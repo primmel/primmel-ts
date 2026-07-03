@@ -1,9 +1,17 @@
 {
-  "name": "@riboseinc/mmel",
-  "version": "0.1.0",
+  "name": "@primmel/mmel",
+  "version": "1.0.0",
+  "description": "Primmel (formerly MMEL) — parser, types, and serializer for the Primmel modelling language",
   "main": "index.js",
-  "repository": "https://github.com/metanorma/mmel-ts",
-  "author": "Ribose Inc. <open.source@ribose.com>",
+  "repository": "https://github.com/primmel/mmel",
+  "homepage": "https://github.com/primmel/mmel",
+  "bugs": {
+    "url": "https://github.com/primmel/mmel/issues"
+  },
+  "author": "Primmel project <primmel@ribose.com>",
+  "contributors": [
+    "Ribose Inc. <open.source@ribose.com>"
+  ],
   "scripts": {},
   "files": [
     "*.js",
@@ -13,5 +21,18 @@
     "**/*.js.map",
     "**/*.d.ts"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [
+    "primmel",
+    "mmel",
+    "multi-modal",
+    "modelling",
+    "compliance",
+    "standard",
+    "ocl",
+    "metanorma"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

@@ -1,3 +1,52 @@
-= MMEL tools for TypeScript
+= @primmel/mmel — TypeScript tools
 
-Includes interfaces and basic serialization/deserialization functionality.
+Parser, types, and serializer/deserializer for the
+https://github.com/primmel/spec[Primmel] modelling language (formerly MMEL).
+
+== Exports
+
+* `load(mmelString: string): Standard` — parse a .mmel file into a typed Standard
+* `dump(standard: Standard): string` — serialize a Standard back to .mmel syntax
+* Types: `Standard`, `Process`, `DataClass`, `Registry`, `Event`, `Gateway`,
+  `Approval`, `Provision`, `Reference`, `Role`, `Variable`, `Enum`, plus
+  Primmel extensions: `Form`, `Subform`, `Symbol`, `Calculation`, `StateMachine`
+
+== Usage
+
+[source,ts]
+----
+import { load, dump } from '@primmel/mmel'
+
+const standard = load(mmelString)
+// ...
+const out = dump(standard)
+----
+
+== Primmel extensions
+
+This package supports all MMEL 0.1 keywords plus five extensions
+defined in the Primmel spec:
+
+[cols="1,2"]
+|===
+|Keyword |Purpose
+
+|`form`
+|Declarative data-capture form schema
+
+|`subform`
+|Reusable parameterized row shape
+
+|`symbol`
+|Typed, unit-aware formal symbol
+
+|`calculation`
+|Named OCL computation primitive
+
+|`state_machine`
+|Entity lifecycle with declarative cascades
+
+|===
+
+See the https://github.com/primmel/spec/tree/main/sources[spec sources]
+for the full language reference.

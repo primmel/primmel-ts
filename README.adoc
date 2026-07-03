@@ -1,5 +1,62 @@
-= MMEL tools
+= Primmel — TypeScript tools
 
-For `mmel` package docs, see `packages/mmel`.
+Parser, types, and serializer/deserializer for the
+https://github.com/primmel/spec[Primmel] modelling language (formerly MMEL).
+
+== Packages
+
+* `@primmel/mmel` (in `packages/mmel/`) — types and ser/des
+
+== Usage
+
+[source,ts]
+----
+import { load, dump } from '@primmel/mmel'
+
+// Parse a .mmel file
+const standard = load(mmelString)
+
+// Serialize back to a .mmel string
+const out = dump(standard)
+----
+
+== What is Primmel?
+
+Primmel is the second generation of MMEL — a Domain-Sefined Language for
+integrated compliance modelling. See the spec at
+https://github.com/primmel/spec.
+
+Primmel supports all MMEL 0.1 constructs plus five extensions:
+
+* `form` / `subform` — declarative data-capture schemas with parameterized composition
+* `symbol` — typed, unit-aware symbol registry
+* `calculation` — named OCL computation primitives
+* `state_machine` — entity lifecycles with declarative cascades
+
+== Migration from `@riboseinc/mmel`
+
+If you previously used `@riboseinc/mmel`, replace:
+
+[source,sh]
+----
+npm uninstall @riboseinc/mmel
+npm install @primmel/mmel
+----
+
+Imports are identical:
+
+[source,ts]
+----
+// before
+import { load } from '@riboseinc/mmel'
+
+// after
+import { load } from '@primmel/mmel'
+----
+
+The package is API-compatible with the latest `@riboseinc/mmel` plus
+support for the five Primmel extension keywords.
+
+== Development
 
 Please run `yarn lint` (and `yarn lint-fix` if necessary) after your changes.

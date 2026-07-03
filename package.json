@@ -1,5 +1,5 @@
 {
-  "name": "mmel-monorepo",
+  "name": "primmel-monorepo",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -17,5 +17,11 @@
     "prepare": "yarn run compile",
     "pretest": "yarn run compile",
     "posttest": "yarn run lint"
+  },
+  "description": "Primmel monorepo \u2014 TypeScript tools for the Primmel modelling language (formerly MMEL)",
+  "repository": "https://github.com/primmel/mmel",
+  "homepage": "https://github.com/primmel/mmel",
+  "bugs": {
+    "url": "https://github.com/primmel/mmel/issues"
   }
 }
