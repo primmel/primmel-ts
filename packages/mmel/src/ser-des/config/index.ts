@@ -32,8 +32,16 @@ import {
   dumpSubprocess,
 } from './process';
 import { parseProvision, resolveProvision, dumpProvision } from './provision';
-import { dumpReference } from './reference';
+import { dumpReference, parseReference } from './reference';
 import { parseRole, dumpRole } from './role';
+
+// MMEL 0.1 spec-parity parsers/dumpers
+import { dumpNote, parseNote, resolveNote } from './note';
+import { dumpTable, parseTable } from './table';
+import { dumpFigure, parseFigure } from './figure';
+import { dumpLink, parseLink } from './link';
+import { dumpMapProfile, parseMapProfile } from './mapProfile';
+import { dumpViewProfile, parseViewProfile } from './viewProfile';
 
 export const PARSER_CONFIG: ParserConfiguration = {
   root: {
@@ -102,6 +110,37 @@ export const PARSER_CONFIG: ParserConfiguration = {
     takesID: true,
     parse: parseTimerEvent,
   },
+
+  reference: {
+    takesID: true,
+    parse: parseReference,
+  },
+
+  // ── MMEL 0.1 spec-parity additions ───────────────────────────────
+  note: {
+    takesID: true,
+    parse: parseNote,
+  },
+  table: {
+    takesID: true,
+    parse: parseTable,
+  },
+  figure: {
+    takesID: true,
+    parse: parseFigure,
+  },
+  link: {
+    takesID: true,
+    parse: parseLink,
+  },
+  map_profile: {
+    takesID: true,
+    parse: parseMapProfile,
+  },
+  view_profile: {
+    takesID: true,
+    parse: parseViewProfile,
+  },
 };
 
 export const RESOLVER_CONFIG: ResolverConfiguration = {
@@ -119,6 +158,9 @@ export const RESOLVER_CONFIG: ResolverConfiguration = {
   },
   registers: {
     resolve: resolveRegistry,
+  },
+  notes: {
+    resolve: resolveNote,
   },
 };
 
@@ -214,4 +256,12 @@ export const DUMPER_CONFIG: DumperConfiguration = {
   pages: dumpSubprocess,
   vars: dumpVariable,
   refs: dumpReference,
+
+  // MMEL 0.1 spec-parity dumpers
+  notes: dumpNote,
+  tables: dumpTable,
+  figures: dumpFigure,
+  links: dumpLink,
+  mapProfiles: dumpMapProfile,
+  viewProfiles: dumpViewProfile,
 };

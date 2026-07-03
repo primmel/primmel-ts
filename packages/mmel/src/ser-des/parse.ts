@@ -20,6 +20,13 @@ export default function parse(
     events: {},
     enums: {},
     variables: {},
+    // MMEL 0.1 constructs missing from earlier parser versions
+    notes: {},
+    tables: {},
+    figures: {},
+    links: {},
+    mapProfiles: {},
+    viewProfiles: {},
   };
 
   const token: Array<string> = tokenize(mmelString);

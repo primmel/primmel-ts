@@ -1,6 +1,11 @@
 import type Resolvable from '../types/Resolvable';
 import type { DataClass, Enum, Registry, Variable } from '../types/data';
+import type Figure from '../types/Figure';
+import type Link from '../types/Link';
+import type MapProfile from '../types/MapProfile';
 import type Metadata from '../types/Metadata';
+import type Note from '../types/Note';
+import type { ResolvableNote } from '../types/Note';
 import type { ResolvableProcess } from '../types/process';
 import type { ResolvableSubprocess } from '../types/flow';
 import type { ResolvableProvision } from '../types/Provision';
@@ -8,6 +13,8 @@ import type { ResolvableApproval } from '../types/Approval';
 import type Reference from '../types/Reference';
 import type Role from '../types/Role';
 import type Standard from '../types/Standard';
+import type Table from '../types/Table';
+import type ViewProfile from '../types/ViewProfile';
 import type Gateway from '../types/Gateway';
 import type EventNode from '../types/events';
 
@@ -78,4 +85,12 @@ export interface ParseContext {
   enums: Record<string, Enum>;
   gateways: Record<string, Gateway>;
   variables: Record<string, Variable>;
+
+  // MMEL 0.1 constructs missing from earlier parser versions
+  notes: Record<string, ResolvableNote>;
+  tables: Record<string, Table>;
+  figures: Record<string, Figure>;
+  links: Record<string, Link>;
+  mapProfiles: Record<string, MapProfile>;
+  viewProfiles: Record<string, ViewProfile>;
 }
