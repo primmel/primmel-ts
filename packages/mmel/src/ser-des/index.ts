@@ -3,6 +3,7 @@ import parse from './parse';
 import resolve from './resolve';
 import _dump from './dump';
 import { PARSER_CONFIG, RESOLVER_CONFIG, DUMPER_CONFIG } from './config';
+import { preprocessIncludes } from './includes';
 
 /**
  * Parse a .mmel string into a typed Standard.
@@ -18,7 +19,6 @@ export function load(mmelString: string): Standard {
  * Use this when the model uses `include "..."` to split across files.
  */
 export function loadFile(filePath: string): Standard {
-  const { preprocessIncludes } = require('./includes');
   const content = preprocessIncludes(filePath);
   return load(content);
 }
