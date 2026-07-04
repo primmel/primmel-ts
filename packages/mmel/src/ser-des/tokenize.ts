@@ -25,6 +25,18 @@ export default function tokenize(x: string): string[] {
         let count = 1;
         while (i < x.length && count > 0) {
           char = x.charAt(i);
+          // Skip string content: don't count braces inside quoted strings
+          if (char === '"') {
+            t += char;
+            i++;
+            while (i < x.length && x.charAt(i) !== '"') {
+              t += x.charAt(i);
+              i++;
+            }
+            t += x.charAt(i);
+            i++;
+            continue;
+          }
           if (char === '{') {
             count++;
           }
@@ -34,7 +46,6 @@ export default function tokenize(x: string): string[] {
           t += char;
           i++;
         }
-        i++;
       } else {
         while (i < x.length && !isWhiteSpace(x.charAt(i))) {
           t += x.charAt(i);

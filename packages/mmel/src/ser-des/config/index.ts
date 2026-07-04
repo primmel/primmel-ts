@@ -99,24 +99,15 @@ export const PARSER_CONFIG: ParserConfiguration = {
     parse: parseExclusiveGate,
   },
 
-  start: {
-    takesID: true,
-    parse: parseStartEvent,
-  },
-
-  end: {
-    takesID: true,
-    parse: parseEndEvent,
-  },
-
-  signalcatch: {
-    takesID: true,
-    parse: parseSignalCatchEvent,
-  },
-  timer: {
-    takesID: true,
-    parse: parseTimerEvent,
-  },
+  // Events: support both short (start/end) and full (start_event/end_event) forms
+  start: { takesID: true, parse: parseStartEvent },
+  end: { takesID: true, parse: parseEndEvent },
+  start_event: { takesID: true, parse: parseStartEvent },
+  end_event: { takesID: true, parse: parseEndEvent },
+  signalcatch: { takesID: true, parse: parseSignalCatchEvent },
+  signal_catch_event: { takesID: true, parse: parseSignalCatchEvent },
+  timer: { takesID: true, parse: parseTimerEvent },
+  timer_event: { takesID: true, parse: parseTimerEvent },
 
   reference: {
     takesID: true,
