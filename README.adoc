@@ -5,13 +5,13 @@ https://github.com/primmel/spec[Primmel] modelling language (formerly MMEL).
 
 == Packages
 
-* `@primmel/mmel` (in `packages/mmel/`) — types and ser/des
+* `@primmel/primmel` (in `packages/mmel/`) — types and ser/des
 
 == Usage
 
 [source,ts]
 ----
-import { load, dump } from '@primmel/mmel'
+import { load, dump } from '@primmel/primmel'
 
 // Parse a .mmel file
 const standard = load(mmelString)
@@ -40,7 +40,7 @@ If you previously used `@riboseinc/mmel`, replace:
 [source,sh]
 ----
 npm uninstall @riboseinc/mmel
-npm install @primmel/mmel
+npm install @primmel/primmel
 ----
 
 Imports are identical:
@@ -51,7 +51,7 @@ Imports are identical:
 import { load } from '@riboseinc/mmel'
 
 // after
-import { load } from '@primmel/mmel'
+import { load } from '@primmel/primmel'
 ----
 
 The package is API-compatible with the latest `@riboseinc/mmel` plus
