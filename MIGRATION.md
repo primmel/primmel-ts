@@ -1,4 +1,4 @@
-# Migration: `@riboseinc/mmel` → `@primmel/mmel`
+# Migration: `@riboseinc/mmel` → `@primmel/primmel`
 
 **Date:** 2026-07-03
 **Status:** READY — package renamed; npm publish + GitHub transfer pending
@@ -9,8 +9,8 @@ The `mmel` package is being renamed and rebranded:
 
 | Before | After |
 |---|---|
-| npm: `@riboseinc/mmel` | npm: `@primmel/mmel` |
-| GitHub: `github.com/metanorma/mmel-ts` | GitHub: `github.com/primmel/mmel` |
+| npm: `@riboseinc/mmel` | npm: `@primmel/primmel` |
+| GitHub: `github.com/metanorma/mmel-ts` | GitHub: `github.com/primmel/primmel` |
 | Brand: "MMEL tools" | Brand: "Primmel — TypeScript tools" |
 | Version: `0.1.0` | Version: `1.0.0` (Primmel is a new major version) |
 
@@ -26,10 +26,10 @@ The rename aligns the package identity with the language identity.
 
 ### `package.json` updates
 
-- `name`: `@riboseinc/mmel` → `@primmel/mmel`
+- `name`: `@riboseinc/mmel` → `@primmel/primmel`
 - `version`: `0.1.0` → `1.0.0` (major version bump — Primmel is a new generation)
 - `description`: added
-- `repository`: `github.com/metanorma/mmel-ts` → `github.com/primmel/mmel`
+- `repository`: `github.com/metanorma/mmel-ts` → `github.com/primmel/primmel`
 - `homepage`: added
 - `bugs`: added
 - `keywords`: added (`primmel`, `mmel`, `compliance`, `ocl`, etc.)
@@ -54,14 +54,14 @@ updating).
 
 ```sh
 npm uninstall @riboseinc/mmel
-npm install @primmel/mmel
+npm install @primmel/primmel
 ```
 
 Or with yarn:
 
 ```sh
 yarn remove @riboseinc/mmel
-yarn add @primmel/mmel
+yarn add @primmel/primmel
 ```
 
 ### Step 2 — Update imports (no change needed)
@@ -73,7 +73,7 @@ The import paths are identical:
 import { load, dump } from '@riboseinc/mmel'
 
 // After
-import { load, dump } from '@primmel/mmel'
+import { load, dump } from '@primmel/primmel'
 ```
 
 ### Step 3 — Verify
@@ -83,10 +83,10 @@ the five Primmel extension keywords. Existing code works unchanged.
 
 ## What's NOT in this commit (requires admin access)
 
-- **GitHub repo transfer**: `github.com/metanorma/mmel-ts` → `github.com/primmel/mmel`
+- **GitHub repo transfer**: `github.com/metanorma/mmel-ts` → `github.com/primmel/primmel`
   - Requires owner permission on both source and target orgs
   - GitHub will redirect automatically after transfer
-- **npm publish**: `npm publish` of `@primmel/mmel@1.0.0`
+- **npm publish**: `npm publish` of `@primmel/primmel@1.0.0`
   - Requires `@primmel` scope ownership on npm
   - The `@primmel` scope must be created first
 
@@ -102,15 +102,15 @@ the five Primmel extension keywords. Existing code works unchanged.
    - Create `@primmel` scope on npm (owner: primmel project)
    - `npm login` with appropriate credentials
    - From the mmel-ts repo: `cd packages/mmel && npm publish`
-   - Verify `npm view @primmel/mmel`
+   - Verify `npm view @primmel/primmel`
 
 3. **Sunset `@riboseinc/mmel`**
    - Publish a final version of `@riboseinc/mmel` that is a stub
-     pointing to `@primmel/mmel`
+     pointing to `@primmel/primmel`
    - Mark `@riboseinc/mmel` as deprecated on npm
 
 4. **Update dependent repos**
-   - `oimlsmart/smart` — replace `@riboseinc/mmel` with `@primmel/mmel`
+   - `oimlsmart/smart` — replace `@riboseinc/mmel` with `@primmel/primmel`
      in `package.json` (currently the converter uses structural typing,
      so no import changes needed)
 

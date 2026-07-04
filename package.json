@@ -19,9 +19,9 @@
     "posttest": "yarn run lint"
   },
   "description": "Primmel monorepo \u2014 TypeScript tools for the Primmel modelling language (formerly MMEL)",
-  "repository": "https://github.com/primmel/mmel",
-  "homepage": "https://github.com/primmel/mmel",
+  "repository": "https://github.com/primmel/primmel",
+  "homepage": "https://github.com/primmel/primmel",
   "bugs": {
-    "url": "https://github.com/primmel/mmel/issues"
+    "url": "https://github.com/primmel/primmel/issues"
   }
 }

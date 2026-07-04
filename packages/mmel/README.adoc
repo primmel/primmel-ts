@@ -1,4 +1,4 @@
-= @primmel/mmel — TypeScript tools
+= @primmel/primmel — TypeScript tools
 
 Parser, types, and serializer/deserializer for the
 https://github.com/primmel/spec[Primmel] modelling language (formerly MMEL).
@@ -15,7 +15,7 @@ https://github.com/primmel/spec[Primmel] modelling language (formerly MMEL).
 
 [source,ts]
 ----
-import { load, dump } from '@primmel/mmel'
+import { load, dump } from '@primmel/primmel'
 
 const standard = load(mmelString)
 // ...

@@ -1,12 +1,15 @@
 {
-  "name": "@primmel/mmel",
+  "name": "@primmel/primmel",
   "version": "1.0.0",
-  "description": "Primmel (formerly MMEL) — parser, types, and serializer for the Primmel modelling language",
+  "description": "Primmel — parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
   "main": "index.js",
-  "repository": "https://github.com/primmel/mmel",
-  "homepage": "https://github.com/primmel/mmel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/primmel/primmel"
+  },
+  "homepage": "https://github.com/primmel/primmel",
   "bugs": {
-    "url": "https://github.com/primmel/mmel/issues"
+    "url": "https://github.com/primmel/primmel/issues"
   },
   "author": "Primmel project <primmel@ribose.com>",
   "contributors": [
