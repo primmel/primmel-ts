@@ -101,7 +101,7 @@ the five Primmel extension keywords. Existing code works unchanged.
 2. **npm publish**
    - Create `@primmel` scope on npm (owner: primmel project)
    - `npm login` with appropriate credentials
-   - From the mmel-ts repo: `cd packages/mmel && npm publish`
+   - From the mmel-ts repo: `cd packages/primmel && npm publish`
    - Verify `npm view @primmel/primmel`
 
 3. **Sunset `@riboseinc/mmel`**

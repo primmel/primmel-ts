@@ -1,0 +1,43 @@
+{
+  "name": "@primmel/primmel",
+  "version": "1.0.0",
+  "description": "Primmel — parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/primmel/primmel-ts"
+  },
+  "homepage": "https://github.com/primmel/primmel-ts",
+  "bugs": {
+    "url": "https://github.com/primmel/primmel-ts/issues"
+  },
+  "author": "Primmel project <primmel@ribose.com>",
+  "contributors": [
+    "Ribose Inc. <open.source@ribose.com>"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "yarn build",
+    "test": "node --test --import tsx test/*.test.ts"
+  },
+  "files": [
+    "dist/",
+    "README.adoc",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "primmel",
+    "mmel",
+    "multi-modal",
+    "modelling",
+    "compliance",
+    "standard",
+    "ocl",
+    "metanorma"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
