@@ -5,9 +5,9 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/primmel/primmel"
+    "url": "https://github.com/primmel/primmel-ts"
   },
-  "homepage": "https://github.com/primmel/primmel",
+  "homepage": "https://github.com/primmel/primmel-ts",
   "bugs": {
     "url": "https://github.com/primmel/primmel/issues"
   },
