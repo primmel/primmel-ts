@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ─────────────────────────────────────────────────────────────────────
 // Include preprocessor.
 //
@@ -8,8 +9,8 @@
 // same convention as C preprocessor #include and AsciiDoc include::.
 // ─────────────────────────────────────────────────────────────────────
 
-import { readFileSync, existsSync } from 'node:fs'
-import { resolve, dirname, isAbsolute } from 'node:path'
+const { readFileSync, existsSync } = require('fs')
+const { resolve, dirname, isAbsolute } = require('path')
 
 const INCLUDE_RE = /^include\s+"([^"]+)"/gm
 

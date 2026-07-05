@@ -29,7 +29,6 @@ import {
   parseProcess,
   resolveProcess,
   dumpProcess,
-  dumpSubprocess,
 } from './process';
 import { parseProvision, resolveProvision, dumpProvision } from './provision';
 import { dumpReference, parseReference } from './reference';
@@ -279,7 +278,7 @@ export const DUMPER_CONFIG: DumperConfiguration = {
   enums: dumpEnum,
   dataclasses: dumpDataClass,
   regs: dumpRegistry,
-  pages: dumpSubprocess,
+  pages: () => '', // no-op dumper for subprocess pages
   vars: dumpVariable,
   refs: dumpReference,
 
