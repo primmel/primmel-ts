@@ -36,6 +36,7 @@ export type ResolverConfiguration = Partial<
   Record<
     keyof ParseContext,
     {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       resolve: Resolver<any, any>;
     }
   >
@@ -58,7 +59,7 @@ export type Parser<C = ParseContext> = (...tokens: string[]) => (ctx: C) => C;
    and replaces any references from the incomplete object with full referenced objects. */
 export type Resolver<T, R, C = ParseContext> = (
   ctx: C,
-  resolvableObject: R
+  resolvableObject: R,
 ) => T;
 
 /* Dumper function takes any structure and returns a string. */

@@ -16,7 +16,7 @@ export const parseEndEvent: Parser = function (id, data) {
     const t: string[] = tokenizePackage(data);
     if (t.length > 0) {
       throw new Error(
-        `Parsing error: end_event. ID ${id}: Expecting empty body`
+        `Parsing error: end_event. ID ${id}: Expecting empty body`,
       );
     }
   }
@@ -46,7 +46,7 @@ export const parseSignalCatchEvent: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: Signal Catch Event. ID ${id}: Expecting value for ${command}`
+          `Parsing error: Signal Catch Event. ID ${id}: Expecting value for ${command}`,
         );
       }
     }
@@ -67,7 +67,7 @@ export const parseStartEvent: Parser = function (id, data) {
     const t: string[] = tokenizePackage(data);
     if (t.length > 0) {
       throw new Error(
-        `Parsing error: end_event. ID ${id}: Expecting empty body`
+        `Parsing error: end_event. ID ${id}: Expecting empty body`,
       );
     }
   }
@@ -100,7 +100,7 @@ export const parseTimerEvent: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: Timer Event. ID ${id}: Expecting value for ${command}`
+          `Parsing error: Timer Event. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

@@ -20,7 +20,7 @@ export const parseFigure: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: figure. ID ${id}: Expecting value for ${command}`
+          `Parsing error: figure. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

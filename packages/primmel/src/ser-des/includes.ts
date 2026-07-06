@@ -26,7 +26,7 @@ const INCLUDE_RE = /^include\s+"([^"]+)"/gm;
  */
 export function preprocessIncludes(
   filePath: string,
-  _seen: Set<string> = new Set()
+  _seen: Set<string> = new Set(),
 ): string {
   const absPath = resolve(filePath);
 
@@ -34,7 +34,7 @@ export function preprocessIncludes(
     throw new Error(
       `Include cycle detected: ${absPath} (chain: ${[..._seen, absPath]
         .map(s => s.split('/').pop())
-        .join(' → ')})`
+        .join(' → ')})`,
     );
   }
   _seen.add(absPath);

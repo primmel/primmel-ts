@@ -20,7 +20,7 @@ describe('strict mode (unknown keyword handling)', () => {
     `;
     assert.throws(
       () => load(src, { strict: true }),
-      /Unknown keyword "future_keyword"/
+      /Unknown keyword "future_keyword"/,
     );
   });
 

@@ -34,7 +34,7 @@ export const parseMapProfile: Parser = function (namespace, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: map_profile. NS ${namespace}: Expecting value for ${command}`
+          `Parsing error: map_profile. NS ${namespace}: Expecting value for ${command}`,
         );
       }
     }

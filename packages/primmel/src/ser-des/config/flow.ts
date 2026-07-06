@@ -44,7 +44,7 @@ export const parseSubprocess: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: subprocess. ID ${id}: Expecting value for ${keyword}`
+          `Parsing error: subprocess. ID ${id}: Expecting value for ${keyword}`,
         );
       }
     }
@@ -66,7 +66,7 @@ const parseElements: Parser<ResolvableSubprocess> = function (data: string) {
       elements[id] = readSubprocessComponent(id, t[i++]);
     } else {
       throw new Error(
-        `Parsing error: elements in subprocess. Expecting value for ${name}`
+        `Parsing error: elements in subprocess. Expecting value for ${name}`,
       );
     }
   }
@@ -88,7 +88,7 @@ const parseData: Parser<ResolvableSubprocess> = function (data: string) {
       elements[id] = readSubprocessComponent(id, t[i++]);
     } else {
       throw new Error(
-        `Parsing error: data in subprocess. Expecting value for ${name}`
+        `Parsing error: data in subprocess. Expecting value for ${name}`,
       );
     }
   }
@@ -109,7 +109,7 @@ const parseEdges: Parser<ResolvableSubprocess> = function (data: string) {
       edges[id] = readEdge(id.trim(), t[i++]);
     } else {
       throw new Error(
-        `Parsing error: edges in subprocess. Expecting value for ${id}`
+        `Parsing error: edges in subprocess. Expecting value for ${id}`,
       );
     }
   }
@@ -121,7 +121,7 @@ const parseEdges: Parser<ResolvableSubprocess> = function (data: string) {
 
 function readSubprocessComponent(
   elm: string,
-  data: string
+  data: string,
 ): ResolvableSubprocessComponent {
   const com: ResolvableSubprocessComponent = {
     name: elm,
@@ -144,12 +144,12 @@ function readSubprocessComponent(
         com.y = parseFloat(t[i++]);
       } else {
         throw new Error(
-          `Parsing error: subprocess component. Element ${elm}: Unknown keyword ${keyword}`
+          `Parsing error: subprocess component. Element ${elm}: Unknown keyword ${keyword}`,
         );
       }
     } else {
       throw new Error(
-        `Parsing error: subprocess component. Element ${elm}: Expecting value for ${keyword}`
+        `Parsing error: subprocess component. Element ${elm}: Expecting value for ${keyword}`,
       );
     }
   }
@@ -184,12 +184,12 @@ function readEdge(id: string, data: string): ResolvableEdge {
         edge._relations.to = t[i++];
       } else {
         throw new Error(
-          `Parsing error: process_flow. ID ${id}: Unknown keyword ${command}`
+          `Parsing error: process_flow. ID ${id}: Unknown keyword ${command}`,
         );
       }
     } else {
       throw new Error(
-        `Parsing error: process_flow. ID ${id}: Expecting value for ${command}`
+        `Parsing error: process_flow. ID ${id}: Expecting value for ${command}`,
       );
     }
   }
@@ -220,7 +220,7 @@ export const resolveSubprocess: Resolver<Subprocess, ResolvableSubprocess> =
     }
 
     const resolveComponent = (
-      c: ResolvableSubprocessComponent
+      c: ResolvableSubprocessComponent,
     ): SubprocessComponent => ({
       name: c.name,
       x: c.x,

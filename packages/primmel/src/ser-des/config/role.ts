@@ -19,7 +19,7 @@ export const parseRole: Parser = (id: string, data: string) => {
       }
     } else {
       throw new Error(
-        `Parsing error: role. ID ${id}: Expecting value for ${keyword}`
+        `Parsing error: role. ID ${id}: Expecting value for ${keyword}`,
       );
     }
   }

@@ -46,7 +46,7 @@ export const parseCalculation: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: calculation. ID ${id}: Expecting value for ${command}`
+          `Parsing error: calculation. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

@@ -26,7 +26,7 @@ export function load(mmelString: string, options: LoadOptions = {}): Standard {
  */
 export function loadFile(
   filePath: string,
-  options: LoadOptions = {}
+  options: LoadOptions = {},
 ): Standard {
   const content = preprocessIncludes(filePath);
   return load(content, options);

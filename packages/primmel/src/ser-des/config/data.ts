@@ -33,7 +33,7 @@ export const parseEnum: Parser = (id: string, data: string) => {
         result.values.push(parseEnumValue(vid, vcontent));
       } else {
         throw new Error(
-          `Parsing error: enum. ID ${id}: Empty definition for value ${vid}`
+          `Parsing error: enum. ID ${id}: Empty definition for value ${vid}`,
         );
       }
     }
@@ -63,7 +63,7 @@ const parseEnumValue = (id: string, data: string) => {
         }
       } else {
         throw new Error(
-          `Parsing error: enum value. ID ${id}: Expecting value for ${command}`
+          `Parsing error: enum value. ID ${id}: Expecting value for ${command}`,
         );
       }
     }
@@ -96,7 +96,7 @@ export const parseRegistry: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: registry. ID ${id}: Expecting value for ${command}`
+          `Parsing error: registry. ID ${id}: Expecting value for ${command}`,
         );
       }
     }
@@ -123,7 +123,7 @@ export const parseDataClass: Parser = function (id, data) {
         result.attributes.push(parseDataAttribute(basic.trim(), details));
       } else {
         throw new Error(
-          `Parsing error: class. ID ${id}: Expecting { after ${basic}`
+          `Parsing error: class. ID ${id}: Expecting { after ${basic}`,
         );
       }
     }
@@ -136,7 +136,7 @@ export const parseDataClass: Parser = function (id, data) {
 
 const parseDataAttribute = (
   basic: string,
-  details: string
+  details: string,
 ): ResolveableDataAttribute => {
   const result: ResolveableDataAttribute = {
     id: '',
@@ -183,7 +183,7 @@ const parseDataAttribute = (
         }
       } else {
         throw new Error(
-          `Parsing error: data attribute. ID ${result.id}: Expecting value for ${keyword}`
+          `Parsing error: data attribute. ID ${result.id}: Expecting value for ${keyword}`,
         );
       }
     }
@@ -214,7 +214,7 @@ export const resolveRegistry: Resolver<Registry, ResolvableRegistry> =
       const dc = resolveFromContext<DataClass>(
         ctx,
         'dataClasses',
-        _relations.data
+        _relations.data,
       );
       if (dc !== undefined) {
         p.data = dc;

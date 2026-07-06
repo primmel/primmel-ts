@@ -13,7 +13,7 @@ export interface ParseOptions {
 export default function parse(
   mmelString: string,
   parsers: ParserConfiguration,
-  options: ParseOptions = {}
+  options: ParseOptions = {},
 ): ParseContext {
   let ctx: ParseContext = {
     root: '',
@@ -54,7 +54,7 @@ export default function parse(
     if (!cfg) {
       if (options.strict) {
         throw new Error(
-          `Unknown keyword "${keyword}" at token ${i}. Use lenient mode (default) to skip unknown keywords.`
+          `Unknown keyword "${keyword}" at token ${i}. Use lenient mode (default) to skip unknown keywords.`,
         );
       }
       // Lenient: skip unknown keywords for forward compatibility.
@@ -67,14 +67,14 @@ export default function parse(
         throw new Error(
           `Keyword "${keyword}" expects an ID and payload, but only ${
             token.length - i + 1
-          } token(s) remain.`
+          } token(s) remain.`,
         );
       }
       updateCtx = cfg.parse(token[i++], token[i++]);
     } else {
       if (i >= token.length) {
         throw new Error(
-          `Keyword "${keyword}" expects a payload, but no tokens remain.`
+          `Keyword "${keyword}" expects a payload, but no tokens remain.`,
         );
       }
       updateCtx = cfg.parse(token[i++]);

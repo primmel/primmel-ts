@@ -33,12 +33,12 @@ export const parseMetadata: Parser = function (token) {
           metadata.shortname = removePackage(t[i++]);
         } else {
           throw new Error(
-            'Parsing error: metadata. Unknown keyword ' + keyword
+            'Parsing error: metadata. Unknown keyword ' + keyword,
           );
         }
       } else {
         throw new Error(
-          'Parsing error: metadata. Expecting value for ' + keyword
+          'Parsing error: metadata. Expecting value for ' + keyword,
         );
       }
     }

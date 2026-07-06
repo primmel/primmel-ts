@@ -21,7 +21,7 @@ const EMPTY_META: Metadata = {
 export function resolveFromContext<T>(
   ctx: ParseContext,
   field: keyof ParseContext,
-  id: string
+  id: string,
 ): T | undefined {
   const table = ctx[field] as unknown as Record<string, T>;
   if (table === null || table === undefined) {
@@ -54,7 +54,7 @@ export function resolveFromContext<T>(
  */
 export default function resolve(
   ctx: ParseContext,
-  resolvers: ResolverConfiguration
+  resolvers: ResolverConfiguration,
 ): Standard {
   const standard: Standard = {
     meta: ctx.metadata ?? EMPTY_META,
@@ -109,7 +109,7 @@ function resolveField(
   ctx: ParseContext,
   resolvers: ResolverConfiguration,
   field: keyof ParseContext,
-  out: unknown[]
+  out: unknown[],
 ) {
   const cfg = resolvers[field];
   if (!cfg) {

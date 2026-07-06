@@ -27,9 +27,9 @@ describe('public API surface', () => {
   it('re-exports all advertised types (compilation-time check)', () => {
     // This test exists so that a broken type re-export in index.ts would
     // surface at compile time. At runtime it is a no-op.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     type _Probe = import('../index').Standard;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const _check: _Probe = {} as any;
     void _check;
   });

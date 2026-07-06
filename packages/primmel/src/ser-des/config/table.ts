@@ -39,7 +39,7 @@ export const parseTable: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: table. ID ${id}: Expecting value for ${command}`
+          `Parsing error: table. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

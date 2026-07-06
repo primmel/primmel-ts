@@ -46,7 +46,7 @@ export const parseApproval: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: approval. ID ${id}: Expecting value for ${keyword}`
+          `Parsing error: approval. ID ${id}: Expecting value for ${keyword}`,
         );
       }
     }

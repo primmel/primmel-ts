@@ -12,7 +12,7 @@ import { DumperConfiguration } from './types';
  */
 export default function dump(
   model: Standard,
-  dumpers: DumperConfiguration
+  dumpers: DumperConfiguration,
 ): string {
   let out = '';
 

@@ -23,7 +23,7 @@ export const parseReference: Parser = (id: string, data: string) => {
         }
       } else {
         throw new Error(
-          `Parsing error: reference. ID ${id}: Expecting value for ${keyword}`
+          `Parsing error: reference. ID ${id}: Expecting value for ${keyword}`,
         );
       }
     }

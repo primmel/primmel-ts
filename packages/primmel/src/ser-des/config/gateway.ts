@@ -21,7 +21,7 @@ export const parseExclusiveGate: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: Exclusive gateway. ID ${id}: Expecting value for ${command}`
+          `Parsing error: Exclusive gateway. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

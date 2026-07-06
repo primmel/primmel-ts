@@ -83,7 +83,7 @@ export const parseStateMachine: Parser = function (entityName, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: state_machine. Entity ${entityName}: Expecting value for ${command}`
+          `Parsing error: state_machine. Entity ${entityName}: Expecting value for ${command}`,
         );
       }
     }

@@ -54,7 +54,7 @@ export const parseProcess: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: process. ID ${id}: Expecting value for ${keyword}`
+          `Parsing error: process. ID ${id}: Expecting value for ${keyword}`,
         );
       }
     }
@@ -67,7 +67,7 @@ export const parseProcess: Parser = function (id, data) {
 
 export const resolveProcess: Resolver<Process, ResolvableProcess> = function (
   ctx,
-  unresolved
+  unresolved,
 ) {
   const { _relations, ...rest } = unresolved;
   const p: Process = {

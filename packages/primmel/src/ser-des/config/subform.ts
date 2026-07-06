@@ -27,7 +27,7 @@ export const parseSubform: Parser = function (id, data) {
             result.shapeType = v;
           } else {
             throw new Error(
-              `Parsing error: subform. ID ${id}: type must be object or array (got ${v})`
+              `Parsing error: subform. ID ${id}: type must be object or array (got ${v})`,
             );
           }
         } else if (command === 'parameters') {
@@ -46,7 +46,7 @@ export const parseSubform: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: subform. ID ${id}: Expecting value for ${command}`
+          `Parsing error: subform. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

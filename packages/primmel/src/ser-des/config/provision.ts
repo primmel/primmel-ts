@@ -37,7 +37,7 @@ export const parseProvision: Parser = function (id, data) {
           'Parsing error: provision. ID ' +
             id +
             ': Expecting value for ' +
-            command
+            command,
         );
       }
     }

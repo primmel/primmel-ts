@@ -61,7 +61,7 @@ export const parseForm: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: form. ID ${id}: Expecting value for ${command}`
+          `Parsing error: form. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

@@ -13,15 +13,15 @@ describe('preprocessIncludes', () => {
     await mkdir(join(tmp, 'sub'), { recursive: true });
     await writeFile(
       join(tmp, 'root.mmel'),
-      'root r1\ninclude "sub/child.mmel"\n'
+      'root r1\ninclude "sub/child.mmel"\n',
     );
     await writeFile(
       join(tmp, 'sub', 'child.mmel'),
-      'role child { name "Child" }\ninclude "grandchild.mmel"\n'
+      'role child { name "Child" }\ninclude "grandchild.mmel"\n',
     );
     await writeFile(
       join(tmp, 'sub', 'grandchild.mmel'),
-      'role grand { name "Grand" }\n'
+      'role grand { name "Grand" }\n',
     );
     await writeFile(join(tmp, 'cycle-a.mmel'), 'include "cycle-b.mmel"\n');
     await writeFile(join(tmp, 'cycle-b.mmel'), 'include "cycle-a.mmel"\n');
@@ -52,14 +52,14 @@ describe('preprocessIncludes', () => {
   it('rejects cycles with a chain message', () => {
     assert.throws(
       () => preprocessIncludes(join(tmp, 'cycle-a.mmel')),
-      /Include cycle detected/
+      /Include cycle detected/,
     );
   });
 
   it('throws on missing file', () => {
     assert.throws(
       () => preprocessIncludes(join(tmp, 'nope.mmel')),
-      /Include file not found/
+      /Include file not found/,
     );
   });
 

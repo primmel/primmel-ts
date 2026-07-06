@@ -19,8 +19,8 @@ export const parseLink: Parser = function (id, data) {
           if (!VALID_LINK_KINDS.includes(v)) {
             throw new Error(
               `Parsing error: link. ID ${id}: Unknown kind ${v} (valid: ${VALID_LINK_KINDS.join(
-                ', '
-              )})`
+                ', ',
+              )})`,
             );
           }
           result.kind = v;
@@ -37,7 +37,7 @@ export const parseLink: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: link. ID ${id}: Expecting value for ${command}`
+          `Parsing error: link. ID ${id}: Expecting value for ${command}`,
         );
       }
     }

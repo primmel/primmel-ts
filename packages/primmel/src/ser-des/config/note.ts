@@ -30,8 +30,8 @@ export const parseNote: Parser = function (id, data) {
           if (!VALID_NOTE_TYPES.includes(v)) {
             throw new Error(
               `Parsing error: note. ID ${id}: Unknown type ${v} (valid: ${VALID_NOTE_TYPES.join(
-                ', '
-              )})`
+                ', ',
+              )})`,
             );
           }
           result.type = v;
@@ -44,7 +44,7 @@ export const parseNote: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: note. ID ${id}: Expecting value for ${command}`
+          `Parsing error: note. ID ${id}: Expecting value for ${command}`,
         );
       }
     }
@@ -58,7 +58,7 @@ export const parseNote: Parser = function (id, data) {
 
 export const resolveNote: Resolver<Note, ResolvableNote> = function (
   ctx,
-  unresolved
+  unresolved,
 ) {
   const ref: Reference[] = [];
   for (const id of unresolved._relations.ref) {

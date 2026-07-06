@@ -43,8 +43,8 @@ export const parseSymbol: Parser = function (id, data) {
           if (!VALID_SYMBOL_TYPES.includes(v)) {
             throw new Error(
               `Parsing error: symbol. ID ${id}: Unknown type ${v} (valid: ${VALID_SYMBOL_TYPES.join(
-                ', '
-              )})`
+                ', ',
+              )})`,
             );
           }
           result.type = v;
@@ -61,7 +61,7 @@ export const parseSymbol: Parser = function (id, data) {
         }
       } else {
         throw new Error(
-          `Parsing error: symbol. ID ${id}: Expecting value for ${command}`
+          `Parsing error: symbol. ID ${id}: Expecting value for ${command}`,
         );
       }
     }
@@ -75,7 +75,7 @@ export const parseSymbol: Parser = function (id, data) {
 
 export const resolveSymbol: Resolver<Symbol, ResolvableSymbol> = function (
   ctx,
-  unresolved
+  unresolved,
 ) {
   const ref: Reference[] = [];
   for (const id of unresolved._relations.ref) {
