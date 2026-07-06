@@ -4,7 +4,9 @@
     "rootDir": ".",
     "outDir": "build",
     "noEmit": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "include": [
     "packages/*/src/**/*.ts",
