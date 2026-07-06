@@ -17,7 +17,7 @@
     "Ribose Inc. <open.source@ribose.com>"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "../../node_modules/.bin/tsc",
     "prepublishOnly": "yarn build",
     "test": "node --test --import tsx test/*.test.ts"
   },

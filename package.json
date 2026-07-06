@@ -15,6 +15,8 @@
     "lint-clean": "gts clean",
     "lint-fix": "gts fix",
     "compile": "tsc",
+    "test": "yarn workspace @primmel/primmel run test",
+    "build": "yarn workspace @primmel/primmel run build",
     "prepare": "yarn run compile",
     "pretest": "yarn run compile",
     "posttest": "yarn run lint"
