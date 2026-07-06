@@ -7,7 +7,7 @@
 // to the repo root). The model is intentionally NOT shipped with this
 // repository — it is an external integration fixture. If you don't have
 // the model, this script will print a clear skip message and exit 0.
-import { loadFile } from '../packages/primmel/src/ser-des/index.ts';
+import { loadFile } from '../packages/primmel/src/ser-des/index.js';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
