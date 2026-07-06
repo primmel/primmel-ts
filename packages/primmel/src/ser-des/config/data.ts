@@ -289,8 +289,43 @@ export const dumpRegistry: Dumper<Registry> = function (reg) {
   return out;
 };
 
+export const parseVariable: Parser = function (id, data) {
+  const result: Variable = {
+    id: id,
+    type: '',
+    definition: '',
+    description: '',
+  };
+  if (data !== '') {
+    const t: string[] = tokenizePackage(data);
+    let i = 0;
+    while (i < t.length) {
+      const keyword: string = t[i++];
+      if (i < t.length) {
+        if (keyword === 'type') {
+          result.type = t[i++];
+        } else if (keyword === 'definition') {
+          result.definition = removePackage(t[i++]);
+        } else if (keyword === 'description') {
+          result.description = removePackage(t[i++]);
+        } else {
+          i++;
+        }
+      } else {
+        throw new Error(
+          `Parsing error: variable. ID ${id}: Expecting value for ${keyword}`,
+        );
+      }
+    }
+  }
+  return ctx => {
+    ctx.variables[id] = result;
+    return ctx;
+  };
+};
+
 export const dumpVariable: Dumper<Variable> = function (v) {
-  let out: string = 'measurement ' + v.id + ' {\n';
+  let out: string = 'variable ' + v.id + ' {\n';
   if (v.type !== '') {
     out += '  type ' + v.type + '\n';
   }

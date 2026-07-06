@@ -20,12 +20,21 @@ export default function tokenize(x: string): string[] {
       t += char;
       i++;
       if (char === '"') {
-        while (i < x.length && x.charAt(i) !== '"') {
-          t += x.charAt(i);
+        // Scan string token, honouring backslash escapes so that
+        // embedded quotes (\"..") don't terminate the string early.
+        while (i < x.length) {
+          char = x.charAt(i);
+          if (char === '\\' && i + 1 < x.length) {
+            t += char + x.charAt(i + 1);
+            i += 2;
+            continue;
+          }
+          t += char;
           i++;
+          if (char === '"') {
+            break;
+          }
         }
-        t += x.charAt(i);
-        i++;
       } else if (char === '{') {
         let count = 1;
         while (i < x.length && count > 0) {
@@ -34,12 +43,19 @@ export default function tokenize(x: string): string[] {
           if (char === '"') {
             t += char;
             i++;
-            while (i < x.length && x.charAt(i) !== '"') {
-              t += x.charAt(i);
+            while (i < x.length) {
+              const c = x.charAt(i);
+              if (c === '\\' && i + 1 < x.length) {
+                t += c + x.charAt(i + 1);
+                i += 2;
+                continue;
+              }
+              t += c;
               i++;
+              if (c === '"') {
+                break;
+              }
             }
-            t += x.charAt(i);
-            i++;
             continue;
           }
           if (char === '{') {
@@ -92,6 +108,25 @@ export function tokenizeAttributes(x: string): Array<string> {
         let count = 1;
         while (i < x.length && count > 0) {
           char = x.charAt(i);
+          // String-awareness: don't count braces inside quoted strings.
+          if (char === '"') {
+            t += char;
+            i++;
+            while (i < x.length) {
+              const c = x.charAt(i);
+              if (c === '\\' && i + 1 < x.length) {
+                t += c + x.charAt(i + 1);
+                i += 2;
+                continue;
+              }
+              t += c;
+              i++;
+              if (c === '"') {
+                break;
+              }
+            }
+            continue;
+          }
           if (char === '{') {
             count++;
           }

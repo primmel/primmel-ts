@@ -12,6 +12,7 @@ import {
   parseDataClass,
   parseEnum,
   parseRegistry,
+  parseVariable,
   resolveDataClass,
   resolveRegistry,
 } from './data';
@@ -95,6 +96,11 @@ export const PARSER_CONFIG: ParserConfiguration = {
   data_registry: {
     takesID: true,
     parse: parseRegistry,
+  },
+
+  variable: {
+    takesID: true,
+    parse: parseVariable,
   },
 
   exclusive_gateway: {

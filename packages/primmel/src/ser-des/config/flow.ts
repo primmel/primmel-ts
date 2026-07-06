@@ -143,9 +143,8 @@ function readSubprocessComponent(
       } else if (keyword === 'y') {
         com.y = parseFloat(t[i++]);
       } else {
-        throw new Error(
-          `Parsing error: subprocess component. Element ${elm}: Unknown keyword ${keyword}`,
-        );
+        // forward-compatible: skip unknown keyword value
+        i++;
       }
     } else {
       throw new Error(
@@ -183,9 +182,8 @@ function readEdge(id: string, data: string): ResolvableEdge {
       } else if (command === 'to') {
         edge._relations.to = t[i++];
       } else {
-        throw new Error(
-          `Parsing error: process_flow. ID ${id}: Unknown keyword ${command}`,
-        );
+        // forward-compatible: skip unknown keyword value (e.g., label, color)
+        i++;
       }
     } else {
       throw new Error(

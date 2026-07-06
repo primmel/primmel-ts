@@ -62,6 +62,17 @@ describe('tokenize', () => {
   it('ignores // inside quoted strings', () => {
     assert.deepEqual(tokenize('"a // b" c'), ['"a // b"', 'c']);
   });
+
+  it('honours backslash escapes in strings', () => {
+    assert.deepEqual(tokenize('"he said \\"hi\\"" c'), ['"he said \\"hi\\""', 'c']);
+  });
+
+  it('does NOT terminate strings on escaped quotes inside brace blocks', () => {
+    assert.deepEqual(tokenize('id { key "val \\" } \\" ue" }'), [
+      'id',
+      '{ key "val \\" } \\" ue" }',
+    ]);
+  });
 });
 
 describe('removePackage', () => {
@@ -99,5 +110,17 @@ describe('tokenizeAttributes', () => {
     assert.equal(attrs.length, 2);
     assert.equal(attrs[0], 'id ');
     assert.equal(attrs[1], '{ outer { inner } tail }');
+  });
+
+  it('does NOT count braces inside quoted strings', () => {
+    const attrs = tokenizeAttributes('{ id { default "has } char" } }');
+    assert.equal(attrs.length, 2);
+    assert.equal(attrs[1], '{ default "has } char" }');
+  });
+
+  it('does NOT terminate strings on escaped quotes', () => {
+    const attrs = tokenizeAttributes('{ id { default "val \\" tail" } }');
+    assert.equal(attrs.length, 2);
+    assert.equal(attrs[1], '{ default "val \\" tail" }');
   });
 });
