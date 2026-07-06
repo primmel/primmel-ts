@@ -26,5 +26,16 @@
   "homepage": "https://github.com/primmel/primmel-ts",
   "bugs": {
     "url": "https://github.com/primmel/primmel/issues"
+  },
+  "resolutions": {
+    "ansi-regex": "^5.0.1",
+    "brace-expansion": "^1.1.12",
+    "cross-spawn": "^7.0.6",
+    "got": "^11.8.5",
+    "http-cache-semantics": "^4.1.1",
+    "micromatch": "^4.0.8",
+    "semver": "^7.5.4",
+    "tmp": "^0.2.3",
+    "word-wrap": "^1.2.5"
   }
 }
