@@ -40,7 +40,7 @@ import { dumpLink, parseLink } from './link';
 import { dumpMapProfile, parseMapProfile } from './mapProfile';
 import { dumpViewProfile, parseViewProfile } from './viewProfile';
 
-// Primmel extension parsers/dumpers (MN 113-7 to 113-10)
+// Primmel extension parsers/dumpers (MN 113-6 to 113-10)
 import { dumpForm, parseForm } from './form';
 import { dumpSubformType as dumpSubform, parseSubform } from './subform';
 import { dumpSymbol, parseSymbol, resolveSymbol } from './symbol';
@@ -50,6 +50,7 @@ import {
   resolveCalculation,
 } from './calculation';
 import { dumpStateMachine, parseStateMachine } from './stateMachine';
+import { dumpTerm, parseTerm } from './term';
 
 export const PARSER_CONFIG: ParserConfiguration = {
   root: {
@@ -154,7 +155,11 @@ export const PARSER_CONFIG: ParserConfiguration = {
     parse: parseViewProfile,
   },
 
-  // ── Primmel extension additions (MN 113-7 to 113-10) ─────────────
+  // ── Primmel extension additions (MN 113-6 to 113-10) ─────────────
+  term: {
+    takesID: true,
+    parse: parseTerm,
+  },
   form: {
     takesID: true,
     parse: parseForm,
@@ -309,6 +314,7 @@ export const DUMPER_CONFIG: DumperConfiguration = {
   viewProfiles: dumpViewProfile,
 
   // Primmel extension dumpers
+  terms: dumpTerm,
   forms: dumpForm,
   subforms: dumpSubform,
   symbols: dumpSymbol,

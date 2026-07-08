@@ -19,6 +19,7 @@ import type StateMachine from '../types/StateMachine';
 import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
 import type Table from '../types/Table';
+import type Term from '../types/Term';
 import type ViewProfile from '../types/ViewProfile';
 
 // Configuration
@@ -97,7 +98,8 @@ export interface ParseContext {
   mapProfiles: Record<string, MapProfile>;
   viewProfiles: Record<string, ViewProfile>;
 
-  // Primmel extensions (MN 113-7 to 113-10)
+  // Primmel extensions (MN 113-6 to 113-10)
+  terms: Record<string, Term>;
   forms: Record<string, Form>;
   subforms: Record<string, Subform>;
   symbols: Record<string, Symbol>;

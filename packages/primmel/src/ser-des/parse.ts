@@ -37,7 +37,8 @@ export default function parse(
     links: {},
     mapProfiles: {},
     viewProfiles: {},
-    // Primmel extensions (MN 113-7 to 113-10)
+    // Primmel extensions (MN 113-6 to 113-10)
+    terms: {},
     forms: {},
     subforms: {},
     symbols: {},

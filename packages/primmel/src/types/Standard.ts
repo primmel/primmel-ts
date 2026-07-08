@@ -18,6 +18,7 @@ import type StateMachine from './StateMachine';
 import type Subform from './Subform';
 import type Symbol from './Symbol';
 import type Table from './Table';
+import type Term from './Term';
 import type ViewProfile from './ViewProfile';
 
 export default interface Standard {
@@ -44,7 +45,8 @@ export default interface Standard {
   mapProfiles: MapProfile[];
   viewProfiles: ViewProfile[];
 
-  // Primmel extensions (MN 113-7 to 113-10)
+  // Primmel extensions (MN 113-6 to 113-10)
+  terms: Term[];
   forms: Form[];
   subforms: Subform[];
   symbols: Symbol[];

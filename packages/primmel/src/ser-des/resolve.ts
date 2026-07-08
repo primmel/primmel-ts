@@ -76,6 +76,7 @@ export default function resolve(
     links: Object.values(ctx.links),
     mapProfiles: Object.values(ctx.mapProfiles),
     viewProfiles: Object.values(ctx.viewProfiles),
+    terms: Object.values(ctx.terms),
     forms: Object.values(ctx.forms),
     subforms: Object.values(ctx.subforms),
     symbols: [],

@@ -40,3 +40,4 @@ export type {
   Transition,
   Cascade,
 } from './src/types/StateMachine';
+export type { default as Term } from './src/types/Term';
