@@ -94,6 +94,24 @@ export function removePackage(x: string): string {
   }
 }
 
+/**
+ * Strip surrounding quotes OR braces if (and only if) the token starts
+ * and ends with them. Returns the token unchanged otherwise.
+ *
+ * Use this instead of removePackage for values that may be either bare
+ * IDs (`realProc`) or quoted strings (`"My Form"`) — common in form
+ * field references.
+ */
+export function stripWrapping(x: string): string {
+  if (x.length < 2) return x;
+  const first = x.charAt(0);
+  const last = x.charAt(x.length - 1);
+  if ((first === '"' && last === '"') || (first === '{' && last === '}')) {
+    return x.substr(1, x.length - 2);
+  }
+  return x;
+}
+
 export function tokenizeAttributes(x: string): Array<string> {
   x = removePackage(x);
   const set: Array<string> = [];

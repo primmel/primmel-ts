@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { removePackage, stripWrapping, tokenizePackage } from '../tokenize';
 import type Form from '../../types/Form';
 import type {
   FormField,
@@ -34,11 +34,11 @@ export const parseForm: Parser = function (id, data) {
         } else if (command === 'description') {
           result.description = removePackage(t[i++]);
         } else if (command === 'data_class') {
-          result.dataClassId = removePackage(t[i++]);
+          result.dataClassId = stripWrapping(t[i++]);
         } else if (command === 'header') {
-          result.headerFormId = removePackage(t[i++]);
+          result.headerFormId = stripWrapping(t[i++]);
         } else if (command === 'conformance_process') {
-          result.conformanceProcessId = removePackage(t[i++]);
+          result.conformanceProcessId = stripWrapping(t[i++]);
         } else if (command === 'applicability') {
           result.applicability = parseApplicability(removePackage(t[i++]));
         } else if (command === 'field') {
@@ -174,7 +174,7 @@ function parseFormField(name: string, block: string): FormField {
         } else if (cmd === 'measurement_method') {
           field.measurementMethod = removePackage(t[i++]);
         } else if (cmd === 'calculation') {
-          field.calculationId = removePackage(t[i++]);
+          field.calculationId = stripWrapping(t[i++]);
         } else if (cmd === 'calculation_bindings') {
           removePackage(t[i++]);
         } else if (cmd === 'derivation') {
