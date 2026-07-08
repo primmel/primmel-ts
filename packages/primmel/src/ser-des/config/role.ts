@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, removePackage, tokenizePackage } from '../tokenize';
 import Role from '../../types/Role';
 
 export const parseRole: Parser = (id: string, data: string) => {
@@ -31,7 +31,7 @@ export const parseRole: Parser = (id: string, data: string) => {
 
 export const dumpRole: Dumper<Role> = function (role) {
   let out: string = 'role ' + role.id + ' {\n';
-  out += '  name "' + role.name + '"\n';
+  out += '  name "' + escapeString(role.name) + '"\n';
   out += '}\n';
   return out;
 };

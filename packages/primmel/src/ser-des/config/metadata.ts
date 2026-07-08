@@ -1,6 +1,6 @@
 import type Metadata from '../../types/Metadata';
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, removePackage, tokenizePackage } from '../tokenize';
 
 export const parseMetadata: Parser = function (token) {
   const metadata: Metadata = {
@@ -52,11 +52,11 @@ export const parseMetadata: Parser = function (token) {
 
 export const dumpMetadata: Dumper<Metadata> = function (meta) {
   let out = 'metadata {\n';
-  out += '  title "' + meta.title + '"\n';
-  out += '  schema "' + meta.schema + '"\n';
-  out += '  edition "' + meta.edition + '"\n';
-  out += '  author "' + meta.author + '"\n';
-  out += '  namespace "' + meta.namespace + '"\n';
+  out += '  title "' + escapeString(meta.title) + '"\n';
+  out += '  schema "' + escapeString(meta.schema) + '"\n';
+  out += '  edition "' + escapeString(meta.edition) + '"\n';
+  out += '  author "' + escapeString(meta.author) + '"\n';
+  out += '  namespace "' + escapeString(meta.namespace) + '"\n';
   out += '}\n';
   return out;
 };

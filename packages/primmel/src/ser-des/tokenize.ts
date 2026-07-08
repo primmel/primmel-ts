@@ -94,6 +94,40 @@ export function removePackage(x: string): string {
   }
 }
 
+/**
+ * Strip surrounding quotes OR braces if (and only if) the token starts
+ * and ends with them. Returns the token unchanged otherwise.
+ *
+ * Use this instead of removePackage for values that may be either bare
+ * IDs (`realProc`) or quoted strings (`"My Form"`) — common in form
+ * field references, calculation IDs, conformance process IDs, etc.
+ *
+ * removePackage unconditionally strips first+last char, which mangles
+ * bare IDs (e.g. `DetermineMeasurementError` → `etermineMeasurementErro`).
+ * stripWrapping only strips when the wrapping chars are actually
+ * matching quote-or-brace.
+ */
+export function stripWrapping(x: string): string {
+  if (x.length < 2) return x;
+  const first = x.charAt(0);
+  const last = x.charAt(x.length - 1);
+  if ((first === '"' && last === '"') || (first === '{' && last === '}')) {
+    return x.substr(1, x.length - 2);
+  }
+  return x;
+}
+
+/**
+ * Escape a string for emission inside double-quotes. The tokenizer's
+ * string scanner honours backslash escapes, so `"` and `\` inside
+ * values MUST be escaped to round-trip cleanly.
+ *
+ * Use this in dumpers: `out += '  name "' + escapeString(role.name) + '"\n'`
+ */
+export function escapeString(x: string): string {
+  return x.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 export function tokenizeAttributes(x: string): Array<string> {
   x = removePackage(x);
   const set: Array<string> = [];

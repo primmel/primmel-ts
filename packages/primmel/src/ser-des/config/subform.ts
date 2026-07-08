@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { removePackage, stripWrapping, tokenizePackage } from '../tokenize';
 import type Subform from '../../types/Subform';
 import type { ParameterDecl } from '../../types/Subform';
 import type { FormField } from '../../types/Form';
@@ -156,7 +156,7 @@ function parseField(name: string, block: string): FormField {
         } else if (cmd === 'measurement_method') {
           field.measurementMethod = removePackage(t[i++]);
         } else if (cmd === 'calculation') {
-          field.calculationId = removePackage(t[i++]);
+          field.calculationId = stripWrapping(t[i++]);
         } else if (cmd === 'calculation_bindings') {
           // Skip the binding block (raw)
           removePackage(t[i++]);

@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, removePackage, stripWrapping, tokenizePackage } from '../tokenize';
 import type Form from '../../types/Form';
 import type {
   FormField,
@@ -34,11 +34,11 @@ export const parseForm: Parser = function (id, data) {
         } else if (command === 'description') {
           result.description = removePackage(t[i++]);
         } else if (command === 'data_class') {
-          result.dataClassId = removePackage(t[i++]);
+          result.dataClassId = stripWrapping(t[i++]);
         } else if (command === 'header') {
-          result.headerFormId = removePackage(t[i++]);
+          result.headerFormId = stripWrapping(t[i++]);
         } else if (command === 'conformance_process') {
-          result.conformanceProcessId = removePackage(t[i++]);
+          result.conformanceProcessId = stripWrapping(t[i++]);
         } else if (command === 'applicability') {
           result.applicability = parseApplicability(removePackage(t[i++]));
         } else if (command === 'field') {
@@ -174,7 +174,7 @@ function parseFormField(name: string, block: string): FormField {
         } else if (cmd === 'measurement_method') {
           field.measurementMethod = removePackage(t[i++]);
         } else if (cmd === 'calculation') {
-          field.calculationId = removePackage(t[i++]);
+          field.calculationId = stripWrapping(t[i++]);
         } else if (cmd === 'calculation_bindings') {
           removePackage(t[i++]);
         } else if (cmd === 'derivation') {
@@ -265,9 +265,9 @@ function parseSubformRef(subformId: string, block: string): SubformRef {
 
 export const dumpForm: Dumper<Form> = function (f) {
   let out = 'form ' + f.id + ' {\n';
-  out += '  name "' + f.name + '"\n';
+  out += '  name "' + escapeString(f.name) + '"\n';
   if (f.description) {
-    out += '  description "' + f.description + '"\n';
+    out += '  description "' + escapeString(f.description) + '"\n';
   }
   if (f.dataClassId) {
     out += '  data_class ' + f.dataClassId + '\n';
@@ -309,10 +309,10 @@ export const dumpForm: Dumper<Form> = function (f) {
     } else {
       out += '  field ' + field.name + ' { ';
       if (field.label) {
-        out += 'label "' + field.label + '" ';
+        out += 'label "' + escapeString(field.label) + '" ';
       }
       if (field.unit) {
-        out += 'unit "' + field.unit + '" ';
+        out += 'unit "' + escapeString(field.unit) + '" ';
       }
       if (field.required) {
         out += 'required true ';
@@ -323,9 +323,9 @@ export const dumpForm: Dumper<Form> = function (f) {
   if (f.passFail) {
     out +=
       '  pass_fail { criteria "' +
-      f.passFail.criteria +
+      escapeString(f.passFail.criteria) +
       '" pass_if "' +
-      f.passFail.passIf +
+      escapeString(f.passFail.passIf) +
       '" }\n';
   }
   out += '}\n';

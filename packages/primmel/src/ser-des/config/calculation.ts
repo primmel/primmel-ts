@@ -1,5 +1,5 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, removePackage, tokenizePackage } from '../tokenize';
 import type Calculation from '../../types/Calculation';
 import type {
   CalculationInput,
@@ -148,17 +148,17 @@ export const resolveCalculation: Resolver<Calculation, ResolvableCalculation> =
 
 export const dumpCalculation: Dumper<Calculation> = function (c) {
   let out = 'calculation ' + c.id + ' {\n';
-  out += '  name "' + c.name + '"\n';
+  out += '  name "' + escapeString(c.name) + '"\n';
   if (c.description) {
-    out += '  description "' + c.description + '"\n';
+    out += '  description "' + escapeString(c.description) + '"\n';
   }
   if (c.inputs.length > 0) {
     out += '  inputs {\n';
     for (const inp of c.inputs) {
       let line = '    ' + inp.name + ' : ' + inp.type + ' { ';
-      line += 'unit "' + inp.unit + '"';
+      line += 'unit "' + escapeString(inp.unit) + '"';
       if (inp.description) {
-        line += ' description "' + inp.description + '"';
+        line += ' description "' + escapeString(inp.description) + '"';
       }
       if (inp.hasDefault) {
         line += ' default ' + inp.defaultValue;
@@ -168,8 +168,8 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     }
     out += '  }\n';
   }
-  out += '  output : ' + c.output.type + ' { unit "' + c.output.unit + '" }\n';
-  out += '  expression "' + c.expression + '"\n';
+  out += '  output : ' + c.output.type + ' { unit "' + escapeString(c.output.unit) + '" }\n';
+  out += '  expression "' + escapeString(c.expression) + '"\n';
   if (c.ref.length > 0) {
     out += '  reference {\n';
     for (const r of c.ref) {
