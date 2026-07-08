@@ -5,8 +5,14 @@ import resolve from './resolve';
 import _dump from './dump';
 import { PARSER_CONFIG, RESOLVER_CONFIG, DUMPER_CONFIG } from './config';
 import { preprocessIncludes } from './includes';
+import { validate, type ValidationIssue } from '../validate';
 
 export type LoadOptions = ParseOptions;
+
+export interface LoadResult {
+  standard: Standard;
+  issues: ValidationIssue[];
+}
 
 /**
  * Parse a .mmel string into a typed Standard.
@@ -30,6 +36,24 @@ export function loadFile(
 ): Standard {
   const content = preprocessIncludes(filePath);
   return load(content, options);
+}
+
+/**
+ * Load + validate in one call. Returns the parsed Standard plus a list of
+ * validation issues (cross-reference integrity bugs the lenient parser
+ * silently dropped). Empty `issues` array means clean.
+ *
+ * Caller decides how to surface issues: log them, throw on severity,
+ * display in an editor, etc.
+ */
+export function loadWithIssues(
+  filePath: string,
+  options: LoadOptions = {},
+): LoadResult {
+  const content = preprocessIncludes(filePath);
+  const standard = load(content, options);
+  const issues = validate(standard);
+  return { standard, issues };
 }
 
 export function dump(standard: Standard): string {

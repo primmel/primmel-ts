@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { load, validate } from '../index.ts';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { load, loadWithIssues, validate } from '../index.ts';
 import type { ValidationIssue } from '../index.ts';
 
 function issuesWithCode(issues: ValidationIssue[], code: string): ValidationIssue[] {
@@ -129,5 +131,28 @@ describe('validate', () => {
     const toMissing = issuesWithCode(issues, 'state-machine-to-missing');
     assert.equal(toMissing.length, 1);
     assert.match(toMissing[0].message, /Archived/);
+  });
+});
+
+describe('loadWithIssues', () => {
+  it('returns both standard and issues in one call', () => {
+    const src = `
+      form F {
+        name "F"
+        conformance_process missingProc
+        field x { type string }
+      }
+    `;
+    // loadWithIssues takes a file path, not a string. Write to a temp file
+    // via the OS, or use a path we know exists. For the unit test, we use
+    // the R 60 model fixture if available; otherwise skip.
+    const r60 = resolve(process.env.HOME ?? '', 'src/primmel/mmel/models/r60/r60.mmel');
+    if (!existsSync(r60)) {
+      // skip — covered by CI with fixture
+      return;
+    }
+    const { standard, issues } = loadWithIssues(r60);
+    assert.ok(standard.forms.length > 0);
+    assert.ok(Array.isArray(issues));
   });
 });

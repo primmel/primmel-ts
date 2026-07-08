@@ -1,5 +1,6 @@
 // Package entry point — re-exports the public API
-export { load, loadFile, dump } from './src/ser-des/index';
+export { load, loadFile, loadWithIssues, dump } from './src/ser-des/index';
+export type { LoadResult } from './src/ser-des/index';
 export { validate } from './src/validate';
 export type { ValidationIssue, ValidationSeverity } from './src/validate';
 export type { default as Standard } from './src/types/Standard';
