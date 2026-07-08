@@ -1,0 +1,56 @@
+name: Publish
+
+# Trusted publishing to npm via GitHub Actions OIDC.
+# Requires the publishing workflow to be configured as a trusted
+# publisher on npm (no NPM_TOKEN needed). See:
+# https://docs.npmjs.com/generating-provenance-statements
+#
+# Triggers when a GitHub Release matching `v*` is published. To publish
+# a new version: bump `packages/primmel/package.json`, merge to main,
+# then create a Release tagged `v<x.y.z>` in the GitHub UI.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: yarn
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install
+        run: yarn install --immutable
+      - name: Type-check
+        run: yarn compile
+      - name: Lint
+        run: yarn lint
+      - name: Test
+        run: yarn test
+      - name: Build package
+        run: yarn build
+      - name: Verify version matches the released tag
+        run: |
+          PKG_VERSION=$(node -p "require('./packages/primmel/package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "package.json: $PKG_VERSION"
+          echo "release tag:  $TAG_VERSION"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "Mismatch: package.json $PKG_VERSION != release tag $TAG_VERSION"
+            exit 1
+          fi
+      - name: Publish
+        run: npm publish --provenance --access public
+        working-directory: packages/primmel

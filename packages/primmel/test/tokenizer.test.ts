@@ -64,7 +64,10 @@ describe('tokenize', () => {
   });
 
   it('honours backslash escapes in strings', () => {
-    assert.deepEqual(tokenize('"he said \\"hi\\"" c'), ['"he said \\"hi\\""', 'c']);
+    assert.deepEqual(tokenize('"he said \\"hi\\"" c'), [
+      '"he said \\"hi\\""',
+      'c',
+    ]);
   });
 
   it('does NOT terminate strings on escaped quotes inside brace blocks', () => {
