@@ -21,14 +21,20 @@ import type Symbol from '../types/Symbol';
 import type Table from '../types/Table';
 import type Term from '../types/Term';
 import type ViewProfile from '../types/ViewProfile';
+import type { ParseIssue } from '../validate';
 
 // Configuration
 
-/* Maps an MMEL keyword to parser function. */
+/* Maps an MMEL keyword to parser function.
+ *
+ * `field`, when set, declares which ParseContext collection this keyword
+ * writes to. Used by parse() for duplicate-ID detection.
+ */
 export interface ParserConfiguration {
   [keyword: string]: {
     takesID?: true;
     parse: Parser;
+    field?: keyof ParseContext;
   };
 }
 
@@ -105,4 +111,8 @@ export interface ParseContext {
   symbols: Record<string, Symbol>;
   calculations: Record<string, Calculation>;
   stateMachines: Record<string, StateMachine>;
+
+  // Issues collected during parsing (duplicate IDs, etc.). NOT a model
+  // collection — populated by parse() and surfaced via loadWithIssues().
+  issues: ParseIssue[];
 }

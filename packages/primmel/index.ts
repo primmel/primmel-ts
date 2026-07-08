@@ -1,5 +1,17 @@
 // Package entry point — re-exports the public API
-export { load, loadFile, dump } from './src/ser-des/index';
+export {
+  load,
+  loadFile,
+  loadWithIssues,
+  loadFileWithIssues,
+  dump,
+  validate,
+  type LoadOptions,
+  type LoadResult,
+  type ValidationIssue,
+  type ValidationSeverity,
+  type Position,
+} from './src/ser-des/index';
 export type { default as Standard } from './src/types/Standard';
 export type { default as Metadata } from './src/types/Metadata';
 export type { default as Role } from './src/types/Role';

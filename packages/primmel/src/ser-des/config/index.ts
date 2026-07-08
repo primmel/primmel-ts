@@ -67,92 +67,109 @@ export const PARSER_CONFIG: ParserConfiguration = {
   role: {
     takesID: true,
     parse: parseRole,
+    field: 'roles',
   },
 
   provision: {
     takesID: true,
     parse: parseProvision,
+    field: 'provisions',
   },
 
   process: {
     takesID: true,
     parse: parseProcess,
+    field: 'processes',
   },
 
   approval: {
     takesID: true,
     parse: parseApproval,
+    field: 'approvals',
   },
 
   class: {
     takesID: true,
     parse: parseDataClass,
+    field: 'dataClasses',
   },
 
   enum: {
     takesID: true,
     parse: parseEnum,
+    field: 'enums',
   },
 
   data_registry: {
     takesID: true,
     parse: parseRegistry,
+    field: 'registers',
   },
 
   variable: {
     takesID: true,
     parse: parseVariable,
+    field: 'variables',
   },
 
   exclusive_gateway: {
     takesID: true,
     parse: parseExclusiveGate,
+    field: 'gateways',
   },
 
   // Events: support both short (start/end) and full (start_event/end_event) forms
-  start: { takesID: true, parse: parseStartEvent },
-  end: { takesID: true, parse: parseEndEvent },
-  start_event: { takesID: true, parse: parseStartEvent },
-  end_event: { takesID: true, parse: parseEndEvent },
-  signalcatch: { takesID: true, parse: parseSignalCatchEvent },
-  signal_catch_event: { takesID: true, parse: parseSignalCatchEvent },
-  timer: { takesID: true, parse: parseTimerEvent },
-  timer_event: { takesID: true, parse: parseTimerEvent },
+  start: { takesID: true, parse: parseStartEvent, field: 'events' },
+  end: { takesID: true, parse: parseEndEvent, field: 'events' },
+  start_event: { takesID: true, parse: parseStartEvent, field: 'events' },
+  end_event: { takesID: true, parse: parseEndEvent, field: 'events' },
+  signalcatch: { takesID: true, parse: parseSignalCatchEvent, field: 'events' },
+  signal_catch_event: { takesID: true, parse: parseSignalCatchEvent, field: 'events' },
+  timer: { takesID: true, parse: parseTimerEvent, field: 'events' },
+  timer_event: { takesID: true, parse: parseTimerEvent, field: 'events' },
 
   reference: {
     takesID: true,
     parse: parseReference,
+    field: 'references',
   },
 
   subprocess: {
     takesID: true,
     parse: parseSubprocess,
+    field: 'pages',
   },
 
   // ── MMEL 0.1 spec-parity additions ───────────────────────────────
   note: {
     takesID: true,
     parse: parseNote,
+    field: 'notes',
   },
   table: {
     takesID: true,
     parse: parseTable,
+    field: 'tables',
   },
   figure: {
     takesID: true,
     parse: parseFigure,
+    field: 'figures',
   },
   link: {
     takesID: true,
     parse: parseLink,
+    field: 'links',
   },
   map_profile: {
     takesID: true,
     parse: parseMapProfile,
+    field: 'mapProfiles',
   },
   view_profile: {
     takesID: true,
     parse: parseViewProfile,
+    field: 'viewProfiles',
   },
 
   // ── Primmel extension additions (MN 113-6 to 113-10) ─────────────
@@ -163,22 +180,27 @@ export const PARSER_CONFIG: ParserConfiguration = {
   form: {
     takesID: true,
     parse: parseForm,
+    field: 'forms',
   },
   subform: {
     takesID: true,
     parse: parseSubform,
+    field: 'subforms',
   },
   symbol: {
     takesID: true,
     parse: parseSymbol,
+    field: 'symbols',
   },
   calculation: {
     takesID: true,
     parse: parseCalculation,
+    field: 'calculations',
   },
   state_machine: {
     takesID: true,
     parse: parseStateMachine,
+    field: 'stateMachines',
   },
 };
 
