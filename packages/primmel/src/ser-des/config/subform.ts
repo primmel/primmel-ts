@@ -1,5 +1,6 @@
 import type { Dumper, Parser } from '../types';
 import { escapeString, removePackage, stripWrapping, tokenizePackage } from '../tokenize';
+import { parseFormField as parseField } from './field-parser';
 import type Subform from '../../types/Subform';
 import type { ParameterDecl } from '../../types/Subform';
 import type { FormField } from '../../types/Form';
@@ -115,78 +116,6 @@ function parseParameters(block: string): ParameterDecl[] {
   return params;
 }
 
-function parseField(name: string, block: string): FormField {
-  // Simplified: capture properties without full type-spec parsing
-  const field: FormField = {
-    name,
-    type: 'string',
-    label: '',
-    definition: '',
-    unit: '',
-    required: false,
-    measurementMethod: '',
-    calculationId: null,
-    calculationBindings: [],
-    derivation: '',
-    evaluation: null,
-    values: [],
-    defaultValue: '',
-    hasDefault: false,
-    referenceIds: [],
-    fields: [],
-    itemsType: '',
-    subformRef: null,
-  };
-
-  if (block && block.trim()) {
-    const t = tokenizePackage(block);
-    let i = 0;
-    // Skip leading type spec (handled by caller or ': type' before {)
-    while (i < t.length) {
-      const cmd = t[i++];
-      if (i < t.length) {
-        if (cmd === 'label') {
-          field.label = removePackage(t[i++]);
-        } else if (cmd === 'definition') {
-          field.definition = removePackage(t[i++]);
-        } else if (cmd === 'unit') {
-          field.unit = removePackage(t[i++]);
-        } else if (cmd === 'required') {
-          field.required = removePackage(t[i++]) === 'true';
-        } else if (cmd === 'measurement_method') {
-          field.measurementMethod = removePackage(t[i++]);
-        } else if (cmd === 'calculation') {
-          field.calculationId = stripWrapping(t[i++]);
-        } else if (cmd === 'calculation_bindings') {
-          // Skip the binding block (raw)
-          removePackage(t[i++]);
-        } else if (cmd === 'derivation') {
-          field.derivation = removePackage(t[i++]);
-        } else if (cmd === 'evaluation') {
-          // Skip evaluation block
-          removePackage(t[i++]);
-        } else if (cmd === 'values') {
-          field.values = tokenizePackage(t[i++]);
-        } else if (cmd === 'default') {
-          field.defaultValue = removePackage(t[i++]);
-          field.hasDefault = true;
-        } else if (cmd === 'min_items' || cmd === 'max_items') {
-          // Placeholders or integers — store raw
-          removePackage(t[i++]);
-        } else if (cmd === 'items' || cmd === 'fields') {
-          // Nested block — skip for now
-          removePackage(t[i++]);
-        } else if (cmd === 'reference') {
-          field.referenceIds = tokenizePackage(t[i++]);
-        } else {
-          // Unknown property, skip its value
-          removePackage(t[i++]);
-        }
-      }
-    }
-  }
-  return field;
-}
 
 export const dumpSubformType: Dumper<Subform> = function (sf) {
   let out = 'subform ' + sf.id + ' {\n';

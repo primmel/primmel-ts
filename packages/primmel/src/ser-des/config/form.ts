@@ -1,5 +1,6 @@
 import type { Dumper, Parser } from '../types';
 import { escapeString, removePackage, stripWrapping, tokenizePackage } from '../tokenize';
+import { parseFormField } from './field-parser';
 import type Form from '../../types/Form';
 import type {
   FormField,
@@ -133,72 +134,6 @@ function parsePassFail(block: string): PassFail {
     }
   }
   return pf;
-}
-
-function parseFormField(name: string, block: string): FormField {
-  const field: FormField = {
-    name,
-    type: 'string',
-    label: '',
-    definition: '',
-    unit: '',
-    required: false,
-    measurementMethod: '',
-    calculationId: null,
-    calculationBindings: [],
-    derivation: '',
-    evaluation: null,
-    values: [],
-    defaultValue: '',
-    hasDefault: false,
-    referenceIds: [],
-    fields: [],
-    itemsType: '',
-    subformRef: null,
-  };
-  // Same field parsing as subform.ts (kept inline to avoid circular imports)
-  if (block && block.trim()) {
-    const t = tokenizePackage(block);
-    let i = 0;
-    while (i < t.length) {
-      const cmd = t[i++];
-      if (i < t.length) {
-        if (cmd === 'label') {
-          field.label = removePackage(t[i++]);
-        } else if (cmd === 'definition') {
-          field.definition = removePackage(t[i++]);
-        } else if (cmd === 'unit') {
-          field.unit = removePackage(t[i++]);
-        } else if (cmd === 'required') {
-          field.required = removePackage(t[i++]) === 'true';
-        } else if (cmd === 'measurement_method') {
-          field.measurementMethod = removePackage(t[i++]);
-        } else if (cmd === 'calculation') {
-          field.calculationId = stripWrapping(t[i++]);
-        } else if (cmd === 'calculation_bindings') {
-          removePackage(t[i++]);
-        } else if (cmd === 'derivation') {
-          field.derivation = removePackage(t[i++]);
-        } else if (cmd === 'evaluation') {
-          removePackage(t[i++]);
-        } else if (cmd === 'values') {
-          field.values = tokenizePackage(t[i++]);
-        } else if (cmd === 'default') {
-          field.defaultValue = removePackage(t[i++]);
-          field.hasDefault = true;
-        } else if (cmd === 'min_items' || cmd === 'max_items') {
-          removePackage(t[i++]);
-        } else if (cmd === 'items' || cmd === 'fields') {
-          removePackage(t[i++]);
-        } else if (cmd === 'reference') {
-          field.referenceIds = tokenizePackage(t[i++]);
-        } else {
-          removePackage(t[i++]);
-        }
-      }
-    }
-  }
-  return field;
 }
 
 function makeSubformRefField(subformId: string, block: string): FormField {
