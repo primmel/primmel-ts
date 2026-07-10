@@ -11,12 +11,8 @@ import {
   Variable,
 } from '../../types/data';
 import { resolveFromContext } from '../resolve';
-import {
-  escapeString,
-  removePackage,
-  tokenizeAttributes,
-  tokenizePackage,
-} from '../tokenize';
+import { escapeString, tokenizePackage } from '../tokenize';
+import { forEachEntry, forEachAttribute, unwrapped } from '../parse-block';
 import { Dumper, Parser, Resolver } from '../types';
 
 export const parseEnum: Parser = (id: string, data: string) => {
@@ -24,21 +20,16 @@ export const parseEnum: Parser = (id: string, data: string) => {
     id: id,
     values: [],
   };
-  if (data !== '') {
-    const t: string[] = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const vid: string = t[i++];
-      if (i < t.length) {
-        const vcontent: string = t[i++];
-        result.values.push(parseEnumValue(vid, vcontent));
-      } else {
-        throw new Error(
-          `Parsing error: enum. ID ${id}: Empty definition for value ${vid}`,
-        );
-      }
-    }
-  }
+  // Enum bodies are (value-id, block) pairs, not (keyword, value).
+  // forEachEntry's contract still applies: the visitor always claims.
+  forEachEntry(
+    data,
+    (_vid, value) => {
+      result.values.push(parseEnumValue(_vid, value()));
+      return true;
+    },
+    { construct: 'enum', id },
+  );
 
   return ctx => {
     ctx.enums[id] = result;
@@ -51,24 +42,18 @@ const parseEnumValue = (id: string, data: string) => {
     id: id,
     value: '',
   };
-  if (data !== '') {
-    const t: string[] = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'definition') {
-          ev.value = removePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
-        }
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'definition') {
+        ev.value = unwrapped(value);
       } else {
-        throw new Error(
-          `Parsing error: enum value. ID ${id}: Expecting value for ${command}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'enum value', id },
+  );
   return ev;
 };
 
@@ -82,28 +67,23 @@ export const parseRegistry: Parser = function (id, data) {
     },
   };
 
-  if (data !== '') {
-    const t: string[] = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'title') {
-          result.title = removePackage(t[i++]);
-        } else if (command === 'data_class') {
-          result._relations.data = t[i++];
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
-        }
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'title') {
+        result.title = unwrapped(value);
+      } else if (command === 'data_class') {
+        result._relations.data = value();
       } else {
-        throw new Error(
-          `Parsing error: registry. ID ${id}: Expecting value for ${command}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'registry', id },
+  );
+
   return ctx => {
-    ctx.registers[id] = result;
+    ctx.regs[id] = result;
     return ctx;
   };
 };
@@ -114,23 +94,16 @@ export const parseDataClass: Parser = function (id, data) {
     attributes: [],
   };
 
-  if (data !== '') {
-    const t: string[] = tokenizeAttributes(data);
-    let i = 0;
-    while (i < t.length) {
-      const basic: string = t[i++];
-      if (i < t.length) {
-        const details: string = t[i++];
-        result.attributes.push(parseDataAttribute(basic.trim(), details));
-      } else {
-        throw new Error(
-          `Parsing error: class. ID ${id}: Expecting { after ${basic}`,
-        );
-      }
-    }
-  }
+  forEachAttribute(
+    data,
+    (basic, details) => {
+      result.attributes.push(parseDataAttribute(basic.trim(), details));
+    },
+    { construct: 'class', id },
+  );
+
   return ctx => {
-    ctx.dataClasses[id] = result;
+    ctx.dataclasses[id] = result;
     return ctx;
   };
 };
@@ -164,31 +137,24 @@ const parseDataAttribute = (
     basic = basic.substr(0, index);
   }
   result.id = basic.trim();
-  if (details !== '') {
-    const t: string[] = tokenizePackage(details);
-    let i = 0;
-    while (i < t.length) {
-      const keyword: string = t[i++];
-      if (i < t.length) {
-        if (keyword === 'modality') {
-          result.modality = t[i++];
-        } else if (keyword === 'definition') {
-          result.definition = removePackage(t[i++]);
-        } else if (keyword === 'reference') {
-          result._relations.ref = tokenizePackage(t[i++]);
-        } else if (keyword === 'satisfy') {
-          result.satisfy = tokenizePackage(t[i++]);
-        } else {
-          // Forward-compatible: skip unknown keywords (e.g., cardinality, unit, default)
-          i++;
-        }
+  forEachEntry(
+    details,
+    (keyword, value) => {
+      if (keyword === 'modality') {
+        result.modality = value();
+      } else if (keyword === 'definition') {
+        result.definition = unwrapped(value);
+      } else if (keyword === 'reference') {
+        result._relations.ref = tokenizePackage(value());
+      } else if (keyword === 'satisfy') {
+        result.satisfy = tokenizePackage(value());
       } else {
-        throw new Error(
-          `Parsing error: data attribute. ID ${result.id}: Expecting value for ${keyword}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'data attribute', id: result.id },
+  );
   return result;
 };
 
@@ -214,7 +180,7 @@ export const resolveRegistry: Resolver<Registry, ResolvableRegistry> =
     if (_relations.data !== '') {
       const dc = resolveFromContext<DataClass>(
         ctx,
-        'dataClasses',
+        'dataclasses',
         _relations.data,
       );
       if (dc !== undefined) {
@@ -297,28 +263,22 @@ export const parseVariable: Parser = function (id, data) {
     definition: '',
     description: '',
   };
-  if (data !== '') {
-    const t: string[] = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const keyword: string = t[i++];
-      if (i < t.length) {
-        if (keyword === 'type') {
-          result.type = t[i++];
-        } else if (keyword === 'definition') {
-          result.definition = removePackage(t[i++]);
-        } else if (keyword === 'description') {
-          result.description = removePackage(t[i++]);
-        } else {
-          i++;
-        }
+  forEachEntry(
+    data,
+    (keyword, value) => {
+      if (keyword === 'type') {
+        result.type = value();
+      } else if (keyword === 'definition') {
+        result.definition = unwrapped(value);
+      } else if (keyword === 'description') {
+        result.description = unwrapped(value);
       } else {
-        throw new Error(
-          `Parsing error: variable. ID ${id}: Expecting value for ${keyword}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'variable', id },
+  );
   return ctx => {
     ctx.variables[id] = result;
     return ctx;

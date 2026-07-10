@@ -91,7 +91,7 @@ export const PARSER_CONFIG: ParserConfiguration = {
   class: {
     takesID: true,
     parse: parseDataClass,
-    field: 'dataClasses',
+    field: 'dataclasses',
   },
 
   enum: {
@@ -103,7 +103,7 @@ export const PARSER_CONFIG: ParserConfiguration = {
   data_registry: {
     takesID: true,
     parse: parseRegistry,
-    field: 'registers',
+    field: 'regs',
   },
 
   variable: {
@@ -208,7 +208,19 @@ export const PARSER_CONFIG: ParserConfiguration = {
   },
 };
 
+// Resolver order matters: a resolver may pull items from other ctx tables
+// (via resolveFromContext). Those items get their `_relations` stripped on
+// first read, so a resolver must run AFTER any other resolver whose items
+// it might look up. Concretely: regs reference dataclasses (via
+// `data_class`); processes reference regs/provisions; pages reference
+// processes/approvals/events/gateways. Order: dependencies first, pages last.
 export const RESOLVER_CONFIG: ResolverConfiguration = {
+  dataclasses: {
+    resolve: resolveDataClass,
+  },
+  regs: {
+    resolve: resolveRegistry,
+  },
   provisions: {
     resolve: resolveProvision,
   },
@@ -218,15 +230,6 @@ export const RESOLVER_CONFIG: ResolverConfiguration = {
   approvals: {
     resolve: resolveApproval,
   },
-  pages: {
-    resolve: resolveSubprocess,
-  },
-  dataClasses: {
-    resolve: resolveDataClass,
-  },
-  registers: {
-    resolve: resolveRegistry,
-  },
   notes: {
     resolve: resolveNote,
   },
@@ -235,6 +238,9 @@ export const RESOLVER_CONFIG: ResolverConfiguration = {
   },
   calculations: {
     resolve: resolveCalculation,
+  },
+  pages: {
+    resolve: resolveSubprocess,
   },
 };
 

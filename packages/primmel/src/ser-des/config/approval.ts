@@ -1,6 +1,7 @@
 import Approval, { ResolvableApproval } from '../../types/Approval';
 import { resolveFromContext } from '../resolve';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser, Resolver } from '../types';
 import type { Registry } from '../../types/data';
 import type Reference from '../../types/Reference';
@@ -23,34 +24,29 @@ export const parseApproval: Parser = function (id, data) {
     },
   };
 
-  if (data !== '') {
-    const t: string[] = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const keyword: string = t[i++];
-      if (i < t.length) {
-        if (keyword === 'modality') {
-          result.modality = t[i++];
-        } else if (keyword === 'name') {
-          result.name = removePackage(t[i++]);
-        } else if (keyword === 'actor') {
-          result._relations.actor = t[i++];
-        } else if (keyword === 'approve_by') {
-          result._relations.approver = t[i++];
-        } else if (keyword === 'approval_record') {
-          result._relations.records = tokenizePackage(t[i++]);
-        } else if (keyword === 'reference') {
-          result._relations.ref = tokenizePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
-        }
+  forEachEntry(
+    data,
+    (keyword, value) => {
+      if (keyword === 'modality') {
+        result.modality = value();
+      } else if (keyword === 'name') {
+        result.name = unwrapped(value);
+      } else if (keyword === 'actor') {
+        result._relations.actor = value();
+      } else if (keyword === 'approve_by') {
+        result._relations.approver = value();
+      } else if (keyword === 'approval_record') {
+        result._relations.records = tokenizePackage(value());
+      } else if (keyword === 'reference') {
+        result._relations.ref = tokenizePackage(value());
       } else {
-        throw new Error(
-          `Parsing error: approval. ID ${id}: Expecting value for ${keyword}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'approval', id },
+  );
+
   return ctx => {
     ctx.approvals[id] = result;
     return ctx;
@@ -70,7 +66,7 @@ export const resolveApproval: Resolver<Approval, ResolvableApproval> =
         resolveFromContext<Role>(ctx, 'roles', _relations.approver) ?? null;
     }
     for (const id of _relations.records) {
-      const r = resolveFromContext<Registry>(ctx, 'registers', id);
+      const r = resolveFromContext<Registry>(ctx, 'regs', id);
       if (r !== undefined) {
         p.records.push(r);
       }

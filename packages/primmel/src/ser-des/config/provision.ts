@@ -1,6 +1,7 @@
 import type Provision from '../../types/Provision';
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import { ResolvableProvision } from '../../types/Provision';
 import type Reference from '../../types/Reference';
 import { resolveFromContext } from '../resolve';
@@ -17,31 +18,25 @@ export const parseProvision: Parser = function (id, data) {
     },
   };
 
-  if (data !== '') {
-    const t: Array<string> = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'modality') {
-          result.modality = t[i++];
-        } else if (command === 'condition') {
-          result.condition = removePackage(t[i++]);
-        } else if (command === 'reference') {
-          result._relations.ref = tokenizePackage(t[i++]);
-        } else {
-          result.subject.set(command, t[i++]);
-        }
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'modality') {
+        result.modality = value();
+      } else if (command === 'condition') {
+        result.condition = unwrapped(value);
+      } else if (command === 'reference') {
+        result._relations.ref = tokenizePackage(value());
       } else {
-        throw new Error(
-          'Parsing error: provision. ID ' +
-            id +
-            ': Expecting value for ' +
-            command,
-        );
+        // Unknown command becomes a subject key → its raw value.
+        // (Provisions are intentionally extensible: free-form key/value
+        // pairs are part of the spec.)
+        result.subject.set(command, value());
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'provision', id },
+  );
 
   return ctx => {
     ctx.provisions[id] = result;

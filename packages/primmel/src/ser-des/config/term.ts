@@ -1,5 +1,6 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { tokenizePackage } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import type Term from '../../types/Term';
 
 export const parseTerm: Parser = function (id, data) {
@@ -12,38 +13,32 @@ export const parseTerm: Parser = function (id, data) {
     ref: [],
   };
 
-  if (data !== '') {
-    const t: Array<string> = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'label') {
-          result.label = removePackage(t[i++]);
-        } else if (command === 'definition') {
-          result.definition = removePackage(t[i++]);
-        } else if (command === 'symbol') {
-          // symbol reference is a bare ID (e.g., `symbol Emax`).
-          // Strip wrapping quotes if present (defensive — most models use bare IDs).
-          const raw = t[i++];
-          result.symbolId =
-            raw.length >= 2 &&
-            raw.charAt(0) === '"' &&
-            raw.charAt(raw.length - 1) === '"'
-              ? raw.slice(1, -1)
-              : raw;
-        } else if (command === 'reference') {
-          result.referenceIds = tokenizePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
-        }
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'label') {
+        result.label = unwrapped(value);
+      } else if (command === 'definition') {
+        result.definition = unwrapped(value);
+      } else if (command === 'symbol') {
+        // symbol reference is a bare ID (e.g., `symbol Emax`).
+        // Strip wrapping quotes if present (defensive — most models use bare IDs).
+        const raw = value();
+        result.symbolId =
+          raw.length >= 2 &&
+          raw.charAt(0) === '"' &&
+          raw.charAt(raw.length - 1) === '"'
+            ? raw.slice(1, -1)
+            : raw;
+      } else if (command === 'reference') {
+        result.referenceIds = tokenizePackage(value());
       } else {
-        throw new Error(
-          `Parsing error: term. ID ${id}: Expecting value for ${command}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'term', id },
+  );
 
   return ctx => {
     ctx.terms[id] = result;

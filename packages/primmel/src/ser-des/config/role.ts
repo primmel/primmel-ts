@@ -1,5 +1,6 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import Role from '../../types/Role';
 
 export const parseRole: Parser = (id: string, data: string) => {
@@ -7,22 +8,20 @@ export const parseRole: Parser = (id: string, data: string) => {
     id: id,
     name: '',
   };
-  const t: Array<string> = tokenizePackage(data);
-  let i = 0;
-  while (i < t.length) {
-    const keyword: string = t[i++];
-    if (i < t.length) {
+
+  forEachEntry(
+    data,
+    (keyword, value) => {
       if (keyword === 'name') {
-        role.name = removePackage(t[i++]);
+        role.name = unwrapped(value);
       } else {
-        i++; // forward-compatible: skip unknown keyword value
+        return false;
       }
-    } else {
-      throw new Error(
-        `Parsing error: role. ID ${id}: Expecting value for ${keyword}`,
-      );
-    }
-  }
+      return true;
+    },
+    { construct: 'role', id },
+  );
+
   return ctx => {
     ctx.roles[id] = role;
     return ctx;

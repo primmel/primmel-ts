@@ -14,14 +14,11 @@
 
 import type Standard from './types/Standard';
 import type Form from './types/Form';
+import type { Position } from './ser-des/tokenize';
+
+export type { Position };
 
 export type ValidationSeverity = 'error' | 'warning' | 'info';
-
-export interface Position {
-  line: number;
-  col: number;
-  offset: number;
-}
 
 export interface ValidationIssue {
   severity: ValidationSeverity;

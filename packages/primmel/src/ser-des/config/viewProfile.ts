@@ -1,5 +1,6 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { tokenizePackage } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import type ViewProfile from '../../types/ViewProfile';
 
 export const parseViewProfile: Parser = function (id, data) {
@@ -10,28 +11,22 @@ export const parseViewProfile: Parser = function (id, data) {
     visibleElements: [],
   };
 
-  if (data !== '') {
-    const t: Array<string> = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'description') {
-          result.description = removePackage(t[i++]);
-        } else if (command === 'roles') {
-          result.roles = tokenizePackage(t[i++]);
-        } else if (command === 'visible') {
-          result.visibleElements = tokenizePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
-        }
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'description') {
+        result.description = unwrapped(value);
+      } else if (command === 'roles') {
+        result.roles = tokenizePackage(value());
+      } else if (command === 'visible') {
+        result.visibleElements = tokenizePackage(value());
       } else {
-        throw new Error(
-          `Parsing error: view_profile. ID ${id}: Expecting value for ${command}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'view_profile', id },
+  );
 
   return ctx => {
     ctx.viewProfiles[id] = result;

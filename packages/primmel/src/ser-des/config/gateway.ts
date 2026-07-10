@@ -1,5 +1,6 @@
 import Gateway, { ExclusiveGateway } from '../../types/Gateway';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser } from '../types';
 
 export const parseExclusiveGate: Parser = function (id, data) {
@@ -8,24 +9,20 @@ export const parseExclusiveGate: Parser = function (id, data) {
     gatewayType: 'exclusive_gateway',
     label: '',
   };
-  if (data !== '') {
-    const t: Array<string> = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'label') {
-          gateway.label = removePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
-        }
+
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'label') {
+        gateway.label = unwrapped(value);
       } else {
-        throw new Error(
-          `Parsing error: Exclusive gateway. ID ${id}: Expecting value for ${command}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'Exclusive gateway', id },
+  );
+
   return ctx => {
     ctx.gateways[id] = gateway;
     return ctx;
