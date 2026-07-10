@@ -45,87 +45,76 @@ export function resolveFromContext<T>(
 /**
  * Resolve a ParseContext into a typed Standard.
  *
- * For each registered resolver (RESOLVER_CONFIG), iterate every parsed item
- * of that construct, run the resolver, and append the result to the matching
- * Standard field. Fields without a resolver are passed through directly.
+ * Fields without a resolver are passed through directly (their entries are
+ * already in final form). Fields WITH a resolver are iterated, resolved,
+ * and the result replaces the parsed form on both `ctx` (cached for any
+ * later lookup) and `standard`.
+ *
+ * Adding a new construct with cross-references is now purely a registry
+ * change in RESOLVER_CONFIG — no edit needed here.
  *
  * Lenient: missing references inside a resolver are dropped (not thrown).
  * The partially-resolved item is still returned.
+ *
+ * Resolve order is RESOLVER_CONFIG insertion order; pages must come last
+ * because subprocess components reference processes/approvals/events/
+ * gateways, and those need to be cached in resolved form first.
  */
 export default function resolve(
   ctx: ParseContext,
   resolvers: ResolverConfiguration,
 ): Standard {
-  const standard: Standard = {
+  const standard = {
     meta: ctx.metadata ?? EMPTY_META,
-    roles: Object.values(ctx.roles),
-    provisions: [],
-    pages: [],
-    processes: [],
-    dataclasses: [],
-    regs: [],
-    events: Object.values(ctx.events),
-    gateways: Object.values(ctx.gateways),
-    refs: Object.values(ctx.references),
-    approvals: [],
-    enums: Object.values(ctx.enums),
-    vars: Object.values(ctx.variables),
-    notes: [],
-    tables: Object.values(ctx.tables),
-    figures: Object.values(ctx.figures),
-    links: Object.values(ctx.links),
-    mapProfiles: Object.values(ctx.mapProfiles),
-    viewProfiles: Object.values(ctx.viewProfiles),
-    terms: Object.values(ctx.terms),
-    forms: Object.values(ctx.forms),
-    subforms: Object.values(ctx.subforms),
-    symbols: [],
-    calculations: [],
-    stateMachines: Object.values(ctx.stateMachines),
     root: null,
-  };
+  } as Standard;
 
-  // Resolve order matters: pages reference processes/approvals/events/gateways,
-  // so those must be cached in their resolved form before pages run.
-  resolveField(ctx, resolvers, 'dataClasses', standard.dataclasses);
-  resolveField(ctx, resolvers, 'registers', standard.regs);
-  resolveField(ctx, resolvers, 'provisions', standard.provisions);
-  resolveField(ctx, resolvers, 'processes', standard.processes);
-  resolveField(ctx, resolvers, 'approvals', standard.approvals);
-  resolveField(ctx, resolvers, 'notes', standard.notes);
-  resolveField(ctx, resolvers, 'symbols', standard.symbols);
-  resolveField(ctx, resolvers, 'calculations', standard.calculations);
-  resolveField(ctx, resolvers, 'pages', standard.pages);
+  // Pass-through fields (no resolver — entries are already in final form).
+  // Listed explicitly so the Standard shape drives this, not the resolver
+  // registry. Singletons `meta` and `root` are handled above.
+  standard.roles = Object.values(ctx.roles);
+  standard.events = Object.values(ctx.events);
+  standard.gateways = Object.values(ctx.gateways);
+  standard.refs = Object.values(ctx.references);
+  standard.enums = Object.values(ctx.enums);
+  standard.vars = Object.values(ctx.variables);
+  standard.tables = Object.values(ctx.tables);
+  standard.figures = Object.values(ctx.figures);
+  standard.links = Object.values(ctx.links);
+  standard.mapProfiles = Object.values(ctx.mapProfiles);
+  standard.viewProfiles = Object.values(ctx.viewProfiles);
+  standard.terms = Object.values(ctx.terms);
+  standard.forms = Object.values(ctx.forms);
+  standard.subforms = Object.values(ctx.subforms);
+  standard.stateMachines = Object.values(ctx.stateMachines);
 
-  // Root is a single page reference — look it up after pages are resolved.
+  // Resolved fields — driven entirely by RESOLVER_CONFIG. Order matters:
+  // processes/approvals/etc. must run before pages (subprocess components
+  // reference them via lookupNode).
+  for (const field of Object.keys(resolvers) as Array<keyof ParseContext>) {
+    const cfg = resolvers[field];
+    if (!cfg) {
+      continue;
+    }
+    const table = ctx[field] as Record<string, unknown>;
+    const out: unknown[] = [];
+    for (const [id, item] of Object.entries(table)) {
+      const resolved = cfg.resolve(ctx, item as never) as {
+        _relations?: unknown;
+      };
+      if (resolved === undefined) {
+        continue;
+      }
+      delete resolved._relations;
+      table[id] = resolved;
+      out.push(resolved);
+    }
+    (standard as unknown as Record<string, unknown[]>)[field as string] = out;
+  }
+
   if (ctx.root) {
-    const root = ctx.pages[ctx.root];
-    standard.root = root ?? null;
+    standard.root = ctx.pages[ctx.root] ?? null;
   }
 
   return standard;
-}
-
-function resolveField(
-  ctx: ParseContext,
-  resolvers: ResolverConfiguration,
-  field: keyof ParseContext,
-  out: unknown[],
-) {
-  const cfg = resolvers[field];
-  if (!cfg) {
-    return;
-  }
-  const table = ctx[field] as Record<string, unknown>;
-  for (const [id, item] of Object.entries(table)) {
-    const resolved = cfg.resolve(ctx, item as never) as {
-      _relations?: unknown;
-    };
-    if (resolved === undefined) {
-      continue;
-    }
-    delete resolved._relations;
-    table[id] = resolved;
-    out.push(resolved);
-  }
 }

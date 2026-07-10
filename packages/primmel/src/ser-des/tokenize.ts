@@ -194,64 +194,6 @@ export function escapeString(x: string): string {
   return x.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-export function tokenizeAttributes(x: string): Array<string> {
-  x = removePackage(x);
-  const set: Array<string> = [];
-  let t = '';
-  let i = 0;
-  while (i < x.length) {
-    let char: string = x.charAt(i);
-    if (!isWhiteSpace(char)) {
-      t += char;
-      i++;
-      if (char === '{') {
-        let count = 1;
-        while (i < x.length && count > 0) {
-          char = x.charAt(i);
-          // String-awareness: don't count braces inside quoted strings.
-          if (char === '"') {
-            t += char;
-            i++;
-            while (i < x.length) {
-              const c = x.charAt(i);
-              if (c === '\\' && i + 1 < x.length) {
-                t += c + x.charAt(i + 1);
-                i += 2;
-                continue;
-              }
-              t += c;
-              i++;
-              if (c === '"') {
-                break;
-              }
-            }
-            continue;
-          }
-          if (char === '{') {
-            count++;
-          }
-          if (char === '}') {
-            count--;
-          }
-          t += char;
-          i++;
-        }
-        i++;
-      } else {
-        while (i < x.length && x.charAt(i) !== '{') {
-          t += x.charAt(i);
-          i++;
-        }
-      }
-      set.push(t);
-      t = '';
-    } else {
-      i++;
-    }
-  }
-  return set;
-}
-
 function isWhiteSpace(x: string): boolean {
   return /\s/.test(x);
 }

@@ -1,6 +1,6 @@
-import { tokenizeWithPositions, type Token, type Position } from './tokenize';
+import { tokenizeWithPositions, type Token } from './tokenize';
 import { ParseContext, ParserConfiguration } from './types';
-import type { ValidationIssue } from '../validate';
+import { createDuplicateIdChecker } from '../duplicate-id';
 
 export interface ParseOptions {
   /**
@@ -20,8 +20,9 @@ export interface ParseOptions {
  * exact source location of any model problem.
  *
  * Duplicate-ID detection runs during parsing (not post-resolution),
- * because the parser silently overwrites duplicate ctx entries. By
- * catching duplicates here, the issue survives into the result.
+ * because the parser silently overwrites duplicate ctx entries. The
+ * detection itself lives in `duplicate-id.ts` — this module just calls
+ * it at the moment each declaration is parsed.
  */
 export default function parse(
   mmelString: string,
@@ -29,7 +30,7 @@ export default function parse(
   options: ParseOptions = {},
 ): ParseContext {
   const tokens: Token[] = tokenizeWithPositions(mmelString);
-  const seenIds = new Map<keyof ParseContext, Map<string, Position>>();
+  const dupChecker = createDuplicateIdChecker();
 
   // ctx is mutated by parser functions; declared with let because
   // some parsers return a new ctx object via immutable update.
@@ -41,10 +42,10 @@ export default function parse(
     processes: {},
     pages: {},
     gateways: {},
-    registers: {},
+    regs: {},
     references: {},
     provisions: {},
-    dataClasses: {},
+    dataclasses: {},
     events: {},
     enums: {},
     variables: {},
@@ -92,32 +93,18 @@ export default function parse(
       const idTok = tokens[i++];
       const payloadTok = tokens[i++];
 
-      // Duplicate-ID detection: if this keyword config declares a
-      // field, track the ID + position. On second occurrence, emit an
-      // issue but still let the parser overwrite (preserves backward-
-      // compat: callers see the latest declaration).
+      // Duplicate-ID detection runs at parse time because the parser
+      // silently overwrites ctx entries — without this check, the
+      // issue would never surface.
       if (cfg.field) {
-        let fieldMap = seenIds.get(cfg.field);
-        if (!fieldMap) {
-          fieldMap = new Map();
-          seenIds.set(cfg.field, fieldMap);
-        }
-        const prior = fieldMap.get(idTok.value);
-        if (prior) {
-          ctx.issues.push({
-            severity: 'error',
-            code: 'duplicate-id',
-            construct: String(cfg.field),
-            id: idTok.value,
-            message: `Duplicate ${keyword} id "${idTok.value}" (first declared at line ${prior.line} col ${prior.col}) — earlier declaration overwritten`,
-            position: {
-              line: idTok.start.line,
-              col: idTok.start.col,
-              offset: idTok.start.offset,
-            },
-          } as ValidationIssue);
-        } else {
-          fieldMap.set(idTok.value, idTok.start);
+        const issue = dupChecker.check(
+          cfg.field,
+          keyword,
+          idTok.value,
+          idTok.start,
+        );
+        if (issue) {
+          ctx.issues.push(issue);
         }
       }
 

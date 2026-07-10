@@ -1,5 +1,6 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import type Note from '../../types/Note';
 import type { NoteType } from '../../types/Note';
 import type { ResolvableNote } from '../../types/Note';
@@ -19,36 +20,30 @@ export const parseNote: Parser = function (id, data) {
     },
   };
 
-  if (data !== '') {
-    const t: Array<string> = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'type') {
-          const v = t[i++] as NoteType;
-          if (!VALID_NOTE_TYPES.includes(v)) {
-            throw new Error(
-              `Parsing error: note. ID ${id}: Unknown type ${v} (valid: ${VALID_NOTE_TYPES.join(
-                ', ',
-              )})`,
-            );
-          }
-          result.type = v;
-        } else if (command === 'message') {
-          result.message = removePackage(t[i++]);
-        } else if (command === 'reference') {
-          result._relations.ref = tokenizePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'type') {
+        const v = value() as NoteType;
+        if (!VALID_NOTE_TYPES.includes(v)) {
+          throw new Error(
+            `Parsing error: note. ID ${id}: Unknown type ${v} (valid: ${VALID_NOTE_TYPES.join(
+              ', ',
+            )})`,
+          );
         }
+        result.type = v;
+      } else if (command === 'message') {
+        result.message = unwrapped(value);
+      } else if (command === 'reference') {
+        result._relations.ref = tokenizePackage(value());
       } else {
-        throw new Error(
-          `Parsing error: note. ID ${id}: Expecting value for ${command}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'note', id },
+  );
 
   return ctx => {
     ctx.notes[id] = result;

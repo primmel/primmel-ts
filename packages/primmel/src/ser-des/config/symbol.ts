@@ -1,5 +1,6 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import type Symbol from '../../types/Symbol';
 import type { SymbolType, ResolvableSymbol } from '../../types/Symbol';
 import type Reference from '../../types/Reference';
@@ -28,44 +29,38 @@ export const parseSymbol: Parser = function (id, data) {
     },
   };
 
-  if (data !== '') {
-    const t: Array<string> = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const command: string = t[i++];
-      if (i < t.length) {
-        if (command === 'name') {
-          result.name = removePackage(t[i++]);
-        } else if (command === 'definition') {
-          result.definition = removePackage(t[i++]);
-        } else if (command === 'type') {
-          const v = t[i++] as SymbolType;
-          if (!VALID_SYMBOL_TYPES.includes(v)) {
-            throw new Error(
-              `Parsing error: symbol. ID ${id}: Unknown type ${v} (valid: ${VALID_SYMBOL_TYPES.join(
-                ', ',
-              )})`,
-            );
-          }
-          result.type = v;
-        } else if (command === 'unit') {
-          result.unit = removePackage(t[i++]);
-        } else if (command === 'latex') {
-          result.latex = removePackage(t[i++]);
-        } else if (command === 'values') {
-          result.values = tokenizePackage(t[i++]);
-        } else if (command === 'reference') {
-          result._relations.ref = tokenizePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
+  forEachEntry(
+    data,
+    (command, value) => {
+      if (command === 'name') {
+        result.name = unwrapped(value);
+      } else if (command === 'definition') {
+        result.definition = unwrapped(value);
+      } else if (command === 'type') {
+        const v = value() as SymbolType;
+        if (!VALID_SYMBOL_TYPES.includes(v)) {
+          throw new Error(
+            `Parsing error: symbol. ID ${id}: Unknown type ${v} (valid: ${VALID_SYMBOL_TYPES.join(
+              ', ',
+            )})`,
+          );
         }
+        result.type = v;
+      } else if (command === 'unit') {
+        result.unit = unwrapped(value);
+      } else if (command === 'latex') {
+        result.latex = unwrapped(value);
+      } else if (command === 'values') {
+        result.values = tokenizePackage(value());
+      } else if (command === 'reference') {
+        result._relations.ref = tokenizePackage(value());
       } else {
-        throw new Error(
-          `Parsing error: symbol. ID ${id}: Expecting value for ${command}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'symbol', id },
+  );
 
   return ctx => {
     ctx.symbols[id] = result;

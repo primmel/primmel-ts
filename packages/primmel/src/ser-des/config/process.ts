@@ -1,6 +1,7 @@
 import Process, { ResolvableProcess } from '../../types/process';
 import { resolveFromContext } from '../resolve';
 import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser, Resolver } from '../types';
 import type { Registry } from '../../types/data';
 import type Provision from '../../types/Provision';
@@ -27,38 +28,33 @@ export const parseProcess: Parser = function (id, data) {
     },
   };
 
-  if (data !== '') {
-    const t: string[] = tokenizePackage(data);
-    let i = 0;
-    while (i < t.length) {
-      const keyword: string = t[i++];
-      if (i < t.length) {
-        if (keyword === 'modality') {
-          result.modality = t[i++];
-        } else if (keyword === 'name') {
-          result.name = removePackage(t[i++]);
-        } else if (keyword === 'actor') {
-          result._relations.actor = t[i++];
-        } else if (keyword === 'subprocess') {
-          result._relations.page = t[i++];
-        } else if (keyword === 'validate_provision') {
-          result._relations.provision = tokenizePackage(t[i++]);
-        } else if (keyword === 'validate_measurement') {
-          result.measure = tokenizePackage(t[i++]).map(x => removePackage(x));
-        } else if (keyword === 'output') {
-          result._relations.output = tokenizePackage(t[i++]);
-        } else if (keyword === 'reference_data_registry') {
-          result._relations.input = tokenizePackage(t[i++]);
-        } else {
-          i++; // forward-compatible: skip unknown keyword value
-        }
+  forEachEntry(
+    data,
+    (keyword, value) => {
+      if (keyword === 'modality') {
+        result.modality = value();
+      } else if (keyword === 'name') {
+        result.name = unwrapped(value);
+      } else if (keyword === 'actor') {
+        result._relations.actor = value();
+      } else if (keyword === 'subprocess') {
+        result._relations.page = value();
+      } else if (keyword === 'validate_provision') {
+        result._relations.provision = tokenizePackage(value());
+      } else if (keyword === 'validate_measurement') {
+        result.measure = tokenizePackage(value()).map(x => removePackage(x));
+      } else if (keyword === 'output') {
+        result._relations.output = tokenizePackage(value());
+      } else if (keyword === 'reference_data_registry') {
+        result._relations.input = tokenizePackage(value());
       } else {
-        throw new Error(
-          `Parsing error: process. ID ${id}: Expecting value for ${keyword}`,
-        );
+        return false;
       }
-    }
-  }
+      return true;
+    },
+    { construct: 'process', id },
+  );
+
   return ctx => {
     ctx.processes[id] = result;
     return ctx;
@@ -79,13 +75,13 @@ export const resolveProcess: Resolver<Process, ResolvableProcess> = function (
     page: null,
   };
   for (const id of _relations.output) {
-    const r = resolveFromContext<Registry>(ctx, 'registers', id);
+    const r = resolveFromContext<Registry>(ctx, 'regs', id);
     if (r !== undefined) {
       p.output.push(r);
     }
   }
   for (const id of _relations.input) {
-    const r = resolveFromContext<Registry>(ctx, 'registers', id);
+    const r = resolveFromContext<Registry>(ctx, 'regs', id);
     if (r !== undefined) {
       p.input.push(r);
     }

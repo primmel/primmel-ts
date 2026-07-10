@@ -88,9 +88,9 @@ export interface ParseContext {
   pages: Record<string, ResolvableSubprocess>;
 
   // XXX: Make resolvable
-  registers: Record<string, Registry>;
+  regs: Record<string, Registry>;
   references: Record<string, Reference>;
-  dataClasses: Record<string, DataClass>;
+  dataclasses: Record<string, DataClass>;
   events: Record<string, EventNode>;
   enums: Record<string, Enum>;
   gateways: Record<string, Gateway>;

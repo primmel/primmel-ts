@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import tokenize, {
   tokenizePackage,
   removePackage,
-  tokenizeAttributes,
 } from '../src/ser-des/tokenize';
+import { forEachAttribute, forEachEntry } from '../src/ser-des/parse-block';
 
 describe('tokenize', () => {
   it('splits whitespace-delimited tokens', () => {
@@ -95,35 +95,78 @@ describe('tokenizePackage', () => {
   });
 });
 
-describe('tokenizeAttributes', () => {
-  // tokenizeAttributes expects a brace-wrapped input (it strips the outer
-  // braces via removePackage, then emits alternating name / block tokens).
-  // Callers like parseDataClass consume the result pairwise.
-  it('emits name and block tokens alternately', () => {
-    const attrs = tokenizeAttributes('{ a { x 1 } b { y 2 } }');
-    assert.equal(attrs.length, 4);
-    assert.equal(attrs[0], 'a ');
-    assert.equal(attrs[1], '{ x 1 }');
-    assert.equal(attrs[2], 'b ');
-    assert.equal(attrs[3], '{ y 2 }');
+describe('forEachAttribute', () => {
+  // forEachAttribute parses class-body style `<name-spec> { <block> }`
+  // pairs. The name-spec may span multiple tokens (e.g. `attr1: string`).
+  const collect = (data: string) => {
+    const out: Array<[string, string]> = [];
+    forEachAttribute(data, (name, block) => out.push([name, block]), {
+      construct: 'test',
+      id: '',
+    });
+    return out;
+  };
+
+  it('emits name-spec and block pairs', () => {
+    assert.deepEqual(collect('{ a { x 1 } b { y 2 } }'), [
+      ['a', ' x 1 '],
+      ['b', ' y 2 '],
+    ]);
   });
 
-  it('counts nested braces as part of one block token', () => {
-    const attrs = tokenizeAttributes('{ id { outer { inner } tail } }');
-    assert.equal(attrs.length, 2);
-    assert.equal(attrs[0], 'id ');
-    assert.equal(attrs[1], '{ outer { inner } tail }');
+  it('keeps multi-token name specs together', () => {
+    assert.deepEqual(collect('{ a: string { x 1 } b: int [0..1] { y 2 } }'), [
+      ['a: string', ' x 1 '],
+      ['b: int [0..1]', ' y 2 '],
+    ]);
+  });
+
+  it('counts nested braces as part of one block', () => {
+    assert.deepEqual(collect('{ id { outer { inner } tail } }'), [
+      ['id', ' outer { inner } tail '],
+    ]);
   });
 
   it('does NOT count braces inside quoted strings', () => {
-    const attrs = tokenizeAttributes('{ id { default "has } char" } }');
-    assert.equal(attrs.length, 2);
-    assert.equal(attrs[1], '{ default "has } char" }');
+    assert.deepEqual(collect('{ id { default "has } char" } }'), [
+      ['id', ' default "has } char" '],
+    ]);
   });
 
   it('does NOT terminate strings on escaped quotes', () => {
-    const attrs = tokenizeAttributes('{ id { default "val \\" tail" } }');
-    assert.equal(attrs.length, 2);
-    assert.equal(attrs[1], '{ default "val \\" tail" }');
+    assert.deepEqual(collect('{ id { default "val \\" tail" } }'), [
+      ['id', ' default "val \\" tail" '],
+    ]);
+  });
+
+  it('throws on a truncated body', () => {
+    assert.throws(() => collect('{ a b c }'), /Expecting \{ after a b c/);
+  });
+});
+
+describe('forEachEntry', () => {
+  it('auto-skips unknown keywords for forward compat', () => {
+    const seen: Array<[string, string | undefined]> = [];
+    forEachEntry(
+      '{ known value1 unknown value2 }',
+      (kw, value) => {
+        if (kw === 'known') {
+          seen.push([kw, value()]);
+          return true;
+        }
+        return false;
+      },
+      { construct: 'test', id: '' },
+    );
+    // 'unknown' should be auto-skipped; 'known' is claimed.
+    assert.deepEqual(seen, [['known', 'value1']]);
+  });
+
+  it('throws on truncated block', () => {
+    assert.throws(
+      () =>
+        forEachEntry('{ orphan }', () => true, { construct: 'test', id: 'x' }),
+      /Expecting value for orpha/,
+    );
   });
 });
