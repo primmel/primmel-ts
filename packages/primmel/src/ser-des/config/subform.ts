@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import { parseFormField as parseField } from './field-parser';
 import type Subform from '../../types/Subform';
 import type { ParameterDecl } from '../../types/Subform';
@@ -20,7 +20,7 @@ export const parseSubform: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'description') {
-          result.description = removePackage(t[i++]);
+          result.description = unwrapBlock(t[i++]);
         } else if (command === 'type') {
           const v = t[i++];
           if (v === 'object' || v === 'array') {
@@ -31,12 +31,12 @@ export const parseSubform: Parser = function (id, data) {
             );
           }
         } else if (command === 'parameters') {
-          result.parameters = parseParameters(removePackage(t[i++]));
+          result.parameters = parseParameters(unwrapBlock(t[i++]));
         } else if (command === 'field') {
           // field is followed by `name [: type] { ... }`
           const fieldName = t[i++];
           if (i < t.length) {
-            const fieldBlock = removePackage(t[i++]);
+            const fieldBlock = unwrapBlock(t[i++]);
             // Determine if there's a type spec between name and {
             const field = parseField(fieldName, fieldBlock);
             result.fields.push(field);
@@ -76,19 +76,19 @@ function parseParameters(block: string): ParameterDecl[] {
     let defaultValue = '';
     let mapping: Record<string, string | number> | null = null;
     if (i < t.length && t[i].startsWith('{')) {
-      const propBlock = removePackage(t[i++]);
+      const propBlock = unwrapBlock(t[i++]);
       const pt = tokenizePackage(propBlock);
       let j = 0;
       while (j < pt.length) {
         const cmd = pt[j++];
         if (j < pt.length) {
           if (cmd === 'description') {
-            description = removePackage(pt[j++]);
+            description = unwrapBlock(pt[j++]);
           } else if (cmd === 'default') {
-            defaultValue = removePackage(pt[j++]);
+            defaultValue = unwrapBlock(pt[j++]);
             hasDefault = true;
           } else if (cmd === 'mapping') {
-            const mapBlock = removePackage(pt[j++]);
+            const mapBlock = unwrapBlock(pt[j++]);
             mapping = {};
             // Map block format: { A: 5, B: 5, C: 3 }
             const mt = tokenizePackage(mapBlock);
@@ -100,7 +100,7 @@ function parseParameters(block: string): ParameterDecl[] {
                   k++;
                 }
                 if (k < mt.length) {
-                  mapping[key] = removePackage(mt[k++]);
+                  mapping[key] = unwrapBlock(mt[k++]);
                 }
               }
             }

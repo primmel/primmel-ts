@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import tokenize, {
   tokenizePackage,
-  removePackage,
+  unwrapBlock,
 } from '../src/ser-des/tokenize';
 import { forEachAttribute, forEachEntry } from '../src/ser-des/parse-block';
 
@@ -78,14 +78,14 @@ describe('tokenize', () => {
   });
 });
 
-describe('removePackage', () => {
+describe('unwrapBlock', () => {
   it('strips outer braces from a {...} block', () => {
-    assert.equal(removePackage('{ inner }'), ' inner ');
+    assert.equal(unwrapBlock('{ inner }'), ' inner ');
   });
 
   it('returns input unchanged for a string shorter than 2 chars', () => {
-    assert.equal(removePackage(''), '');
-    assert.equal(removePackage('{'), '{');
+    assert.equal(unwrapBlock(''), '');
+    assert.equal(unwrapBlock('{'), '{');
   });
 });
 

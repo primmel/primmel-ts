@@ -147,10 +147,10 @@ export default function tokenize(x: string): string[] {
 }
 
 export function tokenizePackage(x: string): Array<string> {
-  return tokenize(removePackage(x));
+  return tokenize(unwrapBlock(x));
 }
 
-export function removePackage(x: string): string {
+export function unwrapBlock(x: string): string {
   if (x.length >= 2) {
     return x.substr(1, x.length - 2);
   } else {
@@ -162,11 +162,11 @@ export function removePackage(x: string): string {
  * Strip surrounding quotes OR braces if (and only if) the token starts
  * and ends with them. Returns the token unchanged otherwise.
  *
- * Use this instead of removePackage for values that may be either bare
+ * Use this instead of unwrapBlock for values that may be either bare
  * IDs (`realProc`) or quoted strings (`"My Form"`) — common in form
  * field references, calculation IDs, conformance process IDs, etc.
  *
- * removePackage unconditionally strips first+last char, which mangles
+ * unwrapBlock unconditionally strips first+last char, which mangles
  * bare IDs (e.g. `DetermineMeasurementError` → `etermineMeasurementErro`).
  * stripWrapping only strips when the wrapping chars are actually
  * matching quote-or-brace.

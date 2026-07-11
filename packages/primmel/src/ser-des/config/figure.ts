@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import type Figure from '../../types/Figure';
 
 export const parseFigure: Parser = function (id, data) {
@@ -12,9 +12,9 @@ export const parseFigure: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'title') {
-          result.title = removePackage(t[i++]);
+          result.title = unwrapBlock(t[i++]);
         } else if (command === 'src') {
-          result.src = removePackage(t[i++]);
+          result.src = unwrapBlock(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }

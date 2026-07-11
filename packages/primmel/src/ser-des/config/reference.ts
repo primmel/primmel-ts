@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import Reference from '../../types/Reference';
 
 export const parseReference: Parser = (id: string, data: string) => {
@@ -15,9 +15,9 @@ export const parseReference: Parser = (id: string, data: string) => {
       const keyword: string = t[i++];
       if (i < t.length) {
         if (keyword === 'document') {
-          ref.document = removePackage(t[i++]);
+          ref.document = unwrapBlock(t[i++]);
         } else if (keyword === 'clause') {
-          ref.clause = removePackage(t[i++]);
+          ref.clause = unwrapBlock(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }

@@ -32,10 +32,10 @@ export default interface Standard {
   regs: Registry[];
   events: EventNode[];
   gateways: Gateway[];
-  refs: Reference[];
+  references: Reference[];
   approvals: Approval[];
   enums: Enum[];
-  vars: Variable[];
+  variables: Variable[];
 
   // MMEL 0.1 constructs missing from earlier parser versions
   notes: Note[];

@@ -77,9 +77,9 @@ export default function resolve(
   standard.roles = Object.values(ctx.roles);
   standard.events = Object.values(ctx.events);
   standard.gateways = Object.values(ctx.gateways);
-  standard.refs = Object.values(ctx.references);
+  standard.references = Object.values(ctx.references);
   standard.enums = Object.values(ctx.enums);
-  standard.vars = Object.values(ctx.variables);
+  standard.variables = Object.values(ctx.variables);
   standard.tables = Object.values(ctx.tables);
   standard.figures = Object.values(ctx.figures);
   standard.links = Object.values(ctx.links);

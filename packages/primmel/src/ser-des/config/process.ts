@@ -1,6 +1,6 @@
 import Process, { ResolvableProcess } from '../../types/process';
 import { resolveFromContext } from '../resolve';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser, Resolver } from '../types';
 import type { Registry } from '../../types/data';
@@ -42,7 +42,7 @@ export const parseProcess: Parser = function (id, data) {
       } else if (keyword === 'validate_provision') {
         result._relations.provision = tokenizePackage(value());
       } else if (keyword === 'validate_measurement') {
-        result.measure = tokenizePackage(value()).map(x => removePackage(x));
+        result.measure = tokenizePackage(value()).map(x => unwrapBlock(x));
       } else if (keyword === 'output') {
         result._relations.output = tokenizePackage(value());
       } else if (keyword === 'reference_data_registry') {

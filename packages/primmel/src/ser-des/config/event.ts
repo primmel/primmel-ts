@@ -4,7 +4,7 @@ import EventNode, {
   StartEvent,
   TimerEvent,
 } from '../../types/events';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import { Dumper, Parser } from '../types';
 
 export const parseEndEvent: Parser = function (id, data) {
@@ -40,7 +40,7 @@ export const parseSignalCatchEvent: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'catch') {
-          result.signal = removePackage(t[i++]);
+          result.signal = unwrapBlock(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -94,7 +94,7 @@ export const parseTimerEvent: Parser = function (id, data) {
         if (command === 'type') {
           result.type = t[i++];
         } else if (command === 'para') {
-          result.para = removePackage(t[i++]);
+          result.para = unwrapBlock(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }

@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import type Link from '../../types/Link';
 import type { LinkKind } from '../../types/Link';
 
@@ -29,9 +29,9 @@ export const parseLink: Parser = function (id, data) {
           command === 'path' ||
           command === 'url'
         ) {
-          result.target = removePackage(t[i++]);
+          result.target = unwrapBlock(t[i++]);
         } else if (command === 'namespace' || command === 'ns') {
-          result.namespace = removePackage(t[i++]);
+          result.namespace = unwrapBlock(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }

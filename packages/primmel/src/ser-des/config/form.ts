@@ -1,7 +1,7 @@
 import type { Dumper, Parser } from '../types';
 import {
   escapeString,
-  removePackage,
+  unwrapBlock,
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
@@ -36,9 +36,9 @@ export const parseForm: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'name') {
-          result.name = removePackage(t[i++]);
+          result.name = unwrapBlock(t[i++]);
         } else if (command === 'description') {
-          result.description = removePackage(t[i++]);
+          result.description = unwrapBlock(t[i++]);
         } else if (command === 'data_class') {
           result.dataClassId = stripWrapping(t[i++]);
         } else if (command === 'header') {
@@ -46,20 +46,20 @@ export const parseForm: Parser = function (id, data) {
         } else if (command === 'conformance_process') {
           result.conformanceProcessId = stripWrapping(t[i++]);
         } else if (command === 'applicability') {
-          result.applicability = parseApplicability(removePackage(t[i++]));
+          result.applicability = parseApplicability(unwrapBlock(t[i++]));
         } else if (command === 'field') {
           const fieldName = t[i++];
           if (i < t.length) {
-            const fieldBlock = removePackage(t[i++]);
+            const fieldBlock = unwrapBlock(t[i++]);
             result.fields.push(parseFormField(fieldName, fieldBlock));
           }
         } else if (command === 'subform_ref') {
           // subform_ref SubformID { parameters { ... } applicability { ... } }
           const subformId = t[i++];
-          const refBlock = i < t.length ? removePackage(t[i++]) : '';
+          const refBlock = i < t.length ? unwrapBlock(t[i++]) : '';
           result.fields.push(makeSubformRefField(subformId, refBlock));
         } else if (command === 'pass_fail') {
-          result.passFail = parsePassFail(removePackage(t[i++]));
+          result.passFail = parsePassFail(unwrapBlock(t[i++]));
         } else if (command === 'reference') {
           result.referenceIds = tokenizePackage(t[i++]);
         } else {
@@ -92,7 +92,7 @@ function parseApplicability(block: string): ApplicabilityEntry[] {
       i++;
     }
     if (i < t.length) {
-      const valueBlock = removePackage(t[i++]);
+      const valueBlock = unwrapBlock(t[i++]);
       // valueBlock is `[A, B]` or `{ A: 5, B: 5 }`
       const trimmed = valueBlock.trim();
       if (trimmed.startsWith('[')) {
@@ -130,11 +130,11 @@ function parsePassFail(block: string): PassFail {
     const cmd = t[i++];
     if (i < t.length) {
       if (cmd === 'criteria') {
-        pf.criteria = removePackage(t[i++]);
+        pf.criteria = unwrapBlock(t[i++]);
       } else if (cmd === 'pass_if') {
-        pf.passIf = removePackage(t[i++]);
+        pf.passIf = unwrapBlock(t[i++]);
       } else {
-        removePackage(t[i++]);
+        unwrapBlock(t[i++]);
       }
     }
   }
@@ -178,7 +178,7 @@ function parseSubformRef(subformId: string, block: string): SubformRef {
       const cmd = t[i++];
       if (i < t.length) {
         if (cmd === 'parameters') {
-          const pblock = removePackage(t[i++]);
+          const pblock = unwrapBlock(t[i++]);
           const pt = tokenizePackage(pblock);
           let j = 0;
           while (j < pt.length) {
@@ -188,14 +188,14 @@ function parseSubformRef(subformId: string, block: string): SubformRef {
                 j++;
               }
               if (j < pt.length) {
-                ref.parameters[key] = removePackage(pt[j++]);
+                ref.parameters[key] = unwrapBlock(pt[j++]);
               }
             }
           }
         } else if (cmd === 'applicability') {
-          ref.applicability = parseApplicability(removePackage(t[i++]));
+          ref.applicability = parseApplicability(unwrapBlock(t[i++]));
         } else {
-          removePackage(t[i++]);
+          unwrapBlock(t[i++]);
         }
       }
     }

@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { unwrapBlock, tokenizePackage } from '../tokenize';
 import type StateMachine from '../../types/StateMachine';
 import type { Transition, Cascade, CascadeSet } from '../../types/StateMachine';
 
@@ -21,7 +21,7 @@ export const parseStateMachine: Parser = function (entityName, data) {
         if (command === 'initial') {
           result.initialState = t[i++];
         } else if (command === 'states') {
-          const stateBlock = removePackage(t[i++]);
+          const stateBlock = unwrapBlock(t[i++]);
           for (const s of stateBlock.split(/\s+/).filter(s => s.length > 0)) {
             result.states.push({ name: s });
           }
@@ -45,24 +45,24 @@ export const parseStateMachine: Parser = function (entityName, data) {
           const cascades: Cascade[] = [];
           const referenceIds: string[] = [];
           if (i < t.length && t[i].startsWith('{')) {
-            const body = removePackage(t[i++]);
+            const body = unwrapBlock(t[i++]);
             const bt = tokenizePackage(body);
             let j = 0;
             while (j < bt.length) {
               const cmd = bt[j++];
               if (j < bt.length) {
                 if (cmd === 'guard') {
-                  guard = removePackage(bt[j++]);
+                  guard = unwrapBlock(bt[j++]);
                 } else if (cmd === 'cascade') {
                   const target = bt[j++];
                   if (j < bt.length) {
-                    const cascadeBlock = removePackage(bt[j++]);
+                    const cascadeBlock = unwrapBlock(bt[j++]);
                     cascades.push(parseCascade(target, cascadeBlock));
                   }
                 } else if (cmd === 'reference') {
                   referenceIds.push(...tokenizePackage(bt[j++]));
                 } else {
-                  removePackage(bt[j++]);
+                  unwrapBlock(bt[j++]);
                 }
               }
             }
@@ -103,9 +103,9 @@ function parseCascade(target: string, block: string): Cascade {
     const cmd = t[i++];
     if (i < t.length) {
       if (cmd === 'where') {
-        cascade.where = removePackage(t[i++]);
+        cascade.where = unwrapBlock(t[i++]);
       } else if (cmd === 'set') {
-        const setBlock = removePackage(t[i++]);
+        const setBlock = unwrapBlock(t[i++]);
         const st = tokenizePackage(setBlock);
         let j = 0;
         while (j < st.length) {
@@ -115,14 +115,14 @@ function parseCascade(target: string, block: string): Cascade {
               j++;
             }
             if (j < st.length) {
-              const value = removePackage(st[j++]);
+              const value = unwrapBlock(st[j++]);
               const setEntry: CascadeSet = { field, value };
               cascade.set.push(setEntry);
             }
           }
         }
       } else {
-        removePackage(t[i++]);
+        unwrapBlock(t[i++]);
       }
     }
   }

@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { removePackage, tokenizePackage } from '../tokenize';
+import { unwrapBlock, tokenizePackage } from '../tokenize';
 import type Table from '../../types/Table';
 
 export const parseTable: Parser = function (id, data) {
@@ -19,20 +19,20 @@ export const parseTable: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'title') {
-          result.title = removePackage(t[i++]);
+          result.title = unwrapBlock(t[i++]);
         } else if (command === 'columns') {
-          result.columns = removePackage(t[i++]);
+          result.columns = unwrapBlock(t[i++]);
         } else if (command === 'display') {
-          result.display = removePackage(t[i++]);
+          result.display = unwrapBlock(t[i++]);
         } else if (command === 'domain') {
           // Domain block is captured as raw package string
-          result.domain = removePackage(t[i++]) as unknown as Record<
+          result.domain = unwrapBlock(t[i++]) as unknown as Record<
             string,
             unknown
           >;
         } else if (command === 'data') {
           // Data block contains CSV-like rows
-          const dataBlock = removePackage(t[i++]);
+          const dataBlock = unwrapBlock(t[i++]);
           result.data = parseTableData(dataBlock);
         } else {
           i++; // forward-compatible: skip unknown keyword value

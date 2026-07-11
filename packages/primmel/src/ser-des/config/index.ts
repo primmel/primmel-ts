@@ -1,8 +1,33 @@
+// ─────────────────────────────────────────────────────────────────────
+// Construct registration.
+//
+// Adding a new MMEL/Primmel construct used to require three separate
+// registry edits (PARSER_CONFIG + RESOLVER_CONFIG + DUMPER_CONFIG), each
+// with its own boilerplate. `defineConstruct` collapses those into one
+// declaration per construct: the three registries are derived from a
+// single CONSTRUCTS array.
+//
+// To add `regulation`:
+//   1. Add the field to Standard + ParseContext (types only — TS won't
+//      let us infer these from a runtime call).
+//   2. Append one `defineConstruct(...)` entry to CONSTRUCTS below.
+// Nothing else.
+//
+// Special cases (root, metadata) stay inline in PARSER_CONFIG because
+// they don't fit the keyword/field/parse/resolve/dump shape — root is
+// a string ID, metadata is a singleton.
+// ─────────────────────────────────────────────────────────────────────
+
 import type {
   DumperConfiguration,
+  Parser,
   ParserConfiguration,
+  Resolver,
   ResolverConfiguration,
 } from '../types';
+import type { ParseContext } from '../types';
+import type Standard from '../../types/Standard';
+
 import { dumpApproval, parseApproval, resolveApproval } from './approval';
 import {
   dumpDataClass,
@@ -26,11 +51,11 @@ import {
 import { dumpGateway, parseExclusiveGate } from './gateway';
 
 import { parseMetadata } from './metadata';
-import { parseProcess, resolveProcess, dumpProcess } from './process';
-import { parseProvision, resolveProvision, dumpProvision } from './provision';
+import { dumpProcess, parseProcess, resolveProcess } from './process';
+import { dumpProvision, parseProvision, resolveProvision } from './provision';
 import { dumpReference, parseReference } from './reference';
-import { parseRole, dumpRole } from './role';
-import { parseSubprocess, dumpSubprocess, resolveSubprocess } from './flow';
+import { dumpRole, parseRole } from './role';
+import { dumpSubprocess, parseSubprocess, resolveSubprocess } from './flow';
 
 // MMEL 0.1 spec-parity parsers/dumpers
 import { dumpNote, parseNote, resolveNote } from './note';
@@ -52,304 +77,306 @@ import {
 import { dumpStateMachine, parseStateMachine } from './stateMachine';
 import { dumpTerm, parseTerm } from './term';
 
-export const PARSER_CONFIG: ParserConfiguration = {
+export interface ConstructDefinition {
+  /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
+  keyword: string;
+  /** Additional keywords that map to the same parser (e.g. event aliases). */
+  aliases?: string[];
+  /** ParseContext (and Standard) field name this construct populates. */
+  field?: keyof ParseContext & keyof Standard;
+  /** Parser function — receives (id, data) or (data) depending on takesID. */
+  parse: Parser;
+  /** Whether the keyword consumes an ID token before its payload. */
+  takesID?: true;
+  /** Optional resolver for constructs with cross-references. */
+  resolve?: Resolver<unknown, unknown>;
+  /** Per-item dumper. */
+  dump: (item: never) => string;
+}
+
+/** Identity helper — exists so call sites read as declarations, not data. */
+export function defineConstruct(def: ConstructDefinition): ConstructDefinition {
+  return def;
+}
+
+// Order here is the order constructs appear in PARSER_CONFIG and
+// DUMPER_CONFIG output. RESOLVER_CONFIG order is not load-bearing —
+// resolveFromContext is pure (see ser-des/resolve.ts).
+const CONSTRUCTS: ConstructDefinition[] = [
+  defineConstruct({
+    keyword: 'role',
+    field: 'roles',
+    takesID: true,
+    parse: parseRole,
+    dump: dumpRole as never,
+  }),
+  defineConstruct({
+    keyword: 'provision',
+    field: 'provisions',
+    takesID: true,
+    parse: parseProvision,
+    resolve: resolveProvision as never,
+    dump: dumpProvision as never,
+  }),
+  defineConstruct({
+    keyword: 'process',
+    field: 'processes',
+    takesID: true,
+    parse: parseProcess,
+    resolve: resolveProcess as never,
+    dump: dumpProcess as never,
+  }),
+  defineConstruct({
+    keyword: 'approval',
+    field: 'approvals',
+    takesID: true,
+    parse: parseApproval,
+    resolve: resolveApproval as never,
+    dump: dumpApproval as never,
+  }),
+  defineConstruct({
+    keyword: 'class',
+    field: 'dataclasses',
+    takesID: true,
+    parse: parseDataClass,
+    resolve: resolveDataClass as never,
+    dump: dumpDataClass as never,
+  }),
+  defineConstruct({
+    keyword: 'enum',
+    field: 'enums',
+    takesID: true,
+    parse: parseEnum,
+    dump: dumpEnum as never,
+  }),
+  defineConstruct({
+    keyword: 'data_registry',
+    field: 'regs',
+    takesID: true,
+    parse: parseRegistry,
+    resolve: resolveRegistry as never,
+    dump: dumpRegistry as never,
+  }),
+  defineConstruct({
+    keyword: 'variable',
+    field: 'variables',
+    takesID: true,
+    parse: parseVariable,
+    dump: dumpVariable as never,
+  }),
+  defineConstruct({
+    keyword: 'exclusive_gateway',
+    field: 'gateways',
+    takesID: true,
+    parse: parseExclusiveGate,
+    dump: dumpGateway as never,
+  }),
+  // Events: short (start/end) and full (start_event/end_event) keyword
+  // forms both map to the same parser family.
+  defineConstruct({
+    keyword: 'start',
+    aliases: ['start_event'],
+    field: 'events',
+    takesID: true,
+    parse: parseStartEvent,
+    dump: dumpEvent as never,
+  }),
+  defineConstruct({
+    keyword: 'end',
+    aliases: ['end_event'],
+    field: 'events',
+    takesID: true,
+    parse: parseEndEvent,
+    dump: dumpEvent as never,
+  }),
+  defineConstruct({
+    keyword: 'signalcatch',
+    aliases: ['signal_catch_event'],
+    field: 'events',
+    takesID: true,
+    parse: parseSignalCatchEvent,
+    dump: dumpEvent as never,
+  }),
+  defineConstruct({
+    keyword: 'timer',
+    aliases: ['timer_event'],
+    field: 'events',
+    takesID: true,
+    parse: parseTimerEvent,
+    dump: dumpEvent as never,
+  }),
+  defineConstruct({
+    keyword: 'reference',
+    field: 'references',
+    takesID: true,
+    parse: parseReference,
+    dump: dumpReference as never,
+  }),
+  defineConstruct({
+    keyword: 'subprocess',
+    field: 'pages',
+    takesID: true,
+    parse: parseSubprocess,
+    resolve: resolveSubprocess as never,
+    dump: dumpSubprocess as never,
+  }),
+  defineConstruct({
+    keyword: 'note',
+    field: 'notes',
+    takesID: true,
+    parse: parseNote,
+    resolve: resolveNote as never,
+    dump: dumpNote as never,
+  }),
+  defineConstruct({
+    keyword: 'table',
+    field: 'tables',
+    takesID: true,
+    parse: parseTable,
+    dump: dumpTable as never,
+  }),
+  defineConstruct({
+    keyword: 'figure',
+    field: 'figures',
+    takesID: true,
+    parse: parseFigure,
+    dump: dumpFigure as never,
+  }),
+  defineConstruct({
+    keyword: 'link',
+    field: 'links',
+    takesID: true,
+    parse: parseLink,
+    dump: dumpLink as never,
+  }),
+  defineConstruct({
+    keyword: 'map_profile',
+    field: 'mapProfiles',
+    takesID: true,
+    parse: parseMapProfile,
+    dump: dumpMapProfile as never,
+  }),
+  defineConstruct({
+    keyword: 'view_profile',
+    field: 'viewProfiles',
+    takesID: true,
+    parse: parseViewProfile,
+    dump: dumpViewProfile as never,
+  }),
+  // Primmel extensions (MN 113-6 to 113-10)
+  defineConstruct({
+    keyword: 'term',
+    field: 'terms',
+    takesID: true,
+    parse: parseTerm,
+    dump: dumpTerm as never,
+  }),
+  defineConstruct({
+    keyword: 'form',
+    field: 'forms',
+    takesID: true,
+    parse: parseForm,
+    dump: dumpForm as never,
+  }),
+  defineConstruct({
+    keyword: 'subform',
+    field: 'subforms',
+    takesID: true,
+    parse: parseSubform,
+    dump: dumpSubform as never,
+  }),
+  defineConstruct({
+    keyword: 'symbol',
+    field: 'symbols',
+    takesID: true,
+    parse: parseSymbol,
+    resolve: resolveSymbol as never,
+    dump: dumpSymbol as never,
+  }),
+  defineConstruct({
+    keyword: 'calculation',
+    field: 'calculations',
+    takesID: true,
+    parse: parseCalculation,
+    resolve: resolveCalculation as never,
+    dump: dumpCalculation as never,
+  }),
+  defineConstruct({
+    keyword: 'state_machine',
+    field: 'stateMachines',
+    takesID: true,
+    parse: parseStateMachine,
+    dump: dumpStateMachine as never,
+  }),
+];
+
+function buildParserConfig(
+  constructs: ConstructDefinition[],
+): ParserConfiguration {
+  const out: ParserConfiguration = {};
+  for (const c of constructs) {
+    if (!c.field) {
+      continue;
+    }
+    const entry = { takesID: c.takesID, parse: c.parse, field: c.field };
+    out[c.keyword] = entry;
+    for (const alias of c.aliases ?? []) {
+      out[alias] = entry;
+    }
+  }
+  return out;
+}
+
+function buildResolverConfig(
+  constructs: ConstructDefinition[],
+): ResolverConfiguration {
+  const out: ResolverConfiguration = {};
+  for (const c of constructs) {
+    if (!c.field || !c.resolve) {
+      continue;
+    }
+    out[c.field] = { resolve: c.resolve };
+  }
+  return out;
+}
+
+function buildDumperConfig(
+  constructs: ConstructDefinition[],
+): DumperConfiguration {
+  const out: Record<string, (item: never) => string> = {};
+  for (const c of constructs) {
+    if (!c.field) {
+      continue;
+    }
+    out[c.field] = c.dump;
+  }
+  return out as DumperConfiguration;
+}
+
+// Special cases that don't fit the keyword/field shape — `root` is a
+// single ID reference, `metadata` is a singleton block.
+const SPECIAL_PARSERS: ParserConfiguration = {
   root: {
     parse: token => ctx => {
       ctx.root = token.trim();
       return ctx;
     },
   },
-
   metadata: {
     parse: parseMetadata,
   },
-
-  role: {
-    takesID: true,
-    parse: parseRole,
-    field: 'roles',
-  },
-
-  provision: {
-    takesID: true,
-    parse: parseProvision,
-    field: 'provisions',
-  },
-
-  process: {
-    takesID: true,
-    parse: parseProcess,
-    field: 'processes',
-  },
-
-  approval: {
-    takesID: true,
-    parse: parseApproval,
-    field: 'approvals',
-  },
-
-  class: {
-    takesID: true,
-    parse: parseDataClass,
-    field: 'dataclasses',
-  },
-
-  enum: {
-    takesID: true,
-    parse: parseEnum,
-    field: 'enums',
-  },
-
-  data_registry: {
-    takesID: true,
-    parse: parseRegistry,
-    field: 'regs',
-  },
-
-  variable: {
-    takesID: true,
-    parse: parseVariable,
-    field: 'variables',
-  },
-
-  exclusive_gateway: {
-    takesID: true,
-    parse: parseExclusiveGate,
-    field: 'gateways',
-  },
-
-  // Events: support both short (start/end) and full (start_event/end_event) forms
-  start: { takesID: true, parse: parseStartEvent, field: 'events' },
-  end: { takesID: true, parse: parseEndEvent, field: 'events' },
-  start_event: { takesID: true, parse: parseStartEvent, field: 'events' },
-  end_event: { takesID: true, parse: parseEndEvent, field: 'events' },
-  signalcatch: { takesID: true, parse: parseSignalCatchEvent, field: 'events' },
-  signal_catch_event: {
-    takesID: true,
-    parse: parseSignalCatchEvent,
-    field: 'events',
-  },
-  timer: { takesID: true, parse: parseTimerEvent, field: 'events' },
-  timer_event: { takesID: true, parse: parseTimerEvent, field: 'events' },
-
-  reference: {
-    takesID: true,
-    parse: parseReference,
-    field: 'references',
-  },
-
-  subprocess: {
-    takesID: true,
-    parse: parseSubprocess,
-    field: 'pages',
-  },
-
-  // ── MMEL 0.1 spec-parity additions ───────────────────────────────
-  note: {
-    takesID: true,
-    parse: parseNote,
-    field: 'notes',
-  },
-  table: {
-    takesID: true,
-    parse: parseTable,
-    field: 'tables',
-  },
-  figure: {
-    takesID: true,
-    parse: parseFigure,
-    field: 'figures',
-  },
-  link: {
-    takesID: true,
-    parse: parseLink,
-    field: 'links',
-  },
-  map_profile: {
-    takesID: true,
-    parse: parseMapProfile,
-    field: 'mapProfiles',
-  },
-  view_profile: {
-    takesID: true,
-    parse: parseViewProfile,
-    field: 'viewProfiles',
-  },
-
-  // ── Primmel extension additions (MN 113-6 to 113-10) ─────────────
-  term: {
-    takesID: true,
-    parse: parseTerm,
-  },
-  form: {
-    takesID: true,
-    parse: parseForm,
-    field: 'forms',
-  },
-  subform: {
-    takesID: true,
-    parse: parseSubform,
-    field: 'subforms',
-  },
-  symbol: {
-    takesID: true,
-    parse: parseSymbol,
-    field: 'symbols',
-  },
-  calculation: {
-    takesID: true,
-    parse: parseCalculation,
-    field: 'calculations',
-  },
-  state_machine: {
-    takesID: true,
-    parse: parseStateMachine,
-    field: 'stateMachines',
-  },
 };
 
-// Resolver order matters: a resolver may pull items from other ctx tables
-// (via resolveFromContext). Those items get their `_relations` stripped on
-// first read, so a resolver must run AFTER any other resolver whose items
-// it might look up. Concretely: regs reference dataclasses (via
-// `data_class`); processes reference regs/provisions; pages reference
-// processes/approvals/events/gateways. Order: dependencies first, pages last.
-export const RESOLVER_CONFIG: ResolverConfiguration = {
-  dataclasses: {
-    resolve: resolveDataClass,
-  },
-  regs: {
-    resolve: resolveRegistry,
-  },
-  provisions: {
-    resolve: resolveProvision,
-  },
-  processes: {
-    resolve: resolveProcess,
-  },
-  approvals: {
-    resolve: resolveApproval,
-  },
-  notes: {
-    resolve: resolveNote,
-  },
-  symbols: {
-    resolve: resolveSymbol,
-  },
-  calculations: {
-    resolve: resolveCalculation,
-  },
-  pages: {
-    resolve: resolveSubprocess,
-  },
+export const PARSER_CONFIG: ParserConfiguration = {
+  ...SPECIAL_PARSERS,
+  ...buildParserConfig(CONSTRUCTS),
 };
 
-/*
-  Parser & resolver implementation status
+// RESOLVER_CONFIG insertion order is not load-bearing — resolveFromContext
+// is pure and resolvers may read any ctx table at any time without
+// observing partial state. Order here is kept logical (dependencies first)
+// for readability only.
+export const RESOLVER_CONFIG: ResolverConfiguration =
+  buildResolverConfig(CONSTRUCTS);
 
-  Already done:
-  if (keyword == "root") {
-    ctx.root = token[i++].trim()
-  } else if (keyword == "metadata") {
-    m.meta = parseMetaData(token[i++])
-  } else if (keyword == "role") {
-    let r = parseRole(token[i++], token[i++])
-    m.roles.push(r)
-    map.roles.set(r.id, r)
-  } else if (keyword == "provision") {
-    let p = parseProvision(token[i++], token[i++])
-    container.p_provisions.push(p)
-    map.provisions.set(p.content.id, p.content)
-  } else if (keyword == "process") {
-    let p = parseProcess(token[i++], token[i++])
-    container.p_processes.push(p)
-    map.nodes.set(p.content.id, p.content)
-
-  XXX: Migrate these:
-  } else if (keyword == "class") {
-    let p = parseDataClass(token[i++], token[i++])
-    container.p_dataclasses.push(p)
-    map.nodes.set(p.content.id, p.content)
-    map.dcs.set(p.content.id, p.content)
-  } else if (keyword == "data_registry") {
-    let p = parseRegistry(token[i++], token[i++])
-    container.p_regs.push(p)
-    map.regs.set(p.content.id, p.content)
-    map.nodes.set(p.content.id, p.content)
-  } else if (keyword == "start_event") {
-    let p = parseStartEvent(token[i++], token[i++])
-    m.events.push(p)
-    map.nodes.set(p.id, p)
-  } else if (keyword == "end_event") {
-    let p = parseEndEvent(token[i++], token[i++])
-    m.events.push(p)
-    map.nodes.set(p.id, p)
-  } else if (keyword == "timer_event") {
-    let p = parseTimerEvent(token[i++], token[i++])
-    m.events.push(p)
-    map.nodes.set(p.id, p)
-  } else if (keyword == "exclusive_gateway") {
-    let p = parseEGate(token[i++], token[i++])
-    m.gateways.push(p)
-    map.nodes.set(p.id, p)
-  } else if (keyword == "subprocess") {
-    let p = parseSubprocess(token[i++], token[i++])
-    container.p_pages.push(p)
-    map.pages.set(p.content.id, p.content)
-  } else if (keyword == "reference") {
-    let p = parseReference(token[i++], token[i++])
-    m.refs.push(p)
-    map.refs.set(p.id, p)
-  } else if (keyword == "approval") {
-    let p = parseApproval(token[i++], token[i++])
-    container.p_approvals.push(p)
-    map.nodes.set(p.content.id, p.content)
-  } else if (keyword == "enum") {
-    let p = parseEnum(token[i++], token[i++])
-    m.enums.push(p)
-  } else if (keyword == "measurement") {
-    let v = parseVariable(token[i++], token[i++])
-    m.vars.push(v)
-  } else if (keyword == "signal_catch_event") {
-    let e = parseSignalCatchEvent(token[i++], token[i++])
-    m.events.push(e)
-    map.nodes.set(e.id, e)
-  } else {
-    console.error("Unknown command " + keyword)
-    break
-  }
-
-*/
-
-export const DUMPER_CONFIG: DumperConfiguration = {
-  roles: dumpRole,
-  processes: dumpProcess,
-  provisions: dumpProvision,
-
-  // XXX: Define dumpers
-  approvals: dumpApproval,
-  events: dumpEvent,
-  gateways: dumpGateway,
-  enums: dumpEnum,
-  dataclasses: dumpDataClass,
-  regs: dumpRegistry,
-  pages: dumpSubprocess,
-  vars: dumpVariable,
-  refs: dumpReference,
-
-  // MMEL 0.1 spec-parity dumpers
-  notes: dumpNote,
-  tables: dumpTable,
-  figures: dumpFigure,
-  links: dumpLink,
-  mapProfiles: dumpMapProfile,
-  viewProfiles: dumpViewProfile,
-
-  // Primmel extension dumpers
-  terms: dumpTerm,
-  forms: dumpForm,
-  subforms: dumpSubform,
-  symbols: dumpSymbol,
-  calculations: dumpCalculation,
-  stateMachines: dumpStateMachine,
-};
+export const DUMPER_CONFIG: DumperConfiguration = buildDumperConfig(CONSTRUCTS);

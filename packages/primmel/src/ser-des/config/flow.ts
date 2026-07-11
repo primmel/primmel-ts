@@ -9,7 +9,7 @@ import {
 import type Node from '../../types/Node';
 import type { ParseContext } from '../types';
 import { resolveFromContext } from '../resolve';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import { Dumper, Parser, Resolver } from '../types';
 
 // Parsers
@@ -34,11 +34,11 @@ export const parseSubprocess: Parser = function (id, data) {
       const keyword: string = t[i++];
       if (i < t.length) {
         if (keyword === 'elements') {
-          result = parseElements(removePackage(t[i++]))(result);
+          result = parseElements(unwrapBlock(t[i++]))(result);
         } else if (keyword === 'process_flow') {
-          result = parseEdges(removePackage(t[i++]))(result);
+          result = parseEdges(unwrapBlock(t[i++]))(result);
         } else if (keyword === 'data') {
-          result = parseData(removePackage(t[i++]))(result);
+          result = parseData(unwrapBlock(t[i++]))(result);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -176,9 +176,9 @@ function readEdge(id: string, data: string): ResolvableEdge {
       if (command === 'from') {
         edge._relations.from = t[i++];
       } else if (command === 'description') {
-        edge.description = removePackage(t[i++]);
+        edge.description = unwrapBlock(t[i++]);
       } else if (command === 'condition') {
-        edge.condition = removePackage(t[i++]);
+        edge.condition = unwrapBlock(t[i++]);
       } else if (command === 'to') {
         edge._relations.to = t[i++];
       } else {
@@ -212,11 +212,17 @@ function readEdge(id: string, data: string): ResolvableEdge {
  */
 export const resolveSubprocess: Resolver<Subprocess, ResolvableSubprocess> =
   function (ctx, unresolved) {
-    const relations = unresolved._relations ?? { childs: [], edges: [], data: [] };
+    const relations = unresolved._relations ?? {
+      childs: [],
+      edges: [],
+      data: [],
+    };
     const components = unresolved._components ?? {};
     const componentsById = new Map<string, ResolvableSubprocessComponent>();
     for (const c of Object.values(components)) {
-      if (c._relations?.element) componentsById.set(c._relations.element, c);
+      if (c._relations?.element) {
+        componentsById.set(c._relations.element, c);
+      }
     }
 
     const resolveComponent = (

@@ -1,5 +1,5 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, removePackage, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import type Calculation from '../../types/Calculation';
 import type {
   CalculationInput,
@@ -30,17 +30,17 @@ export const parseCalculation: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'name') {
-          result.name = removePackage(t[i++]);
+          result.name = unwrapBlock(t[i++]);
         } else if (command === 'description') {
-          result.description = removePackage(t[i++]);
+          result.description = unwrapBlock(t[i++]);
         } else if (command === 'expression') {
-          result.expression = removePackage(t[i++]);
+          result.expression = unwrapBlock(t[i++]);
         } else if (command === 'reference') {
           result._relations.ref = tokenizePackage(t[i++]);
         } else if (command === 'inputs') {
-          result.inputs = parseInputs(removePackage(t[i++]));
+          result.inputs = parseInputs(unwrapBlock(t[i++]));
         } else if (command === 'output') {
-          result.output = parseOutput(removePackage(t[i++]));
+          result.output = parseOutput(unwrapBlock(t[i++]));
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -80,18 +80,18 @@ function parseInputs(block: string): CalculationInput[] {
     let defaultValue = '';
     let hasDefault = false;
     if (i < t.length && t[i].startsWith('{')) {
-      const propBlock = removePackage(t[i++]);
+      const propBlock = unwrapBlock(t[i++]);
       const pt = tokenizePackage(propBlock);
       let j = 0;
       while (j < pt.length) {
         const cmd = pt[j++];
         if (j < pt.length) {
           if (cmd === 'unit') {
-            unit = removePackage(pt[j++]);
+            unit = unwrapBlock(pt[j++]);
           } else if (cmd === 'description') {
-            description = removePackage(pt[j++]);
+            description = unwrapBlock(pt[j++]);
           } else if (cmd === 'default') {
-            defaultValue = removePackage(pt[j++]);
+            defaultValue = unwrapBlock(pt[j++]);
             hasDefault = true;
           } else {
             j++; // skip unknown
@@ -117,14 +117,14 @@ function parseOutput(block: string): CalculationOutput {
     type = t[i++];
   }
   if (i < t.length && t[i].startsWith('{')) {
-    const propBlock = removePackage(t[i++]);
+    const propBlock = unwrapBlock(t[i++]);
     const pt = tokenizePackage(propBlock);
     let j = 0;
     while (j < pt.length) {
       const cmd = pt[j++];
       if (j < pt.length) {
         if (cmd === 'unit') {
-          unit = removePackage(pt[j++]);
+          unit = unwrapBlock(pt[j++]);
         } else {
           j++;
         }

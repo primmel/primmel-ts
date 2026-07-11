@@ -19,7 +19,7 @@
 // block as a single string.
 // ─────────────────────────────────────────────────────────────────────
 
-import { tokenizePackage, removePackage } from './tokenize';
+import { tokenizePackage, unwrapBlock } from './tokenize';
 
 export interface ParseEntryErrorContext {
   /** Construct name for error messages, e.g. "process", "enum value". */
@@ -106,7 +106,7 @@ export function forEachAttribute(
       );
     }
     const blockRaw = t[i++];
-    visitor(nameParts.join(' '), removePackage(blockRaw));
+    visitor(nameParts.join(' '), unwrapBlock(blockRaw));
   }
 }
 
@@ -123,5 +123,5 @@ export function forEachAttribute(
  *     }, { construct: 'process', id });
  */
 export function unwrapped(value: () => string): string {
-  return removePackage(value());
+  return unwrapBlock(value());
 }

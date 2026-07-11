@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import type { FormField } from '../../types/Form';
-import { removePackage, stripWrapping, tokenizePackage } from '../tokenize';
+import { unwrapBlock, stripWrapping, tokenizePackage } from '../tokenize';
 
 /**
  * Parse a `field <name> { ... }` block into a FormField.
@@ -55,40 +55,40 @@ export function parseFormField(name: string, block: string): FormField {
       break;
     }
     if (cmd === 'label') {
-      field.label = removePackage(t[i++]);
+      field.label = unwrapBlock(t[i++]);
     } else if (cmd === 'definition') {
-      field.definition = removePackage(t[i++]);
+      field.definition = unwrapBlock(t[i++]);
     } else if (cmd === 'unit') {
-      field.unit = removePackage(t[i++]);
+      field.unit = unwrapBlock(t[i++]);
     } else if (cmd === 'required') {
-      field.required = removePackage(t[i++]) === 'true';
+      field.required = unwrapBlock(t[i++]) === 'true';
     } else if (cmd === 'measurement_method') {
-      field.measurementMethod = removePackage(t[i++]);
+      field.measurementMethod = unwrapBlock(t[i++]);
     } else if (cmd === 'calculation') {
       // Bare ID — use stripWrapping to avoid mangling unquoted values.
       field.calculationId = stripWrapping(t[i++]);
     } else if (cmd === 'calculation_bindings') {
       // Skip the binding block (raw preservation not yet implemented).
-      removePackage(t[i++]);
+      unwrapBlock(t[i++]);
     } else if (cmd === 'derivation') {
-      field.derivation = removePackage(t[i++]);
+      field.derivation = unwrapBlock(t[i++]);
     } else if (cmd === 'evaluation') {
       // Skip evaluation block.
-      removePackage(t[i++]);
+      unwrapBlock(t[i++]);
     } else if (cmd === 'values') {
       field.values = tokenizePackage(t[i++]);
     } else if (cmd === 'default') {
-      field.defaultValue = removePackage(t[i++]);
+      field.defaultValue = unwrapBlock(t[i++]);
       field.hasDefault = true;
     } else if (cmd === 'min_items' || cmd === 'max_items') {
-      removePackage(t[i++]);
+      unwrapBlock(t[i++]);
     } else if (cmd === 'items' || cmd === 'fields') {
-      removePackage(t[i++]);
+      unwrapBlock(t[i++]);
     } else if (cmd === 'reference') {
       field.referenceIds = tokenizePackage(t[i++]);
     } else {
       // Forward-compatible: skip unknown keyword value
-      removePackage(t[i++]);
+      unwrapBlock(t[i++]);
     }
   }
   return field;
