@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { tokenizePackage } from '../tokenize';
+import { escapeString, stripWrapping, tokenizePackage } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import type Term from '../../types/Term';
 
@@ -21,15 +21,9 @@ export const parseTerm: Parser = function (id, data) {
       } else if (command === 'definition') {
         result.definition = unwrapped(value);
       } else if (command === 'symbol') {
-        // symbol reference is a bare ID (e.g., `symbol Emax`).
-        // Strip wrapping quotes if present (defensive — most models use bare IDs).
-        const raw = value();
-        result.symbolId =
-          raw.length >= 2 &&
-          raw.charAt(0) === '"' &&
-          raw.charAt(raw.length - 1) === '"'
-            ? raw.slice(1, -1)
-            : raw;
+        // symbol reference may be a bare ID (e.g. `symbol Emax`) or a
+        // quoted string (`symbol "Emax"`). stripWrapping handles both.
+        result.symbolId = stripWrapping(value());
       } else if (command === 'reference') {
         result.referenceIds = tokenizePackage(value());
       } else {
@@ -49,10 +43,10 @@ export const parseTerm: Parser = function (id, data) {
 export const dumpTerm: Dumper<Term> = function (term) {
   let out: string = 'term ' + term.id + ' {\n';
   if (term.label) {
-    out += '  label "' + term.label + '"\n';
+    out += '  label "' + escapeString(term.label) + '"\n';
   }
   if (term.definition) {
-    out += '  definition "' + term.definition + '"\n';
+    out += '  definition "' + escapeString(term.definition) + '"\n';
   }
   if (term.symbolId) {
     out += '  symbol ' + term.symbolId + '\n';

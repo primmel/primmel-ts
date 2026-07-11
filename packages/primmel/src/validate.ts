@@ -10,6 +10,10 @@
 // ValidationIssue is the shared shape; `position` is optional because
 // parse-time issues always have it (we know the source location) but
 // post-parse issues may not (resolved objects don't carry positions).
+//
+// Checks are registered in `VALIDATORS`. Adding a new post-parse
+// check is one entry in that array — mirrors the defineConstruct
+// pattern in ser-des/config/index.ts.
 // ─────────────────────────────────────────────────────────────────────
 
 import type Standard from './types/Standard';
@@ -36,125 +40,149 @@ export interface ValidationIssue {
 export type ParseIssue = ValidationIssue;
 
 /**
- * Validate a parsed Standard. Returns issues; empty array means clean.
+ * A post-parse validation check. Receives the resolved Standard and
+ * returns any issues it finds. Checks are independent — order does not
+ * matter, no shared mutable state.
  */
-export function validate(standard: Standard): ValidationIssue[] {
-  return new Validator(standard).run();
+export interface Validator {
+  /** Stable name for test reporting and filtering. */
+  name: string;
+  check: (standard: Standard) => ValidationIssue[];
 }
 
-class Validator {
-  private readonly issues: ValidationIssue[] = [];
-
-  constructor(private readonly standard: Standard) {}
-
-  run(): ValidationIssue[] {
-    this.checkEmptyIds();
-    this.checkFormReferences();
-    this.checkStateMachineCascades();
-    return this.issues;
+/**
+ * Validate a parsed Standard. Returns issues; empty array means clean.
+ * Iterates every registered Validator.
+ */
+export function validate(standard: Standard): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  for (const v of VALIDATORS) {
+    issues.push(...v.check(standard));
   }
+  return issues;
+}
 
-  private issue(
-    severity: ValidationSeverity,
-    code: string,
-    construct: string,
-    message: string,
-    id?: string,
-  ): void {
-    this.issues.push({ severity, code, construct, message, id });
-  }
+// ── Registered validators ────────────────────────────────────────────
+// Add a new post-parse check by appending one entry to this array.
 
-  private checkEmptyIds(): void {
-    const allItems: Array<{ kind: string; item: { id: string } }> = [
-      ...this.standard.roles.map(item => ({ kind: 'role', item })),
-      ...this.standard.provisions.map(item => ({ kind: 'provision', item })),
-      ...this.standard.processes.map(item => ({ kind: 'process', item })),
-      ...this.standard.forms.map(item => ({ kind: 'form', item })),
-      ...this.standard.symbols.map(item => ({ kind: 'symbol', item })),
-      ...this.standard.calculations.map(item => ({
-        kind: 'calculation',
-        item,
-      })),
-    ];
-    for (const { kind, item } of allItems) {
+export const VALIDATORS: Validator[] = [
+  { name: 'empty-ids', check: checkEmptyIds },
+  { name: 'form-references', check: checkFormReferences },
+  { name: 'state-machine-cascades', check: checkStateMachineCascades },
+];
+
+// ── Check implementations ────────────────────────────────────────────
+
+/**
+ * Reports empty or whitespace-only IDs on any Standard array whose
+ * elements expose `.id`. Iterates generically so adding a construct
+ * type does not require editing this check.
+ */
+function checkEmptyIds(standard: Standard): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  for (const [field, items] of iterIdArrays(standard)) {
+    for (const item of items) {
       if (!item.id || item.id.trim() === '') {
-        this.issue(
-          'error',
-          'empty-id',
-          kind,
-          `${kind} has an empty id — every ${kind} must declare a non-empty id`,
-        );
+        issues.push({
+          severity: 'error',
+          code: 'empty-id',
+          construct: field,
+          message: `${field} has an empty id — every ${field} must declare a non-empty id`,
+        });
       }
     }
   }
+  return issues;
+}
 
-  private checkFormReferences(): void {
-    const calcIds = new Set(this.standard.calculations.map(c => c.id));
-    const procIds = new Set(this.standard.processes.map(p => p.id));
-    const subformIds = new Set(this.standard.subforms.map(s => s.id));
+function checkFormReferences(standard: Standard): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const calcIds = new Set(standard.calculations.map(c => c.id));
+  const procIds = new Set(standard.processes.map(p => p.id));
+  const subformIds = new Set(standard.subforms.map(s => s.id));
 
-    for (const form of this.standard.forms) {
-      if (
-        form.conformanceProcessId &&
-        !procIds.has(form.conformanceProcessId)
-      ) {
-        this.issue(
-          'error',
-          'form-conformance-process-missing',
-          'form',
-          `Form "${form.id}" references conformance process "${form.conformanceProcessId}" which does not exist`,
-          form.id,
-        );
+  for (const form of standard.forms) {
+    if (form.conformanceProcessId && !procIds.has(form.conformanceProcessId)) {
+      issues.push({
+        severity: 'error',
+        code: 'form-conformance-process-missing',
+        construct: 'form',
+        message: `Form "${form.id}" references conformance process "${form.conformanceProcessId}" which does not exist`,
+        id: form.id,
+      });
+    }
+
+    for (const field of iterFields(form)) {
+      if (field.calculationId && !calcIds.has(field.calculationId)) {
+        issues.push({
+          severity: 'error',
+          code: 'form-calculation-missing',
+          construct: 'form',
+          message: `Form "${form.id}" field "${field.name}" references calculation "${field.calculationId}" which does not exist`,
+          id: form.id,
+        });
       }
-
-      for (const field of iterFields(form)) {
-        if (field.calculationId && !calcIds.has(field.calculationId)) {
-          this.issue(
-            'error',
-            'form-calculation-missing',
-            'form',
-            `Form "${form.id}" field "${field.name}" references calculation "${field.calculationId}" which does not exist`,
-            form.id,
-          );
-        }
-        if (field.subformRef && !subformIds.has(field.subformRef.subformId)) {
-          this.issue(
-            'error',
-            'form-subform-missing',
-            'form',
-            `Form "${form.id}" field "${field.name}" references subform "${field.subformRef.subformId}" which does not exist`,
-            form.id,
-          );
-        }
+      if (field.subformRef && !subformIds.has(field.subformRef.subformId)) {
+        issues.push({
+          severity: 'error',
+          code: 'form-subform-missing',
+          construct: 'form',
+          message: `Form "${form.id}" field "${field.name}" references subform "${field.subformRef.subformId}" which does not exist`,
+          id: form.id,
+        });
       }
     }
   }
+  return issues;
+}
 
-  private checkStateMachineCascades(): void {
-    for (const sm of this.standard.stateMachines) {
-      const stateNames = new Set(sm.states.map(s => s.name));
-      // `*` is the conventional wildcard for "any state" — always valid.
-      stateNames.add('*');
-      for (const tr of sm.transitions) {
-        if (tr.from && !stateNames.has(tr.from)) {
-          this.issue(
-            'warning',
-            'state-machine-from-missing',
-            'state_machine',
-            `State machine "${sm.entityName}" transition from "${tr.from}" is not in declared states`,
-            sm.entityName,
-          );
-        }
-        if (tr.to && !stateNames.has(tr.to)) {
-          this.issue(
-            'warning',
-            'state-machine-to-missing',
-            'state_machine',
-            `State machine "${sm.entityName}" transition to "${tr.to}" is not in declared states`,
-            sm.entityName,
-          );
-        }
+function checkStateMachineCascades(standard: Standard): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  for (const sm of standard.stateMachines) {
+    const stateNames = new Set(sm.states.map(s => s.name));
+    // `*` is the conventional wildcard for "any state" — always valid.
+    stateNames.add('*');
+    for (const tr of sm.transitions) {
+      if (tr.from && !stateNames.has(tr.from)) {
+        issues.push({
+          severity: 'warning',
+          code: 'state-machine-from-missing',
+          construct: 'state_machine',
+          message: `State machine "${sm.entityName}" transition from "${tr.from}" is not in declared states`,
+          id: sm.entityName,
+        });
       }
+      if (tr.to && !stateNames.has(tr.to)) {
+        issues.push({
+          severity: 'warning',
+          code: 'state-machine-to-missing',
+          construct: 'state_machine',
+          message: `State machine "${sm.entityName}" transition to "${tr.to}" is not in declared states`,
+          id: sm.entityName,
+        });
+      }
+    }
+  }
+  return issues;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Yield (construct-name, array) pairs for every Standard array whose
+ * elements expose an `id`. Used by checkEmptyIds to walk every
+ * identifiable construct type without hardcoding the list.
+ */
+function* iterIdArrays(
+  standard: Standard,
+): Generator<[string, Array<{ id: string }>]> {
+  for (const [field, value] of Object.entries(standard)) {
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      typeof value[0]?.id === 'string'
+    ) {
+      yield [field, value as Array<{ id: string }>];
     }
   }
 }

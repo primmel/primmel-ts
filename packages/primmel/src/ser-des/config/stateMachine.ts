@@ -1,5 +1,5 @@
 import type { Dumper, Parser } from '../types';
-import { unwrapBlock, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import type StateMachine from '../../types/StateMachine';
 import type { Transition, Cascade, CascadeSet } from '../../types/StateMachine';
 
@@ -146,17 +146,17 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
     }
     out += ' {\n';
     if (t.guard) {
-      out += '    guard "' + t.guard + '"\n';
+      out += '    guard "' + escapeString(t.guard) + '"\n';
     }
     for (const c of t.cascades) {
       out += '    cascade ' + c.targetEntity + ' {\n';
       if (c.where) {
-        out += '      where "' + c.where + '"\n';
+        out += '      where "' + escapeString(c.where) + '"\n';
       }
       if (c.set.length > 0) {
         out += '      set {\n';
         for (const s of c.set) {
-          out += '        ' + s.field + ': "' + s.value + '"\n';
+          out += '        ' + s.field + ': "' + escapeString(s.value) + '"\n';
         }
         out += '      }\n';
       }

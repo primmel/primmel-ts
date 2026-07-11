@@ -336,8 +336,7 @@ function buildResolverConfig(
       continue;
     }
     out[c.field] = {
-      resolve: c.resolve ??
-        (((_ctx: unknown, item: unknown) => item) as never),
+      resolve: c.resolve ?? (((_ctx: unknown, item: unknown) => item) as never),
     };
   }
   return out;

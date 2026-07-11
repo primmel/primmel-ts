@@ -11,6 +11,8 @@ import type { ParseContext } from '../types';
 import { resolveFromContext } from '../resolve';
 import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import { Dumper, Parser, Resolver } from '../types';
+// `Parser` is still used by parseSubprocess below; the sub-parsers
+// (parseElements/parseData/parseEdges) use SubprocessSubParser instead.
 
 // Parsers
 
@@ -55,7 +57,16 @@ export const parseSubprocess: Parser = function (id, data) {
   };
 };
 
-const parseElements: Parser<ResolvableSubprocess> = function (data: string) {
+// Sub-parsers operate on a ResolvableSubprocess accumulator (not the
+// top-level ParseContext). They take the inner block content and return
+// a function that folds the accumulator. Declared explicitly — the
+// `Parser<C>` type parameter is for the top-level ParseContext, not for
+// this intermediate shape.
+type SubprocessSubParser = (
+  data: string,
+) => (acc: ResolvableSubprocess) => ResolvableSubprocess;
+
+const parseElements: SubprocessSubParser = function (data: string) {
   const t: string[] = tokenizePackage(data);
   const elements: Record<string, ResolvableSubprocessComponent> = {};
   let i = 0;
@@ -77,7 +88,7 @@ const parseElements: Parser<ResolvableSubprocess> = function (data: string) {
   });
 };
 
-const parseData: Parser<ResolvableSubprocess> = function (data: string) {
+const parseData: SubprocessSubParser = function (data: string) {
   const t: string[] = tokenizePackage(data);
   const elements: Record<string, ResolvableSubprocessComponent> = {};
   let i = 0;
@@ -99,7 +110,7 @@ const parseData: Parser<ResolvableSubprocess> = function (data: string) {
   });
 };
 
-const parseEdges: Parser<ResolvableSubprocess> = function (data: string) {
+const parseEdges: SubprocessSubParser = function (data: string) {
   const t: string[] = tokenizePackage(data);
   const edges: Record<string, ResolvableEdge> = {};
   let i = 0;

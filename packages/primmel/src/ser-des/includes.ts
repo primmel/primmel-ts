@@ -6,12 +6,17 @@
 //
 // Design: recursive, relative-path, cycle-detecting. Follows the
 // same convention as C preprocessor #include and AsciiDoc include::.
+//
+// Comment-aware: `#` and `//` comments containing `include "foo"` are
+// NOT expanded. The tokenizer's own comment-stripping logic is mirrored
+// here so the two stages agree on what counts as content.
 // ─────────────────────────────────────────────────────────────────────
 
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname, isAbsolute } from 'path';
 
 const INCLUDE_RE = /^include\s+"([^"]+)"/gm;
+const COMMENT_LINE_RE = /^[ \t]*(#|\/\/)/;
 
 /**
  * Preprocess include directives in a .mmel file.
@@ -21,6 +26,10 @@ const INCLUDE_RE = /^include\s+"([^"]+)"/gm;
  *
  * Include paths are resolved relative to the directory of the
  * including file. Absolute paths are also supported.
+ *
+ * Comment-aware: lines starting (after optional whitespace) with `#`
+ * or `//` are skipped, so a comment like `// include "ignored.mmel"`
+ * is NOT expanded. This matches the tokenizer's comment handling.
  *
  * Cycles are detected and rejected.
  */
@@ -47,8 +56,19 @@ export function preprocessIncludes(
   const dir = dirname(absPath);
 
   // Replace each include directive with the preprocessed content of
-  // the referenced file
-  return content.replace(INCLUDE_RE, (_match: string, includePath: string) => {
+  // the referenced file. Skip comment lines so a `// include "..."` in
+  // a comment doesn't get falsely expanded.
+  return content.replace(INCLUDE_RE, (match, includePath: string) => {
+    // Look backward from the match start to the start of the line —
+    // if everything before the match on this line is whitespace
+    // followed by `#` or `//`, the match is inside a comment.
+    const matchEnd = INCLUDE_RE.lastIndex;
+    const lineStart = content.lastIndexOf('\n', matchEnd - match.length) + 1;
+    const prefix = content.slice(lineStart, matchEnd - match.length);
+    if (COMMENT_LINE_RE.test(prefix)) {
+      return match; // in a comment — leave untouched
+    }
+
     const resolved = isAbsolute(includePath)
       ? includePath
       : resolve(dir, includePath);
