@@ -73,26 +73,10 @@ export default function resolve(
     root: null,
   } as Standard;
 
-  // Pass-through fields (no resolver — entries are already in final form).
-  standard.roles = Object.values(ctx.roles);
-  standard.events = Object.values(ctx.events);
-  standard.gateways = Object.values(ctx.gateways);
-  standard.references = Object.values(ctx.references);
-  standard.enums = Object.values(ctx.enums);
-  standard.variables = Object.values(ctx.variables);
-  standard.tables = Object.values(ctx.tables);
-  standard.figures = Object.values(ctx.figures);
-  standard.links = Object.values(ctx.links);
-  standard.mapProfiles = Object.values(ctx.mapProfiles);
-  standard.viewProfiles = Object.values(ctx.viewProfiles);
-  standard.terms = Object.values(ctx.terms);
-  standard.forms = Object.values(ctx.forms);
-  standard.subforms = Object.values(ctx.subforms);
-  standard.stateMachines = Object.values(ctx.stateMachines);
-
-  // Resolved fields — driven entirely by RESOLVER_CONFIG. The loop is
-  // order-independent: resolveFromContext is pure, so resolvers may read
-  // from any ctx table at any time without observing partial state.
+  // All constructs go through the resolver loop. Pass-through constructs
+  // (no cross-references) have auto-generated identity resolvers from
+  // buildResolverConfig — no hardcoded field list here. Adding a new
+  // pass-through construct is purely a config change.
   for (const field of Object.keys(resolvers) as Array<keyof ParseContext>) {
     const cfg = resolvers[field];
     if (!cfg) {

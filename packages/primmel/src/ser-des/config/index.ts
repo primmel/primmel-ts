@@ -332,10 +332,13 @@ function buildResolverConfig(
 ): ResolverConfiguration {
   const out: ResolverConfiguration = {};
   for (const c of constructs) {
-    if (!c.field || !c.resolve) {
+    if (!c.field) {
       continue;
     }
-    out[c.field] = { resolve: c.resolve };
+    out[c.field] = {
+      resolve: c.resolve ??
+        (((_ctx: unknown, item: unknown) => item) as never),
+    };
   }
   return out;
 }
