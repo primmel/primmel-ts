@@ -16,10 +16,11 @@ Migration context (see `MIGRATION.md`): the package was renamed from `@riboseinc
 yarn compile          # tsc — type-check & emit to build/
 yarn lint             # gts lint (Google TS style; curly required, single quotes)
 yarn lint-fix         # gts fix
+npm test              # node:test + tsx — 122 specs in packages/primmel/test/
 npx tsx scripts/validate-r60.mts   # parser smoke test against the R 60 model
 ```
 
-There is no formal test runner. `scripts/validate-r60.mts` is the only executable validation — it loads a multi-file model from `models/r60/` (not committed at repo root; the script resolves the path relative to the repo root) and asserts element counts. `yarn pretest` runs `compile`; `yarn posttest` runs `lint`.
+The test suite uses Node's built-in test runner (`node --test --import tsx`) with specs in `packages/primmel/test/*.test.ts`. Coverage spans all ser-des stages: tokenizer, parser, resolver (unit + integration), round-trip, duplicate detection, includes, strict mode, validate. `yarn pretest` runs `compile`; `yarn posttest` runs `lint`.
 
 To exercise the parser ad-hoc against a `.mmel` file: `npx tsx -e "import { loadFile } from './packages/primmel/src/ser-des/index.ts'; console.log(loadFile('./path/to/model.mmel'))"`.
 
