@@ -212,9 +212,11 @@ function readEdge(id: string, data: string): ResolvableEdge {
  */
 export const resolveSubprocess: Resolver<Subprocess, ResolvableSubprocess> =
   function (ctx, unresolved) {
+    const relations = unresolved._relations ?? { childs: [], edges: [], data: [] };
+    const components = unresolved._components ?? {};
     const componentsById = new Map<string, ResolvableSubprocessComponent>();
-    for (const c of Object.values(unresolved._components)) {
-      componentsById.set(c._relations.element, c);
+    for (const c of Object.values(components)) {
+      if (c._relations?.element) componentsById.set(c._relations.element, c);
     }
 
     const resolveComponent = (
@@ -244,9 +246,9 @@ export const resolveSubprocess: Resolver<Subprocess, ResolvableSubprocess> =
 
     return {
       id: unresolved.id,
-      childs: unresolved._relations.childs.map(resolveComponent),
-      edges: unresolved._relations.edges.map(resolveEdge),
-      data: unresolved._relations.data.map(resolveComponent),
+      childs: relations.childs.map(resolveComponent),
+      edges: relations.edges.map(resolveEdge),
+      data: relations.data.map(resolveComponent),
     };
   };
 

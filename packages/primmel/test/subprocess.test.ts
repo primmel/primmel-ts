@@ -141,4 +141,55 @@ describe('subprocess resolution', () => {
     assert.match(dumped, /y 4/);
     assert.match(dumped, /data \{[\s\S]*d1 \{/);
   });
+
+  it('resolves multiple subprocesses without crashing (regression)', () => {
+    // Previously crashed with "Cannot read properties of undefined
+    // (reading 'childs')" when resolveFromContext cached stripped pages
+    // back into ctx, stripping _relations before the pages resolver ran.
+    const src = `
+      role Warehouse { name "Warehouse" }
+      start_event Start1 { }
+      end_event End1 { }
+      process DoA {
+        name "Do A"
+        actor Warehouse
+        subprocess FlowA
+      }
+      process DoB {
+        name "Do B"
+        actor Warehouse
+        subprocess FlowB
+      }
+      subprocess FlowA {
+        elements {
+          Start1 { x 0 y 0 }
+          DoA { x 0 y 100 }
+          End1 { x 0 y 200 }
+        }
+        process_flow {
+          e1 { from Start1 to DoA }
+          e2 { from DoA to End1 }
+        }
+        data { }
+      }
+      subprocess FlowB {
+        elements {
+          Start1 { x 0 y 0 }
+          DoB { x 0 y 100 }
+        }
+        process_flow {
+          e1 { from Start1 to DoB }
+        }
+        data { }
+      }
+    `;
+    const s = load(src);
+    assert.equal(s.pages.length, 2);
+    const flowA = s.pages.find(p => p.id === 'FlowA');
+    const flowB = s.pages.find(p => p.id === 'FlowB');
+    assert.equal(flowA?.childs.length, 3);
+    assert.equal(flowA?.edges.length, 2);
+    assert.equal(flowB?.childs.length, 2);
+    assert.equal(flowB?.edges.length, 1);
+  });
 });

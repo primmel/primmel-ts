@@ -17,6 +17,12 @@ const EMPTY_META: Metadata = {
  * Returns the item (with `_relations` stripped if it had any) or `undefined`
  * if the ID is not present. Lenient by design — callers decide whether an
  * undefined miss is an error.
+ *
+ * Pure: does NOT mutate `ctx`. The caller receives a fresh object when
+ * `_relations` needs stripping; the original entry stays intact for its
+ * own resolver. Caching the stripped form back into the table caused
+ * ordering bugs: a resolver for X reading an item from Y via this
+ * function would strip Y's `_relations` before Y's own resolver ran.
  */
 export function resolveFromContext<T>(
   ctx: ParseContext,
@@ -36,7 +42,6 @@ export function resolveFromContext<T>(
   if (anyItem._relations) {
     const stripped = { ...item };
     delete (stripped as unknown as { _relations?: unknown })._relations;
-    table[id] = stripped;
     return stripped;
   }
   return item;
@@ -47,8 +52,7 @@ export function resolveFromContext<T>(
  *
  * Fields without a resolver are passed through directly (their entries are
  * already in final form). Fields WITH a resolver are iterated, resolved,
- * and the result replaces the parsed form on both `ctx` (cached for any
- * later lookup) and `standard`.
+ * and the result is appended to the matching Standard field.
  *
  * Adding a new construct with cross-references is now purely a registry
  * change in RESOLVER_CONFIG — no edit needed here.
@@ -56,9 +60,9 @@ export function resolveFromContext<T>(
  * Lenient: missing references inside a resolver are dropped (not thrown).
  * The partially-resolved item is still returned.
  *
- * Resolve order is RESOLVER_CONFIG insertion order; pages must come last
- * because subprocess components reference processes/approvals/events/
- * gateways, and those need to be cached in resolved form first.
+ * Order-independent: resolveFromContext is pure (does not mutate ctx),
+ * so resolvers may read from any ctx table at any time without observing
+ * partial state from other resolvers.
  */
 export default function resolve(
   ctx: ParseContext,
@@ -70,8 +74,6 @@ export default function resolve(
   } as Standard;
 
   // Pass-through fields (no resolver — entries are already in final form).
-  // Listed explicitly so the Standard shape drives this, not the resolver
-  // registry. Singletons `meta` and `root` are handled above.
   standard.roles = Object.values(ctx.roles);
   standard.events = Object.values(ctx.events);
   standard.gateways = Object.values(ctx.gateways);
@@ -88,17 +90,20 @@ export default function resolve(
   standard.subforms = Object.values(ctx.subforms);
   standard.stateMachines = Object.values(ctx.stateMachines);
 
-  // Resolved fields — driven entirely by RESOLVER_CONFIG. Order matters:
-  // processes/approvals/etc. must run before pages (subprocess components
-  // reference them via lookupNode).
+  // Resolved fields — driven entirely by RESOLVER_CONFIG. The loop is
+  // order-independent: resolveFromContext is pure, so resolvers may read
+  // from any ctx table at any time without observing partial state.
   for (const field of Object.keys(resolvers) as Array<keyof ParseContext>) {
     const cfg = resolvers[field];
     if (!cfg) {
       continue;
     }
-    const table = ctx[field] as Record<string, unknown>;
+    const table = ctx[field] as Record<string, unknown> | undefined;
+    if (!table) {
+      continue;
+    }
     const out: unknown[] = [];
-    for (const [id, item] of Object.entries(table)) {
+    for (const [, item] of Object.entries(table)) {
       const resolved = cfg.resolve(ctx, item as never) as {
         _relations?: unknown;
       };
@@ -106,7 +111,6 @@ export default function resolve(
         continue;
       }
       delete resolved._relations;
-      table[id] = resolved;
       out.push(resolved);
     }
     (standard as unknown as Record<string, unknown[]>)[field as string] = out;
