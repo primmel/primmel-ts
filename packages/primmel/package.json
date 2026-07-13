@@ -16,8 +16,17 @@
   "contributors": [
     "Ribose Inc. <open.source@ribose.com>"
   ],
+  "exports": {
+    ".": {
+      "browser": "./dist-browser/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "../../node_modules/.bin/tsc",
+    "build:browser": "vite build --config ../../vite.browser.config.ts",
     "prepublishOnly": "yarn build",
     "test": "node --test --import tsx test/*.test.ts"
   },
