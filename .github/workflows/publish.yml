@@ -19,9 +19,11 @@ jobs:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
-      - run: npm install
+      - run: corepack enable
 
-      - run: cd packages/primmel && npm run build
+      - run: yarn install --immutable
+
+      - run: yarn workspace @primmel/primmel run build
 
       - run: cd packages/primmel && npm publish --provenance --access public
         env:
