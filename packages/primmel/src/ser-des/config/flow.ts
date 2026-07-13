@@ -284,7 +284,7 @@ function lookupNode(ctx: ParseContext, id: string): Node | null {
 }
 
 export const dumpSubprocess: Dumper<Subprocess> = function (sub) {
-  let out: string = 'subprocess ' + sub.id + ' {\n';
+  let out: string = 'canvas ' + sub.id + ' {\n';
   out += '  elements {\n';
   sub.childs.forEach(x => {
     out += dumpSubprocessComponent(x);

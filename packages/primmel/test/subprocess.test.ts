@@ -7,7 +7,7 @@ describe('subprocess resolution', () => {
     // Previously a parser bug: parseSubprocess filled _relations.childs but
     // never Subprocess.childs, so the dumper always saw empty arrays.
     const src = `
-      subprocess s1 {
+      canvas s1 {
         elements {
           e1 { x 0 y 0 }
         }
@@ -27,7 +27,7 @@ describe('subprocess resolution', () => {
   it('resolves a component element reference to a real Node', () => {
     const src = `
       process p1 { name "P1" }
-      subprocess s1 {
+      canvas s1 {
         elements {
           p1 { x 1 y 2 }
         }
@@ -43,7 +43,7 @@ describe('subprocess resolution', () => {
 
   it('leaves element null when the referenced node does not exist (lenient)', () => {
     const src = `
-      subprocess s1 {
+      canvas s1 {
         elements {
           ghost { x 0 y 0 }
         }
@@ -60,7 +60,7 @@ describe('subprocess resolution', () => {
     const src = `
       process p1 { name "P1" }
       process p2 { name "P2" }
-      subprocess s1 {
+      canvas s1 {
         elements {
           p1 { x 0 y 0 }
           p2 { x 1 y 1 }
@@ -84,7 +84,7 @@ describe('subprocess resolution', () => {
   it('leaves edge.from null when the referenced component does not exist', () => {
     const src = `
       process p1 { name "P1" }
-      subprocess s1 {
+      canvas s1 {
         elements {
           p1 { x 0 y 0 }
         }
@@ -102,7 +102,7 @@ describe('subprocess resolution', () => {
 
   it('populates data components alongside elements', () => {
     const src = `
-      subprocess s1 {
+      canvas s1 {
         elements { }
         process_flow { }
         data {
@@ -120,7 +120,7 @@ describe('subprocess resolution', () => {
   it('round-trips element/data/edge content through dump', () => {
     const src = `
       process p1 { name "P1" }
-      subprocess s1 {
+      canvas s1 {
         elements {
           p1 { x 3 y 4 }
         }
@@ -135,7 +135,7 @@ describe('subprocess resolution', () => {
     const out = load(src);
     // The dumper writes element.id, so p1 must appear in the elements block.
     const dumped = dump(out);
-    assert.match(dumped, /subprocess s1 \{/);
+    assert.match(dumped, /canvas s1 \{/);
     assert.match(dumped, /elements \{[\s\S]*p1 \{/);
     assert.match(dumped, /x 3/);
     assert.match(dumped, /y 4/);

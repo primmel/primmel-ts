@@ -20,7 +20,7 @@ describe('round-trip', () => {
         shortname "t"
       }
 
-      subprocess home {
+      canvas home {
         elements { }
         process_flow { }
         data { }
@@ -68,7 +68,7 @@ describe('round-trip', () => {
 
   it('preserves a subprocess with elements, edges, and data', () => {
     const src = `
-      subprocess s1 {
+      canvas s1 {
         elements {
           e1 { x 0 y 0 }
         }
@@ -80,7 +80,7 @@ describe('round-trip', () => {
       }
     `;
     const out = roundTrip(src);
-    assert.match(out, /subprocess s1 \{/);
+    assert.match(out, /canvas s1 \{/);
     assert.match(out, /elements \{/);
     assert.match(out, /process_flow \{/);
   });

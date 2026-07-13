@@ -213,7 +213,8 @@ const CONSTRUCTS: ConstructDefinition[] = [
     dump: dumpReference as never,
   }),
   defineConstruct({
-    keyword: 'subprocess',
+    keyword: 'canvas',
+    aliases: ['subprocess'],
     field: 'pages',
     takesID: true,
     parse: parseSubprocess,
