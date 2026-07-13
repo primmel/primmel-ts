@@ -8,7 +8,7 @@ export default defineConfig({
       formats: ['es'],
       fileName: 'index',
     },
-    outDir: 'packages/primmel/dist-browser',
+    outDir: resolve(__dirname, 'packages/primmel/dist-browser'),
     emptyOutDir: true,
     rollupOptions: {
       external: [],
