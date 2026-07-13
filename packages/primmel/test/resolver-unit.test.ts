@@ -137,6 +137,7 @@ describe('resolve (unit, minimal context)', () => {
       provision: [],
       page: null,
       measure: [],
+      parent: '',
       _relations: {
         actor: 'author',
         output: [],

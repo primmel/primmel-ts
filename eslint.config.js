@@ -28,6 +28,8 @@ module.exports = defineConfig([
       '**/node_modules/',
       '.yarn/',
       'packages/*/dist/',
+      'packages/*/dist-browser/',
+      'vite.browser.config.ts',
     ],
   },
 ]);
