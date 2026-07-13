@@ -19,6 +19,7 @@ export const parseProcess: Parser = function (id, data) {
     provision: [],
     page: null,
     measure: [],
+    parent: '',
     _relations: {
       actor: '',
       output: [],
@@ -37,7 +38,9 @@ export const parseProcess: Parser = function (id, data) {
         result.name = unwrapped(value);
       } else if (keyword === 'actor') {
         result._relations.actor = value();
-      } else if (keyword === 'subprocess') {
+      } else if (keyword === 'parent') {
+        result.parent = value();
+      } else if (keyword === 'canvas' || keyword === 'subprocess') {
         result._relations.page = value();
       } else if (keyword === 'validate_provision') {
         result._relations.provision = tokenizePackage(value());
@@ -140,7 +143,10 @@ export const dumpProcess: Dumper<Process> = function (process) {
     out += '  }\n';
   }
   if (process.page !== null) {
-    out += '  subprocess ' + process.page.id + '\n';
+    out += '  canvas ' + process.page.id + '\n';
+  }
+  if (process.parent) {
+    out += '  parent ' + process.parent + '\n';
   }
   out += '}\n';
   return out;
