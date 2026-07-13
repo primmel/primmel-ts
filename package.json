@@ -9,7 +9,8 @@
     "eslint": "^9",
     "gts": "^7",
     "tsx": "^4.23.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.1.4"
   },
   "scripts": {
     "lint": "eslint .",
