@@ -5,7 +5,6 @@ import Provision from './Provision';
 import Role from './Role';
 
 export default interface Process {
-  // extends Node?
   id: string;
   name: string;
   modality: string;
@@ -15,6 +14,7 @@ export default interface Process {
   provision: Provision[];
   page: Subprocess | null;
   measure: string[];
+  parent: string;
 }
 
 export type ResolvableProcess = Resolvable<
