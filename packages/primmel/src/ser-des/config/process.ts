@@ -3,6 +3,7 @@ import { resolveFromContext } from '../resolve';
 import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser, Resolver } from '../types';
+import type { ParseContext } from '../types';
 import type { Registry } from '../../types/data';
 import type Provision from '../../types/Provision';
 import type Role from '../../types/Role';
@@ -20,6 +21,7 @@ export const parseProcess: Parser = function (id, data) {
     page: null,
     measure: [],
     parent: '',
+    children: [],
     _relations: {
       actor: '',
       output: [],
@@ -28,6 +30,39 @@ export const parseProcess: Parser = function (id, data) {
       page: '',
     },
   };
+
+  const childModifiers: ((ctx: ParseContext) => ParseContext)[] = [];
+
+  if (data.trim() !== '') {
+    const tokens = tokenizePackage(data);
+    const filtered: string[] = [];
+    let i = 0;
+    while (i < tokens.length) {
+      if (
+        tokens[i] === 'process' &&
+        i + 2 < tokens.length &&
+        tokens[i + 2].startsWith('{')
+      ) {
+        const childId = tokens[i + 1];
+        const childBlock = tokens[i + 2];
+        const childModifier = parseProcess(childId, childBlock);
+        childModifiers.push((ctx: ParseContext) => {
+          ctx = childModifier(ctx);
+          const childProc = ctx.processes[childId];
+          if (childProc) {
+            childProc.parent = id;
+          }
+          return ctx;
+        });
+        result.children.push(childId);
+        i += 3;
+      } else {
+        filtered.push(tokens[i]);
+        i++;
+      }
+    }
+    data = '{ ' + filtered.join(' ') + ' }';
+  }
 
   forEachEntry(
     data,
@@ -60,6 +95,9 @@ export const parseProcess: Parser = function (id, data) {
 
   return ctx => {
     ctx.processes[id] = result;
+    for (const mod of childModifiers) {
+      ctx = mod(ctx);
+    }
     return ctx;
   };
 };
@@ -105,6 +143,33 @@ export const resolveProcess: Resolver<Process, ResolvableProcess> = function (
   return p;
 };
 
+function indentBlock(block: string): string {
+  return block
+    .split('\n')
+    .map(line => (line ? '  ' + line : line))
+    .join('\n');
+}
+
+export function dumpProcessTree(
+  process: Process,
+  lookup: Map<string, Process>,
+): string {
+  let out = dumpProcess(process);
+  if (process.children.length > 0) {
+    const childBlocks: string[] = [];
+    for (const childId of process.children) {
+      const child = lookup.get(childId);
+      if (child) {
+        childBlocks.push(indentBlock(dumpProcessTree(child, lookup)));
+      }
+    }
+    if (childBlocks.length > 0) {
+      out = out.replace(/\n}\n$/, '\n' + childBlocks.join('\n') + '}\n');
+    }
+  }
+  return out;
+}
+
 export const dumpProcess: Dumper<Process> = function (process) {
   let out: string = 'process ' + process.id + ' {\n';
   out += '  name "' + escapeString(process.name) + '"\n';
@@ -145,7 +210,7 @@ export const dumpProcess: Dumper<Process> = function (process) {
   if (process.page !== null) {
     out += '  canvas ' + process.page.id + '\n';
   }
-  if (process.parent) {
+  if (process.parent && process.children.length === 0) {
     out += '  parent ' + process.parent + '\n';
   }
   out += '}\n';

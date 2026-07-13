@@ -15,6 +15,7 @@ export default interface Process {
   page: Subprocess | null;
   measure: string[];
   parent: string;
+  children: string[];
 }
 
 export type ResolvableProcess = Resolvable<
