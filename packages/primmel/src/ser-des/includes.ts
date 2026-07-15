@@ -58,19 +58,24 @@ export function preprocessIncludes(
   // Replace each include directive with the preprocessed content of
   // the referenced file. Skip comment lines so a `// include "..."` in
   // a comment doesn't get falsely expanded.
-  return content.replace(INCLUDE_RE, (match, includePath: string, offset: number) => {
-    const lineStart = content.lastIndexOf('\n', offset) + 1;
-    const prefix = content.slice(lineStart, offset);
-    if (COMMENT_LINE_RE.test(prefix)) {
-      return match;
-    }
+  return content.replace(
+    INCLUDE_RE,
+    (match, includePath: string, offset: number) => {
+      const lineStart = content.lastIndexOf('\n', offset) + 1;
+      const prefix = content.slice(lineStart, offset);
+      if (COMMENT_LINE_RE.test(prefix)) {
+        return match;
+      }
 
-    const resolved = isAbsolute(includePath)
-      ? includePath
-      : resolve(dir, includePath);
+      const resolved = isAbsolute(includePath)
+        ? includePath
+        : resolve(dir, includePath);
 
-    const withExt = resolved.endsWith('.mmel') ? resolved : `${resolved}.mmel`;
+      const withExt = resolved.endsWith('.mmel')
+        ? resolved
+        : `${resolved}.mmel`;
 
-    return preprocessIncludes(withExt, new Set(_seen));
-  });
+      return preprocessIncludes(withExt, new Set(_seen));
+    },
+  );
 }
