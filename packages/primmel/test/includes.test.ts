@@ -68,4 +68,14 @@ describe('preprocessIncludes', () => {
     const out = preprocessIncludes(join(tmp, 'plain.mmel'));
     assert.equal(out, 'just text\nno includes\n');
   });
+
+  it('does not expand includes inside comments but expands real ones after a comment header', async () => {
+    await writeFile(
+      join(tmp, 'comment-header.mmel'),
+      '// This is a header comment\n// include "should-not-expand.mmel"\n\ninclude "sub/child.mmel"\n',
+    );
+    const out = preprocessIncludes(join(tmp, 'comment-header.mmel'));
+    assert.match(out, /include "should-not-expand\.mmel"/);
+    assert.match(out, /role child/);
+  });
 });
