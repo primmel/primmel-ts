@@ -1,5 +1,6 @@
 import type Approval from './Approval';
 import type Calculation from './Calculation';
+import type ConformanceTest from './ConformanceTest';
 import type { DataClass, Enum, Registry, Variable } from './data';
 import EventNode from './events';
 import type Figure from './Figure';
@@ -52,6 +53,7 @@ export default interface Standard {
   symbols: Symbol[];
   calculations: Calculation[];
   stateMachines: StateMachine[];
+  conformanceTests: ConformanceTest[];
 
   root: Subprocess | null;
 }

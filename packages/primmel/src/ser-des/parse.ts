@@ -63,6 +63,7 @@ export default function parse(
     symbols: {},
     calculations: {},
     stateMachines: {},
+    conformanceTests: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };

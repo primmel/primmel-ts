@@ -75,6 +75,7 @@ import {
   resolveCalculation,
 } from './calculation';
 import { dumpStateMachine, parseStateMachine } from './stateMachine';
+import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
 
 export interface ConstructDefinition {
@@ -308,6 +309,13 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseStateMachine,
     dump: dumpStateMachine as never,
+  }),
+  defineConstruct({
+    keyword: 'conformance_test',
+    field: 'conformanceTests',
+    takesID: true,
+    parse: parseConformanceTest,
+    dump: dumpConformanceTest as never,
   }),
 ];
 

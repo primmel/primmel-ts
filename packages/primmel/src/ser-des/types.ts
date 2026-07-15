@@ -1,4 +1,5 @@
 import type Calculation from '../types/Calculation';
+import type ConformanceTest from '../types/ConformanceTest';
 import type { DataClass, Enum, Registry, Variable } from '../types/data';
 import EventNode from '../types/events';
 import type Figure from '../types/Figure';
@@ -111,6 +112,7 @@ export interface ParseContext {
   symbols: Record<string, Symbol>;
   calculations: Record<string, Calculation>;
   stateMachines: Record<string, StateMachine>;
+  conformanceTests: Record<string, ConformanceTest>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().
