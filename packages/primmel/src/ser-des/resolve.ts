@@ -70,6 +70,7 @@ export default function resolve(
 ): Standard {
   const standard = {
     meta: ctx.metadata ?? EMPTY_META,
+    packageManifest: ctx.packageManifest ?? null,
     root: null,
   } as Standard;
 

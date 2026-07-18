@@ -71,9 +71,13 @@ export function preprocessIncludes(
         ? includePath
         : resolve(dir, includePath);
 
-      const withExt = resolved.endsWith('.mmel')
-        ? resolved
-        : `${resolved}.mmel`;
+      // .prl is the Primmel extension; .mmel is the legacy MMEL one.
+      const withExt =
+        resolved.endsWith('.prl') || resolved.endsWith('.mmel')
+          ? resolved
+          : existsSync(`${resolved}.prl`)
+            ? `${resolved}.prl`
+            : `${resolved}.mmel`;
 
       return preprocessIncludes(withExt, new Set(_seen));
     },

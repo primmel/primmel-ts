@@ -24,6 +24,7 @@ import type {
   Instrument,
 } from './Subject';
 import type { Requirement, RequirementClass } from './Requirement';
+import type { PackageManifest } from './Package';
 import type Subform from './Subform';
 import type Symbol from './Symbol';
 import type Table from './Table';
@@ -32,6 +33,8 @@ import type ViewProfile from './ViewProfile';
 
 export default interface Standard {
   meta: Metadata;
+  /** v2 package manifest — present when loaded from a package (loadPackage). */
+  packageManifest?: PackageManifest | null;
 
   roles: Role[];
   provisions: Provision[];

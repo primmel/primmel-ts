@@ -6,6 +6,9 @@ export {
   loadFileWithIssues,
   dump,
   validate,
+  loadPackage,
+  packageFiles,
+  dumpPackage,
   type LoadOptions,
   type LoadResult,
   type ValidationIssue,
@@ -13,6 +16,7 @@ export {
   type Position,
 } from './src/ser-des/index';
 export type { default as Standard } from './src/types/Standard';
+export type { PackageManifest, PackageSource } from './src/types/Package';
 export type { default as Metadata } from './src/types/Metadata';
 export type { default as Role } from './src/types/Role';
 export type { default as Provision } from './src/types/Provision';

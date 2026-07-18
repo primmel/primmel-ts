@@ -25,6 +25,7 @@ import type {
   Instrument,
 } from '../types/Subject';
 import type { Requirement, RequirementClass } from '../types/Requirement';
+import type { PackageManifest } from '../types/Package';
 import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
 import type Table from '../types/Table';
@@ -62,7 +63,9 @@ export type ResolverConfiguration = Partial<
    intentionally excluded — they are singletons, not arrays, and dump()
    handles them explicitly at the top of the output. */
 export type DumperConfiguration = {
-  [key in keyof Omit<Standard, 'meta' | 'root'>]: Dumper<Standard[key][number]>;
+  [key in keyof Omit<Standard, 'meta' | 'root' | 'packageManifest'>]: Dumper<
+    Standard[key][number]
+  >;
 };
 
 // Functions
@@ -89,6 +92,8 @@ export type Dumper<T> = (obj: T) => string;
 export interface ParseContext {
   root: string;
   metadata: Metadata | null;
+  /** v2 package manifest (singleton, from `package { ... }`). */
+  packageManifest: PackageManifest | null;
   roles: Record<string, Role>;
 
   approvals: Record<string, ResolvableApproval>;

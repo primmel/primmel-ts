@@ -74,6 +74,9 @@ export function dump(standard: Standard): string {
   return _dump(standard, DUMPER_CONFIG);
 }
 
+export { loadPackage, packageFiles } from './package';
+export { dumpPackage } from './config/packageManifest';
+
 export function validate(standard: Standard): ValidationIssue[] {
   return _validate(standard);
 }

@@ -37,6 +37,7 @@ export default function parse(
   let ctx: ParseContext = {
     root: '',
     metadata: null,
+    packageManifest: null,
     approvals: {},
     roles: {},
     processes: {},

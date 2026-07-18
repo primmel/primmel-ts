@@ -78,6 +78,7 @@ import { dumpStateMachine, parseStateMachine } from './stateMachine';
 import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
+import { parsePackage } from './packageManifest';
 import {
   instrumentConstruct,
   attributeDefinitionConstruct,
@@ -393,6 +394,9 @@ function buildDumperConfig(
 // Special cases that don't fit the keyword/field shape — `root` is a
 // single ID reference, `metadata` is a singleton block.
 const SPECIAL_PARSERS: ParserConfiguration = {
+  package: {
+    parse: parsePackage,
+  },
   root: {
     parse: token => ctx => {
       ctx.root = token.trim();
