@@ -170,6 +170,11 @@ export function unwrapBlock(x: string): string {
  * bare IDs (e.g. `DetermineMeasurementError` → `etermineMeasurementErro`).
  * stripWrapping only strips when the wrapping chars are actually
  * matching quote-or-brace.
+ *
+ * Quoted values are UNESCAPED (see unescapeString): the tokenizer keeps
+ * `\"` and `\\` raw, and dumpers re-escape via escapeString — without
+ * unescaping here, every load→dump→load cycle would add one more layer
+ * of backslashes.
  */
 export function stripWrapping(x: string): string {
   if (x.length < 2) {
@@ -177,10 +182,31 @@ export function stripWrapping(x: string): string {
   }
   const first = x.charAt(0);
   const last = x.charAt(x.length - 1);
-  if ((first === '"' && last === '"') || (first === '{' && last === '}')) {
+  if (first === '"' && last === '"') {
+    return unescapeString(x.substr(1, x.length - 2));
+  }
+  if (first === '{' && last === '}') {
     return x.substr(1, x.length - 2);
   }
   return x;
+}
+
+/**
+ * Inverse of escapeString: `\"` → `"`, `\\` → `\`.
+ * Applied when CONSUMING quoted values (stripWrapping); dumpers escape
+ * again on the way out, giving a stable round-trip fixpoint.
+ */
+export function unescapeString(x: string): string {
+  let out = '';
+  for (let i = 0; i < x.length; i++) {
+    if (x.charAt(i) === '\\' && i + 1 < x.length) {
+      out += x.charAt(i + 1);
+      i++;
+    } else {
+      out += x.charAt(i);
+    }
+  }
+  return out;
 }
 
 /**

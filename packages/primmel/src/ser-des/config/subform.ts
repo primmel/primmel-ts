@@ -31,7 +31,7 @@ export const parseSubform: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'description') {
-          result.description = unwrapBlock(t[i++]);
+          result.description = stripWrapping(t[i++]);
         } else if (command === 'type') {
           const v = t[i++];
           if (v === 'object' || v === 'array') {

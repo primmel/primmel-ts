@@ -36,6 +36,8 @@ export default interface ConformanceTest {
   name: string;
   type: string;
   reference: string;
+  /** Structured form when reference is a { doc, clause } block (v2). */
+  sourceRef?: { doc: string; clause: string } | null;
   targets: string[];
   procedure: ConformanceTestStep[];
   measurements: string[];

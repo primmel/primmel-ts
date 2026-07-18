@@ -19,7 +19,7 @@
 // block as a single string.
 // ─────────────────────────────────────────────────────────────────────
 
-import { tokenizePackage, unwrapBlock } from './tokenize';
+import { tokenizePackage, unwrapBlock, unescapeString } from './tokenize';
 
 export interface ParseEntryErrorContext {
   /** Construct name for error messages, e.g. "process", "enum value". */
@@ -123,5 +123,11 @@ export function forEachAttribute(
  *     }, { construct: 'process', id });
  */
 export function unwrapped(value: () => string): string {
-  return unwrapBlock(value());
+  const x = value();
+  // Quoted values must be unescaped on consumption (same contract as
+  // stripWrapping) — otherwise dump/load cycles keep adding backslashes.
+  if (x.length >= 2 && x.charAt(0) === '"' && x.charAt(x.length - 1) === '"') {
+    return unescapeString(x.substr(1, x.length - 2));
+  }
+  return unwrapBlock(x);
 }

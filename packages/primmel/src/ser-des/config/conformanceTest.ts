@@ -235,9 +235,26 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.type = value();
       } else if (keyword === 'reference') {
         const refValue = value();
-        result.reference = refValue.startsWith('{')
-          ? unwrapBlock(refValue).trim()
-          : refValue;
+        if (refValue.startsWith('{')) {
+          const inner = tokenize(unwrapBlock(refValue));
+          if (inner.includes('doc') || inner.includes('clause')) {
+            // Structured block: reference { doc "urn:…" clause "2.5" } (v2)
+            const src: { doc: string; clause: string } = { doc: '', clause: '' };
+            for (let k = 0; k + 1 < inner.length; k += 2) {
+              if (inner[k] === 'doc') src.doc = stripWrapping(inner[k + 1]);
+              else if (inner[k] === 'clause') src.clause = stripWrapping(inner[k + 1]);
+            }
+            result.sourceRef = src;
+            result.reference = src.doc;
+          } else {
+            // Legacy block: reference { R60doc#2.10.1 } — scalar inside braces
+            result.sourceRef = null;
+            result.reference = unwrapBlock(refValue).trim();
+          }
+        } else {
+          result.sourceRef = null;
+          result.reference = refValue;
+        }
       } else if (keyword === 'targets') {
         result.targets = tokenizePackage(value());
       } else if (keyword === 'procedure') {
@@ -307,7 +324,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.type) {
     out += '  type ' + ct.type + '\n';
   }
-  if (ct.reference) {
+  if (ct.sourceRef && ct.sourceRef.doc) {
+    out += '  reference { doc "' + escapeString(ct.sourceRef.doc) + '" clause "' + escapeString(ct.sourceRef.clause) + '" }\n';
+  } else if (ct.reference) {
     out += '  reference ' + ct.reference + '\n';
   }
   if (ct.targets.length > 0) {
