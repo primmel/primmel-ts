@@ -70,6 +70,10 @@ export interface AttributeDefinition {
   category: string;
   isDimension: boolean;
   enumRef: string;
+  /** Inline enum values (when the attribute defines its own axis). */
+  enumValues?: string[];
+  /** Free-text editorial note (rationale, provenance). */
+  note?: string;
   irdi: string;
   derived: string;
   referenceIds: string[];

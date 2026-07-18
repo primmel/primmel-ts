@@ -463,6 +463,10 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
       result.isDimension = stripWrapping(t[i++]) === 'true';
     } else if (cmd === 'enum') {
       result.enumRef = stripWrapping(t[i++]);
+    } else if (cmd === 'enum_values') {
+      result.enumValues = readIdList(t[i++]);
+    } else if (cmd === 'note') {
+      result.note = stripWrapping(t[i++]);
     } else if (cmd === 'irdi') {
       result.irdi = stripWrapping(t[i++]);
     } else if (cmd === 'derived') {
