@@ -1,5 +1,12 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
+import tokenize from '../tokenize';
+import {
+  escapeString,
+  unwrapBlock,
+  stripWrapping,
+  tokenizePackage,
+} from '../tokenize';
+import { stripColon } from './field-parser';
 import type StateMachine from '../../types/StateMachine';
 import type { Transition, Cascade, CascadeSet } from '../../types/StateMachine';
 
@@ -106,16 +113,16 @@ function parseCascade(target: string, block: string): Cascade {
         cascade.where = unwrapBlock(t[i++]);
       } else if (cmd === 'set') {
         const setBlock = unwrapBlock(t[i++]);
-        const st = tokenizePackage(setBlock);
+        const st = tokenize(setBlock);
         let j = 0;
         while (j < st.length) {
-          const field = st[j++];
+          const field = stripColon(st[j++]);
           if (j < st.length) {
             if (st[j] === ':') {
               j++;
             }
             if (j < st.length) {
-              const value = unwrapBlock(st[j++]);
+              const value = stripWrapping(st[j++]);
               const setEntry: CascadeSet = { field, value };
               cascade.set.push(setEntry);
             }

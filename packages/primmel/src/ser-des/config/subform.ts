@@ -1,6 +1,17 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
-import { parseFormField as parseField } from './field-parser';
+import tokenize from '../tokenize';
+import {
+  escapeString,
+  unwrapBlock,
+  stripWrapping,
+  tokenizePackage,
+} from '../tokenize';
+import {
+  parseFormField as parseField,
+  readFieldHead,
+  dumpFormField,
+  stripColon,
+} from './field-parser';
 import type Subform from '../../types/Subform';
 import type { ParameterDecl } from '../../types/Subform';
 
@@ -33,13 +44,15 @@ export const parseSubform: Parser = function (id, data) {
         } else if (command === 'parameters') {
           result.parameters = parseParameters(unwrapBlock(t[i++]));
         } else if (command === 'field') {
-          // field is followed by `name [: type] { ... }`
-          const fieldName = t[i++];
-          if (i < t.length) {
-            const fieldBlock = unwrapBlock(t[i++]);
-            // Determine if there's a type spec between name and {
-            const field = parseField(fieldName, fieldBlock);
-            result.fields.push(field);
+          // field is followed by `name [: type] { ... }` (W1a: typed heads)
+          const head = readFieldHead(t, i);
+          if (head) {
+            result.fields.push(
+              parseField(head.name, head.block, head.type || undefined),
+            );
+            i = head.next;
+          } else {
+            i++; // not a field head — keep scanning
           }
         } else {
           i++; // forward-compatible: skip unknown keyword value
@@ -60,10 +73,10 @@ export const parseSubform: Parser = function (id, data) {
 
 function parseParameters(block: string): ParameterDecl[] {
   const params: ParameterDecl[] = [];
-  const t = tokenizePackage(block);
+  const t = tokenize(block);
   let i = 0;
   while (i < t.length) {
-    const name = t[i++];
+    const name = stripColon(t[i++]);
     if (i >= t.length) {
       break;
     }
@@ -83,24 +96,24 @@ function parseParameters(block: string): ParameterDecl[] {
         const cmd = pt[j++];
         if (j < pt.length) {
           if (cmd === 'description') {
-            description = unwrapBlock(pt[j++]);
+            description = stripWrapping(pt[j++]);
           } else if (cmd === 'default') {
-            defaultValue = unwrapBlock(pt[j++]);
+            defaultValue = stripWrapping(pt[j++]);
             hasDefault = true;
           } else if (cmd === 'mapping') {
             const mapBlock = unwrapBlock(pt[j++]);
             mapping = {};
             // Map block format: { A: 5, B: 5, C: 3 }
-            const mt = tokenizePackage(mapBlock);
+            const mt = tokenize(mapBlock);
             let k = 0;
             while (k < mt.length) {
-              const key = mt[k++];
+              const key = stripColon(mt[k++]);
               if (k < mt.length) {
                 if (mt[k] === ':') {
                   k++;
                 }
                 if (k < mt.length) {
-                  mapping[key] = unwrapBlock(mt[k++]);
+                  mapping[key] = stripWrapping(mt[k++]);
                 }
               }
             }
@@ -144,17 +157,7 @@ export const dumpSubformType: Dumper<Subform> = function (sf) {
     out += '  }\n';
   }
   for (const f of sf.fields) {
-    out += '  field ' + f.name + ' { ';
-    if (f.label) {
-      out += 'label "' + escapeString(f.label) + '" ';
-    }
-    if (f.unit) {
-      out += 'unit "' + escapeString(f.unit) + '" ';
-    }
-    if (f.required) {
-      out += 'required true ';
-    }
-    out += '}\n';
+    out += dumpFormField(f, '  ');
   }
   out += '}\n';
   return out;

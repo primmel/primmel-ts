@@ -38,6 +38,9 @@ export interface FormField {
   // Nested object/array shape
   fields: FormField[];
   itemsType: string;
+  /** Array cardinality bounds (optional; parsed from min_items/max_items). */
+  minItems?: number | null;
+  maxItems?: number | null;
   // Subform reference (when this field composes a subform)
   subformRef: SubformRef | null;
 }

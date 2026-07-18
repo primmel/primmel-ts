@@ -1,18 +1,21 @@
 import type { Dumper, Parser } from '../types';
+import tokenize from '../tokenize';
 import {
   escapeString,
   unwrapBlock,
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { parseFormField } from './field-parser';
+import {
+  parseFormField,
+  parseApplicability,
+  parseSubformRef,
+  readFieldHead,
+  dumpFormField,
+  dumpApplicabilityEntries,
+} from './field-parser';
 import type Form from '../../types/Form';
-import type {
-  FormField,
-  ApplicabilityEntry,
-  PassFail,
-  SubformRef,
-} from '../../types/Form';
+import type { FormField, PassFail } from '../../types/Form';
 
 export const parseForm: Parser = function (id, data) {
   const result: Form = {
@@ -36,9 +39,9 @@ export const parseForm: Parser = function (id, data) {
       const command: string = t[i++];
       if (i < t.length) {
         if (command === 'name') {
-          result.name = unwrapBlock(t[i++]);
+          result.name = stripWrapping(t[i++]);
         } else if (command === 'description') {
-          result.description = unwrapBlock(t[i++]);
+          result.description = stripWrapping(t[i++]);
         } else if (command === 'data_class') {
           result.dataClassId = stripWrapping(t[i++]);
         } else if (command === 'header') {
@@ -48,10 +51,15 @@ export const parseForm: Parser = function (id, data) {
         } else if (command === 'applicability') {
           result.applicability = parseApplicability(unwrapBlock(t[i++]));
         } else if (command === 'field') {
-          const fieldName = t[i++];
-          if (i < t.length) {
-            const fieldBlock = unwrapBlock(t[i++]);
-            result.fields.push(parseFormField(fieldName, fieldBlock));
+          // field <name> [: <type>] { … } — typed heads included (W1a repair)
+          const head = readFieldHead(t, i);
+          if (head) {
+            result.fields.push(
+              parseFormField(head.name, head.block, head.type || undefined),
+            );
+            i = head.next;
+          } else {
+            i++; // not a field head — skip the token, keep scanning
           }
         } else if (command === 'subform_ref') {
           // subform_ref SubformID { parameters { ... } applicability { ... } }
@@ -61,7 +69,7 @@ export const parseForm: Parser = function (id, data) {
         } else if (command === 'pass_fail') {
           result.passFail = parsePassFail(unwrapBlock(t[i++]));
         } else if (command === 'reference') {
-          result.referenceIds = tokenizePackage(t[i++]);
+          result.referenceIds = tokenizePackage(t[i++]).map(stripWrapping);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -79,60 +87,17 @@ export const parseForm: Parser = function (id, data) {
   };
 };
 
-function parseApplicability(block: string): ApplicabilityEntry[] {
-  const entries: ApplicabilityEntry[] = [];
-  const t = tokenizePackage(block);
-  let i = 0;
-  while (i < t.length) {
-    const dimension = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (t[i] === ':') {
-      i++;
-    }
-    if (i < t.length) {
-      const valueBlock = unwrapBlock(t[i++]);
-      // valueBlock is `[A, B]` or `{ A: 5, B: 5 }`
-      const trimmed = valueBlock.trim();
-      if (trimmed.startsWith('[')) {
-        const inner = trimmed.slice(1, -1);
-        const values = inner.split(/[,\s]+/).filter(s => s.length > 0);
-        entries.push({ dimension, values, mapping: null });
-      } else if (trimmed.startsWith('{')) {
-        // Mapping form
-        const inner = trimmed.slice(1, -1);
-        const mapping: Record<string, string | number> = {};
-        for (const pair of inner
-          .split(/[,\n]+/)
-          .map(s => s.trim())
-          .filter(s => s)) {
-          const m = pair.match(/^(\w+)\s*:\s*(.+)$/);
-          if (m) {
-            mapping[m[1]] = m[2].trim();
-          }
-        }
-        entries.push({ dimension, values: [], mapping });
-      } else {
-        // Single value
-        entries.push({ dimension, values: [trimmed], mapping: null });
-      }
-    }
-  }
-  return entries;
-}
-
 function parsePassFail(block: string): PassFail {
   const pf: PassFail = { criteria: '', passIf: '' };
-  const t = tokenizePackage(block);
+  const t = tokenize(block);
   let i = 0;
   while (i < t.length) {
     const cmd = t[i++];
     if (i < t.length) {
       if (cmd === 'criteria') {
-        pf.criteria = unwrapBlock(t[i++]);
+        pf.criteria = stripWrapping(t[i++]);
       } else if (cmd === 'pass_if') {
-        pf.passIf = unwrapBlock(t[i++]);
+        pf.passIf = stripWrapping(t[i++]);
       } else {
         unwrapBlock(t[i++]);
       }
@@ -165,44 +130,6 @@ function makeSubformRefField(subformId: string, block: string): FormField {
   return field;
 }
 
-function parseSubformRef(subformId: string, block: string): SubformRef {
-  const ref: SubformRef = {
-    subformId,
-    parameters: {},
-    applicability: [],
-  };
-  if (block && block.trim()) {
-    const t = tokenizePackage(block);
-    let i = 0;
-    while (i < t.length) {
-      const cmd = t[i++];
-      if (i < t.length) {
-        if (cmd === 'parameters') {
-          const pblock = unwrapBlock(t[i++]);
-          const pt = tokenizePackage(pblock);
-          let j = 0;
-          while (j < pt.length) {
-            const key = pt[j++];
-            if (j < pt.length) {
-              if (pt[j] === ':') {
-                j++;
-              }
-              if (j < pt.length) {
-                ref.parameters[key] = unwrapBlock(pt[j++]);
-              }
-            }
-          }
-        } else if (cmd === 'applicability') {
-          ref.applicability = parseApplicability(unwrapBlock(t[i++]));
-        } else {
-          unwrapBlock(t[i++]);
-        }
-      }
-    }
-  }
-  return ref;
-}
-
 export const dumpForm: Dumper<Form> = function (f) {
   let out = 'form ' + f.id + ' {\n';
   out += '  name "' + escapeString(f.name) + '"\n';
@@ -219,46 +146,13 @@ export const dumpForm: Dumper<Form> = function (f) {
     out += '  conformance_process ' + f.conformanceProcessId + '\n';
   }
   if (f.applicability.length > 0) {
-    out += '  applicability {\n';
-    for (const a of f.applicability) {
-      if (a.mapping) {
-        out += '    ' + a.dimension + ': { ';
-        for (const [k, v] of Object.entries(a.mapping)) {
-          out += k + ': ' + v + ' ';
-        }
-        out += '}\n';
-      } else {
-        out += '    ' + a.dimension + ': [' + a.values.join(', ') + ']\n';
-      }
-    }
-    out += '  }\n';
+    out +=
+      '  applicability {\n    ' +
+      dumpApplicabilityEntries(f.applicability).trim() +
+      '\n  }\n';
   }
   for (const field of f.fields) {
-    if (field.subformRef) {
-      const sr = field.subformRef;
-      out += '  subform_ref ' + sr.subformId + ' { ';
-      const pkeys = Object.keys(sr.parameters);
-      if (pkeys.length > 0) {
-        out += 'parameters { ';
-        for (const k of pkeys) {
-          out += k + ': ' + sr.parameters[k] + ' ';
-        }
-        out += '} ';
-      }
-      out += '}\n';
-    } else {
-      out += '  field ' + field.name + ' { ';
-      if (field.label) {
-        out += 'label "' + escapeString(field.label) + '" ';
-      }
-      if (field.unit) {
-        out += 'unit "' + escapeString(field.unit) + '" ';
-      }
-      if (field.required) {
-        out += 'required true ';
-      }
-      out += '}\n';
-    }
+    out += dumpFormField(field, '  ');
   }
   if (f.passFail) {
     out +=

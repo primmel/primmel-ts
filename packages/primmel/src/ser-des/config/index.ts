@@ -165,6 +165,15 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseVariable,
     dump: dumpVariable as never,
   }),
+  // `measurement` is the spec's canonical keyword (MN 113 §2.3); `variable`
+  // is kept as the legacy alias — both feed ctx.variables (W1a).
+  defineConstruct({
+    keyword: 'measurement',
+    field: 'variables',
+    takesID: true,
+    parse: parseVariable,
+    dump: dumpVariable as never,
+  }),
   defineConstruct({
     keyword: 'exclusive_gateway',
     field: 'gateways',
