@@ -16,6 +16,13 @@ import type Provision from './Provision';
 import type Reference from './Reference';
 import type Role from './Role';
 import type StateMachine from './StateMachine';
+import type {
+  AttributeDefinition,
+  Behavior,
+  Capability,
+  ConditionSet,
+  Instrument,
+} from './Subject';
 import type Subform from './Subform';
 import type Symbol from './Symbol';
 import type Table from './Table';
@@ -54,6 +61,13 @@ export default interface Standard {
   calculations: Calculation[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
+
+  // Primmel v2 subject chain (MN v2 §Subject)
+  instruments: Instrument[];
+  attributeDefinitions: AttributeDefinition[];
+  capabilities: Capability[];
+  behaviors: Behavior[];
+  conditionSets: ConditionSet[];
 
   root: Subprocess | null;
 }

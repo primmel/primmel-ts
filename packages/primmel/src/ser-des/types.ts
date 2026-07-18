@@ -17,6 +17,13 @@ import type Reference from '../types/Reference';
 import type Role from '../types/Role';
 import type Standard from '../types/Standard';
 import type StateMachine from '../types/StateMachine';
+import type {
+  AttributeDefinition,
+  Behavior,
+  Capability,
+  ConditionSet,
+  Instrument,
+} from '../types/Subject';
 import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
 import type Table from '../types/Table';
@@ -113,6 +120,13 @@ export interface ParseContext {
   calculations: Record<string, Calculation>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;
+
+  // Primmel v2 subject chain
+  instruments: Record<string, Instrument>;
+  attributeDefinitions: Record<string, AttributeDefinition>;
+  capabilities: Record<string, Capability>;
+  behaviors: Record<string, Behavior>;
+  conditionSets: Record<string, ConditionSet>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().

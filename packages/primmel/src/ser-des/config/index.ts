@@ -77,6 +77,13 @@ import {
 import { dumpStateMachine, parseStateMachine } from './stateMachine';
 import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
+import {
+  instrumentConstruct,
+  attributeDefinitionConstruct,
+  capabilityConstruct,
+  behaviorConstruct,
+  conditionSetConstruct,
+} from './subject';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -319,6 +326,12 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseStateMachine,
     dump: dumpStateMachine as never,
   }),
+  // Primmel v2 subject chain (G1)
+  instrumentConstruct as ConstructDefinition,
+  attributeDefinitionConstruct as ConstructDefinition,
+  capabilityConstruct as ConstructDefinition,
+  behaviorConstruct as ConstructDefinition,
+  conditionSetConstruct as ConstructDefinition,
   defineConstruct({
     keyword: 'conformance_test',
     field: 'conformanceTests',
