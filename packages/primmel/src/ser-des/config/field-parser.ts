@@ -219,8 +219,21 @@ export function parseFormField(
     } else if (cmd === 'max_items') {
       field.maxItems = parseInt(stripWrapping(t[i++]), 10);
     } else if (cmd === 'items') {
-      // items { type array-element-shape } — capture the element type text.
-      field.itemsType = unwrapBlock(t[i++]).trim();
+      // items { <type> [fields { … }] } — element type + optional nested fields.
+      const iblock = unwrapBlock(t[i++]);
+      const it = tokenize(iblock);
+      const typeParts: string[] = [];
+      let k = 0;
+      while (k < it.length && it[k] !== 'fields') {
+        typeParts.push(it[k++]);
+      }
+      field.itemsType = typeParts.join(' ');
+      if (it[k] === 'fields') {
+        k++;
+        if (k < it.length) {
+          field.fields = parseNestedFields(unwrapBlock(it[k]));
+        }
+      }
     } else if (cmd === 'fields') {
       field.fields = parseNestedFields(unwrapBlock(t[i++]));
     } else if (cmd === 'subform_ref') {

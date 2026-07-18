@@ -1,5 +1,5 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
+import { escapeString, unwrapBlock, stripWrapping, tokenizePackage } from '../tokenize';
 import type Calculation from '../../types/Calculation';
 import type {
   CalculationInput,
@@ -31,6 +31,12 @@ export const parseCalculation: Parser = function (id, data) {
       if (i < t.length) {
         if (command === 'name') {
           result.name = unwrapBlock(t[i++]);
+        } else if (command === 'type') {
+          result.ruleType = stripWrapping(t[i++]);
+        } else if (command === 'category') {
+          result.category = stripWrapping(t[i++]);
+        } else if (command === 'label') {
+          result.label = stripWrapping(t[i++]);
         } else if (command === 'description') {
           result.description = unwrapBlock(t[i++]);
         } else if (command === 'expression') {
@@ -149,6 +155,15 @@ export const resolveCalculation: Resolver<Calculation, ResolvableCalculation> =
 export const dumpCalculation: Dumper<Calculation> = function (c) {
   let out = 'calculation ' + c.id + ' {\n';
   out += '  name "' + escapeString(c.name) + '"\n';
+  if (c.ruleType) {
+    out += '  type ' + c.ruleType + '\n';
+  }
+  if (c.category) {
+    out += '  category ' + c.category + '\n';
+  }
+  if (c.label) {
+    out += '  label "' + escapeString(c.label) + '"\n';
+  }
   if (c.description) {
     out += '  description "' + escapeString(c.description) + '"\n';
   }

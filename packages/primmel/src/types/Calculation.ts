@@ -18,6 +18,12 @@ export interface CalculationOutput {
 interface Calculation {
   id: string;
   name: string;
+  /** Engine rule kind (v2): expression | table_lookup | profile_lookup | pass_fail */
+  ruleType?: string;
+  /** Grouping category for typed primitives (v2). */
+  category?: string;
+  /** Display label (v2). */
+  label?: string;
   description: string;
   inputs: CalculationInput[];
   output: CalculationOutput;

@@ -25,6 +25,7 @@ import type {
   Instrument,
 } from '../types/Subject';
 import type { Requirement, RequirementClass } from '../types/Requirement';
+import type { ConformanceClass } from '../types/ConformanceClass';
 import type { PackageManifest } from '../types/Package';
 import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
@@ -126,6 +127,7 @@ export interface ParseContext {
   calculations: Record<string, Calculation>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;
+  conformanceClasses: Record<string, ConformanceClass>;
 
   // Primmel v2 requirements
   requirements: Record<string, Requirement>;

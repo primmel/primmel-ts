@@ -34,12 +34,18 @@ export interface AcceptanceCriterion {
 export default interface ConformanceTest {
   id: string;
   name: string;
+  /** What this test verifies (narrative). */
+  purpose?: string;
+  /** How the test is performed (narrative method). */
+  method?: string;
   type: string;
   reference: string;
   /** Structured form when reference is a { doc, clause } block (v2). */
   sourceRef?: { doc: string; clause: string } | null;
   targets: string[];
   procedure: ConformanceTestStep[];
+  /** Named string step references (R 60-style procedure_steps). */
+  procedureSteps?: string[];
   measurements: string[];
   // v2 G4 additions
   kind: string;

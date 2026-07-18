@@ -47,7 +47,14 @@ export const parseForm: Parser = function (id, data) {
         } else if (command === 'header') {
           result.headerFormId = stripWrapping(t[i++]);
         } else if (command === 'conformance_process') {
-          result.conformanceProcessId = stripWrapping(t[i++]);
+          const tok = t[i++];
+          if (tok.startsWith('{')) {
+            // conformance_process { id1 id2 } — multi-test form
+            result.conformanceProcessIds = tokenize(unwrapBlock(tok)).map(stripWrapping);
+            result.conformanceProcessId = result.conformanceProcessIds[0] ?? '';
+          } else {
+            result.conformanceProcessId = stripWrapping(tok);
+          }
         } else if (command === 'applicability') {
           result.applicability = parseApplicability(unwrapBlock(t[i++]));
         } else if (command === 'field') {
@@ -142,7 +149,9 @@ export const dumpForm: Dumper<Form> = function (f) {
   if (f.headerFormId) {
     out += '  header ' + f.headerFormId + '\n';
   }
-  if (f.conformanceProcessId) {
+  if (f.conformanceProcessIds && f.conformanceProcessIds.length > 1) {
+    out += '  conformance_process { ' + f.conformanceProcessIds.join(' ') + ' }\n';
+  } else if (f.conformanceProcessId) {
     out += '  conformance_process ' + f.conformanceProcessId + '\n';
   }
   if (f.applicability.length > 0) {

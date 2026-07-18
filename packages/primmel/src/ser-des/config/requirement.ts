@@ -205,6 +205,10 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
     }
     if (cmd === 'name') {
       result.name = stripWrapping(t[i++]);
+    } else if (cmd === 'title') {
+      result.title = stripWrapping(t[i++]);
+    } else if (cmd === 'description') {
+      result.description = stripWrapping(t[i++]);
     } else if (cmd === 'subject') {
       result.subject = stripWrapping(t[i++]);
     } else if (cmd === 'guidance') {

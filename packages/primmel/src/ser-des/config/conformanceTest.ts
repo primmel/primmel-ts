@@ -231,6 +231,10 @@ export const parseConformanceTest: Parser = function (id, data) {
     (keyword, value) => {
       if (keyword === 'name') {
         result.name = unwrapped(value);
+      } else if (keyword === 'purpose') {
+        result.purpose = unwrapped(value);
+      } else if (keyword === 'method') {
+        result.method = unwrapped(value);
       } else if (keyword === 'type') {
         result.type = value();
       } else if (keyword === 'reference') {
@@ -323,6 +327,12 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   if (ct.type) {
     out += '  type ' + ct.type + '\n';
+  }
+  if (ct.purpose) {
+    out += '  purpose "' + escapeString(ct.purpose) + '"\n';
+  }
+  if (ct.method) {
+    out += '  method "' + escapeString(ct.method) + '"\n';
   }
   if (ct.sourceRef && ct.sourceRef.doc) {
     out += '  reference { doc "' + escapeString(ct.sourceRef.doc) + '" clause "' + escapeString(ct.sourceRef.clause) + '" }\n';

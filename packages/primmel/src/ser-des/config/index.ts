@@ -79,6 +79,7 @@ import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
 import { parsePackage } from './packageManifest';
+import { conformanceClassConstruct } from './conformanceClass';
 import {
   instrumentConstruct,
   attributeDefinitionConstruct,
@@ -337,6 +338,7 @@ const CONSTRUCTS: ConstructDefinition[] = [
   capabilityConstruct as ConstructDefinition,
   behaviorConstruct as ConstructDefinition,
   conditionSetConstruct as ConstructDefinition,
+  conformanceClassConstruct as ConstructDefinition,
   defineConstruct({
     keyword: 'conformance_test',
     field: 'conformanceTests',

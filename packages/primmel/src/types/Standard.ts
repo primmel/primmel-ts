@@ -24,6 +24,7 @@ import type {
   Instrument,
 } from './Subject';
 import type { Requirement, RequirementClass } from './Requirement';
+import type { ConformanceClass } from './ConformanceClass';
 import type { PackageManifest } from './Package';
 import type Subform from './Subform';
 import type Symbol from './Symbol';
@@ -65,6 +66,7 @@ export default interface Standard {
   calculations: Calculation[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
+  conformanceClasses: ConformanceClass[];
 
   // Primmel v2 requirements (MN v2 §Requirement)
   requirements: Requirement[];

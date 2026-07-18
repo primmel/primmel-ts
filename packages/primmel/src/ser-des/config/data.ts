@@ -143,17 +143,18 @@ const parseDataAttribute = (
       ref: [],
     },
   };
-  let index = basic.indexOf('[');
-  if (index !== -1) {
-    result.cardinality = basic
-      .substr(index + 1, basic.length - index - 2)
-      .trim();
-    basic = basic.substr(0, index);
+  // Cardinality is the TRAILING bracket group, and only when its content
+  // starts with a digit or `*` (`[0..*]`, `[1..1]`) — a `[]` inside the type
+  // itself (e.g. `string[]`) is NOT a cardinality marker.
+  const cardMatch = basic.match(/^(.*?)\s*\[([\d*][^\]]*)\]\s*$/);
+  if (cardMatch) {
+    result.cardinality = cardMatch[2].trim();
+    basic = cardMatch[1];
   }
-  index = basic.indexOf(':');
-  if (index !== -1) {
-    result.type = basic.substr(index + 1, basic.length - index - 1).trim();
-    basic = basic.substr(0, index);
+  const colonIndex = basic.indexOf(':');
+  if (colonIndex !== -1) {
+    result.type = basic.substr(colonIndex + 1, basic.length - colonIndex - 1).trim();
+    basic = basic.substr(0, colonIndex);
   }
   result.id = basic.trim();
   forEachEntry(

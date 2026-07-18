@@ -71,6 +71,8 @@ interface Form {
   dataClassId: string;
   headerFormId: string;
   conformanceProcessId: string;
+  /** Multiple conformance processes (forms covering several tests). */
+  conformanceProcessIds?: string[];
   applicability: ApplicabilityEntry[];
   fields: FormField[];
   passFail: PassFail | null;

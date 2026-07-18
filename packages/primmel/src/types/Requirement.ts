@@ -35,6 +35,9 @@ export interface Requirement {
 export interface RequirementClass {
   id: string;
   name: string;
+  /** Display title (defaults to name when absent). */
+  title?: string;
+  description?: string;
   subject: string;
   guidance: string;
   dependencies: string[];
