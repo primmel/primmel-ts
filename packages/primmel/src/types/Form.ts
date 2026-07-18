@@ -25,6 +25,8 @@ export interface FormField {
   label: string;
   definition: string;
   unit: string;
+  /** Binding path into the subject chain (v2 G5), e.g. model.parameters.e_max */
+  bind?: string;
   required: boolean;
   measurementMethod: string;
   calculationId: string | null;

@@ -178,6 +178,10 @@ export function parseFormField(
       field.type = stripWrapping(t[i++]);
     } else if (cmd === 'unit') {
       field.unit = stripWrapping(t[i++]);
+    } else if (cmd === 'bind') {
+      // Binding path into the subject chain (G5):
+      // model.parameters.e_max · sample.test_context.d_min · model.classification.accuracy_class
+      field.bind = stripWrapping(t[i++]);
     } else if (cmd === 'required') {
       field.required = stripWrapping(t[i++]) === 'true';
     } else if (cmd === 'measurement_method') {

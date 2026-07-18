@@ -1,7 +1,210 @@
-import ConformanceTest from '../../types/ConformanceTest';
-import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
+import ConformanceTest, {
+  TestVariable,
+  TestObservable,
+  AcceptanceCriterion,
+} from '../../types/ConformanceTest';
+import tokenize from '../tokenize';
+import {
+  escapeString,
+  unwrapBlock,
+  stripWrapping,
+  tokenizePackage,
+} from '../tokenize';
+import { stripColon } from './field-parser';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser } from '../types';
+
+function readStringList(block: string): string[] {
+  return tokenize(stripWrapping(block))
+    .map(stripColon)
+    .map(stripWrapping)
+    .filter(x => x.length > 0);
+}
+
+function parseTestVariables(block: string): TestVariable[] {
+  const out: TestVariable[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (cmd !== 'variable') {
+      if (i < t.length) {
+        unwrapBlock(t[i - 1]);
+      }
+      continue;
+    }
+    const name = stripWrapping(t[i++]);
+    const v: TestVariable = {
+      name,
+      type: '',
+      unit: '',
+      source: '',
+      derivation: '',
+      description: '',
+      itemType: '',
+    };
+    if (i < t.length && t[i].startsWith('{')) {
+      const vb = unwrapBlock(t[i++]);
+      const vt = tokenize(vb);
+      let j = 0;
+      while (j < vt.length) {
+        const vc = vt[j++];
+        if (j >= vt.length) {
+          break;
+        }
+        if (vc === 'type') {
+          v.type = stripWrapping(vt[j++]);
+        } else if (vc === 'unit') {
+          v.unit = stripWrapping(vt[j++]);
+        } else if (vc === 'source') {
+          v.source = stripWrapping(vt[j++]);
+        } else if (vc === 'derivation') {
+          v.derivation = stripWrapping(vt[j++]);
+        } else if (vc === 'description') {
+          v.description = stripWrapping(vt[j++]);
+        } else if (vc === 'item_type') {
+          v.itemType = stripWrapping(vt[j++]);
+        } else {
+          unwrapBlock(vt[j++]);
+        }
+      }
+    }
+    out.push(v);
+  }
+  return out;
+}
+
+function parseObservables(block: string): TestObservable[] {
+  const out: TestObservable[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (cmd !== 'observable') {
+      if (i < t.length) {
+        unwrapBlock(t[i - 1]);
+      }
+      continue;
+    }
+    const name = stripWrapping(t[i++]);
+    const o: TestObservable = { name, quantityKind: '', unit: '', as: '' };
+    if (i < t.length && t[i].startsWith('{')) {
+      const ob = unwrapBlock(t[i++]);
+      const ot = tokenize(ob);
+      let j = 0;
+      while (j < ot.length) {
+        const oc = ot[j++];
+        if (j >= ot.length) {
+          break;
+        }
+        if (oc === 'quantity_kind' || oc === 'quantityKind') {
+          o.quantityKind = stripWrapping(ot[j++]);
+        } else if (oc === 'unit') {
+          o.unit = stripWrapping(ot[j++]);
+        } else if (oc === 'as') {
+          o.as = stripWrapping(ot[j++]);
+        } else {
+          unwrapBlock(ot[j++]);
+        }
+      }
+    }
+    out.push(o);
+  }
+  return out;
+}
+
+function parseAcceptanceCriteria(block: string): AcceptanceCriterion[] {
+  const out: AcceptanceCriterion[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (cmd !== 'criterion' && cmd !== 'item') {
+      if (i < t.length) {
+        unwrapBlock(t[i - 1]);
+      }
+      continue;
+    }
+    const item = stripWrapping(t[i++]);
+    const c: AcceptanceCriterion = { item, passIf: '', requirementId: '' };
+    if (i < t.length && t[i].startsWith('{')) {
+      const cb = unwrapBlock(t[i++]);
+      const ct = tokenize(cb);
+      let j = 0;
+      while (j < ct.length) {
+        const cc = ct[j++];
+        if (j >= ct.length) {
+          break;
+        }
+        if (cc === 'pass_if') {
+          c.passIf = stripWrapping(ct[j++]);
+        } else if (cc === 'requirement') {
+          c.requirementId = stripWrapping(ct[j++]);
+        } else {
+          unwrapBlock(ct[j++]);
+        }
+      }
+    }
+    out.push(c);
+  }
+  return out;
+}
+
+function parseDerivedValues(
+  block: string,
+): Array<{ name: string; expression: string }> {
+  const out: Array<{ name: string; expression: string }> = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (cmd !== 'value') {
+      if (i < t.length) {
+        unwrapBlock(t[i - 1]);
+      }
+      continue;
+    }
+    const name = stripWrapping(t[i++]);
+    let expression = '';
+    if (i < t.length && t[i].startsWith('{')) {
+      const vb = unwrapBlock(t[i++]);
+      const vt = tokenize(vb);
+      let j = 0;
+      while (j < vt.length) {
+        const vc = vt[j++];
+        if (j >= vt.length) {
+          break;
+        }
+        if (vc === 'expression') {
+          expression = stripWrapping(vt[j++]);
+        } else {
+          unwrapBlock(vt[j++]);
+        }
+      }
+    }
+    out.push({ name, expression });
+  }
+  return out;
+}
+
+function parseTestSubject(block: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const key = stripColon(t[i++]);
+    if (i >= t.length) {
+      break;
+    }
+    if (t[i] === ':') {
+      i++;
+    }
+    if (i < t.length) {
+      out[key] = stripWrapping(t[i++]);
+    }
+  }
+  return out;
+}
 
 export const parseConformanceTest: Parser = function (id, data) {
   const result: ConformanceTest = {
@@ -12,6 +215,15 @@ export const parseConformanceTest: Parser = function (id, data) {
     targets: [],
     procedure: [],
     measurements: [],
+    kind: '',
+    testSubject: {},
+    variables: [],
+    observables: [],
+    conditionsToEnforce: [],
+    acceptanceCriteria: [],
+    inheritsFrom: '',
+    resultForms: [],
+    derivedValues: [],
   };
 
   forEachEntry(
@@ -42,6 +254,29 @@ export const parseConformanceTest: Parser = function (id, data) {
             i++;
           }
         }
+      } else if (keyword === 'kind') {
+        result.kind = stripWrapping(value());
+      } else if (keyword === 'test_subject') {
+        result.testSubject = parseTestSubject(unwrapBlock(value()));
+      } else if (keyword === 'variables') {
+        result.variables = parseTestVariables(unwrapBlock(value()));
+      } else if (keyword === 'observables') {
+        result.observables = parseObservables(unwrapBlock(value()));
+      } else if (
+        keyword === 'conditions_to_enforce' ||
+        keyword === 'conditionsToEnforce'
+      ) {
+        result.conditionsToEnforce = readStringList(value());
+      } else if (keyword === 'acceptance_criteria') {
+        result.acceptanceCriteria = parseAcceptanceCriteria(
+          unwrapBlock(value()),
+        );
+      } else if (keyword === 'inherits_from') {
+        result.inheritsFrom = stripWrapping(value());
+      } else if (keyword === 'result_forms') {
+        result.resultForms = readStringList(value());
+      } else if (keyword === 'derived_values') {
+        result.derivedValues = parseDerivedValues(unwrapBlock(value()));
       } else if (keyword === 'validate_measurement') {
         const block = value();
         const tokens = tokenizePackage(block);
@@ -93,6 +328,95 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     out += '  validate_measurement {\n';
     for (const m of ct.measurements) {
       out += '    "' + escapeString(m) + '"\n';
+    }
+    out += '  }\n';
+  }
+  if (ct.kind) {
+    out += '  kind ' + ct.kind + '\n';
+  }
+  if (Object.keys(ct.testSubject).length > 0) {
+    out += '  test_subject {\n';
+    for (const [k, v] of Object.entries(ct.testSubject)) {
+      out += '    ' + k + ': "' + escapeString(v) + '"\n';
+    }
+    out += '  }\n';
+  }
+  if (ct.variables.length > 0) {
+    out += '  variables {\n';
+    for (const v of ct.variables) {
+      let line = '    variable ' + v.name + ' { ';
+      if (v.type) {
+        line += 'type ' + v.type + ' ';
+      }
+      if (v.unit) {
+        line += 'unit "' + escapeString(v.unit) + '" ';
+      }
+      if (v.source) {
+        line += 'source ' + v.source + ' ';
+      }
+      if (v.derivation) {
+        line += 'derivation "' + escapeString(v.derivation) + '" ';
+      }
+      if (v.description) {
+        line += 'description "' + escapeString(v.description) + '" ';
+      }
+      if (v.itemType) {
+        line += 'item_type "' + escapeString(v.itemType) + '" ';
+      }
+      out += line + '}\n';
+    }
+    out += '  }\n';
+  }
+  if (ct.observables.length > 0) {
+    out += '  observables {\n';
+    for (const o of ct.observables) {
+      let line = '    observable ' + o.name + ' { ';
+      if (o.quantityKind) {
+        line += 'quantity_kind ' + o.quantityKind + ' ';
+      }
+      if (o.unit) {
+        line += 'unit "' + escapeString(o.unit) + '" ';
+      }
+      if (o.as) {
+        line += 'as "' + escapeString(o.as) + '" ';
+      }
+      out += line + '}\n';
+    }
+    out += '  }\n';
+  }
+  if (ct.conditionsToEnforce.length > 0) {
+    out +=
+      '  conditions_to_enforce { ' + ct.conditionsToEnforce.join(' ') + ' }\n';
+  }
+  if (ct.acceptanceCriteria.length > 0) {
+    out += '  acceptance_criteria {\n';
+    for (const c of ct.acceptanceCriteria) {
+      let line = '    criterion ' + c.item + ' { ';
+      if (c.passIf) {
+        line += 'pass_if "' + escapeString(c.passIf) + '" ';
+      }
+      if (c.requirementId) {
+        line += 'requirement ' + c.requirementId + ' ';
+      }
+      out += line + '}\n';
+    }
+    out += '  }\n';
+  }
+  if (ct.inheritsFrom) {
+    out += '  inherits_from ' + ct.inheritsFrom + '\n';
+  }
+  if (ct.resultForms.length > 0) {
+    out += '  result_forms { ' + ct.resultForms.join(' ') + ' }\n';
+  }
+  if (ct.derivedValues.length > 0) {
+    out += '  derived_values {\n';
+    for (const d of ct.derivedValues) {
+      out +=
+        '    value ' +
+        d.name +
+        ' { expression "' +
+        escapeString(d.expression) +
+        '" }\n';
     }
     out += '  }\n';
   }

@@ -1,6 +1,47 @@
 import type { Dumper, Parser } from '../types';
-import { unwrapBlock, tokenizePackage } from '../tokenize';
+import tokenize from '../tokenize';
+import { unwrapBlock, stripWrapping, tokenizePackage } from '../tokenize';
+import { stripColon } from './field-parser';
 import type Table from '../../types/Table';
+
+/** profiles { <dimension> { <value> { <payload tokens> } } } — raw payload preserved as text map. */
+function parseProfiles(block: string): Record<string, Record<string, unknown>> {
+  const out: Record<string, Record<string, unknown>> = {};
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const dim = stripColon(t[i++]);
+    if (!dim) {
+      break;
+    }
+    if (i < t.length && t[i] === ':') {
+      i++;
+    }
+    if (i < t.length && t[i].startsWith('{')) {
+      const vblock = unwrapBlock(t[i++]);
+      const vt = tokenize(vblock);
+      const values: Record<string, unknown> = {};
+      let j = 0;
+      while (j < vt.length) {
+        const val = stripColon(vt[j++]);
+        if (!val) {
+          break;
+        }
+        if (j < vt.length && vt[j] === ':') {
+          j++;
+        }
+        if (j < vt.length && vt[j].startsWith('{')) {
+          // payload as raw trimmed content (structure preserved textually)
+          values[val] = unwrapBlock(vt[j++]).trim();
+        } else if (j < vt.length) {
+          values[val] = stripWrapping(vt[j++]);
+        }
+      }
+      out[dim] = values;
+    }
+  }
+  return out;
+}
 
 export const parseTable: Parser = function (id, data) {
   const result: Table = {
@@ -24,6 +65,9 @@ export const parseTable: Parser = function (id, data) {
           result.columns = unwrapBlock(t[i++]);
         } else if (command === 'display') {
           result.display = unwrapBlock(t[i++]);
+        } else if (command === 'profiles') {
+          // profiles { accuracy_class { A { ... } B { ... } } ... } (v2 G6)
+          result.profiles = parseProfiles(unwrapBlock(t[i++]));
         } else if (command === 'domain') {
           // Domain block is captured as raw package string
           result.domain = unwrapBlock(t[i++]) as unknown as Record<
@@ -84,6 +128,17 @@ export const dumpTable: Dumper<Table> = function (t) {
     for (const row of t.data) {
       const cells = row.map(c => `"${c}"`).join(' ');
       out += '    ' + cells + '\n';
+    }
+    out += '  }\n';
+  }
+  if (t.profiles && Object.keys(t.profiles).length > 0) {
+    out += '  profiles {\n';
+    for (const [dim, values] of Object.entries(t.profiles)) {
+      out += '    ' + dim + ' { ';
+      for (const [val, payload] of Object.entries(values)) {
+        out += val + ': { ' + String(payload) + ' } ';
+      }
+      out += '}\n';
     }
     out += '  }\n';
   }

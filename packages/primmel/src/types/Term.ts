@@ -14,6 +14,10 @@ interface Term {
   id: string;
   label: string;
   definition: string;
+  /** Link to a glossarist vocabulary register entry (v2 G7). */
+  vocabRef?: { register: string; clause: string };
+  /** Register's preferred designation when it differs from our term (v2 G7). */
+  vocabTerm?: string;
   // Optional cross-reference: when a term has a quantitative form, this is
   // the id of the corresponding `symbol` declaration.
   symbolId: string;

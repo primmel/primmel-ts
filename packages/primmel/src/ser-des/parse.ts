@@ -64,7 +64,9 @@ export default function parse(
     calculations: {},
     stateMachines: {},
     conformanceTests: {},
-    // Primmel v2 subject chain
+    // Primmel v2 requirements + subject chain
+    requirements: {},
+    requirementClasses: {},
     instruments: {},
     attributeDefinitions: {},
     capabilities: {},

@@ -33,8 +33,23 @@ export const parseStateMachine: Parser = function (entityName, data) {
             result.states.push({ name: s });
           }
         } else if (command === 'transition') {
-          // transition <From> -> <To> [action <ActionName>] { ... }
-          const from = t[i++];
+          // transition <From> | [<From>, <From>, ...] -> <To> [action <ActionName>] { ... }
+          // Multi-source lists (G10) fan out to one Transition per source.
+          let fromList: string[] = [];
+          const fromTok = t[i++];
+          if (fromTok.startsWith('[')) {
+            let listText = fromTok;
+            while (!listText.includes(']') && i < t.length) {
+              listText += ' ' + t[i++];
+            }
+            fromList = listText
+              .replace(/^\[/, '')
+              .replace(/\]$/, '')
+              .split(/[,\s]+/)
+              .filter(x => x.length > 0);
+          } else {
+            fromList = [fromTok];
+          }
           // Expect '->'
           if (i < t.length && (t[i] === '->' || t[i] === '→')) {
             i++;
@@ -74,15 +89,17 @@ export const parseStateMachine: Parser = function (entityName, data) {
               }
             }
           }
-          const trans: Transition = {
-            from,
-            to,
-            actionName,
-            guard,
-            cascades,
-            referenceIds,
-          };
-          result.transitions.push(trans);
+          for (const from of fromList) {
+            const trans: Transition = {
+              from,
+              to,
+              actionName,
+              guard,
+              cascades,
+              referenceIds,
+            };
+            result.transitions.push(trans);
+          }
         } else if (command === 'reference') {
           result.referenceIds.push(...tokenizePackage(t[i++]));
         } else {
@@ -103,7 +120,12 @@ export const parseStateMachine: Parser = function (entityName, data) {
 };
 
 function parseCascade(target: string, block: string): Cascade {
-  const cascade: Cascade = { targetEntity: target, where: '', set: [] };
+  const cascade: Cascade = {
+    targetEntity: target,
+    where: '',
+    set: [],
+    create: null,
+  };
   const t = tokenizePackage(block);
   let i = 0;
   while (i < t.length) {
@@ -128,6 +150,25 @@ function parseCascade(target: string, block: string): Cascade {
             }
           }
         }
+      } else if (cmd === 'create') {
+        // create { key: value ... } — cascade that CREATES a record (G10)
+        const createBlock = unwrapBlock(t[i++]);
+        const ct = tokenize(createBlock);
+        const fields: Record<string, string> = {};
+        let k = 0;
+        while (k < ct.length) {
+          const key = stripColon(ct[k++]);
+          if (k >= ct.length) {
+            break;
+          }
+          if (ct[k] === ':') {
+            k++;
+          }
+          if (k < ct.length) {
+            fields[key] = stripWrapping(ct[k++]);
+          }
+        }
+        cascade.create = fields;
       } else {
         unwrapBlock(t[i++]);
       }
@@ -146,16 +187,55 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
     }
     out += '  }\n';
   }
+  // Group consecutive multi-source transitions back into [A, B] -> D form
+  // (parse fans them out; dump re-groups when to/action/guard/cascades match).
+  const groups: Array<{
+    to: string;
+    actionName: string;
+    guard: string;
+    cascades: (typeof sm.transitions)[number]['cascades'];
+    referenceIds: string[];
+    froms: string[];
+  }> = [];
   for (const t of sm.transitions) {
-    out += '  transition ' + t.from + ' -> ' + t.to;
-    if (t.actionName) {
-      out += ' action ' + t.actionName;
+    const key = (x: typeof t) =>
+      [
+        x.to,
+        x.actionName,
+        x.guard,
+        JSON.stringify(x.cascades),
+        JSON.stringify(x.referenceIds),
+      ].join('|');
+    const last = groups[groups.length - 1];
+    if (
+      last &&
+      key({ ...t, from: '' } as typeof t) ===
+        key({ ...last, from: '' } as never)
+    ) {
+      last.froms.push(t.from);
+    } else {
+      groups.push({
+        to: t.to,
+        actionName: t.actionName,
+        guard: t.guard,
+        cascades: t.cascades,
+        referenceIds: t.referenceIds,
+        froms: [t.from],
+      });
+    }
+  }
+  for (const g of groups) {
+    const fromText =
+      g.froms.length > 1 ? '[' + g.froms.join(', ') + ']' : g.froms[0];
+    out += '  transition ' + fromText + ' -> ' + g.to;
+    if (g.actionName) {
+      out += ' action ' + g.actionName;
     }
     out += ' {\n';
-    if (t.guard) {
-      out += '    guard "' + escapeString(t.guard) + '"\n';
+    if (g.guard) {
+      out += '    guard "' + escapeString(g.guard) + '"\n';
     }
-    for (const c of t.cascades) {
+    for (const c of g.cascades) {
       out += '    cascade ' + c.targetEntity + ' {\n';
       if (c.where) {
         out += '      where "' + escapeString(c.where) + '"\n';
@@ -164,6 +244,13 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
         out += '      set {\n';
         for (const s of c.set) {
           out += '        ' + s.field + ': "' + escapeString(s.value) + '"\n';
+        }
+        out += '      }\n';
+      }
+      if (c.create && Object.keys(c.create).length > 0) {
+        out += '      create {\n';
+        for (const [k, v] of Object.entries(c.create)) {
+          out += '        ' + k + ': "' + escapeString(v) + '"\n';
         }
         out += '      }\n';
       }

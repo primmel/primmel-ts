@@ -5,6 +5,32 @@ export interface ConformanceTestStep {
   action: string;
 }
 
+/** Typed test variable (v2 G4): declared | measured | derived | computed | lookup. */
+export interface TestVariable {
+  name: string;
+  type: string;
+  unit: string;
+  source: string;
+  derivation: string;
+  description: string;
+  itemType: string;
+}
+
+/** Observable output of a test run (v2 G4). */
+export interface TestObservable {
+  name: string;
+  quantityKind: string;
+  unit: string;
+  as: string;
+}
+
+/** Machine acceptance criterion (v2 G4). */
+export interface AcceptanceCriterion {
+  item: string;
+  passIf: string;
+  requirementId: string;
+}
+
 export default interface ConformanceTest {
   id: string;
   name: string;
@@ -13,6 +39,16 @@ export default interface ConformanceTest {
   targets: string[];
   procedure: ConformanceTestStep[];
   measurements: string[];
+  // v2 G4 additions
+  kind: string;
+  testSubject: Record<string, string>;
+  variables: TestVariable[];
+  observables: TestObservable[];
+  conditionsToEnforce: string[];
+  acceptanceCriteria: AcceptanceCriterion[];
+  inheritsFrom: string;
+  resultForms: string[];
+  derivedValues: Array<{ name: string; expression: string }>;
 }
 
 export type { Reference };

@@ -14,6 +14,10 @@ export const parseRole: Parser = (id: string, data: string) => {
     (keyword, value) => {
       if (keyword === 'name') {
         role.name = unwrapped(value);
+      } else if (keyword === 'label') {
+        role.label = unwrapped(value);
+      } else if (keyword === 'description') {
+        role.description = unwrapped(value);
       } else {
         return false;
       }
@@ -31,6 +35,12 @@ export const parseRole: Parser = (id: string, data: string) => {
 export const dumpRole: Dumper<Role> = function (role) {
   let out: string = 'role ' + role.id + ' {\n';
   out += '  name "' + escapeString(role.name) + '"\n';
+  if (role.label) {
+    out += '  label "' + escapeString(role.label) + '"\n';
+  }
+  if (role.description) {
+    out += '  description "' + escapeString(role.description) + '"\n';
+  }
   out += '}\n';
   return out;
 };

@@ -97,7 +97,26 @@ export const parseDataClass: Parser = function (id, data) {
   forEachAttribute(
     data,
     (basic, details) => {
-      result.attributes.push(parseDataAttribute(basic.trim(), details));
+      // Reserved class-level entries (v2 G2 storage semantics):
+      //   store { <name> } · indexes { a b c } · helper { true } · extends { <Class> }
+      const head = basic.trim();
+      if (head === 'store') {
+        result.store = details.trim();
+        return;
+      }
+      if (head === 'indexes') {
+        result.indexes = details.split(/\s+/).filter(x => x.length > 0);
+        return;
+      }
+      if (head === 'helper') {
+        result.helper = details.trim() === 'true';
+        return;
+      }
+      if (head === 'extends') {
+        result.extends = details.trim();
+        return;
+      }
+      result.attributes.push(parseDataAttribute(head, details));
     },
     { construct: 'class', id },
   );
@@ -148,6 +167,10 @@ const parseDataAttribute = (
         result._relations.ref = tokenizePackage(value());
       } else if (keyword === 'satisfy') {
         result.satisfy = tokenizePackage(value());
+      } else if (keyword === 'on_delete') {
+        result.onDelete = value();
+      } else if (keyword === 'deprecated') {
+        result.deprecated = value() === 'true';
       } else {
         return false;
       }
@@ -170,7 +193,18 @@ export const resolveDataClass: Resolver<DataClass, ResolvableDataClass> =
       }
       return resolved;
     });
-    return { id: unresolved.id, attributes };
+    return {
+      id: unresolved.id,
+      attributes,
+      ...(unresolved.store !== undefined ? { store: unresolved.store } : {}),
+      ...(unresolved.indexes !== undefined
+        ? { indexes: unresolved.indexes }
+        : {}),
+      ...(unresolved.helper !== undefined ? { helper: unresolved.helper } : {}),
+      ...(unresolved.extends !== undefined
+        ? { extends: unresolved.extends }
+        : {}),
+    };
   };
 
 export const resolveRegistry: Resolver<Registry, ResolvableRegistry> =
@@ -192,6 +226,18 @@ export const resolveRegistry: Resolver<Registry, ResolvableRegistry> =
 
 export const dumpDataClass: Dumper<DataClass> = function (dataclass) {
   let out: string = 'class ' + dataclass.id + ' {\n';
+  if (dataclass.store) {
+    out += '  store { ' + dataclass.store + ' }\n';
+  }
+  if (dataclass.indexes && dataclass.indexes.length > 0) {
+    out += '  indexes { ' + dataclass.indexes.join(' ') + ' }\n';
+  }
+  if (dataclass.helper !== undefined) {
+    out += '  helper { ' + dataclass.helper + ' }\n';
+  }
+  if (dataclass.extends) {
+    out += '  extends { ' + dataclass.extends + ' }\n';
+  }
   for (const a of dataclass.attributes) {
     out += toDataAttributeModel(a);
   }
@@ -211,6 +257,12 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
   out += '    definition "' + escapeString(attribute.definition) + '"\n';
   if (attribute.modality !== '') {
     out += '    modality ' + attribute.modality + '\n';
+  }
+  if (attribute.onDelete) {
+    out += '    on_delete ' + attribute.onDelete + '\n';
+  }
+  if (attribute.deprecated) {
+    out += '    deprecated true\n';
   }
   if (attribute.satisfy.length > 0) {
     out += '    satisfy {\n';

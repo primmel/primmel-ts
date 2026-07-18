@@ -14,11 +14,23 @@ export type ResolvableRegistry = Resolvable<Registry, 'data'>;
 export interface DataClass {
   id: string;
   attributes: DataAttribute[];
+  /** Persistent store name for storable classes (v2 G2). */
+  store?: string;
+  /** Store indexes (v2 G2). */
+  indexes?: string[];
+  /** Helper classes embed into their parents (no store) (v2 G2). */
+  helper?: boolean;
+  /** Inheritance: fields merge from the parent (v2 G2). */
+  extends?: string;
 }
 
 export type ResolvableDataClass = {
   id: string;
   attributes: ResolveableDataAttribute[];
+  store?: string;
+  indexes?: string[];
+  helper?: boolean;
+  extends?: string;
 };
 
 export interface DataAttribute {
@@ -29,6 +41,10 @@ export interface DataAttribute {
   definition: string;
   ref: Reference[];
   satisfy: string[];
+  /** FK edge semantics on reference fields (v2 G2). */
+  onDelete?: string;
+  /** Legacy field kept for migration only (v2 G2). */
+  deprecated?: boolean;
 }
 
 export type ResolveableDataAttribute = Resolvable<DataAttribute, 'ref'>;

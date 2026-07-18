@@ -13,6 +13,8 @@ export interface Cascade {
   targetEntity: string;
   where: string;
   set: CascadeSet[];
+  /** Create-a-record cascade (v2 G10); null for plain set cascades. */
+  create: Record<string, string> | null;
 }
 
 export interface Transition {

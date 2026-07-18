@@ -24,6 +24,7 @@ import type {
   ConditionSet,
   Instrument,
 } from '../types/Subject';
+import type { Requirement, RequirementClass } from '../types/Requirement';
 import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
 import type Table from '../types/Table';
@@ -120,6 +121,10 @@ export interface ParseContext {
   calculations: Record<string, Calculation>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;
+
+  // Primmel v2 requirements
+  requirements: Record<string, Requirement>;
+  requirementClasses: Record<string, RequirementClass>;
 
   // Primmel v2 subject chain
   instruments: Record<string, Instrument>;

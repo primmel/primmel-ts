@@ -77,6 +77,7 @@ import {
 import { dumpStateMachine, parseStateMachine } from './stateMachine';
 import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
+import { requirementConstruct, requirementClassConstruct } from './requirement';
 import {
   instrumentConstruct,
   attributeDefinitionConstruct,
@@ -326,6 +327,9 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseStateMachine,
     dump: dumpStateMachine as never,
   }),
+  // Primmel v2 requirements (G3)
+  requirementConstruct as ConstructDefinition,
+  requirementClassConstruct as ConstructDefinition,
   // Primmel v2 subject chain (G1)
   instrumentConstruct as ConstructDefinition,
   attributeDefinitionConstruct as ConstructDefinition,

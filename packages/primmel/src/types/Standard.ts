@@ -23,6 +23,7 @@ import type {
   ConditionSet,
   Instrument,
 } from './Subject';
+import type { Requirement, RequirementClass } from './Requirement';
 import type Subform from './Subform';
 import type Symbol from './Symbol';
 import type Table from './Table';
@@ -61,6 +62,10 @@ export default interface Standard {
   calculations: Calculation[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
+
+  // Primmel v2 requirements (MN v2 §Requirement)
+  requirements: Requirement[];
+  requirementClasses: RequirementClass[];
 
   // Primmel v2 subject chain (MN v2 §Subject)
   instruments: Instrument[];
