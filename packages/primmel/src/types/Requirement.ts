@@ -24,6 +24,13 @@ export interface Requirement {
   limit: RequirementLimit | null;
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];
+  /**
+   * Channel dimension id (a set-cardinality classification dimension,
+   * e.g. measurand_components). When declared, this requirement is
+   * verified PER SELECTED VALUE of the channel dimension (see the
+   * instrument's per_channel declaration). Empty = once per model.
+   */
+  channel: string;
   /** Structured acceptance criteria (threshold/tiered/composite/qualitative), raw. */
   acceptanceCriteria: string;
   /** definitional | testing | examination | documentation */

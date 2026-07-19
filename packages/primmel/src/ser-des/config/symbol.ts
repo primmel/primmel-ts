@@ -1,6 +1,7 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage, unwrapBlock } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
+import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import type Symbol from '../../types/Symbol';
 import type { SymbolType, ResolvableSymbol } from '../../types/Symbol';
 import type Reference from '../../types/Reference';
@@ -12,6 +13,8 @@ const VALID_SYMBOL_TYPES: SymbolType[] = [
   'string',
   'boolean',
   'enum',
+  'collection',
+  'array',
 ];
 
 export const parseSymbol: Parser = function (id, data) {
@@ -23,6 +26,7 @@ export const parseSymbol: Parser = function (id, data) {
     unit: '1',
     latex: '',
     values: [],
+    series: null,
     ref: [],
     _relations: {
       ref: [],
@@ -52,6 +56,8 @@ export const parseSymbol: Parser = function (id, data) {
         result.latex = unwrapped(value);
       } else if (command === 'values') {
         result.values = tokenizePackage(value());
+      } else if (command === 'series') {
+        result.series = parseSeriesDecl(unwrapBlock(value()));
       } else if (command === 'reference') {
         result._relations.ref = tokenizePackage(value());
       } else {
@@ -97,6 +103,9 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
   }
   if (s.values.length > 0) {
     out += '  values ' + s.values.join(' ') + '\n';
+  }
+  if (s.series) {
+    out += '  ' + dumpSeriesDecl(s.series) + '\n';
   }
   if (s.ref.length > 0) {
     out += '  reference {\n';

@@ -77,6 +77,7 @@ import {
 import { dumpStateMachine, parseStateMachine } from './stateMachine';
 import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
+import { dumpVerdict, parseVerdict } from './verdict';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
 import { parsePackage } from './packageManifest';
 import { conformanceClassConstruct } from './conformanceClass';
@@ -321,6 +322,13 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseCalculation,
     resolve: resolveCalculation as never,
     dump: dumpCalculation as never,
+  }),
+  defineConstruct({
+    keyword: 'verdict',
+    field: 'verdicts',
+    takesID: true,
+    parse: parseVerdict,
+    dump: dumpVerdict as never,
   }),
   defineConstruct({
     keyword: 'state_machine',

@@ -33,6 +33,7 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
+import { parseSeriesDecl, dumpSeriesDecl } from './series';
 
 /**
  * Read a value token, accumulating inline `ocl{…}` expressions that the
@@ -234,6 +235,10 @@ export function parseFormField(
           field.fields = parseNestedFields(unwrapBlock(it[k]));
         }
       }
+    } else if (cmd === 'series') {
+      // series { axis <id> { … } … cell { symbol … unit "…" } } — typed
+      // series shape for datalist (array) evidence.
+      field.series = parseSeriesDecl(unwrapBlock(t[i++]));
     } else if (cmd === 'fields') {
       field.fields = parseNestedFields(unwrapBlock(t[i++]));
     } else if (cmd === 'subform_ref') {
@@ -339,10 +344,11 @@ export function parseApplicability(block: string): ApplicabilityEntry[] {
       i = read.next;
       // text is `[A, B]`, `{ A: 5, B: 5 }`, or a bare value
       const trimmed = read.text.trim();
+      let entry: ApplicabilityEntry;
       if (trimmed.startsWith('[')) {
         const inner = trimmed.slice(1, trimmed.lastIndexOf(']'));
         const values = inner.split(/[,\s]+/).filter(s => s.length > 0);
-        entries.push({ dimension, values, mapping: null });
+        entry = { dimension, values, mapping: null, match: null };
       } else if (trimmed.startsWith('{')) {
         // Mapping form
         const inner = trimmed.slice(1, -1);
@@ -356,15 +362,30 @@ export function parseApplicability(block: string): ApplicabilityEntry[] {
             mapping[m[1]] = m[2].trim();
           }
         }
-        entries.push({ dimension, values: [], mapping });
+        entry = { dimension, values: [], mapping, match: null };
       } else {
         // Single value
-        entries.push({
+        entry = {
           dimension,
           values: [stripWrapping(trimmed)],
           mapping: null,
-        });
+          match: null,
+        };
       }
+      // Declared-condition match mode (rc.yaml $defs/applicability):
+      // `match any|all` follows the values — universal matching for
+      // set-cardinality dimensions (default 'any', existential).
+      if (!entry.mapping && t[i] === 'match') {
+        i++;
+        const mode = stripWrapping(t[i++] ?? '');
+        if (mode !== 'any' && mode !== 'all') {
+          throw new Error(
+            `Parsing error: applicability: Unknown match ${mode} (valid: any, all)`,
+          );
+        }
+        entry.match = mode;
+      }
+      entries.push(entry);
     }
   }
   return entries;
@@ -487,6 +508,9 @@ export function dumpFormField(field: FormField, indent: string): string {
   if (field.maxItems !== undefined && field.maxItems !== null) {
     inner.push('max_items ' + field.maxItems);
   }
+  if (field.series) {
+    inner.push(dumpSeriesDecl(field.series));
+  }
   if (field.fields.length > 0) {
     inner.push(
       'fields {\n' +
@@ -541,6 +565,9 @@ export function dumpApplicabilityEntries(
       out += '} ';
     } else {
       out += a.dimension + ': [' + a.values.join(', ') + '] ';
+      if (a.match) {
+        out += 'match ' + a.match + ' ';
+      }
     }
   }
   return out;

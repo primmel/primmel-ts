@@ -135,6 +135,7 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
     definition: '',
     variants: [],
     dimensions: [],
+    perChannel: '',
     familyCriteria: [],
     familyDefaultDimensions: [],
     familyDefaultParameters: [],
@@ -175,6 +176,8 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       result.dimensions.push(
         parseDimension(stripWrapping(t[i++]), unwrapBlock(t[i++])),
       );
+    } else if (cmd === 'per_channel') {
+      result.perChannel = stripWrapping(t[i++]);
     } else if (cmd === 'family_criteria') {
       result.familyCriteria = readReference(t[i++]);
     } else if (cmd === 'family_defaults') {
@@ -214,6 +217,8 @@ function parseDimension(id: string, block: string): ClassificationDimension {
     id,
     label: '',
     scope: '',
+    cardinality: '',
+    labelSeparator: '',
     description: '',
     source: null,
     values: [],
@@ -229,6 +234,16 @@ function parseDimension(id: string, block: string): ClassificationDimension {
       dim.label = stripWrapping(t[i++]);
     } else if (cmd === 'scope') {
       dim.scope = stripWrapping(t[i++]);
+    } else if (cmd === 'cardinality') {
+      const c = stripWrapping(t[i++]);
+      if (c !== 'single' && c !== 'set') {
+        throw new Error(
+          `Parsing error: dimension. ID ${id}: Unknown cardinality ${c} (valid: single, set)`,
+        );
+      }
+      dim.cardinality = c;
+    } else if (cmd === 'label_separator') {
+      dim.labelSeparator = stripWrapping(t[i++]);
     } else if (cmd === 'description') {
       dim.description = stripWrapping(t[i++]);
     } else if (cmd === 'reference' || cmd === 'source') {
@@ -251,7 +266,12 @@ function parseDimensionValues(block: string): DimensionValue[] {
     if (!id) {
       break;
     }
-    const value: DimensionValue = { id, description: '', payload: {} };
+    const value: DimensionValue = {
+      id,
+      description: '',
+      payload: {},
+      implies: [],
+    };
     if (i < t.length && t[i].startsWith('{')) {
       const vblock = unwrapBlock(t[i++]);
       const vt = tokenize(vblock);
@@ -263,6 +283,8 @@ function parseDimensionValues(block: string): DimensionValue[] {
         }
         if (cmd === 'description') {
           value.description = stripWrapping(vt[j++]);
+        } else if (cmd === 'implies') {
+          value.implies = readIdList(vt[j++]);
         } else if (cmd === 'payload') {
           const pblock = unwrapBlock(vt[j++]);
           const pt = tokenize(pblock);
@@ -320,6 +342,9 @@ const dumpInstrument = function (inst: Instrument): string {
   if (inst.extends) {
     out += '  extends ' + inst.extends + '\n';
   }
+  if (inst.perChannel) {
+    out += '  per_channel ' + inst.perChannel + '\n';
+  }
   if (inst.definition) {
     out += '  definition "' + escapeString(inst.definition) + '"\n';
   }
@@ -339,6 +364,12 @@ const dumpInstrument = function (inst: Instrument): string {
     if (d.scope) {
       out += '    scope ' + d.scope + '\n';
     }
+    if (d.cardinality) {
+      out += '    cardinality ' + d.cardinality + '\n';
+    }
+    if (d.labelSeparator) {
+      out += '    label_separator "' + escapeString(d.labelSeparator) + '"\n';
+    }
     if (d.description) {
       out += '    description "' + escapeString(d.description) + '"\n';
     }
@@ -347,11 +378,17 @@ const dumpInstrument = function (inst: Instrument): string {
       out += '    values {\n';
       for (const v of d.values) {
         let line = '      ' + v.id;
-        const hasProps = v.description || Object.keys(v.payload).length > 0;
+        const hasProps =
+          v.description ||
+          Object.keys(v.payload).length > 0 ||
+          v.implies.length > 0;
         if (hasProps) {
           line += ' { ';
           if (v.description) {
             line += 'description "' + escapeString(v.description) + '" ';
+          }
+          if (v.implies.length > 0) {
+            line += 'implies { ' + v.implies.join(' ') + ' } ';
           }
           if (Object.keys(v.payload).length > 0) {
             line += 'payload { ';

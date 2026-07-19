@@ -63,6 +63,7 @@ export default function parse(
     subforms: {},
     symbols: {},
     calculations: {},
+    verdicts: {},
     stateMachines: {},
     conformanceTests: {},
     conformanceClasses: {},

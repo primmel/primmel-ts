@@ -25,12 +25,29 @@ export interface DimensionValue {
   description: string;
   /** Per-value payload (e.g. n_lc_limits per accuracy class). */
   payload: Record<string, string>;
+  /**
+   * Category subsumption (TODO.refactor/07): other value ids of THIS
+   * dimension this value implies (e.g. R 91 average-speed implies
+   * fixed-distance). The applicability engine walks the implication
+   * closure when matching; the graph must be acyclic.
+   */
+  implies: string[];
 }
 
 export interface ClassificationDimension {
   id: string;
   label: string;
   scope: string;
+  /**
+   * single (default): one value per subject. set: the subject holds a
+   * value SET (multi-select, e.g. R 144 measurand_components).
+   */
+  cardinality: string;
+  /**
+   * Join separator for set-valued dimensions when rendering labels
+   * (certificate dimension_labels). Empty = default '+'.
+   */
+  labelSeparator: string;
   description: string;
   source: SourceRef | null;
   values: DimensionValue[];
@@ -48,6 +65,13 @@ export interface Instrument {
   definition: string;
   variants: SubjectVariant[];
   dimensions: ClassificationDimension[];
+  /**
+   * Channel dimension id (a dimension with cardinality set, e.g.
+   * measurand_components). When declared, requirements marked
+   * `channel <id>` are verified PER SELECTED VALUE of the channel
+   * (evaluation config per_channel in data/schemas/evaluation-dimensions.yaml).
+   */
+  perChannel: string;
   familyCriteria: string[];
   familyDefaultDimensions: string[];
   familyDefaultParameters: string[];

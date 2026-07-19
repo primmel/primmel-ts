@@ -147,7 +147,13 @@ export function checkPackage(dir: string): CheckIssue[] {
       }
     }
     for (const u of r.limit?.uses ?? []) {
-      if (!attrIds.has(u) && !reqIds.has(u) && u !== 'load') {
+      if (u.startsWith('observable:')) {
+        // Observables live in the symbols registry, not the attribute layer.
+        continue;
+      }
+      // `uses` may carry bare ids or full paths — compare the last segment.
+      const leaf = u.split('.').pop() ?? u;
+      if (!attrIds.has(leaf) && !attrIds.has(u) && !reqIds.has(u) && u !== 'load') {
         warn('C2', `requirement ${r.id}: limit.uses "${u}" is not a declared attribute`);
       }
     }

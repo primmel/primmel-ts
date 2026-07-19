@@ -1,11 +1,18 @@
 import Resolvable from './Resolvable';
 import Reference from './Reference';
+import type { SeriesDecl } from './Series';
 
 export interface ApplicabilityEntry {
   dimension: string;
   values: string[];
   // Optional mapping for parameter resolution (e.g., accuracy_class → n_runs)
   mapping: Record<string, string | number> | null;
+  /**
+   * Declared-condition match mode for set-cardinality dimensions
+   * (rc.yaml $defs/applicability): 'any' (default — existential) or
+   * 'all' (universal — every selected value must be listed).
+   */
+  match: 'any' | 'all' | null;
 }
 
 export interface CalculationBinding {
@@ -40,6 +47,8 @@ export interface FormField {
   // Nested object/array shape
   fields: FormField[];
   itemsType: string;
+  /** Series shape (axes + cell) when this datalist field holds a series. */
+  series?: SeriesDecl | null;
   /** Array cardinality bounds (optional; parsed from min_items/max_items). */
   minItems?: number | null;
   maxItems?: number | null;

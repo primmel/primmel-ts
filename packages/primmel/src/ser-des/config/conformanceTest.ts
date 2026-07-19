@@ -2,6 +2,7 @@ import ConformanceTest, {
   TestVariable,
   TestObservable,
   AcceptanceCriterion,
+  TestPrecondition,
 } from '../../types/ConformanceTest';
 import tokenize from '../tokenize';
 import {
@@ -11,6 +12,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { stripColon } from './field-parser';
+import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser } from '../types';
 
@@ -42,6 +44,7 @@ function parseTestVariables(block: string): TestVariable[] {
       derivation: '',
       description: '',
       itemType: '',
+      series: null,
     };
     if (i < t.length && t[i].startsWith('{')) {
       const vb = unwrapBlock(t[i++]);
@@ -64,12 +67,58 @@ function parseTestVariables(block: string): TestVariable[] {
           v.description = stripWrapping(vt[j++]);
         } else if (vc === 'item_type') {
           v.itemType = stripWrapping(vt[j++]);
+        } else if (vc === 'series') {
+          v.series = parseSeriesDecl(unwrapBlock(vt[j++]));
         } else {
           unwrapBlock(vt[j++]);
         }
       }
     }
     out.push(v);
+  }
+  return out;
+}
+
+function parsePreconditions(block: string): TestPrecondition[] {
+  const out: TestPrecondition[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (cmd !== 'precondition') {
+      if (i < t.length) {
+        unwrapBlock(t[i - 1]);
+      }
+      continue;
+    }
+    const pid = stripWrapping(t[i++]);
+    const p: TestPrecondition = {
+      id: pid,
+      check: '',
+      description: '',
+      onViolation: 'invalid',
+    };
+    if (i < t.length && t[i].startsWith('{')) {
+      const pb = unwrapBlock(t[i++]);
+      const pt = tokenize(pb);
+      let j = 0;
+      while (j < pt.length) {
+        const pc = pt[j++];
+        if (j >= pt.length) {
+          break;
+        }
+        if (pc === 'check') {
+          p.check = stripWrapping(pt[j++]);
+        } else if (pc === 'description') {
+          p.description = stripWrapping(pt[j++]);
+        } else if (pc === 'on_violation') {
+          p.onViolation = stripWrapping(pt[j++]);
+        } else {
+          unwrapBlock(pt[j++]);
+        }
+      }
+    }
+    out.push(p);
   }
   return out;
 }
@@ -220,6 +269,7 @@ export const parseConformanceTest: Parser = function (id, data) {
     variables: [],
     observables: [],
     conditionsToEnforce: [],
+    preconditions: [],
     acceptanceCriteria: [],
     inheritsFrom: '',
     resultForms: [],
@@ -288,6 +338,8 @@ export const parseConformanceTest: Parser = function (id, data) {
         keyword === 'conditionsToEnforce'
       ) {
         result.conditionsToEnforce = readStringList(value());
+      } else if (keyword === 'preconditions') {
+        result.preconditions = parsePreconditions(unwrapBlock(value()));
       } else if (keyword === 'acceptance_criteria') {
         result.acceptanceCriteria = parseAcceptanceCriteria(
           unwrapBlock(value()),
@@ -392,6 +444,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       if (v.itemType) {
         line += 'item_type "' + escapeString(v.itemType) + '" ';
       }
+      if (v.series) {
+        line += dumpSeriesDecl(v.series) + ' ';
+      }
       out += line + '}\n';
     }
     out += '  }\n';
@@ -416,6 +471,21 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.conditionsToEnforce.length > 0) {
     out +=
       '  conditions_to_enforce { ' + ct.conditionsToEnforce.join(' ') + ' }\n';
+  }
+  if (ct.preconditions.length > 0) {
+    out += '  preconditions {\n';
+    for (const p of ct.preconditions) {
+      let line = '    precondition ' + p.id + ' { ';
+      if (p.check) {
+        line += 'check "' + escapeString(p.check) + '" ';
+      }
+      if (p.description) {
+        line += 'description "' + escapeString(p.description) + '" ';
+      }
+      line += 'on_violation ' + p.onViolation + ' ';
+      out += line + '}\n';
+    }
+    out += '  }\n';
   }
   if (ct.acceptanceCriteria.length > 0) {
     out += '  acceptance_criteria {\n';

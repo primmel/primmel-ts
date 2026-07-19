@@ -128,7 +128,12 @@ describe('W1b subject-chain constructs', () => {
     assert.equal(dim.values.length, 4);
     assert.equal(dim.values[0].description, 'Class A');
     assert.deepEqual(dim.values[0].payload, { n_lc_limits: '50000-unlimited' });
-    assert.deepEqual(dim.values[1], { id: 'B', description: '', payload: {} });
+    assert.deepEqual(dim.values[1], {
+      id: 'B',
+      description: '',
+      payload: {},
+      implies: [],
+    });
     assert.deepEqual(inst.familyCriteria, [
       'same material or combination of materials',
       'same design of the measurement technique',

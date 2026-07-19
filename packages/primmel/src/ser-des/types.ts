@@ -31,6 +31,7 @@ import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
 import type Table from '../types/Table';
 import type Term from '../types/Term';
+import type Verdict from '../types/Verdict';
 import type ViewProfile from '../types/ViewProfile';
 import type { ParseIssue } from '../validate';
 
@@ -125,6 +126,7 @@ export interface ParseContext {
   subforms: Record<string, Subform>;
   symbols: Record<string, Symbol>;
   calculations: Record<string, Calculation>;
+  verdicts: Record<string, Verdict>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;
   conformanceClasses: Record<string, ConformanceClass>;

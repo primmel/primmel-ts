@@ -30,6 +30,7 @@ import type Subform from './Subform';
 import type Symbol from './Symbol';
 import type Table from './Table';
 import type Term from './Term';
+import type Verdict from './Verdict';
 import type ViewProfile from './ViewProfile';
 
 export default interface Standard {
@@ -64,6 +65,8 @@ export default interface Standard {
   subforms: Subform[];
   symbols: Symbol[];
   calculations: Calculation[];
+  /** Canonical verdict quantities (derive once, reference everywhere). */
+  verdicts: Verdict[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
   conformanceClasses: ConformanceClass[];

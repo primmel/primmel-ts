@@ -87,6 +87,7 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     bindsTo: [],
     limit: null,
     applicability: [],
+    channel: '',
     acceptanceCriteria: '',
     verificationMethod: '',
     source: null,
@@ -110,6 +111,8 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
       result.limit = readLimit(unwrapBlock(t[i++]));
     } else if (cmd === 'applicability') {
       result.applicability = parseApplicability(unwrapBlock(t[i++]));
+    } else if (cmd === 'channel') {
+      result.channel = stripWrapping(t[i++]);
     } else if (cmd === 'acceptance_criteria') {
       result.acceptanceCriteria = unwrapBlock(t[i++]).trim();
     } else if (cmd === 'verification') {
@@ -164,6 +167,9 @@ const dumpRequirement = function (r: Requirement): string {
       '  applicability {\n    ' +
       dumpApplicabilityEntries(r.applicability).trim() +
       '\n  }\n';
+  }
+  if (r.channel) {
+    out += '  channel ' + r.channel + '\n';
   }
   if (r.acceptanceCriteria) {
     out += '  acceptance_criteria {\n    ' + r.acceptanceCriteria + '\n  }\n';
