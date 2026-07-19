@@ -1,5 +1,10 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, unwrapBlock, stripWrapping, tokenizePackage } from '../tokenize';
+import {
+  escapeString,
+  unwrapBlock,
+  stripWrapping,
+  tokenizePackage,
+} from '../tokenize';
 import tokenize from '../tokenize';
 import type Calculation from '../../types/Calculation';
 import type {
@@ -50,6 +55,18 @@ export const parseCalculation: Parser = function (id, data) {
           result.expression = unwrapBlock(t[i++]);
         } else if (command === 'reference') {
           result._relations.ref = tokenizePackage(t[i++]);
+        } else if (command === 'source') {
+          // Structured provenance: source { doc "urn:..." clause "2.1.2.4" }
+          const inner = tokenize(unwrapBlock(t[i++]));
+          const src: { doc: string; clause: string } = { doc: '', clause: '' };
+          for (let k = 0; k + 1 < inner.length; k += 2) {
+            if (inner[k] === 'doc') {
+              src.doc = stripWrapping(inner[k + 1]);
+            } else if (inner[k] === 'clause') {
+              src.clause = stripWrapping(inner[k + 1]);
+            }
+          }
+          result.sourceRef = src;
         } else if (command === 'inputs') {
           result.inputs = parseInputs(unwrapBlock(t[i++]));
         } else if (command === 'output') {
@@ -287,6 +304,14 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
   }
   if (c.profile) {
     out += '  profile ' + c.profile + '\n';
+  }
+  if (c.sourceRef && (c.sourceRef.doc || c.sourceRef.clause)) {
+    out +=
+      '  source { doc "' +
+      escapeString(c.sourceRef.doc) +
+      '" clause "' +
+      escapeString(c.sourceRef.clause) +
+      '" }\n';
   }
   if (c.ref.length > 0) {
     out += '  reference {\n';

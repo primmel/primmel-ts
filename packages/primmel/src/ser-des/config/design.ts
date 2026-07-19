@@ -457,8 +457,12 @@ function dumpSeverityValue(value: SeverityValue): string {
   let out = dumpCell(value);
   if (value.columns) {
     out += 'columns { ';
-    out += value.columns.ac ? 'ac { ' + dumpCell(value.columns.ac) + '} ' : 'ac null ';
-    out += value.columns.dc ? 'dc { ' + dumpCell(value.columns.dc) + '} ' : 'dc null ';
+    out += value.columns.ac
+      ? 'ac { ' + dumpCell(value.columns.ac) + '} '
+      : 'ac null ';
+    out += value.columns.dc
+      ? 'dc { ' + dumpCell(value.columns.dc) + '} '
+      : 'dc null ';
     out += value.columns.vehicleDc
       ? 'vehicle_dc { ' + dumpCell(value.columns.vehicleDc) + '} '
       : 'vehicle_dc null ';
@@ -476,7 +480,8 @@ export function dumpDesign(design: TestDesign, indent: string): string {
   if (design.counts.length > 0) {
     out += indent + '  counts {\n';
     for (const c of design.counts) {
-      let line = indent + '    count ' + c.context + ' { min ' + c.minCount + ' ';
+      let line =
+        indent + '    count ' + c.context + ' { min ' + c.minCount + ' ';
       if (c.clause) {
         line += 'clause "' + escapeString(c.clause) + '" ';
       }

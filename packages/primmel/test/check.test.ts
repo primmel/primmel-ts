@@ -6,7 +6,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkPackage } from '../src/check';
 
-const R60 = process.env.R60_PACKAGE ?? '/Users/mulgogi/src/oimlsmart/smart/primmel-packages/oiml-r60';
+const R60 =
+  process.env.R60_PACKAGE ??
+  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages/oiml-r60';
 
 describe('primmel check (W8)', () => {
   it('the R 60 package passes with zero errors', () => {
@@ -24,9 +26,18 @@ describe('primmel check (W8)', () => {
     const dir = makeTmpPackage();
     const issues = checkPackage(dir);
     const messages = issues.map(i => `[${i.check}] ${i.message}`).join('\n');
-    assert.ok(messages.includes('attribute "bogus_attr" not defined'), 'C1 bogus attr caught');
-    assert.ok(messages.includes('not a declared requirement'), 'C2 dangling target caught');
-    assert.ok(messages.includes('not in the dimension'), 'C3 bad dimension value caught');
+    assert.ok(
+      messages.includes('attribute "bogus_attr" not defined'),
+      'C1 bogus attr caught',
+    );
+    assert.ok(
+      messages.includes('not a declared requirement'),
+      'C2 dangling target caught',
+    );
+    assert.ok(
+      messages.includes('not in the dimension'),
+      'C3 bad dimension value caught',
+    );
     assert.ok(messages.includes('both'), 'C4 duplicate store caught');
   });
 });

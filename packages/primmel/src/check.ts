@@ -15,6 +15,11 @@
 
 import { loadPackage } from './ser-des/package';
 import type Standard from './types/Standard';
+import type { AttributeDefinition, Behavior } from './types/Subject';
+import type { Requirement } from './types/Requirement';
+import type ConformanceTest from './types/ConformanceTest';
+import type Symbol from './types/Symbol';
+import type { FormField } from './types/Form';
 
 export interface CheckIssue {
   check: string;
@@ -55,29 +60,49 @@ function isIdentityPath(path: string): boolean {
   return IDENTITY_PREFIXES.some(p => path.startsWith(p));
 }
 
-function attrId(standard: Standard, id: string): any {
-  return (standard.attributeDefinitions ?? []).find((a: any) => a.id === id);
+function attrId(
+  standard: Standard,
+  id: string,
+): AttributeDefinition | undefined {
+  return (standard.attributeDefinitions ?? []).find(
+    (a: AttributeDefinition) => a.id === id,
+  );
 }
 
 export function checkPackage(dir: string): CheckIssue[] {
   const standard = loadPackage(dir);
   const issues: CheckIssue[] = [];
-  const err = (check: string, message: string) => issues.push({ check, severity: 'error', message });
-  const warn = (check: string, message: string) => issues.push({ check, severity: 'warning', message });
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+  const warn = (check: string, message: string) =>
+    issues.push({ check, severity: 'warning', message });
 
-  const reqIds = new Set((standard.requirements ?? []).map((r: any) => r.id));
-  const testIds = new Set((standard.conformanceTests ?? []).map((t: any) => t.id));
-  const attrIds = new Set((standard.attributeDefinitions ?? []).map((a: any) => a.id));
+  const reqIds = new Set(
+    (standard.requirements ?? []).map((r: Requirement) => r.id),
+  );
+  const testIds = new Set(
+    (standard.conformanceTests ?? []).map((t: ConformanceTest) => t.id),
+  );
+  const attrIds = new Set(
+    (standard.attributeDefinitions ?? []).map((a: AttributeDefinition) => a.id),
+  );
+  const behaviorIds = new Set(
+    (standard.behaviors ?? []).map((b: Behavior) => b.id),
+  );
+  // Observables live in the symbols registry, not the attribute layer —
+  // binds_to / limit.uses may reference them (e.g. sample.test_context
+  // quantities that are measured test outputs).
+  const symbolIds = new Set((standard.symbols ?? []).map((s: Symbol) => s.id));
   const dimIds = new Map<string, Set<string>>();
   for (const inst of standard.instruments ?? []) {
     for (const d of inst.dimensions ?? []) {
-      dimIds.set(d.id, new Set(d.values.map((v: any) => v.id)));
+      dimIds.set(d.id, new Set(d.values.map(v => v.id)));
     }
   }
 
   // C1 — bind path scope vs attribute scope
   for (const form of standard.forms ?? []) {
-    const checkField = (f: any) => {
+    const checkField = (f: FormField) => {
       if (f.bind) {
         const parts = String(f.bind).split('.');
         const prefix = parts.slice(0, 2).join('.');
@@ -87,11 +112,17 @@ export function checkPackage(dir: string): CheckIssue[] {
           // identity binds are always valid
         } else if (scope) {
           if (!attrIds.has(id)) {
-            err('C1', `form ${form.id}: bind "${f.bind}" — attribute "${id}" not defined`);
+            err(
+              'C1',
+              `form ${form.id}: bind "${f.bind}" — attribute "${id}" not defined`,
+            );
           } else {
             const a = attrId(standard, id);
-            if (a.scope && a.scope !== scope) {
-              err('C1', `form ${form.id}: bind "${f.bind}" — attribute scope "${a.scope}" ≠ path scope "${scope}"`);
+            if (a && a.scope && a.scope !== scope) {
+              err(
+                'C1',
+                `form ${form.id}: bind "${f.bind}" — attribute scope "${a.scope}" ≠ path scope "${scope}"`,
+              );
             }
           }
         }
@@ -104,68 +135,133 @@ export function checkPackage(dir: string): CheckIssue[] {
   // C2 — reference targets resolve
   for (const t of standard.conformanceTests ?? []) {
     for (const target of t.targets ?? []) {
-      if (!reqIds.has(target)) err('C2', `conformance test ${t.id}: target "${target}" is not a declared requirement`);
+      if (!reqIds.has(target)) {
+        err(
+          'C2',
+          `conformance test ${t.id}: target "${target}" is not a declared requirement`,
+        );
+      }
     }
     if (t.inheritsFrom && !testIds.has(t.inheritsFrom)) {
-      err('C2', `conformance test ${t.id}: inherits_from "${t.inheritsFrom}" not found`);
+      err(
+        'C2',
+        `conformance test ${t.id}: inherits_from "${t.inheritsFrom}" not found`,
+      );
     }
   }
   for (const form of standard.forms ?? []) {
-    for (const pid of form.conformanceProcessIds ?? (form.conformanceProcessId ? [form.conformanceProcessId] : [])) {
-      if (!testIds.has(pid)) err('C2', `form ${form.id}: conformance_process "${pid}" not found`);
+    for (const pid of form.conformanceProcessIds ??
+      (form.conformanceProcessId ? [form.conformanceProcessId] : [])) {
+      if (!testIds.has(pid)) {
+        err('C2', `form ${form.id}: conformance_process "${pid}" not found`);
+      }
     }
   }
   for (const c of standard.capabilities ?? []) {
     for (const r of c.satisfiesRequirements ?? []) {
-      if (!reqIds.has(r)) err('C2', `capability ${c.id}: satisfies_requirements "${r}" not found`);
+      if (!reqIds.has(r)) {
+        err(
+          'C2',
+          `capability ${c.id}: satisfies_requirements "${r}" not found`,
+        );
+      }
     }
     for (const t of c.verifiedByTests ?? []) {
-      if (!testIds.has(t)) err('C2', `capability ${c.id}: verified_by_tests "${t}" not found`);
+      if (!testIds.has(t)) {
+        err('C2', `capability ${c.id}: verified_by_tests "${t}" not found`);
+      }
     }
   }
   for (const b of standard.behaviors ?? []) {
     for (const t of b.verifiedBy ?? []) {
-      if (!testIds.has(t)) err('C2', `behavior ${b.id}: verified_by "${t}" not found`);
+      if (!testIds.has(t)) {
+        err('C2', `behavior ${b.id}: verified_by "${t}" not found`);
+      }
     }
   }
   for (const r of standard.requirements ?? []) {
     for (const p of r.bindsTo ?? []) {
       const parts = String(p).split('.');
       const id = parts[2];
-      if (!id) continue;
+      if (!id) {
+        continue;
+      }
       if (parts[1] === 'classification') {
         // classification paths reference DIMENSION ids (with enum-name aliases)
         const dim = DIM_ALIASES[id] ?? id;
         if (!dimIds.has(dim) && !attrIds.has(id) && !attrIds.has(dim)) {
-          err('C2', `requirement ${r.id}: binds_to "${p}" — dimension "${id}" not declared`);
+          err(
+            'C2',
+            `requirement ${r.id}: binds_to "${p}" — dimension "${id}" not declared`,
+          );
         }
         continue;
       }
-      if (isIdentityPath(String(p))) continue;
-      if (!attrIds.has(id)) {
-        err('C2', `requirement ${r.id}: binds_to "${p}" — attribute "${id}" not defined`);
+      if (parts[1] === 'behaviors') {
+        // behavior paths reference the behaviors registry (documentary binds)
+        if (!behaviorIds.has(id)) {
+          err(
+            'C2',
+            `requirement ${r.id}: binds_to "${p}" — behavior "${id}" not declared`,
+          );
+        }
+        continue;
+      }
+      if (isIdentityPath(String(p))) {
+        continue;
+      }
+      if (!attrIds.has(id) && !symbolIds.has(id)) {
+        err(
+          'C2',
+          `requirement ${r.id}: binds_to "${p}" — attribute "${id}" not defined`,
+        );
       }
     }
     for (const u of r.limit?.uses ?? []) {
-      if (u.startsWith('observable:')) {
-        // Observables live in the symbols registry, not the attribute layer.
+      // Registry-prefixed uses (observables, formulas/calculations, table
+      // profiles) resolve outside the attribute layer.
+      if (/^(observable|formula|profile):/.test(u)) {
         continue;
       }
       // `uses` may carry bare ids or full paths — compare the last segment.
       const leaf = u.split('.').pop() ?? u;
-      if (!attrIds.has(leaf) && !attrIds.has(u) && !reqIds.has(u) && u !== 'load') {
-        warn('C2', `requirement ${r.id}: limit.uses "${u}" is not a declared attribute`);
+      if (
+        !attrIds.has(leaf) &&
+        !attrIds.has(u) &&
+        !symbolIds.has(leaf) &&
+        !symbolIds.has(u) &&
+        !reqIds.has(u) &&
+        u !== 'load'
+      ) {
+        warn(
+          'C2',
+          `requirement ${r.id}: limit.uses "${u}" is not a declared attribute`,
+        );
       }
     }
   }
 
   // C3 — dimension ids + values exist
+  // test_subject reserves two non-dimension annotation keys (cc.yaml keeps
+  // the block open via additionalProperties): `component` names the
+  // instrument component under test (e.g. R 91's ego speed meter),
+  // `description` annotates the subject block. Neither is a dimension.
+  const TEST_SUBJECT_RESERVED = new Set(['component', 'description']);
   for (const t of standard.conformanceTests ?? []) {
     for (const [dim, value] of Object.entries(t.testSubject ?? {})) {
+      if (TEST_SUBJECT_RESERVED.has(dim)) {
+        continue;
+      }
       if (!dimIds.has(dim)) {
-        err('C3', `conformance test ${t.id}: test_subject dimension "${dim}" not declared`);
+        err(
+          'C3',
+          `conformance test ${t.id}: test_subject dimension "${dim}" not declared`,
+        );
       } else if (!dimIds.get(dim)!.has(String(value))) {
-        err('C3', `conformance test ${t.id}: test_subject ${dim}="${value}" not in the dimension's values`);
+        err(
+          'C3',
+          `conformance test ${t.id}: test_subject ${dim}="${value}" not in the dimension's values`,
+        );
       }
     }
   }
@@ -175,11 +271,17 @@ export function checkPackage(dir: string): CheckIssue[] {
   for (const r of standard.requirements ?? []) {
     for (const a of r.applicability ?? []) {
       if (!dimIds.has(a.dimension)) {
-        err('C3', `requirement ${r.id}: applicability dimension "${a.dimension}" not declared`);
+        err(
+          'C3',
+          `requirement ${r.id}: applicability dimension "${a.dimension}" not declared`,
+        );
       } else {
         for (const v of a.values ?? []) {
           if (!dimIds.get(a.dimension)!.has(v)) {
-            err('C3', `requirement ${r.id}: applicability ${a.dimension}="${v}" not in the dimension's values`);
+            err(
+              'C3',
+              `requirement ${r.id}: applicability ${a.dimension}="${v}" not in the dimension's values`,
+            );
           }
         }
       }
@@ -191,7 +293,10 @@ export function checkPackage(dir: string): CheckIssue[] {
   for (const c of standard.dataclasses ?? []) {
     if (c.store) {
       if (stores.has(c.store)) {
-        err('C4', `store "${c.store}" declared by both ${stores.get(c.store)} and ${c.id}`);
+        err(
+          'C4',
+          `store "${c.store}" declared by both ${stores.get(c.store)} and ${c.id}`,
+        );
       }
       stores.set(c.store, c.id);
     }
@@ -200,13 +305,19 @@ export function checkPackage(dir: string): CheckIssue[] {
   // C5 — coverage: req ⇄ test linkage
   const covered = new Set<string>();
   for (const t of standard.conformanceTests ?? []) {
-    for (const target of t.targets ?? []) covered.add(target);
+    for (const target of t.targets ?? []) {
+      covered.add(target);
+    }
   }
   for (const r of standard.requirements ?? []) {
-    if (!covered.has(r.id)) warn('C5', `requirement ${r.id}: no conformance test targets it`);
+    if (!covered.has(r.id)) {
+      warn('C5', `requirement ${r.id}: no conformance test targets it`);
+    }
   }
   for (const t of standard.conformanceTests ?? []) {
-    if ((t.targets ?? []).length === 0) warn('C5', `conformance test ${t.id}: targets no requirement`);
+    if ((t.targets ?? []).length === 0) {
+      warn('C5', `conformance test ${t.id}: targets no requirement`);
+    }
   }
 
   return issues;

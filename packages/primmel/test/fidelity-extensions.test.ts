@@ -93,7 +93,9 @@ describe('requirement fidelity extensions', () => {
   it('round-trips through dump (parse → dump → parse, identical AST)', () => {
     const m1 = load(REQ_SRC);
     const dumped = dump(m1);
-    assert.ok(dumped.includes('guidance "Applies to digital load cells only."'));
+    assert.ok(
+      dumped.includes('guidance "Applies to digital load cells only."'),
+    );
     assert.ok(dumped.includes('param n_runs: integer {'));
     assert.ok(dumped.includes('modality should'));
     assert.ok(dumped.includes('obligation should'));
@@ -140,7 +142,12 @@ describe('conformance_test fidelity extensions', () => {
     const ct = m.conformanceTests[0];
     assert.equal(ct.guidance, 'Run at reference conditions.');
     assert.deepEqual(ct.applicability, [
-      { dimension: 'accuracy_class', values: ['A', 'B'], mapping: null, match: 'all' },
+      {
+        dimension: 'accuracy_class',
+        values: ['A', 'B'],
+        mapping: null,
+        match: 'all',
+      },
     ]);
     assert.deepEqual(ct.procedure[0], {
       order: 1,
@@ -164,7 +171,10 @@ describe('conformance_test fidelity extensions', () => {
     const m = load(CT_SRC);
     const ct = m.conformanceTests[0];
     assert.equal(ct.acceptanceCriteriaType, 'composite');
-    assert.equal(ct.acceptanceCriteriaDescription, 'Composite of partial tests');
+    assert.equal(
+      ct.acceptanceCriteriaDescription,
+      'Composite of partial tests',
+    );
     assert.equal(ct.acceptancePassIf, 'ocl{all_passed}');
     assert.deepEqual(ct.acceptanceCriteria[0], {
       item: 'partial_mpe',
@@ -174,6 +184,7 @@ describe('conformance_test fidelity extensions', () => {
       optional: true,
       description: 'Partial MPE check',
       reference: 'urn:oiml:pub:r:60-2:2021#clause-2.5',
+      sourceDiscrepancy: null,
     });
   });
 
@@ -192,7 +203,11 @@ describe('conformance_test fidelity extensions', () => {
   it('round-trips through dump (parse → dump → parse, identical AST)', () => {
     const m1 = load(CT_SRC);
     const dumped = dump(m1);
-    assert.ok(dumped.includes('procedure_steps { check_test_conditions insert_load_cell }'));
+    assert.ok(
+      dumped.includes(
+        'procedure_steps { check_test_conditions insert_load_cell }',
+      ),
+    );
     assert.ok(dumped.includes('outputs { e_l e_r mpe }'));
     assert.ok(dumped.includes('type composite'));
     assert.ok(dumped.includes('instances { by accuracy_class values {'));
@@ -628,7 +643,12 @@ describe('form fidelity extensions', () => {
     ]);
     assert.equal(f.specificationReference, 'R 144-1, 4.5.2');
     assert.deepEqual(f.applicability, [
-      { dimension: 'accuracy_class', values: ['A', 'B'], mapping: null, match: null },
+      {
+        dimension: 'accuracy_class',
+        values: ['A', 'B'],
+        mapping: null,
+        match: null,
+      },
     ]);
   });
 

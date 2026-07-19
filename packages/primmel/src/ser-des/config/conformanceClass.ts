@@ -22,7 +22,10 @@ import { parseApplicability, dumpApplicabilityEntries } from './field-parser';
 import type { ConstructDefinition } from './index';
 import type { ConformanceClass } from '../../types/ConformanceClass';
 
-const parseConformanceClass: ConstructDefinition['parse'] = function (id, data) {
+const parseConformanceClass: ConstructDefinition['parse'] = function (
+  id,
+  data,
+) {
   const result: ConformanceClass = {
     id,
     name: '',
@@ -40,7 +43,9 @@ const parseConformanceClass: ConstructDefinition['parse'] = function (id, data) 
   let i = 0;
   while (i < t.length) {
     const cmd = t[i++];
-    if (i >= t.length) break;
+    if (i >= t.length) {
+      break;
+    }
     if (cmd === 'name') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'title') {
@@ -72,17 +77,36 @@ const parseConformanceClass: ConstructDefinition['parse'] = function (id, data) 
 
 const dumpConformanceClass = function (cc: ConformanceClass): string {
   let out = 'conformance_class ' + cc.id + ' {\n';
-  if (cc.title) out += '  title "' + escapeString(cc.title) + '"\n';
-  if (cc.name) out += '  name "' + escapeString(cc.name) + '"\n';
-  if (cc.target) out += '  target ' + cc.target + '\n';
-  if (cc.subject) out += '  subject "' + escapeString(cc.subject) + '"\n';
-  if (cc.description) out += '  description "' + escapeString(cc.description) + '"\n';
-  if (cc.applicability.length > 0) {
-    out += '  applicability {\n    ' + dumpApplicabilityEntries(cc.applicability).trim() + '\n  }\n';
+  if (cc.title) {
+    out += '  title "' + escapeString(cc.title) + '"\n';
   }
-  if (cc.guidance) out += '  guidance "' + escapeString(cc.guidance) + '"\n';
-  if (cc.dependencies.length > 0) out += '  dependencies { ' + cc.dependencies.join(' ') + ' }\n';
-  if (cc.referenceIds.length > 0) out += '  reference { ' + cc.referenceIds.join(' ') + ' }\n';
+  if (cc.name) {
+    out += '  name "' + escapeString(cc.name) + '"\n';
+  }
+  if (cc.target) {
+    out += '  target ' + cc.target + '\n';
+  }
+  if (cc.subject) {
+    out += '  subject "' + escapeString(cc.subject) + '"\n';
+  }
+  if (cc.description) {
+    out += '  description "' + escapeString(cc.description) + '"\n';
+  }
+  if (cc.applicability.length > 0) {
+    out +=
+      '  applicability {\n    ' +
+      dumpApplicabilityEntries(cc.applicability).trim() +
+      '\n  }\n';
+  }
+  if (cc.guidance) {
+    out += '  guidance "' + escapeString(cc.guidance) + '"\n';
+  }
+  if (cc.dependencies.length > 0) {
+    out += '  dependencies { ' + cc.dependencies.join(' ') + ' }\n';
+  }
+  if (cc.referenceIds.length > 0) {
+    out += '  reference { ' + cc.referenceIds.join(' ') + ' }\n';
+  }
   out += '}\n';
   return out;
 };

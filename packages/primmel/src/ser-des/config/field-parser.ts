@@ -485,7 +485,11 @@ export function parseSubformRef(subformId: string, block: string): SubformRef {
 /** Dump one field with full fidelity (recursive for nested fields). */
 export function dumpFormField(field: FormField, indent: string): string {
   let out = '';
-  if (field.subformRef) {
+  // A NAMELESS subform reference (form-level `subform_ref X { ... }`)
+  // dumps in its bare form. A named field that composes a subform keeps
+  // its other properties — the subform_ref becomes one entry of the
+  // field body (converter emits `field x { … subform_ref X { } }`).
+  if (field.subformRef && !field.name) {
     const sr = field.subformRef;
     out += indent + 'subform_ref ' + sr.subformId + ' { ';
     const pkeys = Object.keys(sr.parameters);
@@ -505,6 +509,23 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
 
   const inner: string[] = [];
+  if (field.subformRef) {
+    const sr = field.subformRef;
+    let refLine = 'subform_ref ' + sr.subformId + ' { ';
+    const pkeys = Object.keys(sr.parameters);
+    if (pkeys.length > 0) {
+      refLine += 'parameters { ';
+      for (const k of pkeys) {
+        refLine += k + ': ' + sr.parameters[k] + ' ';
+      }
+      refLine += '} ';
+    }
+    if (sr.applicability.length > 0) {
+      refLine +=
+        'applicability { ' + dumpApplicabilityEntries(sr.applicability) + '} ';
+    }
+    inner.push(refLine + '}');
+  }
   if (field.label) {
     inner.push('label "' + escapeString(field.label) + '"');
   }
@@ -576,7 +597,9 @@ export function dumpFormField(field: FormField, indent: string): string {
     inner.push('values { ' + field.values.join(' ') + ' }');
   }
   if (field.hasDefault) {
-    inner.push('default ' + field.defaultValue);
+    // Defaults may be free text ("26 MHz – 3 GHz") or JSON-encoded
+    // structures — quote whenever the value isn't a single safe token.
+    inner.push('default ' + dumpBareSafe(field.defaultValue));
   }
   if (field.trueLabel) {
     inner.push('true_label "' + escapeString(field.trueLabel) + '"');
@@ -608,11 +631,15 @@ export function dumpFormField(field: FormField, indent: string): string {
     inner.push('targets { ' + field.targets.join(' ') + ' }');
   }
   if (field.fieldReferences.length > 0) {
-    inner.push('references { ' + dumpRoleReferences(field.fieldReferences) + ' }');
+    inner.push(
+      'references { ' + dumpRoleReferences(field.fieldReferences) + ' }',
+    );
   }
   if (field.specificationReference) {
     inner.push(
-      'specification_reference "' + escapeString(field.specificationReference) + '"',
+      'specification_reference "' +
+        escapeString(field.specificationReference) +
+        '"',
     );
   }
   if (field.sourceDiscrepancy) {
@@ -666,9 +693,13 @@ export function dumpApplicabilityEntries(
   for (const a of entries) {
     if (a.mapping) {
       out += a.dimension + ': { ';
+      // Pairs are comma-separated: the mapping parser splits on [,\n], so
+      // space-separated pairs would re-parse as one merged pair.
+      const pairs: string[] = [];
       for (const [k, v] of Object.entries(a.mapping)) {
-        out += k + ': ' + v + ' ';
+        pairs.push(k + ': ' + v);
       }
+      out += pairs.join(', ') + ' ';
       out += '} ';
     } else {
       out += a.dimension + ': [' + a.values.join(', ') + '] ';

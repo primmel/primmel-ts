@@ -55,7 +55,7 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { stripColon } from './field-parser';
+import { stripColon, dumpBareSafe } from './field-parser';
 import type { ConstructDefinition } from './index';
 import type {
   AttributeDefinition,
@@ -280,6 +280,7 @@ function parseDimensionValues(block: string): DimensionValue[] {
     }
     const value: DimensionValue = {
       id,
+      label: '',
       description: '',
       payload: {},
       implies: [],
@@ -293,7 +294,9 @@ function parseDimensionValues(block: string): DimensionValue[] {
         if (j >= vt.length) {
           break;
         }
-        if (cmd === 'description') {
+        if (cmd === 'label') {
+          value.label = stripWrapping(vt[j++]);
+        } else if (cmd === 'description') {
           value.description = stripWrapping(vt[j++]);
         } else if (cmd === 'implies') {
           value.implies = readIdList(vt[j++]);
@@ -426,11 +429,15 @@ const dumpInstrument = function (inst: Instrument): string {
       for (const v of d.values) {
         let line = '      ' + v.id;
         const hasProps =
+          v.label ||
           v.description ||
           Object.keys(v.payload).length > 0 ||
           v.implies.length > 0;
         if (hasProps) {
           line += ' { ';
+          if (v.label) {
+            line += 'label "' + escapeString(v.label) + '" ';
+          }
           if (v.description) {
             line += 'description "' + escapeString(v.description) + '" ';
           }
@@ -759,6 +766,7 @@ const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
     id,
     role: '',
     entries: [],
+    source: null,
     referenceIds: [],
   };
 
@@ -773,6 +781,8 @@ const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
       result.role = stripWrapping(t[i++]);
     } else if (cmd === 'entries') {
       result.entries = parseConditionEntries(unwrapBlock(t[i++]));
+    } else if (cmd === 'source') {
+      result.source = readSource(unwrapBlock(t[i++]));
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
     } else {
@@ -834,17 +844,20 @@ const dumpConditionSet = function (cs: ConditionSet): string {
   if (cs.entries.length > 0) {
     out += '  entries {\n';
     for (const e of cs.entries) {
-      let line = '    ' + e.quantityKind + ' { value ' + e.value;
+      // Entry values may be free text ("nominal, per installation
+      // conditions") — quote whenever not a single safe token.
+      let line = '    ' + e.quantityKind + ' { value ' + dumpBareSafe(e.value);
       if (e.unit) {
         line += ' unit "' + escapeString(e.unit) + '"';
       }
       if (e.tolerance) {
-        line += ' tolerance ' + e.tolerance;
+        line += ' tolerance ' + dumpBareSafe(e.tolerance);
       }
       out += line + ' }\n';
     }
     out += '  }\n';
   }
+  out += dumpSource('source', cs.source ?? null, '  ');
   out += dumpIdList('reference', cs.referenceIds, '  ');
   out += '}\n';
   return out;

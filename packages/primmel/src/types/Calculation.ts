@@ -45,6 +45,8 @@ interface Calculation {
   lookup?: CalculationLookup | null;
   /** Profile path this calculation resolves through (e.g. profiles.mpe_tiers). */
   profile?: string;
+  /** Structured provenance (doc URN + clause), e.g. R 60-3, 2.1.2.4. */
+  sourceRef?: { doc: string; clause: string } | null;
   ref: Reference[];
 }
 

@@ -204,7 +204,12 @@ function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
       }
       continue;
     }
-    const item = stripWrapping(t[i++]);
+    // The criterion name is optional — documentary criteria (description +
+    // reference only) arrive as `criterion { ... }` or `criterion "" { ... }`.
+    let item = '';
+    if (i < t.length && !t[i].startsWith('{')) {
+      item = stripWrapping(t[i++]);
+    }
     const c: AcceptanceCriterion = {
       item,
       passIf: '',
@@ -213,6 +218,7 @@ function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
       optional: false,
       description: '',
       reference: '',
+      sourceDiscrepancy: null,
     };
     if (i < t.length && t[i].startsWith('{')) {
       const cb = unwrapBlock(t[i++]);
@@ -236,6 +242,8 @@ function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
           c.description = stripWrapping(ct[j++]);
         } else if (cc === 'reference') {
           c.reference = stripWrapping(ct[j++]);
+        } else if (cc === 'source_discrepancy') {
+          c.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(ct[j++]));
         } else {
           unwrapBlock(ct[j++]);
         }
@@ -400,10 +408,16 @@ export const parseConformanceTest: Parser = function (id, data) {
           const inner = tokenize(unwrapBlock(refValue));
           if (inner.includes('doc') || inner.includes('clause')) {
             // Structured block: reference { doc "urn:…" clause "2.5" } (v2)
-            const src: { doc: string; clause: string } = { doc: '', clause: '' };
+            const src: { doc: string; clause: string } = {
+              doc: '',
+              clause: '',
+            };
             for (let k = 0; k + 1 < inner.length; k += 2) {
-              if (inner[k] === 'doc') src.doc = stripWrapping(inner[k + 1]);
-              else if (inner[k] === 'clause') src.clause = stripWrapping(inner[k + 1]);
+              if (inner[k] === 'doc') {
+                src.doc = stripWrapping(inner[k + 1]);
+              } else if (inner[k] === 'clause') {
+                src.clause = stripWrapping(inner[k + 1]);
+              }
             }
             result.sourceRef = src;
             result.reference = src.doc;
@@ -516,7 +530,12 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     out += '  guidance "' + escapeString(ct.guidance) + '"\n';
   }
   if (ct.sourceRef && ct.sourceRef.doc) {
-    out += '  reference { doc "' + escapeString(ct.sourceRef.doc) + '" clause "' + escapeString(ct.sourceRef.clause) + '" }\n';
+    out +=
+      '  reference { doc "' +
+      escapeString(ct.sourceRef.doc) +
+      '" clause "' +
+      escapeString(ct.sourceRef.clause) +
+      '" }\n';
   } else if (ct.reference) {
     out += '  reference ' + ct.reference + '\n';
   }
@@ -630,7 +649,8 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     out += '  }\n';
   }
   if (ct.referenceMaterials.length > 0) {
-    out += '  reference_materials { ' + ct.referenceMaterials.join(' ') + ' }\n';
+    out +=
+      '  reference_materials { ' + ct.referenceMaterials.join(' ') + ' }\n';
   }
   if (
     ct.acceptanceCriteria.length > 0 ||
@@ -651,7 +671,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       out += '    pass_if "' + escapeString(ct.acceptancePassIf) + '"\n';
     }
     for (const c of ct.acceptanceCriteria) {
-      let line = '    criterion ' + c.item + ' { ';
+      // Documentary criteria carry no name — emit `criterion "" { ... }`
+      // so the re-parse doesn't swallow the block as the name.
+      let line = '    criterion ' + (c.item || '""') + ' { ';
       if (c.passIf) {
         line += 'pass_if "' + escapeString(c.passIf) + '" ';
       }
@@ -669,6 +691,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       }
       if (c.reference) {
         line += 'reference "' + escapeString(c.reference) + '" ';
+      }
+      if (c.sourceDiscrepancy) {
+        line += dumpSourceDiscrepancy(c.sourceDiscrepancy, '') + ' ';
       }
       out += line + '}\n';
     }

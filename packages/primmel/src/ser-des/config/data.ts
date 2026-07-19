@@ -153,7 +153,9 @@ const parseDataAttribute = (
   }
   const colonIndex = basic.indexOf(':');
   if (colonIndex !== -1) {
-    result.type = basic.substr(colonIndex + 1, basic.length - colonIndex - 1).trim();
+    result.type = basic
+      .substr(colonIndex + 1, basic.length - colonIndex - 1)
+      .trim();
     basic = basic.substr(0, colonIndex);
   }
   result.id = basic.trim();

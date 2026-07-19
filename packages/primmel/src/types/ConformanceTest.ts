@@ -45,6 +45,8 @@ export interface AcceptanceCriterion {
   description: string;
   /** Source reference URN. */
   reference: string;
+  /** Annotated source contradiction on this criterion's limit (TODO.refactor/11). */
+  sourceDiscrepancy?: SourceDiscrepancy | null;
 }
 
 /**

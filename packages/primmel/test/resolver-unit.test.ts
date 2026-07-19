@@ -14,6 +14,7 @@ function emptyContext(): ParseContext {
   return {
     root: '',
     metadata: null,
+    packageManifest: null,
     roles: {},
     approvals: {},
     provisions: {},
@@ -37,8 +38,19 @@ function emptyContext(): ParseContext {
     subforms: {},
     symbols: {},
     calculations: {},
+    verdicts: {},
+    referenceMaterials: {},
+    testPointSets: {},
     stateMachines: {},
     conformanceTests: {},
+    conformanceClasses: {},
+    requirements: {},
+    requirementClasses: {},
+    instruments: {},
+    attributeDefinitions: {},
+    capabilities: {},
+    behaviors: {},
+    conditionSets: {},
     issues: [],
   };
 }

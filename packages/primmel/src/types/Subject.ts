@@ -27,6 +27,8 @@ export interface SubjectVariant {
 
 export interface DimensionValue {
   id: string;
+  /** Display label of the value (certificate classification labels). */
+  label: string;
   description: string;
   /**
    * Per-value payload (e.g. n_lc_limits per accuracy class). Values are
@@ -154,5 +156,7 @@ export interface ConditionSet {
   id: string;
   role: string;
   entries: ConditionEntry[];
+  /** Structured provenance (doc URN + clause). */
+  source?: SourceRef | null;
   referenceIds: string[];
 }

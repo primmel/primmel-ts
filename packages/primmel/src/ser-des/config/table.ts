@@ -1,7 +1,7 @@
 import type { Dumper, Parser } from '../types';
-import tokenize from '../tokenize';
-import {
+import tokenize, {
   escapeString,
+  unescapeString,
   unwrapBlock,
   stripWrapping,
   tokenizePackage,
@@ -277,7 +277,9 @@ export const parseTable: Parser = function (id, data) {
         } else if (command === 'source') {
           result.sourceRef = readSource(unwrapBlock(t[i++]));
         } else if (command === 'source_discrepancy') {
-          result.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
+          result.sourceDiscrepancy = parseSourceDiscrepancy(
+            unwrapBlock(t[i++]),
+          );
         } else if (command === 'overrides') {
           result.overrides = parseOverrides(unwrapBlock(t[i++]));
         } else if (command === 'profiles') {
@@ -328,18 +330,20 @@ export const parseTable: Parser = function (id, data) {
 };
 
 function parseTableData(block: string): string[][] {
-  // Simple line-by-line, whitespace-separated. Strip leading/trailing quotes per cell.
+  // Simple line-by-line, whitespace-separated. Quoted cells honour
+  // backslash escapes (\" and \\) and are unescaped on consumption —
+  // the same contract as stripWrapping elsewhere, so load→dump→load
+  // cycles don't accumulate backslashes.
   const rows = block
     .split(/\n+/)
     .map(r => r.trim())
     .filter(r => r.length > 0);
   return rows.map(row => {
-    // Match quoted cells first, then whitespace-separated tokens
     const cells: string[] = [];
-    const re = /"([^"]*)"|(\S+)/g;
+    const re = /"((?:[^"\\]|\\.)*)"|(\S+)/g;
     let m: RegExpExecArray | null;
     while ((m = re.exec(row)) !== null) {
-      cells.push(m[1] ?? m[2] ?? '');
+      cells.push(m[1] !== undefined ? unescapeString(m[1]) : (m[2] ?? ''));
     }
     return cells;
   });
@@ -428,7 +432,7 @@ export const dumpTable: Dumper<Table> = function (t) {
   if (t.data.length > 0) {
     out += '  data {\n';
     for (const row of t.data) {
-      const cells = row.map(c => `"${c}"`).join(' ');
+      const cells = row.map(c => `"${escapeString(c)}"`).join(' ');
       out += '    ' + cells + '\n';
     }
     out += '  }\n';

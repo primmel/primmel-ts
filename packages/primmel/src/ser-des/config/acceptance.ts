@@ -129,10 +129,7 @@ export function parseAcceptance(block: string): AcceptanceDecision {
  * prefixed by `indent` (no trailing newline) — callers embed it in
  * their own line layout.
  */
-export function dumpAcceptance(
-  a: AcceptanceDecision,
-  indent: string,
-): string {
+export function dumpAcceptance(a: AcceptanceDecision, indent: string): string {
   let out = indent + 'acceptance { ';
   if (a.rule) {
     out += 'rule ' + a.rule + ' ';

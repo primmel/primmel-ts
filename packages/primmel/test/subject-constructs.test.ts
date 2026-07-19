@@ -130,6 +130,7 @@ describe('W1b subject-chain constructs', () => {
     assert.deepEqual(dim.values[0].payload, { n_lc_limits: '50000-unlimited' });
     assert.deepEqual(dim.values[1], {
       id: 'B',
+      label: '',
       description: '',
       payload: {},
       implies: [],
