@@ -10,6 +10,7 @@
  * Maps 1:1 to verdicts.yaml (data/schemas/verdicts.yaml).
  */
 
+import type AcceptanceDecision from './Acceptance';
 import type { SourceRef } from './Subject';
 
 /** How a series of derived values reduces to one scalar before acceptance. */
@@ -29,5 +30,7 @@ export default interface Verdict {
   inputs: string[];
   /** Series→scalar reduction; null for scalar (single-measurement) verdicts. */
   seriesReduction: SeriesReduction | null;
+  /** Acceptance decision rule (guarding, criterion, statistics). */
+  acceptance?: AcceptanceDecision | null;
   source: SourceRef | null;
 }

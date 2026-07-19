@@ -6,18 +6,64 @@
  * Requirement classes group requirements into scopes (/req/<area>).
  */
 
+import type AcceptanceDecision from './Acceptance';
 import type { ApplicabilityEntry } from './Form';
+import type SourceDiscrepancy from './SourceDiscrepancy';
 import type { SourceRef } from './Subject';
+
+/** Canonical acceptance: reference a declared VerdictQuantity by id. */
+export interface RequirementLimitAccepts {
+  /** VerdictQuantity id from the verdict registry. */
+  verdict: string;
+  /** Comparison applied between the derived value and the limit. */
+  op: string;
+  /** Limit predicate, ocl{...}. */
+  limit: string;
+  sourceDiscrepancy: SourceDiscrepancy | null;
+}
 
 export interface RequirementLimit {
   expression: string;
   uses: string[];
+  /** shall (default) | should — a failed should-limit is an observation. */
+  modality: string;
+  /** Declared base of a relative (ratio) limit. */
+  relativeTo: string;
+  notes: string;
+  /** Canonical acceptance via the verdict registry (derive once). */
+  accepts: RequirementLimitAccepts | null;
+  /** Acceptance decision rule (guarding, criterion, statistics). */
+  acceptance: AcceptanceDecision | null;
+  sourceDiscrepancy: SourceDiscrepancy | null;
+}
+
+/** One subject slot the requirement verifies (numbered subject chain). */
+export interface RequirementSubject {
+  slot: number;
+  entityId: string;
+  label: string;
+}
+
+/** Typed requirement parameter (e.g. n_runs with default + range). */
+export interface RequirementParameter {
+  name: string;
+  type: string;
+  description: string;
+  unit: string;
+  defaultValue: string;
+  hasDefault: boolean;
+  rangeMin: string;
+  rangeMax: string;
+  hasRange: boolean;
+  enumValues: string[];
 }
 
 export interface Requirement {
   id: string;
   name: string;
   statement: string;
+  /** Free-text guidance (application notes). */
+  guidance: string;
   /** Attribute paths into the subject chain (INV-3 — bind, never restate). */
   bindsTo: string[];
   /** Machine-checkable limit as OCL (quantitative requirements). */
@@ -31,10 +77,19 @@ export interface Requirement {
    * instrument's per_channel declaration). Empty = once per model.
    */
   channel: string;
+  /** Subject slots the requirement verifies. */
+  subjects: RequirementSubject[];
+  /** Typed parameters (n_runs etc.) with defaults/ranges. */
+  parameters: RequirementParameter[];
+  /** shall (default) | should obligation level. */
+  obligation: string;
   /** Structured acceptance criteria (threshold/tiered/composite/qualitative), raw. */
   acceptanceCriteria: string;
   /** definitional | testing | examination | documentation */
   verificationMethod: string;
+  /** Other requirement ids this one depends on. */
+  dependencies: string[];
+  sourceDiscrepancy: SourceDiscrepancy | null;
   source: SourceRef | null;
   referenceIds: string[];
 }

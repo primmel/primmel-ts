@@ -1,9 +1,15 @@
+import type AcceptanceDecision from './Acceptance';
+import type TestDesign from './Design';
 import type Reference from './Reference';
+import type { ApplicabilityEntry } from './Form';
 import type { SeriesDecl } from './Series';
+import type SourceDiscrepancy from './SourceDiscrepancy';
 
 export interface ConformanceTestStep {
   order: number;
   action: string;
+  /** Observable/value ids this step produces. */
+  outputs: string[];
 }
 
 /** Typed test variable (v2 G4): declared | measured | derived | computed | lookup. */
@@ -32,6 +38,13 @@ export interface AcceptanceCriterion {
   item: string;
   passIf: string;
   requirementId: string;
+  /** Verdict criterion taxonomy (I/MPE | D/NSFa | D/NSFd | n/a). */
+  criterion: string;
+  /** An optional criterion never blocks the verdict. */
+  optional: boolean;
+  description: string;
+  /** Source reference URN. */
+  reference: string;
 }
 
 /**
@@ -49,6 +62,14 @@ export interface TestPrecondition {
   onViolation: string;
 }
 
+/** Runtime class-driven instantiation (cc.yaml `instances`). */
+export interface TestInstances {
+  /** Dimension the instantiation switches on (e.g. accuracy_class). */
+  by: string;
+  /** Dimension value → parameter overrides (numeric when numeric-looking). */
+  values: Record<string, Record<string, string | number>>;
+}
+
 export default interface ConformanceTest {
   id: string;
   name: string;
@@ -56,11 +77,15 @@ export default interface ConformanceTest {
   purpose?: string;
   /** How the test is performed (narrative method). */
   method?: string;
+  /** Free-text guidance (application notes). */
+  guidance: string;
   type: string;
   reference: string;
   /** Structured form when reference is a { doc, clause } block (v2). */
   sourceRef?: { doc: string; clause: string } | null;
   targets: string[];
+  /** Classification applicability filter (dimension → allowed values). */
+  applicability: ApplicabilityEntry[];
   procedure: ConformanceTestStep[];
   /** Named string step references (R 60-style procedure_steps). */
   procedureSteps?: string[];
@@ -73,10 +98,26 @@ export default interface ConformanceTest {
   conditionsToEnforce: string[];
   /** Run-validity preconditions — a violation voids the run (invalid, never fail). */
   preconditions: TestPrecondition[];
+  /** Reference material ids this test relies on. */
+  referenceMaterials: string[];
   acceptanceCriteria: AcceptanceCriterion[];
+  /** Block-level acceptance_criteria kind (e.g. composite). */
+  acceptanceCriteriaType: string;
+  acceptanceCriteriaDescription: string;
+  /** Block-level pass_if for composite criteria. */
+  acceptancePassIf: string;
+  /** Test-design metadata (counts/severities/test points/schedule/specimens). */
+  design: TestDesign | null;
+  /** Acceptance decision rule (guarding, criterion, statistics). */
+  acceptance: AcceptanceDecision | null;
+  /** Other conformance test ids this one depends on. */
+  dependencies: string[];
+  /** Runtime class-driven instantiation parameters. */
+  instances: TestInstances | null;
   inheritsFrom: string;
   resultForms: string[];
   derivedValues: Array<{ name: string; expression: string }>;
+  sourceDiscrepancy: SourceDiscrepancy | null;
 }
 
 export type { Reference };

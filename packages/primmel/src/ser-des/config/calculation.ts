@@ -1,8 +1,10 @@
 import type { Dumper, Parser, Resolver } from '../types';
 import { escapeString, unwrapBlock, stripWrapping, tokenizePackage } from '../tokenize';
+import tokenize from '../tokenize';
 import type Calculation from '../../types/Calculation';
 import type {
   CalculationInput,
+  CalculationLookup,
   CalculationOutput,
   ResolvableCalculation,
 } from '../../types/Calculation';
@@ -17,6 +19,9 @@ export const parseCalculation: Parser = function (id, data) {
     inputs: [],
     output: { type: 'number', unit: '1' },
     expression: '',
+    params: [],
+    lookup: null,
+    profile: '',
     ref: [],
     _relations: {
       ref: [],
@@ -31,6 +36,8 @@ export const parseCalculation: Parser = function (id, data) {
       if (i < t.length) {
         if (command === 'name') {
           result.name = unwrapBlock(t[i++]);
+        } else if (command === 'identifier') {
+          result.identifier = stripWrapping(t[i++]);
         } else if (command === 'type') {
           result.ruleType = stripWrapping(t[i++]);
         } else if (command === 'category') {
@@ -46,7 +53,27 @@ export const parseCalculation: Parser = function (id, data) {
         } else if (command === 'inputs') {
           result.inputs = parseInputs(unwrapBlock(t[i++]));
         } else if (command === 'output') {
-          result.output = parseOutput(unwrapBlock(t[i++]));
+          // output : <type> { ... } — the head spans up to three tokens
+          // (':', type, block); collect them before parsing.
+          let head = '';
+          if (t[i] === ':') {
+            head += t[i++];
+          }
+          if (i < t.length && !t[i].startsWith('{')) {
+            head += ' ' + t[i++];
+          }
+          if (i < t.length && t[i].startsWith('{')) {
+            head += ' ' + t[i++];
+          }
+          result.output = parseOutput(head);
+        } else if (command === 'params') {
+          result.params = tokenize(stripWrapping(t[i++]))
+            .map(stripWrapping)
+            .filter(s => s.length > 0);
+        } else if (command === 'lookup') {
+          result.lookup = parseLookup(unwrapBlock(t[i++]));
+        } else if (command === 'profile') {
+          result.profile = stripWrapping(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -111,11 +138,15 @@ function parseInputs(block: string): CalculationInput[] {
 }
 
 function parseOutput(block: string): CalculationOutput {
-  // output block: `: type { unit "..." }`
-  const t = tokenizePackage(block);
+  // output head: `: type { unit "..." name "..." description "..." }` —
+  // plain tokenize (the head is NOT brace-wrapped; tokenizePackage's
+  // unwrapBlock would mangle the first ':' and last '}').
+  const t = tokenize(block);
   let i = 0;
   let type = 'number';
   let unit = '1';
+  let name = '';
+  let description = '';
   if (t[i] === ':') {
     i++;
   }
@@ -131,13 +162,49 @@ function parseOutput(block: string): CalculationOutput {
       if (j < pt.length) {
         if (cmd === 'unit') {
           unit = unwrapBlock(pt[j++]);
+        } else if (cmd === 'name') {
+          name = stripWrapping(pt[j++]);
+        } else if (cmd === 'description') {
+          description = stripWrapping(pt[j++]);
         } else {
           j++;
         }
       }
     }
   }
-  return { type, unit };
+  // Optional keys are set only when present — a calculation without an
+  // output block keeps the { type, unit } init shape, and a reparse of
+  // its dump must produce the identical shape (round-trip deepEqual).
+  const out: CalculationOutput = { type, unit };
+  if (name) {
+    out.name = name;
+  }
+  if (description) {
+    out.description = description;
+  }
+  return out;
+}
+
+function parseLookup(block: string): CalculationLookup {
+  const lookup: CalculationLookup = { key: '', variable: '', multiplier: '' };
+  const t = tokenizePackage(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'key') {
+      lookup.key = stripWrapping(t[i++]);
+    } else if (cmd === 'variable') {
+      lookup.variable = stripWrapping(t[i++]);
+    } else if (cmd === 'multiplier') {
+      lookup.multiplier = stripWrapping(t[i++]);
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return lookup;
 }
 
 export const resolveCalculation: Resolver<Calculation, ResolvableCalculation> =
@@ -155,6 +222,9 @@ export const resolveCalculation: Resolver<Calculation, ResolvableCalculation> =
 export const dumpCalculation: Dumper<Calculation> = function (c) {
   let out = 'calculation ' + c.id + ' {\n';
   out += '  name "' + escapeString(c.name) + '"\n';
+  if (c.identifier) {
+    out += '  identifier "' + escapeString(c.identifier) + '"\n';
+  }
   if (c.ruleType) {
     out += '  type ' + c.ruleType + '\n';
   }
@@ -183,13 +253,41 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     }
     out += '  }\n';
   }
-  out +=
+  let outputLine =
     '  output : ' +
     c.output.type +
     ' { unit "' +
     escapeString(c.output.unit) +
-    '" }\n';
-  out += '  expression "' + escapeString(c.expression) + '"\n';
+    '"';
+  if (c.output.name) {
+    outputLine += ' name "' + escapeString(c.output.name) + '"';
+  }
+  if (c.output.description) {
+    outputLine += ' description "' + escapeString(c.output.description) + '"';
+  }
+  out += outputLine + ' }\n';
+  if (c.expression) {
+    out += '  expression "' + escapeString(c.expression) + '"\n';
+  }
+  if (c.params && c.params.length > 0) {
+    out += '  params { ' + c.params.join(' ') + ' }\n';
+  }
+  if (c.lookup) {
+    out += '  lookup { ';
+    if (c.lookup.key) {
+      out += 'key ' + c.lookup.key + ' ';
+    }
+    if (c.lookup.variable) {
+      out += 'variable ' + c.lookup.variable + ' ';
+    }
+    if (c.lookup.multiplier) {
+      out += 'multiplier ' + c.lookup.multiplier + ' ';
+    }
+    out += '}\n';
+  }
+  if (c.profile) {
+    out += '  profile ' + c.profile + '\n';
+  }
   if (c.ref.length > 0) {
     out += '  reference {\n';
     for (const r of c.ref) {

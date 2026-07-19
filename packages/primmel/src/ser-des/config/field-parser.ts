@@ -24,6 +24,7 @@ import type {
   ApplicabilityEntry,
   CalculationBinding,
   EvaluationRule,
+  RoleReference,
   SubformRef,
 } from '../../types/Form';
 import tokenize from '../tokenize';
@@ -34,6 +35,10 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
+import {
+  parseSourceDiscrepancy,
+  dumpSourceDiscrepancy,
+} from './sourceDiscrepancy';
 
 /**
  * Read a value token, accumulating inline `ocl{…}` expressions that the
@@ -62,7 +67,7 @@ function readValueToken(
 }
 
 /** Emit a bare value safely: quote it when it contains spaces/braces/quotes. */
-function dumpBareSafe(v: string): string {
+export function dumpBareSafe(v: string): string {
   return /[\s{}"]/.test(v) ? '"' + escapeString(v) + '"' : v;
 }
 
@@ -142,6 +147,12 @@ export function parseFormField(
     label: '',
     definition: '',
     unit: '',
+    symbol: '',
+    verdict: '',
+    targets: [],
+    dimension: '',
+    enumRef: '',
+    pattern: '',
     required: false,
     measurementMethod: '',
     calculationId: null,
@@ -149,9 +160,16 @@ export function parseFormField(
     derivation: '',
     evaluation: null,
     values: [],
+    trueLabel: '',
+    falseLabel: '',
+    enumValues: [],
     defaultValue: '',
     hasDefault: false,
     referenceIds: [],
+    fieldReferences: [],
+    specificationReference: '',
+    applicability: [],
+    sourceDiscrepancy: null,
     fields: [],
     itemsType: '',
     subformRef: null,
@@ -179,6 +197,18 @@ export function parseFormField(
       field.type = stripWrapping(t[i++]);
     } else if (cmd === 'unit') {
       field.unit = stripWrapping(t[i++]);
+    } else if (cmd === 'symbol') {
+      field.symbol = stripWrapping(t[i++]);
+    } else if (cmd === 'verdict') {
+      field.verdict = stripWrapping(t[i++]);
+    } else if (cmd === 'targets') {
+      field.targets = tokenizePackage(t[i++]).map(stripWrapping);
+    } else if (cmd === 'dimension') {
+      field.dimension = stripWrapping(t[i++]);
+    } else if (cmd === 'enum') {
+      field.enumRef = stripWrapping(t[i++]);
+    } else if (cmd === 'pattern') {
+      field.pattern = stripWrapping(t[i++]);
     } else if (cmd === 'bind') {
       // Binding path into the subject chain (G5):
       // model.parameters.e_max · sample.test_context.d_min · model.classification.accuracy_class
@@ -215,6 +245,12 @@ export function parseFormField(
     } else if (cmd === 'default') {
       field.defaultValue = stripWrapping(t[i++]);
       field.hasDefault = true;
+    } else if (cmd === 'true_label') {
+      field.trueLabel = stripWrapping(t[i++]);
+    } else if (cmd === 'false_label') {
+      field.falseLabel = stripWrapping(t[i++]);
+    } else if (cmd === 'enum_values') {
+      field.enumValues = tokenizePackage(t[i++]).map(stripWrapping);
     } else if (cmd === 'min_items') {
       field.minItems = parseInt(stripWrapping(t[i++]), 10);
     } else if (cmd === 'max_items') {
@@ -251,6 +287,14 @@ export function parseFormField(
       }
     } else if (cmd === 'reference') {
       field.referenceIds = tokenizePackage(t[i++]).map(stripWrapping);
+    } else if (cmd === 'references') {
+      field.fieldReferences = parseRoleReferences(unwrapBlock(t[i++]));
+    } else if (cmd === 'specification_reference') {
+      field.specificationReference = stripWrapping(t[i++]);
+    } else if (cmd === 'applicability') {
+      field.applicability = parseApplicability(unwrapBlock(t[i++]));
+    } else if (cmd === 'source_discrepancy') {
+      field.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
     } else {
       // Forward-compatible: skip unknown keyword value
       unwrapBlock(t[i++]);
@@ -279,7 +323,7 @@ function parseCalculationBindings(block: string): CalculationBinding[] {
   return out;
 }
 
-/** `evaluation { rule "…" condition "…" reference { … } }` */
+/** `evaluation { rule "…" verdict <id> op <op> limit "…" condition "…" reference { … } source_discrepancy { … } }` */
 function parseEvaluation(block: string): EvaluationRule {
   const rule: EvaluationRule = { rule: '', condition: '', referenceId: null };
   const t = tokenize(block);
@@ -291,11 +335,19 @@ function parseEvaluation(block: string): EvaluationRule {
     }
     if (cmd === 'rule') {
       rule.rule = stripWrapping(t[i++]);
+    } else if (cmd === 'verdict') {
+      rule.verdict = stripWrapping(t[i++]);
+    } else if (cmd === 'op') {
+      rule.op = stripWrapping(t[i++]);
+    } else if (cmd === 'limit') {
+      rule.limit = stripWrapping(t[i++]);
     } else if (cmd === 'condition') {
       rule.condition = stripWrapping(t[i++]);
     } else if (cmd === 'reference') {
       const ids = tokenizePackage(t[i++]).map(stripWrapping);
       rule.referenceId = ids[0] ?? null;
+    } else if (cmd === 'source_discrepancy') {
+      rule.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
     } else {
       unwrapBlock(t[i++]);
     }
@@ -462,6 +514,21 @@ export function dumpFormField(field: FormField, indent: string): string {
   if (field.unit) {
     inner.push('unit "' + escapeString(field.unit) + '"');
   }
+  if (field.symbol) {
+    inner.push('symbol ' + field.symbol);
+  }
+  if (field.verdict) {
+    inner.push('verdict ' + field.verdict);
+  }
+  if (field.dimension) {
+    inner.push('dimension ' + field.dimension);
+  }
+  if (field.enumRef) {
+    inner.push('enum ' + field.enumRef);
+  }
+  if (field.pattern) {
+    inner.push('pattern "' + escapeString(field.pattern) + '"');
+  }
   if (field.required) {
     inner.push('required true');
   }
@@ -485,11 +552,23 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
   if (field.evaluation) {
     let ev = 'evaluation { rule "' + escapeString(field.evaluation.rule) + '"';
+    if (field.evaluation.verdict) {
+      ev += ' verdict ' + field.evaluation.verdict;
+    }
+    if (field.evaluation.op) {
+      ev += ' op ' + field.evaluation.op;
+    }
+    if (field.evaluation.limit) {
+      ev += ' limit "' + escapeString(field.evaluation.limit) + '"';
+    }
     if (field.evaluation.condition) {
       ev += ' condition "' + escapeString(field.evaluation.condition) + '"';
     }
     if (field.evaluation.referenceId) {
       ev += ' reference { ' + field.evaluation.referenceId + ' }';
+    }
+    if (field.evaluation.sourceDiscrepancy) {
+      ev += ' ' + dumpSourceDiscrepancy(field.evaluation.sourceDiscrepancy, '');
     }
     inner.push(ev + ' }');
   }
@@ -498,6 +577,15 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
   if (field.hasDefault) {
     inner.push('default ' + field.defaultValue);
+  }
+  if (field.trueLabel) {
+    inner.push('true_label "' + escapeString(field.trueLabel) + '"');
+  }
+  if (field.falseLabel) {
+    inner.push('false_label "' + escapeString(field.falseLabel) + '"');
+  }
+  if (field.enumValues.length > 0) {
+    inner.push('enum_values { ' + field.enumValues.join(' ') + ' }');
   }
   if (field.itemsType) {
     inner.push('items { ' + field.itemsType + ' }');
@@ -510,6 +598,25 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
   if (field.series) {
     inner.push(dumpSeriesDecl(field.series));
+  }
+  if (field.applicability.length > 0) {
+    inner.push(
+      'applicability { ' + dumpApplicabilityEntries(field.applicability) + '}',
+    );
+  }
+  if (field.targets.length > 0) {
+    inner.push('targets { ' + field.targets.join(' ') + ' }');
+  }
+  if (field.fieldReferences.length > 0) {
+    inner.push('references { ' + dumpRoleReferences(field.fieldReferences) + ' }');
+  }
+  if (field.specificationReference) {
+    inner.push(
+      'specification_reference "' + escapeString(field.specificationReference) + '"',
+    );
+  }
+  if (field.sourceDiscrepancy) {
+    inner.push(dumpSourceDiscrepancy(field.sourceDiscrepancy, ''));
   }
   if (field.fields.length > 0) {
     inner.push(
@@ -571,4 +678,62 @@ export function dumpApplicabilityEntries(
     }
   }
   return out;
+}
+
+/**
+ * Parse role-grouped reference URNs:
+ * `references { requirement { "urn:…" "urn:…" } test-procedure { "urn:…" } }`
+ * → flattened [{ urn, role }] in document order.
+ */
+export function parseRoleReferences(block: string): RoleReference[] {
+  const out: RoleReference[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const role = stripColon(t[i++]);
+    if (!role) {
+      break;
+    }
+    if (i < t.length && t[i] === ':') {
+      i++;
+    }
+    if (i < t.length && t[i].startsWith('{')) {
+      const urns = tokenize(unwrapBlock(t[i++]))
+        .map(stripWrapping)
+        .filter(s => s.length > 0);
+      for (const urn of urns) {
+        out.push({ urn, role });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Dump flattened role references re-grouped by role (first-seen role
+ * order, urn order preserved within a role) — the inner content of a
+ * `references { … }` block.
+ */
+export function dumpRoleReferences(refs: RoleReference[]): string {
+  const roles: string[] = [];
+  const byRole = new Map<string, string[]>();
+  for (const r of refs) {
+    if (!byRole.has(r.role)) {
+      byRole.set(r.role, []);
+      roles.push(r.role);
+    }
+    byRole.get(r.role)!.push(r.urn);
+  }
+  return roles
+    .map(
+      role =>
+        role +
+        ' { ' +
+        byRole
+          .get(role)!
+          .map(u => '"' + escapeString(u) + '"')
+          .join(' ') +
+        ' }',
+    )
+    .join(' ');
 }

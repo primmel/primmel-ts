@@ -27,10 +27,12 @@ import type {
 import type { Requirement, RequirementClass } from '../types/Requirement';
 import type { ConformanceClass } from '../types/ConformanceClass';
 import type { PackageManifest } from '../types/Package';
+import type ReferenceMaterial from '../types/ReferenceMaterial';
 import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
 import type Table from '../types/Table';
 import type Term from '../types/Term';
+import type TestPointSet from '../types/TestPointSet';
 import type Verdict from '../types/Verdict';
 import type ViewProfile from '../types/ViewProfile';
 import type { ParseIssue } from '../validate';
@@ -127,6 +129,8 @@ export interface ParseContext {
   symbols: Record<string, Symbol>;
   calculations: Record<string, Calculation>;
   verdicts: Record<string, Verdict>;
+  referenceMaterials: Record<string, ReferenceMaterial>;
+  testPointSets: Record<string, TestPointSet>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;
   conformanceClasses: Record<string, ConformanceClass>;

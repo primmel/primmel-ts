@@ -28,6 +28,7 @@ import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { stripColon } from './field-parser';
+import { parseAcceptance, dumpAcceptance } from './acceptance';
 import type { Dumper, Parser } from '../types';
 
 const VALID_SERIES_REDUCTIONS: SeriesReduction[] = [
@@ -73,6 +74,7 @@ export const parseVerdict: Parser = function (id, data) {
     derive: '',
     inputs: [],
     seriesReduction: null,
+    acceptance: null,
     source: null,
   };
 
@@ -109,6 +111,8 @@ export const parseVerdict: Parser = function (id, data) {
           );
         }
         result.seriesReduction = v;
+      } else if (keyword === 'acceptance') {
+        result.acceptance = parseAcceptance(unwrapBlock(value()));
       } else if (keyword === 'source' || keyword === 'reference') {
         result.source = readSource(unwrapBlock(value()));
       } else {
@@ -142,6 +146,9 @@ export const dumpVerdict: Dumper<Verdict> = function (v) {
   }
   if (v.seriesReduction) {
     out += '  series_reduction ' + v.seriesReduction + '\n';
+  }
+  if (v.acceptance) {
+    out += dumpAcceptance(v.acceptance, '  ') + '\n';
   }
   if (v.source && (v.source.doc || v.source.clause)) {
     out +=

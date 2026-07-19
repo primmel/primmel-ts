@@ -1,6 +1,10 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage, unwrapBlock } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
+import {
+  parseSourceDiscrepancy,
+  dumpSourceDiscrepancy,
+} from './sourceDiscrepancy';
 import type Note from '../../types/Note';
 import type { NoteType } from '../../types/Note';
 import type { ResolvableNote } from '../../types/Note';
@@ -14,6 +18,7 @@ export const parseNote: Parser = function (id, data) {
     id: id,
     type: 'NOTE',
     message: '',
+    sourceDiscrepancy: null,
     ref: [],
     _relations: {
       ref: [],
@@ -35,6 +40,8 @@ export const parseNote: Parser = function (id, data) {
         result.type = v;
       } else if (command === 'message') {
         result.message = unwrapped(value);
+      } else if (command === 'source_discrepancy') {
+        result.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(value()));
       } else if (command === 'reference') {
         result._relations.ref = tokenizePackage(value());
       } else {
@@ -69,6 +76,9 @@ export const dumpNote: Dumper<Note> = function (n) {
   let out = 'note ' + n.id + ' {\n';
   out += '  type ' + n.type + '\n';
   out += '  message "' + escapeString(n.message) + '"\n';
+  if (n.sourceDiscrepancy) {
+    out += dumpSourceDiscrepancy(n.sourceDiscrepancy, '  ') + '\n';
+  }
   if (n.ref.length > 0) {
     out += '  reference {\n';
     for (const r of n.ref) {

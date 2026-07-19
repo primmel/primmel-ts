@@ -78,6 +78,11 @@ import { dumpStateMachine, parseStateMachine } from './stateMachine';
 import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
 import { dumpVerdict, parseVerdict } from './verdict';
+import {
+  dumpReferenceMaterial,
+  parseReferenceMaterial,
+} from './referenceMaterial';
+import { dumpTestPointSet, parseTestPointSet } from './testPointSet';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
 import { parsePackage } from './packageManifest';
 import { conformanceClassConstruct } from './conformanceClass';
@@ -329,6 +334,20 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseVerdict,
     dump: dumpVerdict as never,
+  }),
+  defineConstruct({
+    keyword: 'reference_material',
+    field: 'referenceMaterials',
+    takesID: true,
+    parse: parseReferenceMaterial,
+    dump: dumpReferenceMaterial as never,
+  }),
+  defineConstruct({
+    keyword: 'test_point_set',
+    field: 'testPointSets',
+    takesID: true,
+    parse: parseTestPointSet,
+    dump: dumpTestPointSet as never,
   }),
   defineConstruct({
     keyword: 'state_machine',

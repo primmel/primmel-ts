@@ -13,11 +13,22 @@ export interface CalculationInput {
 export interface CalculationOutput {
   type: string;
   unit: string;
+  name?: string;
+  description?: string;
+}
+
+/** Table-lookup declaration (key + carried variable + multiplier). */
+export interface CalculationLookup {
+  key: string;
+  variable: string;
+  multiplier: string;
 }
 
 interface Calculation {
   id: string;
   name: string;
+  /** Canonical identifier path (e.g. /calc/mpe/absolute). */
+  identifier?: string;
   /** Engine rule kind (v2): expression | table_lookup | profile_lookup | pass_fail */
   ruleType?: string;
   /** Grouping category for typed primitives (v2). */
@@ -28,6 +39,12 @@ interface Calculation {
   inputs: CalculationInput[];
   output: CalculationOutput;
   expression: string;
+  /** Parameter ids the calculation is parameterized by. */
+  params?: string[];
+  /** Table-lookup declaration. */
+  lookup?: CalculationLookup | null;
+  /** Profile path this calculation resolves through (e.g. profiles.mpe_tiers). */
+  profile?: string;
   ref: Reference[];
 }
 

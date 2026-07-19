@@ -3,6 +3,7 @@ import ConformanceTest, {
   TestObservable,
   AcceptanceCriterion,
   TestPrecondition,
+  TestInstances,
 } from '../../types/ConformanceTest';
 import tokenize from '../tokenize';
 import {
@@ -11,8 +12,18 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { stripColon } from './field-parser';
+import {
+  stripColon,
+  parseApplicability,
+  dumpApplicabilityEntries,
+} from './field-parser';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
+import {
+  parseSourceDiscrepancy,
+  dumpSourceDiscrepancy,
+} from './sourceDiscrepancy';
+import { parseAcceptance, dumpAcceptance } from './acceptance';
+import { parseDesign, dumpDesign } from './design';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser } from '../types';
 
@@ -21,6 +32,14 @@ function readStringList(block: string): string[] {
     .map(stripColon)
     .map(stripWrapping)
     .filter(x => x.length > 0);
+}
+
+/** Numeric-looking values parse as numbers, everything else stays a string. */
+function numOrString(s: string): string | number {
+  if (s.trim() !== '' && !isNaN(Number(s))) {
+    return Number(s);
+  }
+  return s;
 }
 
 function parseTestVariables(block: string): TestVariable[] {
@@ -162,12 +181,23 @@ function parseObservables(block: string): TestObservable[] {
   return out;
 }
 
-function parseAcceptanceCriteria(block: string): AcceptanceCriterion[] {
-  const out: AcceptanceCriterion[] = [];
+function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
   const t = tokenize(block);
   let i = 0;
   while (i < t.length) {
     const cmd = t[i++];
+    if (cmd === 'type') {
+      result.acceptanceCriteriaType = stripWrapping(t[i++]);
+      continue;
+    }
+    if (cmd === 'description') {
+      result.acceptanceCriteriaDescription = stripWrapping(t[i++]);
+      continue;
+    }
+    if (cmd === 'pass_if') {
+      result.acceptancePassIf = stripWrapping(t[i++]);
+      continue;
+    }
     if (cmd !== 'criterion' && cmd !== 'item') {
       if (i < t.length) {
         unwrapBlock(t[i - 1]);
@@ -175,7 +205,15 @@ function parseAcceptanceCriteria(block: string): AcceptanceCriterion[] {
       continue;
     }
     const item = stripWrapping(t[i++]);
-    const c: AcceptanceCriterion = { item, passIf: '', requirementId: '' };
+    const c: AcceptanceCriterion = {
+      item,
+      passIf: '',
+      requirementId: '',
+      criterion: '',
+      optional: false,
+      description: '',
+      reference: '',
+    };
     if (i < t.length && t[i].startsWith('{')) {
       const cb = unwrapBlock(t[i++]);
       const ct = tokenize(cb);
@@ -187,16 +225,24 @@ function parseAcceptanceCriteria(block: string): AcceptanceCriterion[] {
         }
         if (cc === 'pass_if') {
           c.passIf = stripWrapping(ct[j++]);
-        } else if (cc === 'requirement') {
+        } else if (cc === 'requirement' || cc === 'target') {
+          // `target /req/x` is the cc.yaml alias of `requirement /req/x`.
           c.requirementId = stripWrapping(ct[j++]);
+        } else if (cc === 'criterion') {
+          c.criterion = stripWrapping(ct[j++]);
+        } else if (cc === 'optional') {
+          c.optional = stripWrapping(ct[j++]) === 'true';
+        } else if (cc === 'description') {
+          c.description = stripWrapping(ct[j++]);
+        } else if (cc === 'reference') {
+          c.reference = stripWrapping(ct[j++]);
         } else {
           unwrapBlock(ct[j++]);
         }
       }
     }
-    out.push(c);
+    result.acceptanceCriteria.push(c);
   }
-  return out;
 }
 
 function parseDerivedValues(
@@ -255,13 +301,63 @@ function parseTestSubject(block: string): Record<string, string> {
   return out;
 }
 
+function parseInstances(block: string): TestInstances {
+  const out: TestInstances = { by: '', values: {} };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'by') {
+      out.by = stripWrapping(t[i++]);
+    } else if (cmd === 'values') {
+      const vt = tokenize(unwrapBlock(t[i++]));
+      let j = 0;
+      while (j < vt.length) {
+        const key = stripColon(vt[j++]);
+        if (j >= vt.length) {
+          break;
+        }
+        if (vt[j] === ':') {
+          j++;
+        }
+        if (j < vt.length && vt[j].startsWith('{')) {
+          const pt = tokenize(unwrapBlock(vt[j++]));
+          const params: Record<string, string | number> = {};
+          let k = 0;
+          while (k < pt.length) {
+            const pkey = stripColon(pt[k++]);
+            if (k >= pt.length) {
+              break;
+            }
+            if (pt[k] === ':') {
+              k++;
+            }
+            if (k < pt.length) {
+              params[pkey] = numOrString(stripWrapping(pt[k++]));
+            }
+          }
+          out.values[key] = params;
+        }
+      }
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return out;
+}
+
 export const parseConformanceTest: Parser = function (id, data) {
   const result: ConformanceTest = {
     id,
     name: '',
     type: '',
+    guidance: '',
     reference: '',
     targets: [],
+    applicability: [],
     procedure: [],
     measurements: [],
     kind: '',
@@ -270,10 +366,19 @@ export const parseConformanceTest: Parser = function (id, data) {
     observables: [],
     conditionsToEnforce: [],
     preconditions: [],
+    referenceMaterials: [],
     acceptanceCriteria: [],
+    acceptanceCriteriaType: '',
+    acceptanceCriteriaDescription: '',
+    acceptancePassIf: '',
+    design: null,
+    acceptance: null,
+    dependencies: [],
+    instances: null,
     inheritsFrom: '',
     resultForms: [],
     derivedValues: [],
+    sourceDiscrepancy: null,
   };
 
   forEachEntry(
@@ -285,6 +390,8 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.purpose = unwrapped(value);
       } else if (keyword === 'method') {
         result.method = unwrapped(value);
+      } else if (keyword === 'guidance') {
+        result.guidance = unwrapped(value);
       } else if (keyword === 'type') {
         result.type = value();
       } else if (keyword === 'reference') {
@@ -311,6 +418,8 @@ export const parseConformanceTest: Parser = function (id, data) {
         }
       } else if (keyword === 'targets') {
         result.targets = tokenizePackage(value());
+      } else if (keyword === 'applicability') {
+        result.applicability = parseApplicability(unwrapBlock(value()));
       } else if (keyword === 'procedure') {
         const block = value();
         const tokens = tokenizePackage(block);
@@ -319,12 +428,19 @@ export const parseConformanceTest: Parser = function (id, data) {
           const order = parseInt(tokens[i], 10);
           if (!isNaN(order) && i + 1 < tokens.length) {
             const action = unwrapped(() => tokens[i + 1]);
-            result.procedure.push({ order, action });
+            const step = { order, action, outputs: [] as string[] };
             i += 2;
+            if (tokens[i] === 'outputs' && i + 1 < tokens.length) {
+              step.outputs = readStringList(tokens[i + 1]);
+              i += 2;
+            }
+            result.procedure.push(step);
           } else {
             i++;
           }
         }
+      } else if (keyword === 'procedure_steps') {
+        result.procedureSteps = readStringList(value());
       } else if (keyword === 'kind') {
         result.kind = stripWrapping(value());
       } else if (keyword === 'test_subject') {
@@ -340,10 +456,18 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.conditionsToEnforce = readStringList(value());
       } else if (keyword === 'preconditions') {
         result.preconditions = parsePreconditions(unwrapBlock(value()));
+      } else if (keyword === 'reference_materials') {
+        result.referenceMaterials = readStringList(value());
       } else if (keyword === 'acceptance_criteria') {
-        result.acceptanceCriteria = parseAcceptanceCriteria(
-          unwrapBlock(value()),
-        );
+        parseAcceptanceCriteria(unwrapBlock(value()), result);
+      } else if (keyword === 'design') {
+        result.design = parseDesign(unwrapBlock(value()));
+      } else if (keyword === 'acceptance') {
+        result.acceptance = parseAcceptance(unwrapBlock(value()));
+      } else if (keyword === 'dependencies') {
+        result.dependencies = readStringList(value());
+      } else if (keyword === 'instances') {
+        result.instances = parseInstances(unwrapBlock(value()));
       } else if (keyword === 'inherits_from') {
         result.inheritsFrom = stripWrapping(value());
       } else if (keyword === 'result_forms') {
@@ -358,6 +482,8 @@ export const parseConformanceTest: Parser = function (id, data) {
             result.measurements.push(unwrapBlock(t));
           }
         }
+      } else if (keyword === 'source_discrepancy') {
+        result.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(value()));
       } else {
         return false;
       }
@@ -386,6 +512,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.method) {
     out += '  method "' + escapeString(ct.method) + '"\n';
   }
+  if (ct.guidance) {
+    out += '  guidance "' + escapeString(ct.guidance) + '"\n';
+  }
   if (ct.sourceRef && ct.sourceRef.doc) {
     out += '  reference { doc "' + escapeString(ct.sourceRef.doc) + '" clause "' + escapeString(ct.sourceRef.clause) + '" }\n';
   } else if (ct.reference) {
@@ -398,12 +527,25 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     }
     out += '  }\n';
   }
+  if (ct.applicability.length > 0) {
+    out +=
+      '  applicability {\n    ' +
+      dumpApplicabilityEntries(ct.applicability).trim() +
+      '\n  }\n';
+  }
   if (ct.procedure.length > 0) {
     out += '  procedure {\n';
     for (const step of ct.procedure) {
-      out += '    ' + step.order + ' "' + escapeString(step.action) + '"\n';
+      let line = '    ' + step.order + ' "' + escapeString(step.action) + '"';
+      if (step.outputs.length > 0) {
+        line += ' outputs { ' + step.outputs.join(' ') + ' }';
+      }
+      out += line + '\n';
     }
     out += '  }\n';
+  }
+  if (ct.procedureSteps && ct.procedureSteps.length > 0) {
+    out += '  procedure_steps { ' + ct.procedureSteps.join(' ') + ' }\n';
   }
   if (ct.measurements.length > 0) {
     out += '  validate_measurement {\n';
@@ -487,8 +629,27 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     }
     out += '  }\n';
   }
-  if (ct.acceptanceCriteria.length > 0) {
+  if (ct.referenceMaterials.length > 0) {
+    out += '  reference_materials { ' + ct.referenceMaterials.join(' ') + ' }\n';
+  }
+  if (
+    ct.acceptanceCriteria.length > 0 ||
+    ct.acceptanceCriteriaType ||
+    ct.acceptancePassIf
+  ) {
     out += '  acceptance_criteria {\n';
+    if (ct.acceptanceCriteriaType) {
+      out += '    type ' + ct.acceptanceCriteriaType + '\n';
+    }
+    if (ct.acceptanceCriteriaDescription) {
+      out +=
+        '    description "' +
+        escapeString(ct.acceptanceCriteriaDescription) +
+        '"\n';
+    }
+    if (ct.acceptancePassIf) {
+      out += '    pass_if "' + escapeString(ct.acceptancePassIf) + '"\n';
+    }
     for (const c of ct.acceptanceCriteria) {
       let line = '    criterion ' + c.item + ' { ';
       if (c.passIf) {
@@ -497,9 +658,41 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       if (c.requirementId) {
         line += 'requirement ' + c.requirementId + ' ';
       }
+      if (c.criterion) {
+        line += 'criterion ' + c.criterion + ' ';
+      }
+      if (c.optional) {
+        line += 'optional true ';
+      }
+      if (c.description) {
+        line += 'description "' + escapeString(c.description) + '" ';
+      }
+      if (c.reference) {
+        line += 'reference "' + escapeString(c.reference) + '" ';
+      }
       out += line + '}\n';
     }
     out += '  }\n';
+  }
+  if (ct.design) {
+    out += dumpDesign(ct.design, '  ');
+  }
+  if (ct.acceptance) {
+    out += dumpAcceptance(ct.acceptance, '  ') + '\n';
+  }
+  if (ct.dependencies.length > 0) {
+    out += '  dependencies { ' + ct.dependencies.join(' ') + ' }\n';
+  }
+  if (ct.instances) {
+    let line = '  instances { by ' + ct.instances.by + ' values { ';
+    for (const [key, params] of Object.entries(ct.instances.values)) {
+      line += key + ' { ';
+      for (const [pk, pv] of Object.entries(params)) {
+        line += pk + ': ' + pv + ' ';
+      }
+      line += '} ';
+    }
+    out += line + '} }\n';
   }
   if (ct.inheritsFrom) {
     out += '  inherits_from ' + ct.inheritsFrom + '\n';
@@ -518,6 +711,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
         '" }\n';
     }
     out += '  }\n';
+  }
+  if (ct.sourceDiscrepancy) {
+    out += dumpSourceDiscrepancy(ct.sourceDiscrepancy, '  ') + '\n';
   }
   out += '}\n';
   return out;

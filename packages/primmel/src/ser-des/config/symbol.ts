@@ -1,9 +1,16 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, tokenizePackage, unwrapBlock } from '../tokenize';
+import tokenize from '../tokenize';
+import {
+  escapeString,
+  tokenizePackage,
+  unwrapBlock,
+  stripWrapping,
+} from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import type Symbol from '../../types/Symbol';
 import type { SymbolType, ResolvableSymbol } from '../../types/Symbol';
+import type { SourceRef } from '../../types/Subject';
 import type Reference from '../../types/Reference';
 import { resolveFromContext } from '../resolve';
 
@@ -17,6 +24,26 @@ const VALID_SYMBOL_TYPES: SymbolType[] = [
   'array',
 ];
 
+function readSource(block: string): SourceRef {
+  const src: SourceRef = { doc: '', clause: '' };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'doc') {
+      src.doc = stripWrapping(t[i++]);
+    } else if (cmd === 'clause') {
+      src.clause = stripWrapping(t[i++]);
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return src;
+}
+
 export const parseSymbol: Parser = function (id, data) {
   const result: ResolvableSymbol = {
     id,
@@ -27,6 +54,16 @@ export const parseSymbol: Parser = function (id, data) {
     latex: '',
     values: [],
     series: null,
+    kind: '',
+    quantityKind: '',
+    origin: '',
+    legacyId: '',
+    attribute: '',
+    calculation: '',
+    profile: '',
+    sourceRef: null,
+    formula: null,
+    notes: [],
     ref: [],
     _relations: {
       ref: [],
@@ -58,6 +95,46 @@ export const parseSymbol: Parser = function (id, data) {
         result.values = tokenizePackage(value());
       } else if (command === 'series') {
         result.series = parseSeriesDecl(unwrapBlock(value()));
+      } else if (command === 'kind') {
+        result.kind = stripWrapping(value());
+      } else if (command === 'quantity_kind') {
+        result.quantityKind = stripWrapping(value());
+      } else if (command === 'origin') {
+        result.origin = stripWrapping(value());
+      } else if (command === 'legacy_id') {
+        result.legacyId = stripWrapping(value());
+      } else if (command === 'attribute') {
+        result.attribute = stripWrapping(value());
+      } else if (command === 'calculation') {
+        result.calculation = stripWrapping(value());
+      } else if (command === 'profile') {
+        result.profile = stripWrapping(value());
+      } else if (command === 'source') {
+        result.sourceRef = readSource(unwrapBlock(value()));
+      } else if (command === 'formula') {
+        const ft = tokenize(unwrapBlock(value()));
+        const formula = { display: '', expression: '', inputs: [] as string[] };
+        let j = 0;
+        while (j < ft.length) {
+          const fc = ft[j++];
+          if (j >= ft.length) {
+            break;
+          }
+          if (fc === 'display') {
+            formula.display = stripWrapping(ft[j++]);
+          } else if (fc === 'expression') {
+            formula.expression = stripWrapping(ft[j++]);
+          } else if (fc === 'inputs') {
+            formula.inputs = tokenize(stripWrapping(ft[j++]))
+              .map(stripWrapping)
+              .filter(s => s.length > 0);
+          } else {
+            unwrapBlock(ft[j++]);
+          }
+        }
+        result.formula = formula;
+      } else if (command === 'note') {
+        result.notes.push(unwrapped(value));
       } else if (command === 'reference') {
         result._relations.ref = tokenizePackage(value());
       } else {
@@ -106,6 +183,51 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
   }
   if (s.series) {
     out += '  ' + dumpSeriesDecl(s.series) + '\n';
+  }
+  if (s.kind) {
+    out += '  kind ' + s.kind + '\n';
+  }
+  if (s.quantityKind) {
+    out += '  quantity_kind ' + s.quantityKind + '\n';
+  }
+  if (s.origin) {
+    out += '  origin ' + s.origin + '\n';
+  }
+  if (s.legacyId) {
+    out += '  legacy_id ' + s.legacyId + '\n';
+  }
+  if (s.attribute) {
+    out += '  attribute ' + s.attribute + '\n';
+  }
+  if (s.calculation) {
+    out += '  calculation ' + s.calculation + '\n';
+  }
+  if (s.profile) {
+    out += '  profile ' + s.profile + '\n';
+  }
+  if (s.sourceRef && (s.sourceRef.doc || s.sourceRef.clause)) {
+    out +=
+      '  source { doc "' +
+      escapeString(s.sourceRef.doc) +
+      '" clause "' +
+      escapeString(s.sourceRef.clause) +
+      '" }\n';
+  }
+  if (s.formula) {
+    let line = '  formula { ';
+    if (s.formula.display) {
+      line += 'display "' + escapeString(s.formula.display) + '" ';
+    }
+    if (s.formula.expression) {
+      line += 'expression "' + escapeString(s.formula.expression) + '" ';
+    }
+    if (s.formula.inputs.length > 0) {
+      line += 'inputs { ' + s.formula.inputs.join(' ') + ' } ';
+    }
+    out += line + '}\n';
+  }
+  for (const note of s.notes) {
+    out += '  note "' + escapeString(note) + '"\n';
   }
   if (s.ref.length > 0) {
     out += '  reference {\n';

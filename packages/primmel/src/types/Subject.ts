@@ -17,14 +17,22 @@ export interface SourceRef {
 /** instrument <Id> — the subject type definition (one per Recommendation). */
 export interface SubjectVariant {
   id: string;
+  /** Display name (e.g. "Digital load cell"). */
+  name?: string;
   definition: string;
+  /** Free-text editorial note. */
+  note?: string;
+  source?: SourceRef | null;
 }
 
 export interface DimensionValue {
   id: string;
   description: string;
-  /** Per-value payload (e.g. n_lc_limits per accuracy class). */
-  payload: Record<string, string>;
+  /**
+   * Per-value payload (e.g. n_lc_limits per accuracy class). Values are
+   * scalars, or nested blocks (e.g. n_lc_limits { lower: 50000 upper: unlimited }).
+   */
+  payload: Record<string, string | Record<string, string>>;
   /**
    * Category subsumption (TODO.refactor/07): other value ids of THIS
    * dimension this value implies (e.g. R 91 average-speed implies
@@ -62,7 +70,13 @@ export interface ModelGroupDef {
 export interface Instrument {
   id: string;
   extends: string;
+  /** Measurand kind the instrument measures (e.g. force). */
+  measurandKind?: string;
   definition: string;
+  /** Free-text editorial note. */
+  note?: string;
+  /** Source provenance of the instrument definition. */
+  source?: SourceRef | null;
   variants: SubjectVariant[];
   dimensions: ClassificationDimension[];
   /**

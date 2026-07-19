@@ -64,6 +64,8 @@ export default function parse(
     symbols: {},
     calculations: {},
     verdicts: {},
+    referenceMaterials: {},
+    testPointSets: {},
     stateMachines: {},
     conformanceTests: {},
     conformanceClasses: {},

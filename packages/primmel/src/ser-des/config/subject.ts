@@ -152,8 +152,14 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
     }
     if (cmd === 'extends') {
       result.extends = stripWrapping(t[i++]);
+    } else if (cmd === 'measurand_kind') {
+      result.measurandKind = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
       result.definition = stripWrapping(t[i++]);
+    } else if (cmd === 'note') {
+      result.note = stripWrapping(t[i++]);
+    } else if (cmd === 'source') {
+      result.source = readSource(unwrapBlock(t[i++]));
     } else if (cmd === 'variant') {
       const variantId = stripWrapping(t[i++]);
       const vblock = i < t.length ? unwrapBlock(t[i++]) : '';
@@ -165,8 +171,14 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
         if (j >= vt.length) {
           break;
         }
-        if (vc === 'definition') {
+        if (vc === 'name') {
+          v.name = stripWrapping(vt[j++]);
+        } else if (vc === 'definition') {
           v.definition = stripWrapping(vt[j++]);
+        } else if (vc === 'note') {
+          v.note = stripWrapping(vt[j++]);
+        } else if (vc === 'source') {
+          v.source = readSource(unwrapBlock(vt[j++]));
         } else {
           unwrapBlock(vt[j++]);
         }
@@ -297,7 +309,25 @@ function parseDimensionValues(block: string): DimensionValue[] {
             if (pt[k] === ':') {
               k++;
             }
-            if (k < pt.length) {
+            if (k < pt.length && pt[k].startsWith('{')) {
+              // Nested payload block: n_lc_limits { lower: 50000 upper: unlimited }
+              const nt = tokenize(unwrapBlock(pt[k++]));
+              const nested: Record<string, string> = {};
+              let n = 0;
+              while (n < nt.length) {
+                const nkey = stripColon(nt[n++]);
+                if (n >= nt.length) {
+                  break;
+                }
+                if (nt[n] === ':') {
+                  n++;
+                }
+                if (n < nt.length) {
+                  nested[nkey] = stripWrapping(nt[n++]);
+                }
+              }
+              value.payload[key] = nested;
+            } else if (k < pt.length) {
               value.payload[key] = stripWrapping(pt[k++]);
             }
           }
@@ -345,16 +375,33 @@ const dumpInstrument = function (inst: Instrument): string {
   if (inst.perChannel) {
     out += '  per_channel ' + inst.perChannel + '\n';
   }
+  if (inst.measurandKind) {
+    out += '  measurand_kind ' + inst.measurandKind + '\n';
+  }
   if (inst.definition) {
     out += '  definition "' + escapeString(inst.definition) + '"\n';
   }
+  if (inst.note) {
+    out += '  note "' + escapeString(inst.note) + '"\n';
+  }
   for (const v of inst.variants) {
-    out +=
-      '  variant ' +
-      v.id +
-      ' { definition "' +
-      escapeString(v.definition) +
-      '" }\n';
+    let line = '  variant ' + v.id + ' { ';
+    if (v.name) {
+      line += 'name "' + escapeString(v.name) + '" ';
+    }
+    line += 'definition "' + escapeString(v.definition) + '" ';
+    if (v.note) {
+      line += 'note "' + escapeString(v.note) + '" ';
+    }
+    if (v.source && (v.source.doc || v.source.clause)) {
+      line +=
+        'source { doc "' +
+        escapeString(v.source.doc) +
+        '" clause "' +
+        escapeString(v.source.clause) +
+        '" } ';
+    }
+    out += line + '}\n';
   }
   for (const d of inst.dimensions) {
     out += '  dimension ' + d.id + ' {\n';
@@ -393,7 +440,15 @@ const dumpInstrument = function (inst: Instrument): string {
           if (Object.keys(v.payload).length > 0) {
             line += 'payload { ';
             for (const [k, val] of Object.entries(v.payload)) {
-              line += k + ': "' + escapeString(String(val)) + '" ';
+              if (typeof val === 'object' && val !== null) {
+                line += k + ' { ';
+                for (const [nk, nv] of Object.entries(val)) {
+                  line += nk + ': "' + escapeString(String(nv)) + '" ';
+                }
+                line += '} ';
+              } else {
+                line += k + ': "' + escapeString(String(val)) + '" ';
+              }
             }
             line += '} ';
           }
@@ -439,6 +494,7 @@ const dumpInstrument = function (inst: Instrument): string {
     );
     out += '  }\n';
   }
+  out += dumpSource('source', inst.source ?? null, '  ');
   out += dumpIdList('reference', inst.referenceIds, '  ');
   out += '}\n';
   return out;

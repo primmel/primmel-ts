@@ -23,6 +23,7 @@ import type {
   ConditionSet,
   Instrument,
 } from './Subject';
+import type ReferenceMaterial from './ReferenceMaterial';
 import type { Requirement, RequirementClass } from './Requirement';
 import type { ConformanceClass } from './ConformanceClass';
 import type { PackageManifest } from './Package';
@@ -30,6 +31,7 @@ import type Subform from './Subform';
 import type Symbol from './Symbol';
 import type Table from './Table';
 import type Term from './Term';
+import type TestPointSet from './TestPointSet';
 import type Verdict from './Verdict';
 import type ViewProfile from './ViewProfile';
 
@@ -67,6 +69,10 @@ export default interface Standard {
   calculations: Calculation[];
   /** Canonical verdict quantities (derive once, reference everywhere). */
   verdicts: Verdict[];
+  /** Certified reference materials with machine-checked constraints. */
+  referenceMaterials: ReferenceMaterial[];
+  /** Named shared test-point sets referenced by conformance tests. */
+  testPointSets: TestPointSet[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
   conformanceClasses: ConformanceClass[];

@@ -1,6 +1,8 @@
 import Resolvable from './Resolvable';
 import Reference from './Reference';
 import type { SeriesDecl } from './Series';
+import type SourceDiscrepancy from './SourceDiscrepancy';
+import type { SourceRef } from './Subject';
 
 export interface ApplicabilityEntry {
   dimension: string;
@@ -24,6 +26,19 @@ export interface EvaluationRule {
   rule: string;
   condition: string;
   referenceId: string | null;
+  /** Canonical verdict reference (verdict registry id). */
+  verdict?: string;
+  /** Comparison applied between the derived value and the limit. */
+  op?: string;
+  /** Limit predicate, ocl{...}. */
+  limit?: string;
+  sourceDiscrepancy?: SourceDiscrepancy | null;
+}
+
+/** Role-grouped source reference (e.g. role requirement → clause URNs). */
+export interface RoleReference {
+  urn: string;
+  role: string;
 }
 
 export interface FormField {
@@ -34,6 +49,18 @@ export interface FormField {
   unit: string;
   /** Binding path into the subject chain (v2 G5), e.g. model.parameters.e_max */
   bind?: string;
+  /** Symbol id this field captures. */
+  symbol: string;
+  /** Canonical verdict id this field is judged by. */
+  verdict: string;
+  /** Requirement ids this field provides evidence for. */
+  targets: string[];
+  /** Classification dimension this field captures a value of. */
+  dimension: string;
+  /** Enum id when the field's values come from a declared enum. */
+  enumRef: string;
+  /** Regex validation pattern. */
+  pattern: string;
   required: boolean;
   measurementMethod: string;
   calculationId: string | null;
@@ -41,9 +68,21 @@ export interface FormField {
   derivation: string;
   evaluation: EvaluationRule | null;
   values: string[];
+  /** Labels for boolean fields. */
+  trueLabel: string;
+  falseLabel: string;
+  /** Inline enum values (when the field defines its own axis). */
+  enumValues: string[];
   defaultValue: string;
   hasDefault: boolean;
   referenceIds: string[];
+  /** Role-grouped source reference URNs. */
+  fieldReferences: RoleReference[];
+  /** Free-text source clause citation (e.g. "R 144-1, 4.5.2"). */
+  specificationReference: string;
+  /** Classification applicability filter (dimension → allowed values). */
+  applicability: ApplicabilityEntry[];
+  sourceDiscrepancy: SourceDiscrepancy | null;
   // Nested object/array shape
   fields: FormField[];
   itemsType: string;
@@ -62,9 +101,41 @@ export interface SubformRef {
   applicability: ApplicabilityEntry[];
 }
 
+/** One derived value rule inside a pass_fail block. */
+export interface PassFailDerivation {
+  name: string;
+  calculation: string;
+  forEach: string;
+  unit: string;
+}
+
 export interface PassFail {
   criteria: string;
   passIf: string;
+  /** Derived-value rules feeding the pass_if expression. */
+  derivations: PassFailDerivation[];
+}
+
+/** Form calculation context (shared header + dimensions + tables). */
+export interface FormCalculationContext {
+  header: string;
+  dimensions: boolean;
+  tables: string[];
+}
+
+/** A named form instance (e.g. "on the load cell"). */
+export interface FormInstance {
+  id: string;
+  name: string;
+}
+
+/** A machine-checked form-level constraint. */
+export interface FormConstraint {
+  id: string;
+  rule: string;
+  onViolation: string;
+  notes: string;
+  source: SourceRef | null;
 }
 
 /**
@@ -82,6 +153,22 @@ interface Form {
   conformanceProcessId: string;
   /** Multiple conformance processes (forms covering several tests). */
   conformanceProcessIds?: string[];
+  /** Grouping section (report structure). */
+  section: string;
+  /** Requirement ids this form provides evidence for. */
+  requirements: string[];
+  /** Free-text editorial notes (repeatable). */
+  formNotes: string[];
+  /** Form scope (e.g. administrative). */
+  scope: string;
+  /** Role-grouped source reference URNs. */
+  formReferences: RoleReference[];
+  /** Calculation context for evaluated fields. */
+  calculationContext: FormCalculationContext | null;
+  /** Named form instances. */
+  formInstances: FormInstance[];
+  /** Machine-checked form-level constraints. */
+  formConstraints: FormConstraint[];
   applicability: ApplicabilityEntry[];
   fields: FormField[];
   passFail: PassFail | null;
