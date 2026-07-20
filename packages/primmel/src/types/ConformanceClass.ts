@@ -15,6 +15,8 @@ export interface ConformanceClass {
   /** Subject type or classification the tests apply to. */
   subject: string;
   applicability: ApplicabilityEntry[];
+  /** Structured subject-of-test description (dimension values, etc.). */
+  testSubject?: Record<string, string>;
   guidance: string;
   dependencies: string[];
   referenceIds: string[];

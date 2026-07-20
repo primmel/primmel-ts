@@ -22,6 +22,8 @@ export interface DataClass {
   helper?: boolean;
   /** Inheritance: fields merge from the parent (v2 G2). */
   extends?: string;
+  /** Class-level description. */
+  description?: string;
 }
 
 export type ResolvableDataClass = {
@@ -31,6 +33,7 @@ export type ResolvableDataClass = {
   indexes?: string[];
   helper?: boolean;
   extends?: string;
+  description?: string;
 };
 
 export interface DataAttribute {
@@ -45,6 +48,14 @@ export interface DataAttribute {
   onDelete?: string;
   /** Legacy field kept for migration only (v2 G2). */
   deprecated?: boolean;
+  /** Inline enum values for `enum`-typed fields. */
+  enumValues?: string[];
+  /** Explicit required flag (companion of modality). */
+  required?: boolean;
+  /** Unit of a quantity-valued field. */
+  unit?: string;
+  /** Default value (verbatim; structured defaults travel as JSON strings). */
+  defaultValue?: string;
 }
 
 export type ResolveableDataAttribute = Resolvable<DataAttribute, 'ref'>;

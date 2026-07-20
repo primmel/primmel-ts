@@ -129,6 +129,7 @@ function parseInputs(block: string): CalculationInput[] {
     let description = '';
     let defaultValue = '';
     let hasDefault = false;
+    let enumValues: string[] | undefined;
     if (i < t.length && t[i].startsWith('{')) {
       const propBlock = unwrapBlock(t[i++]);
       const pt = tokenizePackage(propBlock);
@@ -143,13 +144,23 @@ function parseInputs(block: string): CalculationInput[] {
           } else if (cmd === 'default') {
             defaultValue = unwrapBlock(pt[j++]);
             hasDefault = true;
+          } else if (cmd === 'enum_values') {
+            enumValues = tokenizePackage(unwrapBlock(pt[j++]));
           } else {
             j++; // skip unknown
           }
         }
       }
     }
-    inputs.push({ name, type, unit, description, defaultValue, hasDefault });
+    inputs.push({
+      name,
+      type,
+      unit,
+      description,
+      defaultValue,
+      hasDefault,
+      enumValues,
+    });
   }
   return inputs;
 }
@@ -264,6 +275,9 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
       }
       if (inp.hasDefault) {
         line += ' default ' + inp.defaultValue;
+      }
+      if (inp.enumValues && inp.enumValues.length > 0) {
+        line += ' enum_values { ' + inp.enumValues.join(' ') + ' }';
       }
       line += ' }\n';
       out += line;

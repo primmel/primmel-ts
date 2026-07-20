@@ -19,6 +19,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { parseApplicability, dumpApplicabilityEntries } from './field-parser';
+import { parseTestSubject } from './conformanceTest';
 import type { ConstructDefinition } from './index';
 import type { ConformanceClass } from '../../types/ConformanceClass';
 
@@ -58,6 +59,8 @@ const parseConformanceClass: ConstructDefinition['parse'] = function (
       result.subject = stripWrapping(t[i++]);
     } else if (cmd === 'applicability') {
       result.applicability = parseApplicability(unwrapBlock(t[i++]));
+    } else if (cmd === 'test_subject') {
+      result.testSubject = parseTestSubject(unwrapBlock(t[i++]));
     } else if (cmd === 'guidance') {
       result.guidance = stripWrapping(t[i++]);
     } else if (cmd === 'dependencies') {
@@ -100,6 +103,13 @@ const dumpConformanceClass = function (cc: ConformanceClass): string {
   }
   if (cc.guidance) {
     out += '  guidance "' + escapeString(cc.guidance) + '"\n';
+  }
+  if (cc.testSubject && Object.keys(cc.testSubject).length > 0) {
+    out += '  test_subject {\n';
+    for (const [k, v] of Object.entries(cc.testSubject)) {
+      out += '    ' + k + ': "' + escapeString(v) + '"\n';
+    }
+    out += '  }\n';
   }
   if (cc.dependencies.length > 0) {
     out += '  dependencies { ' + cc.dependencies.join(' ') + ' }\n';

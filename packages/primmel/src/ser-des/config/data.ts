@@ -11,7 +11,7 @@ import {
   Variable,
 } from '../../types/data';
 import { resolveFromContext } from '../resolve';
-import { escapeString, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage, stripWrapping } from '../tokenize';
 import { forEachEntry, forEachAttribute, unwrapped } from '../parse-block';
 import { Dumper, Parser, Resolver } from '../types';
 
@@ -104,6 +104,11 @@ export const parseDataClass: Parser = function (id, data) {
         result.store = details.trim();
         return;
       }
+      if (head === 'description') {
+        // stripWrapping unescapes \" — the tokenizer keeps escapes raw.
+        result.description = stripWrapping(details.trim());
+        return;
+      }
       if (head === 'indexes') {
         result.indexes = details.split(/\s+/).filter(x => x.length > 0);
         return;
@@ -174,6 +179,14 @@ const parseDataAttribute = (
         result.onDelete = value();
       } else if (keyword === 'deprecated') {
         result.deprecated = value() === 'true';
+      } else if (keyword === 'enum_values') {
+        result.enumValues = tokenizePackage(value());
+      } else if (keyword === 'required') {
+        result.required = value() === 'true';
+      } else if (keyword === 'unit') {
+        result.unit = unwrapped(value);
+      } else if (keyword === 'default') {
+        result.defaultValue = unwrapped(value);
       } else {
         return false;
       }
@@ -207,6 +220,9 @@ export const resolveDataClass: Resolver<DataClass, ResolvableDataClass> =
       ...(unresolved.extends !== undefined
         ? { extends: unresolved.extends }
         : {}),
+      ...(unresolved.description !== undefined
+        ? { description: unresolved.description }
+        : {}),
     };
   };
 
@@ -231,6 +247,10 @@ export const dumpDataClass: Dumper<DataClass> = function (dataclass) {
   let out: string = 'class ' + dataclass.id + ' {\n';
   if (dataclass.store) {
     out += '  store { ' + dataclass.store + ' }\n';
+  }
+  if (dataclass.description) {
+    // Attribute-shaped body: class-level entries carry brace blocks.
+    out += '  description { "' + escapeString(dataclass.description) + '" }\n';
   }
   if (dataclass.indexes && dataclass.indexes.length > 0) {
     out += '  indexes { ' + dataclass.indexes.join(' ') + ' }\n';
@@ -266,6 +286,18 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
   }
   if (attribute.deprecated) {
     out += '    deprecated true\n';
+  }
+  if (attribute.enumValues && attribute.enumValues.length > 0) {
+    out += '    enum_values { ' + attribute.enumValues.join(' ') + ' }\n';
+  }
+  if (attribute.required !== undefined) {
+    out += '    required ' + (attribute.required ? 'true' : 'false') + '\n';
+  }
+  if (attribute.unit) {
+    out += '    unit "' + escapeString(attribute.unit) + '"\n';
+  }
+  if (attribute.defaultValue !== undefined) {
+    out += '    default "' + escapeString(attribute.defaultValue) + '"\n';
   }
   if (attribute.satisfy.length > 0) {
     out += '    satisfy {\n';

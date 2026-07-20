@@ -91,6 +91,21 @@ export const parseForm: Parser = function (id, data) {
           result.formNotes.push(stripWrapping(t[i++]));
         } else if (command === 'scope') {
           result.scope = stripWrapping(t[i++]);
+        } else if (command === 'report_rows') {
+          // report_rows { field examination_items item_key item }
+          const rb = tokenize(unwrapBlock(t[i++]));
+          const rr: { field: string; itemKey: string } = {
+            field: '',
+            itemKey: '',
+          };
+          for (let k = 0; k + 1 < rb.length; k += 2) {
+            if (rb[k] === 'field') {
+              rr.field = stripWrapping(rb[k + 1]);
+            } else if (rb[k] === 'item_key') {
+              rr.itemKey = stripWrapping(rb[k + 1]);
+            }
+          }
+          result.reportRows = rr;
         } else if (command === 'references') {
           result.formReferences = parseRoleReferences(unwrapBlock(t[i++]));
         } else if (command === 'calculation_context') {
@@ -382,6 +397,14 @@ export const dumpForm: Dumper<Form> = function (f) {
   }
   if (f.scope) {
     out += '  scope ' + f.scope + '\n';
+  }
+  if (f.reportRows && (f.reportRows.field || f.reportRows.itemKey)) {
+    out +=
+      '  report_rows { field ' +
+      f.reportRows.field +
+      ' item_key ' +
+      f.reportRows.itemKey +
+      ' }\n';
   }
   if (f.formReferences.length > 0) {
     out += '  references { ' + dumpRoleReferences(f.formReferences) + ' }\n';

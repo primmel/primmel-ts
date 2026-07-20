@@ -8,6 +8,8 @@ export interface CalculationInput {
   description: string;
   defaultValue: string;
   hasDefault: boolean;
+  /** Inline enum values for enum-typed inputs. */
+  enumValues?: string[];
 }
 
 export interface CalculationOutput {

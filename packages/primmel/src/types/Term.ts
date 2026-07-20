@@ -23,6 +23,28 @@ interface Term {
   symbolId: string;
   referenceIds: string[];
   ref: Reference[];
+  /** Clause/section of the source document where the term is defined. */
+  section?: string;
+  /** Explanatory note accompanying the definition. */
+  note?: string;
+  /** Source URN (plain string form, e.g. "urn:oiml:pub:v:1:2022#clause-5.15"). */
+  source?: string;
+  /** Scope note qualifying the definition. */
+  scopeNote?: string;
+  /** Term language code (e.g. en). */
+  language?: string;
+  /** fullForm | abbreviation | symbol. */
+  formType?: string;
+  /** noun | verb | adjective | … */
+  partOfSpeech?: string;
+  /** Alternative designations. */
+  alt?: string[];
+  /** Deprecated designations. */
+  deprecated?: string[];
+  /** Abbreviations of the term. */
+  abbreviations?: string[];
+  /** Related term ids. */
+  seeAlso?: string[];
 }
 
 export default Term;

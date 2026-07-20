@@ -42,6 +42,11 @@ export interface DimensionValue {
    * closure when matching; the graph must be acyclic.
    */
   implies: string[];
+  /**
+   * Id of the term in the Recommendation's terminology.yaml that defines
+   * this value (TODO.refactor/13 R17 — terminology cross-link).
+   */
+  termRef?: string;
 }
 
 export interface ClassificationDimension {
@@ -67,6 +72,14 @@ export interface ModelGroupDef {
   definition: string;
   identicalCharacteristics: string[];
   identicalAttributes: string[];
+  /** Dimension whose values partition the family into groups. */
+  groupBy?: string;
+  /** Free-text editorial note. */
+  note?: string;
+  /** Source provenance entries. */
+  sources?: SourceRef[];
+  /** Sample-selection provenance (clause refs). */
+  sampleSelection?: SourceRef[];
 }
 
 export interface Instrument {
@@ -88,6 +101,14 @@ export interface Instrument {
    * (evaluation config per_channel in data/schemas/evaluation-dimensions.yaml).
    */
   perChannel: string;
+  /** Metamodel class the family instantiates (e.g. MeasuringInstrumentModelFamily). */
+  familyMetamodelClass?: string;
+  /** Family definition text. */
+  familyDefinition?: string;
+  /** Free-text editorial note on the family. */
+  familyNote?: string;
+  /** Source provenance of the family definition. */
+  familySource?: SourceRef | null;
   familyCriteria: string[];
   familyDefaultDimensions: string[];
   familyDefaultParameters: string[];
@@ -108,7 +129,11 @@ export interface AttributeDefinition {
   origin: string;
   scope: string;
   category: string;
-  isDimension: boolean;
+  /**
+   * Whether the attribute is a classification-dimension mirror.
+   * null = undeclared (the source omits the flag entirely).
+   */
+  isDimension: boolean | null;
   enumRef: string;
   /** Inline enum values (when the attribute defines its own axis). */
   enumValues?: string[];
@@ -150,13 +175,21 @@ export interface ConditionEntry {
   value: string;
   unit: string;
   tolerance: string;
+  /** Free-text provenance/usage note for the entry. */
+  note?: string;
 }
 
 export interface ConditionSet {
   id: string;
   role: string;
+  /** Subject type the conditions apply to (defaults to the instrument). */
+  subject?: string;
+  /** Free-text description of the set. */
+  description?: string;
   entries: ConditionEntry[];
-  /** Structured provenance (doc URN + clause). */
+  /** Structured provenance (doc URN + clause) — first of `sources`. */
   source?: SourceRef | null;
+  /** All provenance entries (a set may cite several clauses). */
+  sources?: SourceRef[];
   referenceIds: string[];
 }

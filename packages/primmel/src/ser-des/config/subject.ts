@@ -192,6 +192,28 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       result.perChannel = stripWrapping(t[i++]);
     } else if (cmd === 'family_criteria') {
       result.familyCriteria = readReference(t[i++]);
+    } else if (cmd === 'family') {
+      // family { metamodel_class X definition "..." note "..." source { … } }
+      const fblk = unwrapBlock(t[i++]);
+      const ft = tokenize(fblk);
+      let j = 0;
+      while (j < ft.length) {
+        const fc = ft[j++];
+        if (j >= ft.length) {
+          break;
+        }
+        if (fc === 'metamodel_class') {
+          result.familyMetamodelClass = stripWrapping(ft[j++]);
+        } else if (fc === 'definition') {
+          result.familyDefinition = stripWrapping(ft[j++]);
+        } else if (fc === 'note') {
+          result.familyNote = stripWrapping(ft[j++]);
+        } else if (fc === 'source') {
+          result.familySource = readSource(unwrapBlock(ft[j++]));
+        } else {
+          unwrapBlock(ft[j++]);
+        }
+      }
     } else if (cmd === 'family_defaults') {
       const fblock = unwrapBlock(t[i++]);
       const ft = tokenize(fblock);
@@ -300,6 +322,8 @@ function parseDimensionValues(block: string): DimensionValue[] {
           value.description = stripWrapping(vt[j++]);
         } else if (cmd === 'implies') {
           value.implies = readIdList(vt[j++]);
+        } else if (cmd === 'term_ref') {
+          value.termRef = stripWrapping(vt[j++]);
         } else if (cmd === 'payload') {
           const pblock = unwrapBlock(vt[j++]);
           const pt = tokenize(pblock);
@@ -349,6 +373,8 @@ function parseModelGroup(block: string): ModelGroupDef {
     definition: '',
     identicalCharacteristics: [],
     identicalAttributes: [],
+    sources: [],
+    sampleSelection: [],
   };
   const t = tokenize(block);
   let i = 0;
@@ -363,6 +389,14 @@ function parseModelGroup(block: string): ModelGroupDef {
       mg.identicalCharacteristics = readIdList(t[i++]);
     } else if (cmd === 'identical_attributes') {
       mg.identicalAttributes = readIdList(t[i++]);
+    } else if (cmd === 'group_by') {
+      mg.groupBy = stripWrapping(t[i++]);
+    } else if (cmd === 'note') {
+      mg.note = stripWrapping(t[i++]);
+    } else if (cmd === 'source') {
+      mg.sources!.push(readSource(unwrapBlock(t[i++])));
+    } else if (cmd === 'sample_selection') {
+      mg.sampleSelection!.push(readSource(unwrapBlock(t[i++])));
     } else {
       unwrapBlock(t[i++]);
     }
@@ -431,6 +465,7 @@ const dumpInstrument = function (inst: Instrument): string {
         const hasProps =
           v.label ||
           v.description ||
+          v.termRef ||
           Object.keys(v.payload).length > 0 ||
           v.implies.length > 0;
         if (hasProps) {
@@ -440,6 +475,9 @@ const dumpInstrument = function (inst: Instrument): string {
           }
           if (v.description) {
             line += 'description "' + escapeString(v.description) + '" ';
+          }
+          if (v.termRef) {
+            line += 'term_ref ' + v.termRef + ' ';
           }
           if (v.implies.length > 0) {
             line += 'implies { ' + v.implies.join(' ') + ' } ';
@@ -467,6 +505,25 @@ const dumpInstrument = function (inst: Instrument): string {
     }
     out += '  }\n';
   }
+  if (
+    inst.familyMetamodelClass ||
+    inst.familyDefinition ||
+    inst.familyNote ||
+    (inst.familySource && (inst.familySource.doc || inst.familySource.clause))
+  ) {
+    out += '  family {\n';
+    if (inst.familyMetamodelClass) {
+      out += '    metamodel_class ' + inst.familyMetamodelClass + '\n';
+    }
+    if (inst.familyDefinition) {
+      out += '    definition "' + escapeString(inst.familyDefinition) + '"\n';
+    }
+    if (inst.familyNote) {
+      out += '    note "' + escapeString(inst.familyNote) + '"\n';
+    }
+    out += dumpSource('source', inst.familySource ?? null, '    ');
+    out += '  }\n';
+  }
   if (inst.familyCriteria.length > 0) {
     out += '  family_criteria {\n';
     for (const c of inst.familyCriteria) {
@@ -489,6 +546,12 @@ const dumpInstrument = function (inst: Instrument): string {
       out +=
         '    definition "' + escapeString(inst.modelGroup.definition) + '"\n';
     }
+    if (inst.modelGroup.groupBy) {
+      out += '    group_by ' + inst.modelGroup.groupBy + '\n';
+    }
+    if (inst.modelGroup.note) {
+      out += '    note "' + escapeString(inst.modelGroup.note) + '"\n';
+    }
     out += dumpIdList(
       'identical_characteristics',
       inst.modelGroup.identicalCharacteristics,
@@ -499,6 +562,12 @@ const dumpInstrument = function (inst: Instrument): string {
       inst.modelGroup.identicalAttributes,
       '    ',
     );
+    for (const s of inst.modelGroup.sources ?? []) {
+      out += dumpSource('source', s, '    ');
+    }
+    for (const s of inst.modelGroup.sampleSelection ?? []) {
+      out += dumpSource('sample_selection', s, '    ');
+    }
     out += '  }\n';
   }
   out += dumpSource('source', inst.source ?? null, '  ');
@@ -525,7 +594,7 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
     origin: '',
     scope: '',
     category: '',
-    isDimension: false,
+    isDimension: null,
     enumRef: '',
     irdi: '',
     derived: '',
@@ -612,8 +681,8 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
   if (a.category) {
     out += '  category ' + a.category + '\n';
   }
-  if (a.isDimension) {
-    out += '  is_dimension true\n';
+  if (a.isDimension !== null && a.isDimension !== undefined) {
+    out += '  is_dimension ' + (a.isDimension ? 'true' : 'false') + '\n';
   }
   if (a.enumRef) {
     out += '  enum ' + a.enumRef + '\n';
@@ -767,6 +836,7 @@ const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
     role: '',
     entries: [],
     source: null,
+    sources: [],
     referenceIds: [],
   };
 
@@ -779,10 +849,19 @@ const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
     }
     if (cmd === 'role') {
       result.role = stripWrapping(t[i++]);
+    } else if (cmd === 'subject') {
+      result.subject = stripWrapping(t[i++]);
+    } else if (cmd === 'description') {
+      result.description = stripWrapping(t[i++]);
     } else if (cmd === 'entries') {
       result.entries = parseConditionEntries(unwrapBlock(t[i++]));
     } else if (cmd === 'source') {
-      result.source = readSource(unwrapBlock(t[i++]));
+      // Repeated source blocks accumulate; `source` stays the first entry.
+      const src = readSource(unwrapBlock(t[i++]));
+      result.sources!.push(src);
+      if (!result.source) {
+        result.source = src;
+      }
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
     } else {
@@ -826,6 +905,8 @@ function parseConditionEntries(block: string): ConditionEntry[] {
           entry.unit = stripWrapping(et[j++]);
         } else if (cmd === 'tolerance') {
           entry.tolerance = stripWrapping(et[j++]);
+        } else if (cmd === 'note') {
+          entry.note = stripWrapping(et[j++]);
         } else {
           unwrapBlock(et[j++]);
         }
@@ -841,6 +922,12 @@ const dumpConditionSet = function (cs: ConditionSet): string {
   if (cs.role) {
     out += '  role ' + cs.role + '\n';
   }
+  if (cs.subject) {
+    out += '  subject ' + cs.subject + '\n';
+  }
+  if (cs.description) {
+    out += '  description "' + escapeString(cs.description) + '"\n';
+  }
   if (cs.entries.length > 0) {
     out += '  entries {\n';
     for (const e of cs.entries) {
@@ -853,11 +940,22 @@ const dumpConditionSet = function (cs: ConditionSet): string {
       if (e.tolerance) {
         line += ' tolerance ' + dumpBareSafe(e.tolerance);
       }
+      if (e.note) {
+        line += ' note "' + escapeString(e.note) + '"';
+      }
       out += line + ' }\n';
     }
     out += '  }\n';
   }
-  out += dumpSource('source', cs.source ?? null, '  ');
+  const sources =
+    cs.sources && cs.sources.length > 0
+      ? cs.sources
+      : cs.source
+        ? [cs.source]
+        : [];
+  for (const s of sources) {
+    out += dumpSource('source', s, '  ');
+  }
   out += dumpIdList('reference', cs.referenceIds, '  ');
   out += '}\n';
   return out;

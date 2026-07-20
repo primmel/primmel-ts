@@ -44,6 +44,28 @@ export const parseTerm: Parser = function (id, data) {
         result.vocabRef = ref;
       } else if (command === 'vocab_term') {
         result.vocabTerm = stripWrapping(value());
+      } else if (command === 'section') {
+        result.section = unwrapped(value);
+      } else if (command === 'note') {
+        result.note = unwrapped(value);
+      } else if (command === 'source') {
+        result.source = unwrapped(value);
+      } else if (command === 'scope_note') {
+        result.scopeNote = unwrapped(value);
+      } else if (command === 'language') {
+        result.language = unwrapped(value);
+      } else if (command === 'form_type') {
+        result.formType = unwrapped(value);
+      } else if (command === 'part_of_speech') {
+        result.partOfSpeech = unwrapped(value);
+      } else if (command === 'alt') {
+        result.alt = tokenizePackage(value());
+      } else if (command === 'deprecated') {
+        result.deprecated = tokenizePackage(value());
+      } else if (command === 'abbreviations') {
+        result.abbreviations = tokenizePackage(value());
+      } else if (command === 'see_also') {
+        result.seeAlso = tokenizePackage(value());
       } else {
         return false;
       }
@@ -79,6 +101,39 @@ export const dumpTerm: Dumper<Term> = function (term) {
   }
   if (term.vocabTerm) {
     out += '  vocab_term "' + escapeString(term.vocabTerm) + '"\n';
+  }
+  if (term.section) {
+    out += '  section "' + escapeString(term.section) + '"\n';
+  }
+  if (term.note) {
+    out += '  note "' + escapeString(term.note) + '"\n';
+  }
+  if (term.source) {
+    out += '  source "' + escapeString(term.source) + '"\n';
+  }
+  if (term.scopeNote) {
+    out += '  scope_note "' + escapeString(term.scopeNote) + '"\n';
+  }
+  if (term.language) {
+    out += '  language "' + escapeString(term.language) + '"\n';
+  }
+  if (term.formType) {
+    out += '  form_type "' + escapeString(term.formType) + '"\n';
+  }
+  if (term.partOfSpeech) {
+    out += '  part_of_speech "' + escapeString(term.partOfSpeech) + '"\n';
+  }
+  if (term.alt && term.alt.length > 0) {
+    out += '  alt { ' + term.alt.join(' ') + ' }\n';
+  }
+  if (term.deprecated && term.deprecated.length > 0) {
+    out += '  deprecated { ' + term.deprecated.join(' ') + ' }\n';
+  }
+  if (term.abbreviations && term.abbreviations.length > 0) {
+    out += '  abbreviations { ' + term.abbreviations.join(' ') + ' }\n';
+  }
+  if (term.seeAlso && term.seeAlso.length > 0) {
+    out += '  see_also { ' + term.seeAlso.join(' ') + ' }\n';
   }
   if (term.referenceIds.length > 0) {
     out += '  reference {\n';

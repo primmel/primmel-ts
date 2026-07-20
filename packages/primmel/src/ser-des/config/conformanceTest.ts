@@ -242,6 +242,19 @@ function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
           c.description = stripWrapping(ct[j++]);
         } else if (cc === 'reference') {
           c.reference = stripWrapping(ct[j++]);
+        } else if (cc === 'accepts') {
+          const ab = tokenize(unwrapBlock(ct[j++]));
+          const accepts = { verdict: '', op: '', limit: '' };
+          for (let k = 0; k + 1 < ab.length; k += 2) {
+            if (ab[k] === 'verdict') {
+              accepts.verdict = stripWrapping(ab[k + 1]);
+            } else if (ab[k] === 'op') {
+              accepts.op = stripWrapping(ab[k + 1]);
+            } else if (ab[k] === 'limit') {
+              accepts.limit = stripWrapping(ab[k + 1]);
+            }
+          }
+          c.accepts = accepts;
         } else if (cc === 'source_discrepancy') {
           c.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(ct[j++]));
         } else {
@@ -290,7 +303,7 @@ function parseDerivedValues(
   return out;
 }
 
-function parseTestSubject(block: string): Record<string, string> {
+export function parseTestSubject(block: string): Record<string, string> {
   const out: Record<string, string> = {};
   const t = tokenize(block);
   let i = 0;
@@ -442,8 +455,21 @@ export const parseConformanceTest: Parser = function (id, data) {
           const order = parseInt(tokens[i], 10);
           if (!isNaN(order) && i + 1 < tokens.length) {
             const action = unwrapped(() => tokens[i + 1]);
-            const step = { order, action, outputs: [] as string[] };
+            const step: {
+              order: number;
+              action: string;
+              outputs: string[];
+              inputs?: string[];
+            } = {
+              order,
+              action,
+              outputs: [],
+            };
             i += 2;
+            if (tokens[i] === 'inputs' && i + 1 < tokens.length) {
+              step.inputs = readStringList(tokens[i + 1]);
+              i += 2;
+            }
             if (tokens[i] === 'outputs' && i + 1 < tokens.length) {
               step.outputs = readStringList(tokens[i + 1]);
               i += 2;
@@ -486,6 +512,8 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.inheritsFrom = stripWrapping(value());
       } else if (keyword === 'result_forms') {
         result.resultForms = readStringList(value());
+      } else if (keyword === 'report_rows') {
+        result.reportRows = readStringList(value());
       } else if (keyword === 'derived_values') {
         result.derivedValues = parseDerivedValues(unwrapBlock(value()));
       } else if (keyword === 'validate_measurement') {
@@ -556,6 +584,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     out += '  procedure {\n';
     for (const step of ct.procedure) {
       let line = '    ' + step.order + ' "' + escapeString(step.action) + '"';
+      if (step.inputs && step.inputs.length > 0) {
+        line += ' inputs { ' + step.inputs.join(' ') + ' }';
+      }
       if (step.outputs.length > 0) {
         line += ' outputs { ' + step.outputs.join(' ') + ' }';
       }
@@ -692,6 +723,16 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       if (c.reference) {
         line += 'reference "' + escapeString(c.reference) + '" ';
       }
+      if (c.accepts) {
+        line +=
+          'accepts { verdict ' +
+          c.accepts.verdict +
+          ' op ' +
+          c.accepts.op +
+          ' limit "' +
+          escapeString(c.accepts.limit) +
+          '" } ';
+      }
       if (c.sourceDiscrepancy) {
         line += dumpSourceDiscrepancy(c.sourceDiscrepancy, '') + ' ';
       }
@@ -724,6 +765,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   if (ct.resultForms.length > 0) {
     out += '  result_forms { ' + ct.resultForms.join(' ') + ' }\n';
+  }
+  if (ct.reportRows && ct.reportRows.length > 0) {
+    out += '  report_rows { ' + ct.reportRows.join(' ') + ' }\n';
   }
   if (ct.derivedValues.length > 0) {
     out += '  derived_values {\n';

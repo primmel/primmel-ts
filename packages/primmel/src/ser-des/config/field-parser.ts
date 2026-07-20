@@ -66,6 +66,49 @@ function readValueToken(
   return { text, next: j };
 }
 
+/**
+ * Parse a values / enum_values block: bare entries, optionally with a
+ * display-label block — `{ kg { label "Kg" } g }` or `[A, B]`.
+ */
+export function parseValueEntries(
+  raw: string,
+): Array<string | { value: string; label: string }> {
+  const inner = raw
+    .trim()
+    .replace(/^[[{]/, '')
+    .replace(/[\]}]$/, '');
+  const t = tokenizePackage(inner);
+  const out: Array<string | { value: string; label: string }> = [];
+  let i = 0;
+  while (i < t.length) {
+    const entry = stripWrapping(t[i++].replace(/,$/, ''));
+    if (!entry) {
+      continue;
+    }
+    if (i < t.length && t[i].startsWith('{')) {
+      const lb = tokenizePackage(unwrapBlock(t[i++]));
+      let label = '';
+      for (let k = 0; k + 1 < lb.length; k += 2) {
+        if (lb[k] === 'label') {
+          label = stripWrapping(lb[k + 1]);
+        }
+      }
+      out.push({ value: entry, label });
+    } else {
+      out.push(entry);
+    }
+  }
+  return out;
+}
+
+/** Dump one values / enum_values entry (label block when present). */
+function dumpValueEntry(e: string | { value: string; label: string }): string {
+  if (typeof e === 'string') {
+    return e;
+  }
+  return e.value + ' { label "' + escapeString(e.label) + '" }';
+}
+
 /** Emit a bare value safely: quote it when it contains spaces/braces/quotes. */
 export function dumpBareSafe(v: string): string {
   return /[\s{}"]/.test(v) ? '"' + escapeString(v) + '"' : v;
@@ -144,6 +187,7 @@ export function parseFormField(
   const field: FormField = {
     name,
     type: type || 'string',
+    typeDeclared: !!type,
     label: '',
     definition: '',
     unit: '',
@@ -192,9 +236,12 @@ export function parseFormField(
       field.label = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
       field.definition = stripWrapping(t[i++]);
+    } else if (cmd === 'description') {
+      field.description = stripWrapping(t[i++]);
     } else if (cmd === 'type') {
       // Type may also be declared inside the block.
       field.type = stripWrapping(t[i++]);
+      field.typeDeclared = true;
     } else if (cmd === 'unit') {
       field.unit = stripWrapping(t[i++]);
     } else if (cmd === 'symbol') {
@@ -209,6 +256,10 @@ export function parseFormField(
       field.enumRef = stripWrapping(t[i++]);
     } else if (cmd === 'pattern') {
       field.pattern = stripWrapping(t[i++]);
+    } else if (cmd === 'scope') {
+      field.scope = stripWrapping(t[i++]);
+    } else if (cmd === 'examples') {
+      field.examples = stripWrapping(t[i++]);
     } else if (cmd === 'bind') {
       // Binding path into the subject chain (G5):
       // model.parameters.e_max · sample.test_context.d_min · model.classification.accuracy_class
@@ -231,16 +282,10 @@ export function parseFormField(
     } else if (cmd === 'evaluation') {
       field.evaluation = parseEvaluation(unwrapBlock(t[i++]));
     } else if (cmd === 'values') {
-      // values [A, B] — lists split across whitespace; accumulate first.
+      // values { A B } / values [A, B] — entries may carry a label:
+      // values { kg { label "Kg" } g }
       const read = readBalanced(t, i);
-      const inner = read.text
-        .trim()
-        .replace(/^[[{]/, '')
-        .replace(/[\]}]$/, '');
-      field.values = inner
-        .split(/[,\s]+/)
-        .filter(s => s.length > 0)
-        .map(stripWrapping);
+      field.values = parseValueEntries(read.text);
       i = read.next;
     } else if (cmd === 'default') {
       field.defaultValue = stripWrapping(t[i++]);
@@ -250,19 +295,29 @@ export function parseFormField(
     } else if (cmd === 'false_label') {
       field.falseLabel = stripWrapping(t[i++]);
     } else if (cmd === 'enum_values') {
-      field.enumValues = tokenizePackage(t[i++]).map(stripWrapping);
+      field.enumValues = parseValueEntries(t[i++]);
     } else if (cmd === 'min_items') {
-      field.minItems = parseInt(stripWrapping(t[i++]), 10);
+      const raw = stripWrapping(t[i++]);
+      const n = parseInt(raw, 10);
+      field.minItems = isNaN(n) ? raw : n;
     } else if (cmd === 'max_items') {
-      field.maxItems = parseInt(stripWrapping(t[i++]), 10);
+      const raw = stripWrapping(t[i++]);
+      const n = parseInt(raw, 10);
+      field.maxItems = isNaN(n) ? raw : n;
     } else if (cmd === 'items') {
-      // items { <type> [fields { … }] } — element type + optional nested fields.
+      // items { <type> [unit "…"] [fields { … }] } — element type, optional
+      // unit, optional nested fields.
       const iblock = unwrapBlock(t[i++]);
       const it = tokenize(iblock);
       const typeParts: string[] = [];
       let k = 0;
       while (k < it.length && it[k] !== 'fields') {
-        typeParts.push(it[k++]);
+        if (it[k] === 'unit' && k + 1 < it.length) {
+          field.itemsUnit = stripWrapping(it[k + 1]);
+          k += 2;
+        } else {
+          typeParts.push(it[k++]);
+        }
       }
       field.itemsType = typeParts.join(' ');
       if (it[k] === 'fields') {
@@ -346,6 +401,8 @@ function parseEvaluation(block: string): EvaluationRule {
     } else if (cmd === 'reference') {
       const ids = tokenizePackage(t[i++]).map(stripWrapping);
       rule.referenceId = ids[0] ?? null;
+    } else if (cmd === 'specification_reference') {
+      rule.specificationReference = stripWrapping(t[i++]);
     } else if (cmd === 'source_discrepancy') {
       rule.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
     } else {
@@ -532,6 +589,9 @@ export function dumpFormField(field: FormField, indent: string): string {
   if (field.definition) {
     inner.push('definition "' + escapeString(field.definition) + '"');
   }
+  if (field.description) {
+    inner.push('description "' + escapeString(field.description) + '"');
+  }
   if (field.unit) {
     inner.push('unit "' + escapeString(field.unit) + '"');
   }
@@ -549,6 +609,12 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
   if (field.pattern) {
     inner.push('pattern "' + escapeString(field.pattern) + '"');
+  }
+  if (field.scope) {
+    inner.push('scope ' + field.scope);
+  }
+  if (field.examples) {
+    inner.push('examples "' + escapeString(field.examples) + '"');
   }
   if (field.required) {
     inner.push('required true');
@@ -588,13 +654,19 @@ export function dumpFormField(field: FormField, indent: string): string {
     if (field.evaluation.referenceId) {
       ev += ' reference { ' + field.evaluation.referenceId + ' }';
     }
+    if (field.evaluation.specificationReference) {
+      ev +=
+        ' specification_reference "' +
+        escapeString(field.evaluation.specificationReference) +
+        '"';
+    }
     if (field.evaluation.sourceDiscrepancy) {
       ev += ' ' + dumpSourceDiscrepancy(field.evaluation.sourceDiscrepancy, '');
     }
     inner.push(ev + ' }');
   }
   if (field.values.length > 0) {
-    inner.push('values { ' + field.values.join(' ') + ' }');
+    inner.push('values { ' + field.values.map(dumpValueEntry).join(' ') + ' }');
   }
   if (field.hasDefault) {
     // Defaults may be free text ("26 MHz – 3 GHz") or JSON-encoded
@@ -608,16 +680,22 @@ export function dumpFormField(field: FormField, indent: string): string {
     inner.push('false_label "' + escapeString(field.falseLabel) + '"');
   }
   if (field.enumValues.length > 0) {
-    inner.push('enum_values { ' + field.enumValues.join(' ') + ' }');
+    inner.push(
+      'enum_values { ' + field.enumValues.map(dumpValueEntry).join(' ') + ' }',
+    );
   }
   if (field.itemsType) {
-    inner.push('items { ' + field.itemsType + ' }');
+    let itemsLine = 'items { ' + field.itemsType;
+    if (field.itemsUnit) {
+      itemsLine += ' unit "' + escapeString(field.itemsUnit) + '"';
+    }
+    inner.push(itemsLine + ' }');
   }
   if (field.minItems !== undefined && field.minItems !== null) {
-    inner.push('min_items ' + field.minItems);
+    inner.push('min_items ' + dumpBareSafe(String(field.minItems)));
   }
   if (field.maxItems !== undefined && field.maxItems !== null) {
-    inner.push('max_items ' + field.maxItems);
+    inner.push('max_items ' + dumpBareSafe(String(field.maxItems)));
   }
   if (field.series) {
     inner.push(dumpSeriesDecl(field.series));
@@ -658,7 +736,9 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
 
   const typeSpec =
-    field.type && field.type !== 'string' ? ' : ' + field.type : '';
+    field.type && (field.type !== 'string' || field.typeDeclared)
+      ? ' : ' + field.type
+      : '';
   if (inner.length === 0) {
     return indent + 'field ' + field.name + typeSpec + ' { }\n';
   }

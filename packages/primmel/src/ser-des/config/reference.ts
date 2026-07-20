@@ -18,6 +18,8 @@ export const parseReference: Parser = (id: string, data: string) => {
           ref.document = unwrapBlock(t[i++]);
         } else if (keyword === 'clause') {
           ref.clause = unwrapBlock(t[i++]);
+        } else if (keyword === 'title') {
+          ref.title = unwrapBlock(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -39,6 +41,9 @@ export const dumpReference: Dumper<Reference> = function (ref) {
   let out: string = 'reference ' + ref.id + ' {\n';
   out += '  document "' + escapeString(ref.document) + '"\n';
   out += '  clause "' + escapeString(ref.clause) + '"\n';
+  if (ref.title) {
+    out += '  title "' + escapeString(ref.title) + '"\n';
+  }
   out += '}\n';
   return out;
 };

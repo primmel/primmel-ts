@@ -306,6 +306,8 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
       result.applicability = parseApplicability(unwrapBlock(t[i++]));
     } else if (cmd === 'channel') {
       result.channel = stripWrapping(t[i++]);
+    } else if (cmd === 'report_row') {
+      result.reportRow = stripWrapping(t[i++]);
     } else if (cmd === 'obligation') {
       result.obligation = stripWrapping(t[i++]);
     } else if (cmd === 'acceptance_criteria') {
@@ -321,6 +323,8 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
         }
         if (vc === 'method') {
           result.verificationMethod = stripWrapping(vt[j++]);
+        } else if (vc === 'description') {
+          result.verificationDescription = stripWrapping(vt[j++]);
         } else {
           unwrapBlock(vt[j++]);
         }
@@ -453,6 +457,9 @@ const dumpRequirement = function (r: Requirement): string {
   if (r.channel) {
     out += '  channel ' + r.channel + '\n';
   }
+  if (r.reportRow) {
+    out += '  report_row ' + r.reportRow + '\n';
+  }
   if (r.obligation) {
     out += '  obligation ' + r.obligation + '\n';
   }
@@ -460,7 +467,11 @@ const dumpRequirement = function (r: Requirement): string {
     out += '  acceptance_criteria {\n    ' + r.acceptanceCriteria + '\n  }\n';
   }
   if (r.verificationMethod) {
-    out += '  verification { method ' + r.verificationMethod + ' }\n';
+    let vline = '  verification { method ' + r.verificationMethod;
+    if (r.verificationDescription) {
+      vline += ' description "' + escapeString(r.verificationDescription) + '"';
+    }
+    out += vline + ' }\n';
   }
   if (r.dependencies.length > 0) {
     out += '  dependencies { ' + r.dependencies.join(' ') + ' }\n';
@@ -510,6 +521,8 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
       result.subject = stripWrapping(t[i++]);
     } else if (cmd === 'guidance') {
       result.guidance = stripWrapping(t[i++]);
+    } else if (cmd === 'applicability') {
+      result.applicability = parseApplicability(unwrapBlock(t[i++]));
     } else if (cmd === 'dependencies') {
       result.dependencies = readIdList(t[i++]);
     } else if (cmd === 'reference') {
@@ -535,6 +548,12 @@ const dumpRequirementClass = function (rc: RequirementClass): string {
   }
   if (rc.guidance) {
     out += '  guidance "' + escapeString(rc.guidance) + '"\n';
+  }
+  if (rc.applicability && rc.applicability.length > 0) {
+    out +=
+      '  applicability {\n    ' +
+      dumpApplicabilityEntries(rc.applicability).trim() +
+      '\n  }\n';
   }
   if (rc.dependencies.length > 0) {
     out += '  dependencies { ' + rc.dependencies.join(' ') + ' }\n';

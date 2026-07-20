@@ -10,6 +10,8 @@ export interface ConformanceTestStep {
   action: string;
   /** Observable/value ids this step produces. */
   outputs: string[];
+  /** Value ids this step consumes. */
+  inputs?: string[];
 }
 
 /** Typed test variable (v2 G4): declared | measured | derived | computed | lookup. */
@@ -45,6 +47,8 @@ export interface AcceptanceCriterion {
   description: string;
   /** Source reference URN. */
   reference: string;
+  /** Verdict-registry acceptance binding (verdict + op + limit). */
+  accepts?: { verdict: string; op: string; limit: string };
   /** Annotated source contradiction on this criterion's limit (TODO.refactor/11). */
   sourceDiscrepancy?: SourceDiscrepancy | null;
 }
@@ -118,6 +122,8 @@ export default interface ConformanceTest {
   instances: TestInstances | null;
   inheritsFrom: string;
   resultForms: string[];
+  /** Report-table conclusion rows this executed test maps to (cc.yaml). */
+  reportRows?: string[];
   derivedValues: Array<{ name: string; expression: string }>;
   sourceDiscrepancy: SourceDiscrepancy | null;
 }

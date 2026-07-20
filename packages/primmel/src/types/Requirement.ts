@@ -83,10 +83,14 @@ export interface Requirement {
   parameters: RequirementParameter[];
   /** shall (default) | should obligation level. */
   obligation: string;
+  /** Report-table row this examination-targeted requirement maps to (rc.yaml). */
+  reportRow?: string;
   /** Structured acceptance criteria (threshold/tiered/composite/qualitative), raw. */
   acceptanceCriteria: string;
   /** definitional | testing | examination | documentation */
   verificationMethod: string;
+  /** Free-text explanation of the verification approach. */
+  verificationDescription?: string;
   /** Other requirement ids this one depends on. */
   dependencies: string[];
   sourceDiscrepancy: SourceDiscrepancy | null;
@@ -102,6 +106,8 @@ export interface RequirementClass {
   description?: string;
   subject: string;
   guidance: string;
+  /** Classification applicability filter at class scope (dimension → allowed values). */
+  applicability?: ApplicabilityEntry[];
   dependencies: string[];
   referenceIds: string[];
 }

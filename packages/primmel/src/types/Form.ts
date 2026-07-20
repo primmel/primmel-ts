@@ -32,6 +32,8 @@ export interface EvaluationRule {
   op?: string;
   /** Limit predicate, ocl{...}. */
   limit?: string;
+  /** Free-text source clause citation (e.g. "R 60-1, 5.7.2.6"). */
+  specificationReference?: string;
   sourceDiscrepancy?: SourceDiscrepancy | null;
 }
 
@@ -44,8 +46,12 @@ export interface RoleReference {
 export interface FormField {
   name: string;
   type: string;
+  /** True when the field head explicitly declared its type (`: string` included). */
+  typeDeclared?: boolean;
   label: string;
   definition: string;
+  /** Free-text description (distinct from the formal definition). */
+  description?: string;
   unit: string;
   /** Binding path into the subject chain (v2 G5), e.g. model.parameters.e_max */
   bind?: string;
@@ -61,18 +67,24 @@ export interface FormField {
   enumRef: string;
   /** Regex validation pattern. */
   pattern: string;
+  /** Field scope (e.g. administrative). */
+  scope?: string;
+  /** Example values shown as entry guidance. */
+  examples?: string;
   required: boolean;
   measurementMethod: string;
   calculationId: string | null;
   calculationBindings: CalculationBinding[];
   derivation: string;
   evaluation: EvaluationRule | null;
-  values: string[];
+  /** Allowed values; entries may carry a display label ({ value, label }). */
+  values: Array<string | { value: string; label: string }>;
   /** Labels for boolean fields. */
   trueLabel: string;
   falseLabel: string;
-  /** Inline enum values (when the field defines its own axis). */
-  enumValues: string[];
+  /** Inline enum values (when the field defines its own axis).
+   *  Entries may carry a display label ({ value, label }). */
+  enumValues: Array<string | { value: string; label: string }>;
   defaultValue: string;
   hasDefault: boolean;
   referenceIds: string[];
@@ -86,11 +98,14 @@ export interface FormField {
   // Nested object/array shape
   fields: FormField[];
   itemsType: string;
+  /** Unit of the array element type (items { <type> unit "…" }). */
+  itemsUnit?: string;
   /** Series shape (axes + cell) when this datalist field holds a series. */
   series?: SeriesDecl | null;
-  /** Array cardinality bounds (optional; parsed from min_items/max_items). */
-  minItems?: number | null;
-  maxItems?: number | null;
+  /** Array cardinality bounds (optional; parsed from min_items/max_items).
+   *  A non-numeric bound (e.g. the template "${{ n_runs }}") is kept verbatim. */
+  minItems?: number | string | null;
+  maxItems?: number | string | null;
   // Subform reference (when this field composes a subform)
   subformRef: SubformRef | null;
 }
@@ -161,6 +176,8 @@ interface Form {
   formNotes: string[];
   /** Form scope (e.g. administrative). */
   scope: string;
+  /** Report-table row vocabulary (report-table forms). */
+  reportRows?: { field: string; itemKey: string };
   /** Role-grouped source reference URNs. */
   formReferences: RoleReference[];
   /** Calculation context for evaluated fields. */
