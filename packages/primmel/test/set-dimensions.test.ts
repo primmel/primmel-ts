@@ -1,9 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { load, dump } from '../src/ser-des/index.js';
+import { checkPackage } from '../src/check';
 
 // Set dimensions (data/schemas/model.yaml + rc.yaml $defs/applicability):
-// cardinality set vs single, label join separator, match any|all on
+// cardinality set vs single, label join separator, match any|all|exact on
 // applicability conditions, and implies subsumption on dimension values.
 
 const SRC = `instrument GasAnalysisSystem {
@@ -38,6 +39,13 @@ requirement /req/metrological/per-component {
   name "Per-component error"
   applicability {
     measurand_components: [co, no] match all
+  }
+}
+
+requirement /req/metrological/co-only {
+  name "CO-only analyzer check"
+  applicability {
+    measurand_components: [co] match exact
   }
 }
 `;
@@ -79,6 +87,19 @@ describe('set dimensions', () => {
         values: ['co', 'no'],
         mapping: null,
         match: 'all',
+      },
+    ]);
+  });
+
+  it('parses match exact on applicability conditions', () => {
+    const m = load(SRC);
+    const r = m.requirements.find(r => r.id === '/req/metrological/co-only')!;
+    assert.deepEqual(r.applicability, [
+      {
+        dimension: 'measurand_components',
+        values: ['co'],
+        mapping: null,
+        match: 'exact',
       },
     ]);
   });
@@ -127,6 +148,7 @@ describe('set dimensions', () => {
     assert.ok(dumped.includes('label_separator "+"'));
     assert.ok(dumped.includes('implies { fixed-distance }'));
     assert.ok(dumped.includes('measurand_components: [co, no] match all'));
+    assert.ok(dumped.includes('measurand_components: [co] match exact'));
 
     const m2 = load(dumped);
     assert.deepEqual(m2.instruments, m1.instruments);
@@ -148,5 +170,56 @@ describe('set dimensions', () => {
     assert.ok(!dumped.includes('cardinality'));
     const m2 = load(dumped);
     assert.deepEqual(m2.instruments, m1.instruments);
+  });
+
+  it('linter warns when match all|exact is declared on a single-cardinality dimension (C3)', () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = require('fs');
+    const { tmpdir } = require('os');
+    const { join } = require('path');
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-setdim-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'model'));
+    writeFileSync(
+      join(dir, 'model', 'instrument.prl'),
+      `instrument T {
+  dimension accuracy_class {
+    scope group
+    values { A B }
+  }
+  dimension measurand_components {
+    scope model
+    cardinality set
+    values { co no }
+  }
+}`,
+    );
+    mkdirSync(join(dir, 'specification'));
+    writeFileSync(
+      join(dir, 'specification', 'requirements.prl'),
+      `requirement /req/single-all {
+  applicability { accuracy_class: [A] match all }
+}
+requirement /req/single-exact {
+  applicability { accuracy_class: [A] match exact }
+}
+requirement /req/set-exact {
+  applicability { measurand_components: [co] match exact }
+}`,
+    );
+    const issues = checkPackage(dir);
+    const c3 = issues.filter(i => i.check === 'C3');
+    const warnings = c3.filter(i => i.severity === 'warning');
+    assert.equal(warnings.length, 2);
+    assert.ok(
+      warnings.every(w =>
+        w.message.includes('only meaningful on set dimensions'),
+      ),
+    );
+    assert.ok(warnings.some(w => w.message.includes('/req/single-all')));
+    assert.ok(warnings.some(w => w.message.includes('/req/single-exact')));
+    // The set-cardinality exact condition stays silent.
+    assert.ok(!warnings.some(w => w.message.includes('/req/set-exact')));
+    // No C3 errors: every filtered value exists on its dimension.
+    assert.equal(c3.filter(i => i.severity === 'error').length, 0);
   });
 });

@@ -1,0 +1,12 @@
+process ApplicationIntake {
+  name "Application intake and completeness check"
+}
+process TestExecution {
+  name "Test execution and test-report production"
+}
+process CertificateIssuance {
+  name "Certificate issuance and registration"
+}
+process Invoicing {
+  name "Invoicing"
+}

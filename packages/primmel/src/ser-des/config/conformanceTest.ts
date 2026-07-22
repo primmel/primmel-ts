@@ -132,6 +132,8 @@ function parsePreconditions(block: string): TestPrecondition[] {
           p.description = stripWrapping(pt[j++]);
         } else if (pc === 'on_violation') {
           p.onViolation = stripWrapping(pt[j++]);
+        } else if (pc === 'on_unresolvable') {
+          p.onUnresolvable = stripWrapping(pt[j++]);
         } else {
           unwrapBlock(pt[j++]);
         }
@@ -382,6 +384,8 @@ export const parseConformanceTest: Parser = function (id, data) {
     procedure: [],
     measurements: [],
     kind: '',
+    obligation: '',
+    obligationNote: '',
     testSubject: {},
     variables: [],
     observables: [],
@@ -483,6 +487,10 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.procedureSteps = readStringList(value());
       } else if (keyword === 'kind') {
         result.kind = stripWrapping(value());
+      } else if (keyword === 'obligation') {
+        result.obligation = stripWrapping(value());
+      } else if (keyword === 'obligation_note') {
+        result.obligationNote = unwrapped(value);
       } else if (keyword === 'test_subject') {
         result.testSubject = parseTestSubject(unwrapBlock(value()));
       } else if (keyword === 'variables') {
@@ -512,6 +520,8 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.inheritsFrom = stripWrapping(value());
       } else if (keyword === 'result_forms') {
         result.resultForms = readStringList(value());
+      } else if (keyword === 'produces_artifacts') {
+        result.producesArtifacts = readStringList(value());
       } else if (keyword === 'report_rows') {
         result.reportRows = readStringList(value());
       } else if (keyword === 'derived_values') {
@@ -607,6 +617,12 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.kind) {
     out += '  kind ' + ct.kind + '\n';
   }
+  if (ct.obligation) {
+    out += '  obligation ' + ct.obligation + '\n';
+  }
+  if (ct.obligationNote) {
+    out += '  obligation_note "' + escapeString(ct.obligationNote) + '"\n';
+  }
   if (Object.keys(ct.testSubject).length > 0) {
     out += '  test_subject {\n';
     for (const [k, v] of Object.entries(ct.testSubject)) {
@@ -675,6 +691,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
         line += 'description "' + escapeString(p.description) + '" ';
       }
       line += 'on_violation ' + p.onViolation + ' ';
+      if (p.onUnresolvable) {
+        line += 'on_unresolvable ' + p.onUnresolvable + ' ';
+      }
       out += line + '}\n';
     }
     out += '  }\n';
@@ -765,6 +784,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   if (ct.resultForms.length > 0) {
     out += '  result_forms { ' + ct.resultForms.join(' ') + ' }\n';
+  }
+  if (ct.producesArtifacts && ct.producesArtifacts.length > 0) {
+    out += '  produces_artifacts { ' + ct.producesArtifacts.join(' ') + ' }\n';
   }
   if (ct.reportRows && ct.reportRows.length > 0) {
     out += '  report_rows { ' + ct.reportRows.join(' ') + ' }\n';

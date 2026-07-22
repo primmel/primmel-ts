@@ -37,7 +37,55 @@ export type { default as Table } from './src/types/Table';
 export type { default as Figure } from './src/types/Figure';
 export type { default as Link } from './src/types/Link';
 export type { default as MapProfile } from './src/types/MapProfile';
+export type { CoverageLevel, MappingPair } from './src/types/MapProfile';
 export type { default as ViewProfile } from './src/types/ViewProfile';
+export {
+  loadPrm,
+  dumpPrm,
+  prmToMapProfiles,
+  mapProfilesToPrm,
+  type PrmFile,
+  type PrmMapSetEntry,
+  type PrmPairMeta,
+} from './src/ser-des/prm';
+export {
+  parseTargetRef,
+  mappingsFromProfile,
+  collectMappings,
+  buildProcessTree,
+  computeCoverage,
+  discoverTransitive,
+  repoMap,
+  applyView,
+  componentIds,
+  type MappingRecord,
+  type TargetRef,
+  type ProcessTreeNode,
+  type ComponentCoverage,
+  type DiscoveryProposal,
+  type CoverageSummary,
+  type CoverageReport,
+  type UnresolvedMapping,
+  type ModelMappings,
+  type RepoMapEdge,
+  type ViewProjection,
+} from './src/mapping-coverage';
+export { checkPackage, type CheckIssue, type CheckOptions } from './src/check';
+export {
+  CHECK_RULES,
+  checkRule,
+  activeRuleIds,
+  type CheckRule,
+  type CheckFamily,
+  type CheckLevel,
+} from './src/check-rules';
+export {
+  ALLOWLIST_FILENAME,
+  loadAllowlist,
+  applyAllowlist,
+  type AllowlistEntry,
+  type PackageAllowlist,
+} from './src/check-allowlist';
 export type {
   default as Form,
   FormField,
@@ -53,7 +101,76 @@ export type {
 } from './src/types/Calculation';
 export type {
   default as StateMachine,
+  StateMachineKind,
   Transition,
   Cascade,
 } from './src/types/StateMachine';
+export {
+  StateTrajectoryError,
+  evaluateStateGate,
+  extractStateGates,
+  foldTrajectory,
+  type FiredStep,
+  type StateGate,
+  type StateGateOutcome,
+  type StateGateResult,
+  type StateGateViolation,
+  type StateTrajectory,
+  type StateTrajectoryEntry,
+} from './src/operational-state';
 export type { default as Term } from './src/types/Term';
+export type {
+  Instance,
+  InstanceHas,
+  InstanceValue,
+  ChainLevel,
+} from './src/types/Instance';
+export type {
+  ArtifactDefinition,
+  ArtifactInstance,
+  ArtifactContentContract,
+  ArtifactField,
+  ArtifactMedia,
+  ProducedWhen,
+} from './src/types/Artifact';
+export {
+  InstanceResolutionError,
+  instanceChain,
+  parseInstancePath,
+  resolveInstanceAttributes,
+  resolveInstanceClassification,
+  resolveInstanceValue,
+  type InstanceArea,
+  type InstancePath,
+  type ResolutionErrorKind,
+} from './src/instance-resolution';
+export type {
+  QuantityValue,
+  QuantityKindDef,
+  UnitDef,
+  QuantityRegister,
+  Dual,
+} from './src/types/Quantity';
+export type {
+  IsoDate,
+  IsoDateTime,
+  IsoDuration,
+  IsoPeriod,
+  ValidityWindow,
+  EditionPin,
+} from './src/types/Time';
+export {
+  isDate,
+  isDateTime,
+  isDuration,
+  isPeriod,
+  isValidTimeValue,
+  checkValidityWindow,
+  editionPins,
+} from './src/time';
+export {
+  parseTypeExpression,
+  isWellFormedMapType,
+  PRIMITIVE_TYPES,
+  type TypeExpr,
+} from './src/type-expr';

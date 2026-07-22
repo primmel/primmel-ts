@@ -66,6 +66,11 @@ export interface TestPrecondition {
   description: string;
   /** Verdict outcome when the check is violated — 'invalid' (void run). */
   onViolation: string;
+  /** Declared escalation when the check's inputs are UNRESOLVABLE (missing
+      run data): 'indeterminate' makes the verdict indeterminate (the
+      unbound-reads discipline) instead of silently skipping the check;
+      absent/'skip' keeps the documented leniency (never fires). */
+  onUnresolvable?: string;
 }
 
 /** Runtime class-driven instantiation (cc.yaml `instances`). */
@@ -98,6 +103,14 @@ export default interface ConformanceTest {
   measurements: string[];
   // v2 G4 additions
   kind: string;
+  /**
+   * Obligation level in the type-evaluation programme (TODO.roadmap/19,
+   * gap audit G5): mandatory | optional | conditional. Empty = mandatory
+   * (the programme default). `conditional` requires obligationNote.
+   */
+  obligation: string;
+  /** Condition/applicability note for obligation=conditional. */
+  obligationNote: string;
   testSubject: Record<string, string>;
   variables: TestVariable[];
   observables: TestObservable[];
@@ -122,6 +135,12 @@ export default interface ConformanceTest {
   instances: TestInstances | null;
   inheritsFrom: string;
   resultForms: string[];
+  /**
+   * Artifact definitions a run of this test produces via the instrument
+   * under test (TODO.roadmap/09 — model/artifacts.yaml ids; e.g. R 91's
+   * enforcement evidence file per measurement).
+   */
+  producesArtifacts?: string[];
   /** Report-table conclusion rows this executed test maps to (cc.yaml). */
   reportRows?: string[];
   derivedValues: Array<{ name: string; expression: string }>;

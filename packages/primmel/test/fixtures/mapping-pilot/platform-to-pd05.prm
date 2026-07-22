@@ -1,0 +1,30 @@
+{
+  "@context": "https://oiml-smart.org",
+  "@type": "Primmel_MAP",
+  "id": "platform-to-pd05",
+  "mapSet": {
+    "PD05": {
+      "id": "PD05",
+      "mappings": {
+        "ApplicationIntake": {
+          "PD05#ApplicationReview": {
+            "description": "The portal's intake workflow performs the completeness check an IA reviewer would do.",
+            "justification": "Every application passes the intake gate before it can be dispatched to a lab."
+          }
+        },
+        "TestExecution": {
+          "PD05#TypeEvaluation": {
+            "description": "The lab workbench executes the required tests and produces the test reports.",
+            "justification": "Each test run is bound to a dispatched test request and its conformance tests."
+          }
+        },
+        "CertificateIssuance": {
+          "PD05#CertificationDecision": {
+            "description": "The IA console's evaluate-and-issue steps take the decision and issue the certificate.",
+            "justification": "Certificate issue requires a passing evaluation verdict across the test reports."
+          }
+        }
+      }
+    }
+  }
+}

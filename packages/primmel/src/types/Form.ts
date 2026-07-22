@@ -11,10 +11,12 @@ export interface ApplicabilityEntry {
   mapping: Record<string, string | number> | null;
   /**
    * Declared-condition match mode for set-cardinality dimensions
-   * (rc.yaml $defs/applicability): 'any' (default — existential) or
-   * 'all' (universal — every selected value must be listed).
+   * (rc.yaml $defs/applicability): 'any' (default — existential),
+   * 'all' (universal — every selected value must be listed), or
+   * 'exact' (mutual coverage — the selection covers the listed values
+   * and nothing else; set equality without implies).
    */
-  match: 'any' | 'all' | null;
+  match: 'any' | 'all' | 'exact' | null;
 }
 
 export interface CalculationBinding {

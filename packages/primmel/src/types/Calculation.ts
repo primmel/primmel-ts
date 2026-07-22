@@ -24,6 +24,14 @@ export interface CalculationLookup {
   key: string;
   variable: string;
   multiplier: string;
+  /**
+   * Declared fallback tier for a MISSING binding key (G12 residual (b),
+   * TODO.roadmap/19) — replaces the hardcoded `multiplier * 1.5` fallback.
+   * Absent: a missing key resolves to null/NaN, never a fabricated limit.
+   * mode: absolute (default) scales the multiplier; relative scales the
+   * measured value — same semantics as table tiers.
+   */
+  defaultTier?: { factor: number; mode?: 'absolute' | 'relative' } | null;
 }
 
 interface Calculation {

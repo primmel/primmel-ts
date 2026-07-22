@@ -18,6 +18,11 @@ export interface LoadResult {
   standard: Standard;
   /** Issues collected during parse (e.g. duplicate IDs). */
   issues: ValidationIssue[];
+  /**
+   * Present when the load composed multiple packages (`uses` with a
+   * package locator — TODO.roadmap/05): the merge order, root last.
+   */
+  composition?: import('./package').CompositionInfo;
 }
 
 /**
@@ -74,8 +79,28 @@ export function dump(standard: Standard): string {
   return _dump(standard, DUMPER_CONFIG);
 }
 
-export { loadPackage, packageFiles } from './package';
+export {
+  loadPackage,
+  loadPackageWithIssues,
+  packageFiles,
+  effectiveUses,
+  readPackageManifest,
+  CompositionError,
+  type CompositionInfo,
+  type CompositionRule,
+  type LoadPackageOptions,
+  type ResolvePackage,
+} from './package';
 export { dumpPackage } from './config/packageManifest';
+export {
+  loadPrm,
+  dumpPrm,
+  prmToMapProfiles,
+  mapProfilesToPrm,
+  type PrmFile,
+  type PrmMapSetEntry,
+  type PrmPairMeta,
+} from './prm';
 
 export function validate(standard: Standard): ValidationIssue[] {
   return _validate(standard);

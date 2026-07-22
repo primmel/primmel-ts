@@ -45,7 +45,7 @@ import {
  * whitespace tokenizer splits (braces are only block delimiters at token
  * start, so `ocl{(a - b) / c}` arrives as several tokens).
  */
-function readValueToken(
+export function readValueToken(
   t: string[],
   i: number,
 ): { text: string; next: number } {
@@ -109,9 +109,14 @@ function dumpValueEntry(e: string | { value: string; label: string }): string {
   return e.value + ' { label "' + escapeString(e.label) + '" }';
 }
 
-/** Emit a bare value safely: quote it when it contains spaces/braces/quotes. */
+/**
+ * Emit a bare value safely: quote it when it contains spaces/braces/quotes
+ * OR ends in a colon. A bare trailing-colon token re-parses as a KEY head
+ * (`note : ref:` reads back as two entries — see isKeyHead in the instance
+ * ser-des), so any value ending in `:` must be quoted on dump.
+ */
 export function dumpBareSafe(v: string): string {
-  return /[\s{}"]/.test(v) ? '"' + escapeString(v) + '"' : v;
+  return /[\s{}"]/.test(v) || v.endsWith(':') ? '"' + escapeString(v) + '"' : v;
 }
 
 /** Strip one trailing colon: `status:` → `status` (tokenizer keeps colons attached). */
@@ -482,14 +487,14 @@ export function parseApplicability(block: string): ApplicabilityEntry[] {
         };
       }
       // Declared-condition match mode (rc.yaml $defs/applicability):
-      // `match any|all` follows the values — universal matching for
-      // set-cardinality dimensions (default 'any', existential).
+      // `match any|all|exact` follows the values — universal/exact matching
+      // for set-cardinality dimensions (default 'any', existential).
       if (!entry.mapping && t[i] === 'match') {
         i++;
         const mode = stripWrapping(t[i++] ?? '');
-        if (mode !== 'any' && mode !== 'all') {
+        if (mode !== 'any' && mode !== 'all' && mode !== 'exact') {
           throw new Error(
-            `Parsing error: applicability: Unknown match ${mode} (valid: any, all)`,
+            `Parsing error: applicability: Unknown match ${mode} (valid: any, all, exact)`,
           );
         }
         entry.match = mode;

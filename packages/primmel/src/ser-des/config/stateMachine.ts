@@ -13,6 +13,7 @@ import type { Transition, Cascade, CascadeSet } from '../../types/StateMachine';
 export const parseStateMachine: Parser = function (entityName, data) {
   const result: StateMachine = {
     entityName,
+    kind: 'lifecycle',
     initialState: '',
     states: [],
     transitions: [],
@@ -25,7 +26,17 @@ export const parseStateMachine: Parser = function (entityName, data) {
     while (i < t.length) {
       const command: string = t[i++];
       if (i < t.length) {
-        if (command === 'initial') {
+        if (command === 'kind') {
+          // The machine family (TODO.roadmap/07): lifecycle (default,
+          // workflow entities) or operational (a subject's HAS state).
+          const kind = t[i++];
+          if (kind !== 'lifecycle' && kind !== 'operational') {
+            throw new Error(
+              `Parsing error: state_machine. Entity ${entityName}: Unknown kind ${kind} (valid: lifecycle, operational)`,
+            );
+          }
+          result.kind = kind;
+        } else if (command === 'initial') {
           result.initialState = t[i++];
         } else if (command === 'states') {
           const stateBlock = unwrapBlock(t[i++]);
@@ -179,6 +190,11 @@ function parseCascade(target: string, block: string): Cascade {
 
 export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
   let out = 'state_machine ' + sm.entityName + ' {\n';
+  // The family line is emitted only for operational machines: lifecycle is
+  // the v2 default, so omitting it keeps pre-v3 dumps byte-identical.
+  if (sm.kind === 'operational') {
+    out += '  kind operational\n';
+  }
   out += '  initial ' + sm.initialState + '\n';
   if (sm.states.length > 0) {
     out += '  states {\n';

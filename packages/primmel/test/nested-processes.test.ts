@@ -114,6 +114,57 @@ canvas Root {
     assert.equal(mfg.children[0], 'Assembly');
   });
 
+  it('round-trips a flat `parent` link on a NON-LEAF process (no silent tree change)', () => {
+    // The reviewer's probe: a flat-declared parent link on a process that
+    // itself has children. Dump used to emit `parent` only for leaves,
+    // so the Mid→Top link vanished — silently re-rooting the subtree the
+    // coverage calculus aggregates over.
+    const src = `root Root
+
+version "v1.0.0"
+
+metadata {
+  title "Test"
+  schema "Primmel 0.1"
+}
+
+process Top {
+  name "Top"
+}
+
+process Mid {
+  name "Mid"
+  parent Top
+  process Leaf {
+    name "Leaf"
+  }
+}
+`;
+    const model = load(src);
+    const mid = model.processes.find(p => p.id === 'Mid');
+    assert.equal(mid?.parent, 'Top');
+    assert.deepEqual(mid?.children, ['Leaf']);
+
+    const dumped = dump(model);
+    assert.ok(
+      dumped.includes('parent Top'),
+      'flat parent link is emitted for a non-leaf process',
+    );
+
+    const reloaded = load(dumped);
+    const mid2 = reloaded.processes.find(p => p.id === 'Mid');
+    assert.equal(
+      mid2?.parent,
+      'Top',
+      'parent link survives the dump/load cycle',
+    );
+    assert.deepEqual(mid2?.children, ['Leaf']);
+    const leaf2 = reloaded.processes.find(p => p.id === 'Leaf');
+    assert.equal(leaf2?.parent, 'Mid');
+    // Fixed point: the second dump is byte-identical.
+    assert.equal(dump(reloaded), dumped);
+  });
+
   it('preserves other process fields when nesting', () => {
     const model = load(`root Root
 

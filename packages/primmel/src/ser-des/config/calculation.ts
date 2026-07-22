@@ -228,6 +228,20 @@ function parseLookup(block: string): CalculationLookup {
       lookup.variable = stripWrapping(t[i++]);
     } else if (cmd === 'multiplier') {
       lookup.multiplier = stripWrapping(t[i++]);
+    } else if (cmd === 'default_tier') {
+      // default_tier { factor 1.5 mode absolute } — declared missing-key
+      // fallback (G12 residual (b), TODO.roadmap/19). Set only when present
+      // so a reparse deep-equals the dump of a declaration without one.
+      const dt = tokenize(unwrapBlock(t[i++]));
+      const tier: { factor: number; mode?: 'absolute' | 'relative' } = { factor: 0 };
+      for (let j = 0; j < dt.length; j++) {
+        if (dt[j] === 'factor' && j + 1 < dt.length) {
+          tier.factor = Number(stripWrapping(dt[++j]));
+        } else if (dt[j] === 'mode' && j + 1 < dt.length) {
+          tier.mode = stripWrapping(dt[++j]) as 'absolute' | 'relative';
+        }
+      }
+      lookup.defaultTier = tier;
     } else {
       unwrapBlock(t[i++]);
     }
@@ -313,6 +327,13 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     }
     if (c.lookup.multiplier) {
       out += 'multiplier ' + c.lookup.multiplier + ' ';
+    }
+    if (c.lookup.defaultTier) {
+      out += 'default_tier { factor ' + c.lookup.defaultTier.factor;
+      if (c.lookup.defaultTier.mode) {
+        out += ' mode ' + c.lookup.defaultTier.mode;
+      }
+      out += ' } ';
     }
     out += '}\n';
   }

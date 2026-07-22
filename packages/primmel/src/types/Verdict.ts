@@ -20,6 +20,13 @@ export type SeriesReduction =
 /** verdict <id> — one canonical acceptance quantity. */
 export default interface Verdict {
   id: string;
+  /** Display symbol of the quantity (e.g. C_M for mdlo_normalized). */
+  symbol?: string;
+  /**
+   * Id of the declared behavior this quantity is derived from — the
+   * behavior→I/O→characteristic chain link (TODO.roadmap/10).
+   */
+  behavior?: string;
   /** Quantity kind of the derived value (e.g. mass, volume-fraction). */
   quantityKind: string;
   /** Measurement unit of the derived value; empty for dimensionless. */

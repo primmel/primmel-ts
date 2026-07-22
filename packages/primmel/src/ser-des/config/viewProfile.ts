@@ -9,6 +9,7 @@ export const parseViewProfile: Parser = function (id, data) {
     description: '',
     roles: [],
     visibleElements: [],
+    against: '',
   };
 
   forEachEntry(
@@ -20,6 +21,8 @@ export const parseViewProfile: Parser = function (id, data) {
         result.roles = tokenizePackage(value());
       } else if (command === 'visible') {
         result.visibleElements = tokenizePackage(value());
+      } else if (command === 'against') {
+        result.against = value().trim();
       } else {
         return false;
       }
@@ -44,6 +47,9 @@ export const dumpViewProfile: Dumper<ViewProfile> = function (vp) {
   }
   if (vp.visibleElements.length > 0) {
     out += '  visible ' + vp.visibleElements.join(' ') + '\n';
+  }
+  if (vp.against) {
+    out += '  against ' + vp.against + '\n';
   }
   out += '}\n';
   return out;

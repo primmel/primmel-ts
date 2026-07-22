@@ -77,6 +77,16 @@ export default function parse(
     capabilities: {},
     behaviors: {},
     conditionSets: {},
+    // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
+    subjects: {},
+    // Primmel v3 instantiation (TODO.roadmap/03)
+    instances: {},
+    // Primmel v3 artifacts (TODO.roadmap/09)
+    artifactDefinitions: {},
+    artifactInstances: {},
+    // Primmel v3 quantities/time/duality (TODO.roadmap/06)
+    quantityRegisters: {},
+    duals: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };

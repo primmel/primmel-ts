@@ -82,6 +82,67 @@ export interface DesignSpecimens {
   rules: string[];
 }
 
+/**
+ * Per-kind metadata: real-traffic field test (TODO.roadmap/19, gap audit
+ * G4; R 91-2, 4). N measurements live in counts; the error statistics
+ * live in acceptance.statistics — this block carries what those do not:
+ * site selection (4.2), traffic conditions (4.3), the reference meter
+ * (4.5) with its uncertainty-budget profile key.
+ */
+export interface DesignField {
+  /** Site selection rule (R 91-2, 4.2). */
+  siteSelection: string;
+  /** Traffic-condition rule (R 91-2, 4.3). */
+  trafficConditions: string;
+  referenceMeter: {
+    description: string;
+    /** Key into the standard's uncertainty_budgets profile (tables.yaml). */
+    uncertaintyBudget: string;
+  } | null;
+}
+
+/**
+ * Per-kind metadata: traffic-simulator laboratory test (TODO.roadmap/19;
+ * R 91-2, 5.2 — the simulator characteristics are test-relevant).
+ */
+export interface DesignSimulation {
+  /** Simulator kind: complete | partial (R 91-2, 5.2 Figures 1-2). */
+  simulatorKind: string;
+  /** The simulated signal (electrical pulse sequence, light pulses,
+      electromagnetic radiation pattern, …). */
+  signal: string;
+  /** Key into the standard's uncertainty_budgets profile (tables.yaml). */
+  uncertaintyBudget: string;
+  /** Simulator validation rule (R 91-2, 5.2: road series comparison). */
+  validation: string;
+}
+
+/** One OIML D 31 examination item (R 91-2, 8.3 tables). */
+export interface DesignSoftwareItem {
+  /** Item number in the R 91-2, 8.3 tables (1-30). */
+  item: number;
+  name: string;
+  /** OIML D 31 clause (e.g. "6.2.1"). */
+  d31: string;
+  /** mandatory | optional (R 91-2, 8.3: 8.3.1-8.3.3 mandatory, 8.3.4/8.3.5 optional). */
+  obligation: string;
+  /** Evaluation methods (AD | VFTM | VFTSw, D 31, 7.3.2). */
+  methods: string[];
+  /** R 91-2 source clause of the item's table (e.g. "8.3.1"). */
+  clause: string;
+}
+
+/**
+ * Per-kind metadata: D 31 software examination (TODO.roadmap/19; R 91-2,
+ * 8). The examination LEVEL (8.2: level A = D 31 normal examination
+ * level) plus the per-item obligation/method matrix.
+ */
+export interface DesignSoftware {
+  /** D 31 examination level (e.g. "A"). */
+  level: string;
+  items: DesignSoftwareItem[];
+}
+
 export default interface TestDesign {
   counts: DesignCount[];
   severities: DesignSeverity[];
@@ -89,4 +150,10 @@ export default interface TestDesign {
   testPointsRef: string;
   schedule: DesignSchedule | null;
   specimens: DesignSpecimens | null;
+  /** kind: field — real-traffic field-test metadata (TODO.roadmap/19). */
+  field: DesignField | null;
+  /** kind: simulation — simulator characteristics (TODO.roadmap/19). */
+  simulation: DesignSimulation | null;
+  /** kind: software-examination — D 31 level + item matrix (TODO.roadmap/19). */
+  software: DesignSoftware | null;
 }

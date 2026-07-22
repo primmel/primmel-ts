@@ -16,7 +16,11 @@
 
 import tokenize from '../tokenize';
 import { unwrapBlock, stripWrapping } from '../tokenize';
-import type { PackageManifest, PackageSource } from '../../types/Package';
+import type {
+  PackageKind,
+  PackageManifest,
+  PackageSource,
+} from '../../types/Package';
 import type { Parser } from '../types';
 
 function readList(block: string): string[] {
@@ -24,6 +28,8 @@ function readList(block: string): string[] {
     .map(stripWrapping)
     .filter(s => s.length > 0);
 }
+
+const PACKAGE_KINDS: readonly string[] = ['core', 'module', 'rec'];
 
 export const parsePackage: Parser = function (data) {
   const manifest: PackageManifest = {
@@ -64,6 +70,22 @@ export const parsePackage: Parser = function (data) {
       manifest.baseUrn = stripWrapping(t[i++]);
     } else if (cmd === 'extends') {
       manifest.extends = stripWrapping(t[i++]);
+    } else if (cmd === 'uses') {
+      manifest.uses = readList(t[i++]);
+    } else if (cmd === 'kind') {
+      const k = stripWrapping(t[i++]);
+      if (!PACKAGE_KINDS.includes(k)) {
+        throw new Error(
+          `Parsing error: package: Expected kind core|module|rec, got "${k}"`,
+        );
+      }
+      manifest.kind = k as PackageKind;
+    } else if (cmd === 'provides') {
+      manifest.provides = readList(t[i++]);
+    } else if (cmd === 'requires') {
+      manifest.requires = readList(t[i++]);
+    } else if (cmd === 'waives') {
+      manifest.waives = readList(t[i++]);
     } else if (cmd === 'description') {
       manifest.description = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
@@ -101,6 +123,9 @@ export function dumpPackage(m: PackageManifest): string {
   if (m.id) {
     out += '  id ' + m.id + '\n';
   }
+  if (m.kind) {
+    out += '  kind ' + m.kind + '\n';
+  }
   if (m.title) {
     out +=
       '  title "' + m.title.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"\n';
@@ -116,6 +141,18 @@ export function dumpPackage(m: PackageManifest): string {
   }
   if (m.extends) {
     out += '  extends ' + m.extends + '\n';
+  }
+  if (m.uses && m.uses.length > 0) {
+    out += '  uses { ' + m.uses.join(' ') + ' }\n';
+  }
+  if (m.provides && m.provides.length > 0) {
+    out += '  provides { ' + m.provides.join(' ') + ' }\n';
+  }
+  if (m.requires && m.requires.length > 0) {
+    out += '  requires { ' + m.requires.join(' ') + ' }\n';
+  }
+  if (m.waives && m.waives.length > 0) {
+    out += '  waives { ' + m.waives.join(' ') + ' }\n';
   }
   if (m.description) {
     out +=

@@ -49,9 +49,13 @@
 import type TestDesign from '../../types/Design';
 import type {
   DesignCount,
+  DesignField,
   DesignSchedule,
   DesignSchedulePhase,
   DesignSeverity,
+  DesignSimulation,
+  DesignSoftware,
+  DesignSoftwareItem,
   DesignSpecimens,
   SeverityCell,
   SeverityValue,
@@ -393,6 +397,9 @@ export function parseDesign(block: string): TestDesign {
     testPointsRef: '',
     schedule: null,
     specimens: null,
+    field: null,
+    simulation: null,
+    software: null,
   };
   const t = tokenize(block);
   let i = 0;
@@ -423,11 +430,153 @@ export function parseDesign(block: string): TestDesign {
       design.schedule = parseSchedule(unwrapBlock(t[i++]));
     } else if (cmd === 'specimens') {
       design.specimens = parseSpecimens(unwrapBlock(t[i++]));
+    } else if (cmd === 'field') {
+      design.field = parseField(unwrapBlock(t[i++]));
+    } else if (cmd === 'simulation') {
+      design.simulation = parseSimulation(unwrapBlock(t[i++]));
+    } else if (cmd === 'software') {
+      design.software = parseSoftware(unwrapBlock(t[i++]));
     } else {
       unwrapBlock(t[i++]);
     }
   }
   return design;
+}
+
+/** kind: field — site_selection / traffic_conditions / reference_meter. */
+function parseField(block: string): DesignField {
+  const field: DesignField = {
+    siteSelection: '',
+    trafficConditions: '',
+    referenceMeter: null,
+  };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'site_selection') {
+      field.siteSelection = stripWrapping(t[i++]);
+    } else if (cmd === 'traffic_conditions') {
+      field.trafficConditions = stripWrapping(t[i++]);
+    } else if (cmd === 'reference_meter') {
+      const rm = { description: '', uncertaintyBudget: '' };
+      const rt = tokenize(unwrapBlock(t[i++]));
+      let j = 0;
+      while (j < rt.length) {
+        const rc = rt[j++];
+        if (j >= rt.length) {
+          break;
+        }
+        if (rc === 'description') {
+          rm.description = stripWrapping(rt[j++]);
+        } else if (rc === 'uncertainty_budget') {
+          rm.uncertaintyBudget = stripWrapping(rt[j++]);
+        } else {
+          unwrapBlock(rt[j++]);
+        }
+      }
+      field.referenceMeter = rm;
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return field;
+}
+
+/** kind: simulation — simulator_kind / signal / uncertainty_budget / validation. */
+function parseSimulation(block: string): DesignSimulation {
+  const sim: DesignSimulation = {
+    simulatorKind: '',
+    signal: '',
+    uncertaintyBudget: '',
+    validation: '',
+  };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'simulator_kind') {
+      sim.simulatorKind = stripWrapping(t[i++]);
+    } else if (cmd === 'signal') {
+      sim.signal = stripWrapping(t[i++]);
+    } else if (cmd === 'uncertainty_budget') {
+      sim.uncertaintyBudget = stripWrapping(t[i++]);
+    } else if (cmd === 'validation') {
+      sim.validation = stripWrapping(t[i++]);
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return sim;
+}
+
+/** kind: software-examination — level + the D 31 item matrix. */
+function parseSoftware(block: string): DesignSoftware {
+  const software: DesignSoftware = { level: '', items: [] };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'level') {
+      software.level = stripWrapping(t[i++]);
+    } else if (cmd === 'items') {
+      const it = tokenize(unwrapBlock(t[i++]));
+      let j = 0;
+      while (j < it.length) {
+        const ic = it[j++];
+        if (ic !== 'item') {
+          if (j < it.length) {
+            unwrapBlock(it[j - 1]);
+          }
+          continue;
+        }
+        const item: DesignSoftwareItem = {
+          item: Number(stripWrapping(it[j++])),
+          name: '',
+          d31: '',
+          obligation: '',
+          methods: [],
+          clause: '',
+        };
+        if (j < it.length && it[j].startsWith('{')) {
+          const bt = tokenize(unwrapBlock(it[j++]));
+          let k = 0;
+          while (k < bt.length) {
+            const bc = bt[k++];
+            if (k >= bt.length) {
+              break;
+            }
+            if (bc === 'name') {
+              item.name = stripWrapping(bt[k++]);
+            } else if (bc === 'd31') {
+              item.d31 = stripWrapping(bt[k++]);
+            } else if (bc === 'obligation') {
+              item.obligation = stripWrapping(bt[k++]);
+            } else if (bc === 'methods') {
+              item.methods = readQuotedList(bt[k++]);
+            } else if (bc === 'clause') {
+              item.clause = stripWrapping(bt[k++]);
+            } else {
+              unwrapBlock(bt[k++]);
+            }
+          }
+        }
+        software.items.push(item);
+      }
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return software;
 }
 
 function dumpCell(cell: SeverityCell): string {
@@ -577,6 +726,75 @@ export function dumpDesign(design: TestDesign, indent: string): string {
       line += 'rules { ' + s.rules.join(' ') + ' } ';
     }
     out += line + '}\n';
+  }
+  if (design.field) {
+    const f = design.field;
+    out += indent + '  field {\n';
+    if (f.siteSelection) {
+      out += indent + '    site_selection "' + escapeString(f.siteSelection) + '"\n';
+    }
+    if (f.trafficConditions) {
+      out += indent + '    traffic_conditions "' + escapeString(f.trafficConditions) + '"\n';
+    }
+    if (f.referenceMeter) {
+      let line = indent + '    reference_meter { ';
+      if (f.referenceMeter.description) {
+        line += 'description "' + escapeString(f.referenceMeter.description) + '" ';
+      }
+      if (f.referenceMeter.uncertaintyBudget) {
+        line += 'uncertainty_budget ' + f.referenceMeter.uncertaintyBudget + ' ';
+      }
+      out += line + '}\n';
+    }
+    out += indent + '  }\n';
+  }
+  if (design.simulation) {
+    const s = design.simulation;
+    out += indent + '  simulation {\n';
+    if (s.simulatorKind) {
+      out += indent + '    simulator_kind ' + s.simulatorKind + '\n';
+    }
+    if (s.signal) {
+      out += indent + '    signal "' + escapeString(s.signal) + '"\n';
+    }
+    if (s.uncertaintyBudget) {
+      out += indent + '    uncertainty_budget ' + s.uncertaintyBudget + '\n';
+    }
+    if (s.validation) {
+      out += indent + '    validation "' + escapeString(s.validation) + '"\n';
+    }
+    out += indent + '  }\n';
+  }
+  if (design.software) {
+    const s = design.software;
+    out += indent + '  software {\n';
+    if (s.level) {
+      out += indent + '    level ' + s.level + '\n';
+    }
+    if (s.items.length > 0) {
+      out += indent + '    items {\n';
+      for (const it of s.items) {
+        let line = indent + '      item ' + it.item + ' { ';
+        if (it.name) {
+          line += 'name "' + escapeString(it.name) + '" ';
+        }
+        if (it.d31) {
+          line += 'd31 "' + escapeString(it.d31) + '" ';
+        }
+        if (it.obligation) {
+          line += 'obligation ' + it.obligation + ' ';
+        }
+        if (it.methods.length > 0) {
+          line += 'methods { ' + it.methods.join(' ') + ' } ';
+        }
+        if (it.clause) {
+          line += 'clause "' + escapeString(it.clause) + '" ';
+        }
+        out += line + '}\n';
+      }
+      out += indent + '    }\n';
+    }
+    out += indent + '  }\n';
   }
   out += indent + '}\n';
   return out;

@@ -23,7 +23,11 @@ import type {
   Capability,
   ConditionSet,
   Instrument,
+  Subject,
 } from '../types/Subject';
+import type { ArtifactDefinition, ArtifactInstance } from '../types/Artifact';
+import type { Instance } from '../types/Instance';
+import type { Dual, QuantityRegister } from '../types/Quantity';
 import type { Requirement, RequirementClass } from '../types/Requirement';
 import type { ConformanceClass } from '../types/ConformanceClass';
 import type { PackageManifest } from '../types/Package';
@@ -145,6 +149,20 @@ export interface ParseContext {
   capabilities: Record<string, Capability>;
   behaviors: Record<string, Behavior>;
   conditionSets: Record<string, ConditionSet>;
+
+  // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
+  subjects: Record<string, Subject>;
+
+  // Primmel v3 instantiation (TODO.roadmap/03)
+  instances: Record<string, Instance>;
+
+  // Primmel v3 artifacts (TODO.roadmap/09)
+  artifactDefinitions: Record<string, ArtifactDefinition>;
+  artifactInstances: Record<string, ArtifactInstance>;
+
+  // Primmel v3 quantities/time/duality (TODO.roadmap/06)
+  quantityRegisters: Record<string, QuantityRegister>;
+  duals: Record<string, Dual>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().

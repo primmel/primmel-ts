@@ -22,7 +22,11 @@ import type {
   Capability,
   ConditionSet,
   Instrument,
+  Subject,
 } from './Subject';
+import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
+import type { Instance } from './Instance';
+import type { Dual, QuantityRegister } from './Quantity';
 import type ReferenceMaterial from './ReferenceMaterial';
 import type { Requirement, RequirementClass } from './Requirement';
 import type { ConformanceClass } from './ConformanceClass';
@@ -87,6 +91,25 @@ export default interface Standard {
   capabilities: Capability[];
   behaviors: Behavior[];
   conditionSets: ConditionSet[];
+
+  // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
+  subjects: Subject[];
+
+  // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
+  // instances of subject definitions, chained family → group → model →
+  // sample with INV-10 delegation semantics (src/instance-resolution.ts).
+  instances: Instance[];
+
+  // Primmel v3 artifacts (TODO.roadmap/09): required output artifacts of
+  // the subject — definitions (IS: content contract + produced-when) and
+  // produced instances (HAS/evidence, checked against the contract).
+  artifactDefinitions: ArtifactDefinition[];
+  artifactInstances: ArtifactInstance[];
+
+  // Primmel v3 quantities/time/duality (TODO.roadmap/06): typed
+  // unit/quantity-kind registers and IS↔HAS dual pairs.
+  quantityRegisters: QuantityRegister[];
+  duals: Dual[];
 
   root: Subprocess | null;
 }

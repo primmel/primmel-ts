@@ -10,7 +10,10 @@
 // To add `regulation`:
 //   1. Add the field to Standard + ParseContext (types only — TS won't
 //      let us infer these from a runtime call).
-//   2. Append one `defineConstruct(...)` entry to CONSTRUCTS below.
+//   2. Add the field to the ctx initializer in ser-des/parse.ts (the
+//      hard-coded ParseContext object — TS enforces this, but a cast or
+//      a stale edit here silently breaks every parse).
+//   3. Append one `defineConstruct(...)` entry to CONSTRUCTS below.
 // Nothing else.
 //
 // Special cases (root, metadata) stay inline in PARSER_CONFIG because
@@ -92,7 +95,15 @@ import {
   capabilityConstruct,
   behaviorConstruct,
   conditionSetConstruct,
+  subjectConstruct,
 } from './subject';
+import { instanceConstruct } from './instance';
+import {
+  artifactDefinitionConstruct,
+  artifactInstanceConstruct,
+} from './artifact';
+import { quantityRegisterConstruct } from './quantityRegister';
+import { dualConstruct } from './dual';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -373,6 +384,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseConformanceTest,
     dump: dumpConformanceTest as never,
   }),
+  // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
+  subjectConstruct as ConstructDefinition,
+  // Primmel v3 instantiation (instance-of, INV-10 — TODO.roadmap/03)
+  instanceConstruct as ConstructDefinition,
+  // Primmel v3 artifacts (TODO.roadmap/09)
+  artifactDefinitionConstruct as ConstructDefinition,
+  artifactInstanceConstruct as ConstructDefinition,
+  // Primmel v3 quantities/time/duality (TODO.roadmap/06)
+  quantityRegisterConstruct as ConstructDefinition,
+  dualConstruct as ConstructDefinition,
 ];
 
 function buildParserConfig(

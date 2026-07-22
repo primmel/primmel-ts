@@ -2,11 +2,16 @@
 // Verdict construct (OIML SMART TODO.refactor/04 — canonical verdict
 // chain: "derive once, reference everywhere"):
 //   verdict mdlo_normalized {
+//     symbol "C_M"
+//     behavior temp-effect-min-dead-load
 //     quantity { kind dimensionless }
 //     derive "ocl{abs(c_m * t_f / delta_t * (d_max - d_min) / (n * v_min))}"
 //     inputs { c_m t_f delta_t d_max d_min n v_min }
 //     source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.4" }
 //   }
+//
+// symbol/behavior (TODO.roadmap/10): the display symbol and the behavior
+// the quantity is derived from (the behavior→I/O→characteristic link).
 //
 //   verdict drift_error {
 //     quantity { kind volume-fraction unit "ppm" }
@@ -97,6 +102,10 @@ export const parseVerdict: Parser = function (id, data) {
             unwrapBlock(qt[j++]);
           }
         }
+      } else if (keyword === 'symbol') {
+        result.symbol = unwrapped(value);
+      } else if (keyword === 'behavior') {
+        result.behavior = value();
       } else if (keyword === 'derive' || keyword === 'expression') {
         result.derive = unwrapped(value);
       } else if (keyword === 'inputs' || keyword === 'uses') {
@@ -131,6 +140,12 @@ export const parseVerdict: Parser = function (id, data) {
 
 export const dumpVerdict: Dumper<Verdict> = function (v) {
   let out = 'verdict ' + v.id + ' {\n';
+  if (v.symbol) {
+    out += '  symbol "' + escapeString(v.symbol) + '"\n';
+  }
+  if (v.behavior) {
+    out += '  behavior ' + v.behavior + '\n';
+  }
   if (v.quantityKind) {
     out += '  quantity { kind ' + v.quantityKind;
     if (v.unit) {

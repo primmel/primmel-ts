@@ -1,0 +1,12 @@
+process CertificationProcess {
+  name "OIML-CS certification process (PD-05 sketch)"
+  process ApplicationReview {
+    name "Application review (PD-05, 5.1)"
+  }
+  process TypeEvaluation {
+    name "Type evaluation and testing (PD-05, 5.3)"
+  }
+  process CertificationDecision {
+    name "Evaluation, decision and certificate issue (PD-05, 5.4)"
+  }
+}
