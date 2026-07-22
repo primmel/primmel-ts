@@ -62,6 +62,12 @@
 // CHILDREN combine for the coverage calculus (TODO.roadmap/04): `all` =
 // every child required; `gateway` = the children are exclusive branches
 // and at least one suffices for minimal cover.
+//
+// `activity_kind { <id>+ }` (TODO.roadmap/39) classifies the process
+// against the ISO/IEC 17000 functional-approach activity taxonomy —
+// multi-kind is deliberate (ISO/IEC 17065 §7.4 "evaluation" = selection +
+// determination). Classification, not inheritance; the ids resolve against
+// a declared activity_archetype register when one is in scope (C58).
 // ─────────────────────────────────────────────────────────────────────
 
 import Process, {
@@ -460,6 +466,7 @@ export const parseProcess: Parser = function (id, data) {
     // v3 process model — defaults keep a plain v2 process exactly as before
     signature: null,
     invariants: [],
+    activityKinds: [],
     preconditions: [],
     executor: '',
     registers: [],
@@ -552,6 +559,13 @@ export const parseProcess: Parser = function (id, data) {
         result.signature = sig;
       } else if (keyword === 'invariants') {
         result.invariants = parseOclList(unwrapBlock(value()));
+      } else if (keyword === 'activity_kind') {
+        // activity_kind { testing verification … } — ISO/IEC 17000
+        // functional-approach classification (TODO.roadmap/39; C58).
+        result.activityKinds = tokenize(stripWrapping(value()))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0);
       } else if (keyword === 'preconditions') {
         result.preconditions = parseProcessPreconditions(unwrapBlock(value()));
       } else if (keyword === 'executor') {
@@ -796,6 +810,12 @@ export const dumpProcess: (
       out += '    "' + escapeString(inv) + '"\n';
     }
     out += '  }\n';
+  }
+  if (process.activityKinds && process.activityKinds.length > 0) {
+    out +=
+      '  activity_kind { ' +
+      process.activityKinds.map(dumpBareSafe).join(' ') +
+      ' }\n';
   }
   if (process.preconditions && process.preconditions.length > 0) {
     out += '  preconditions {\n';

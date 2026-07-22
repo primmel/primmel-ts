@@ -104,6 +104,10 @@ import {
 } from './artifact';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
+import {
+  dumpActivityArchetype,
+  parseActivityArchetype,
+} from './activityArchetype';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -394,6 +398,14 @@ const CONSTRUCTS: ConstructDefinition[] = [
   // Primmel v3 quantities/time/duality (TODO.roadmap/06)
   quantityRegisterConstruct as ConstructDefinition,
   dualConstruct as ConstructDefinition,
+  // Primmel v3 ISO/IEC 17000 activity taxonomy (TODO.roadmap/39)
+  defineConstruct({
+    keyword: 'activity_archetype',
+    field: 'activityArchetypes',
+    takesID: true,
+    parse: parseActivityArchetype,
+    dump: dumpActivityArchetype as never,
+  }),
 ];
 
 function buildParserConfig(

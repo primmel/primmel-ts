@@ -26,6 +26,7 @@ import type {
   Subject,
 } from '../types/Subject';
 import type { ArtifactDefinition, ArtifactInstance } from '../types/Artifact';
+import type ActivityArchetype from '../types/ActivityArchetype';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
 import type { Requirement, RequirementClass } from '../types/Requirement';
@@ -163,6 +164,9 @@ export interface ParseContext {
   // Primmel v3 quantities/time/duality (TODO.roadmap/06)
   quantityRegisters: Record<string, QuantityRegister>;
   duals: Record<string, Dual>;
+
+  // Primmel v3 ISO/IEC 17000 activity taxonomy (TODO.roadmap/39)
+  activityArchetypes: Record<string, ActivityArchetype>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().

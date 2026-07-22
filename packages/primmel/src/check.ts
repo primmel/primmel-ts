@@ -143,6 +143,10 @@
 //      resolve — self.<p> against the subject's parameters, bare names
 //      against the behavior-I/O vocabulary (symbols, attributes,
 //      subject parameters)
+//   C58 activity-kind-resolves: a process's activity_kind ids resolve
+//      against a declared activity_archetype register when one is in
+//      scope; the register's own parent references resolve within the
+//      register (TODO.roadmap/39; silent in a register-less package)
 //
 // ── Coverage audits (TODO.roadmap/17, concept doc §11.5) ──
 //   The aspect↔requirement↔test↔form↔verdict closure. The requirement→test
@@ -1254,6 +1258,44 @@ export function checkPackage(
           err(
             'C50',
             `subject ${s.id}: characteristic "${k}" derivation reads "${id}", which is not a declared symbol, attribute, or subject parameter (behavior I/O) — in \`${c.derivation}\` (characteristic-derivation-inputs)`,
+          );
+        }
+      }
+    }
+  }
+
+  // ── C58: activity-kind-resolves (TODO.roadmap/39) ─────────────────
+  // A process's `activity_kind { … }` classifies it against the ISO/IEC
+  // 17000 functional-approach activity taxonomy (selection; determination
+  // — testing/inspection/audit/validation/verification/peer assessment;
+  // review; decision; attestation — declaration/certification/
+  // accreditation; surveillance …). Classification, not inheritance —
+  // multi-kind is deliberate (ISO/IEC 17065 §7.4 "evaluation" = selection
+  // + determination). Every tagged kind must resolve against a declared
+  // activity_archetype register WHEN ONE IS IN SCOPE (composed via uses);
+  // the rule stays silent in a register-less package — classification is
+  // opt-in and a register-less tree cannot adjudicate. The register's own
+  // `parent` references must likewise resolve to declared archetypes.
+  // Mirror of the OIML SMART linker's R23 activity-kind-resolves.
+  const activityArchetypeIds = new Set(
+    (standard.activityArchetypes ?? []).map(a => a.id),
+  );
+  if (activityArchetypeIds.size > 0) {
+    // The register's own parent references resolve within the register.
+    for (const a of standard.activityArchetypes ?? []) {
+      if (a.parent !== '' && !activityArchetypeIds.has(a.parent)) {
+        err(
+          'C58',
+          `activity_archetype ${a.id}: parent "${a.parent}" is not a declared activity archetype (activity-kind-resolves)`,
+        );
+      }
+    }
+    for (const p of standard.processes ?? []) {
+      for (const kind of p.activityKinds ?? []) {
+        if (!activityArchetypeIds.has(kind)) {
+          err(
+            'C58',
+            `process ${p.id}: activity_kind "${kind}" is not a declared activity archetype (activity-kind-resolves)`,
           );
         }
       }

@@ -731,18 +731,25 @@ export function dumpDesign(design: TestDesign, indent: string): string {
     const f = design.field;
     out += indent + '  field {\n';
     if (f.siteSelection) {
-      out += indent + '    site_selection "' + escapeString(f.siteSelection) + '"\n';
+      out +=
+        indent + '    site_selection "' + escapeString(f.siteSelection) + '"\n';
     }
     if (f.trafficConditions) {
-      out += indent + '    traffic_conditions "' + escapeString(f.trafficConditions) + '"\n';
+      out +=
+        indent +
+        '    traffic_conditions "' +
+        escapeString(f.trafficConditions) +
+        '"\n';
     }
     if (f.referenceMeter) {
       let line = indent + '    reference_meter { ';
       if (f.referenceMeter.description) {
-        line += 'description "' + escapeString(f.referenceMeter.description) + '" ';
+        line +=
+          'description "' + escapeString(f.referenceMeter.description) + '" ';
       }
       if (f.referenceMeter.uncertaintyBudget) {
-        line += 'uncertainty_budget ' + f.referenceMeter.uncertaintyBudget + ' ';
+        line +=
+          'uncertainty_budget ' + f.referenceMeter.uncertaintyBudget + ' ';
       }
       out += line + '}\n';
     }

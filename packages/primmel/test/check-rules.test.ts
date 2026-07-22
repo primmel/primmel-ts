@@ -46,14 +46,14 @@ const FAMILIES = [
 ];
 
 describe('check rule catalog (TODO.roadmap/17)', () => {
-  it('ids are unique and sequential (C1…C57)', () => {
+  it('ids are unique and sequential (C1…C58)', () => {
     const ids = CHECK_RULES.map(r => r.id);
     assert.equal(new Set(ids).size, ids.length, 'duplicate rule ids');
-    const expected = Array.from({ length: 57 }, (_, i) => `C${i + 1}`);
+    const expected = Array.from({ length: 58 }, (_, i) => `C${i + 1}`);
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'the catalog is exactly C1…C57',
+      'the catalog is exactly C1…C58',
     );
   });
 

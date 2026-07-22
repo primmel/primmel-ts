@@ -107,10 +107,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { stripColon, dumpBareSafe, readValueToken } from './field-parser';
-import {
-  parseApplicability,
-  dumpApplicabilityEntries,
-} from './field-parser';
+import { parseApplicability, dumpApplicabilityEntries } from './field-parser';
 import {
   coerceValueToken,
   dumpQuantityBlock,
@@ -451,7 +448,8 @@ function parseStructure(id: string, block: string): StructureEntry {
   return s;
 }
 
-function parseDimension(id: string, block: string): ClassificationDimension {  const dim: ClassificationDimension = {
+function parseDimension(id: string, block: string): ClassificationDimension {
+  const dim: ClassificationDimension = {
     id,
     label: '',
     scope: '',

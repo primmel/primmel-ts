@@ -233,7 +233,9 @@ function parseLookup(block: string): CalculationLookup {
       // fallback (G12 residual (b), TODO.roadmap/19). Set only when present
       // so a reparse deep-equals the dump of a declaration without one.
       const dt = tokenize(unwrapBlock(t[i++]));
-      const tier: { factor: number; mode?: 'absolute' | 'relative' } = { factor: 0 };
+      const tier: { factor: number; mode?: 'absolute' | 'relative' } = {
+        factor: 0,
+      };
       for (let j = 0; j < dt.length; j++) {
         if (dt[j] === 'factor' && j + 1 < dt.length) {
           tier.factor = Number(stripWrapping(dt[++j]));

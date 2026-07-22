@@ -154,6 +154,15 @@ export default interface Process {
   /** IS: OCL invariants over the signature and registers. */
   invariants: string[];
   /**
+   * IS: ISO/IEC 17000 activity-kind ids classifying this process in the
+   * functional approach (TODO.roadmap/39) — an abstract process may be
+   * tagged with several kinds (ISO/IEC 17065 §7.4 "evaluation" =
+   * selection + determination). Classification, not inheritance; the ids
+   * resolve against a declared activity_archetype register when one is in
+   * scope (C58 activity-kind-resolves).
+   */
+  activityKinds: string[];
+  /**
    * IS: OCL Boolean guards on entry. A violated precondition voids the
    * run AS A RUN (verdicts `invalid`, never `fail`); the language carries
    * the declaration, the runtime evaluates it.

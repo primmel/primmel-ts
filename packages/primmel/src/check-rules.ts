@@ -4,7 +4,7 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C57) issues report under;
+//   id       — the per-rule id (C1…C58) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
@@ -178,6 +178,18 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'TODO.roadmap/02',
+  ),
+  // C58 (TODO.roadmap/39): the ISO/IEC 17000 activity-kind classification
+  // facet on processes — every tagged kind resolves against a declared
+  // activity_archetype register when one is in scope, and the register's
+  // own parent references resolve within the register.
+  R(
+    'C58',
+    'activity-kind-resolves',
+    'process',
+    'error',
+    'normal',
+    'TODO.roadmap/39',
   ),
   // ── instantiation (TODO.roadmap/03) ───────────────────────────────
   R(

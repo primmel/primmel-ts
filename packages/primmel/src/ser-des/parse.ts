@@ -87,6 +87,8 @@ export default function parse(
     // Primmel v3 quantities/time/duality (TODO.roadmap/06)
     quantityRegisters: {},
     duals: {},
+    // Primmel v3 ISO/IEC 17000 activity taxonomy (TODO.roadmap/39)
+    activityArchetypes: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };

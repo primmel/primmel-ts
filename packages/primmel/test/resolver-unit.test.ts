@@ -57,6 +57,7 @@ function emptyContext(): ParseContext {
     artifactInstances: {},
     quantityRegisters: {},
     duals: {},
+    activityArchetypes: {},
     issues: [],
   };
 }
@@ -161,6 +162,7 @@ describe('resolve (unit, minimal context)', () => {
       children: [],
       signature: null,
       invariants: [],
+      activityKinds: [],
       preconditions: [],
       executor: '',
       registers: [],

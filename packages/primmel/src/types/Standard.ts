@@ -25,6 +25,7 @@ import type {
   Subject,
 } from './Subject';
 import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
+import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type ReferenceMaterial from './ReferenceMaterial';
@@ -110,6 +111,11 @@ export default interface Standard {
   // unit/quantity-kind registers and IS↔HAS dual pairs.
   quantityRegisters: QuantityRegister[];
   duals: Dual[];
+
+  // Primmel v3 ISO/IEC 17000 activity taxonomy (TODO.roadmap/39): the
+  // classifiable activity-kind register a process's `activity_kind`
+  // classification facet resolves against (C58).
+  activityArchetypes: ActivityArchetype[];
 
   root: Subprocess | null;
 }
