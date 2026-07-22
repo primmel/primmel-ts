@@ -4,7 +4,7 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C58) issues report under;
+//   id       — the per-rule id (C1…C59) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
@@ -186,6 +186,18 @@ export const CHECK_RULES: CheckRule[] = [
   R(
     'C58',
     'activity-kind-resolves',
+    'process',
+    'error',
+    'normal',
+    'TODO.roadmap/39',
+  ),
+  // C59 (TODO.roadmap/39b): the ISO/IEC 17065 role-segregation facet on
+  // processes — every pair member resolves to a declared process (or the
+  // reserved case_personnel token), the two members are distinct, and the
+  // owning process is a member of its own pair.
+  R(
+    'C59',
+    'segregation-members-resolve',
     'process',
     'error',
     'normal',

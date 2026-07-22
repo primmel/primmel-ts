@@ -36,6 +36,41 @@ export interface ProcessSignature {
   outputs: ProcessParameter[];
 }
 
+/**
+ * One role-segregation constraint of a process (TODO.roadmap/39b — the
+ * ISO/IEC 17065 clause-7 non-involvement rules: 7.5.1 reviewer ∉
+ * evaluation, 7.6.2 decider ∉ evaluation, 7.13.5 complaint resolution ∉
+ * case activities, 7.13.6/4.2.10 consultancy bars). First-class structured
+ * declaration, NOT an OCL invariant: invariants quantify over one
+ * process's own signature records, while segregation is a CROSS-process
+ * relation over personnel sets, per case — and invariant strings are never
+ * mechanically evaluated.
+ *
+ * `pair` members are PROCESS ids (that process's personnel set for the
+ * case at hand), or the reserved token `case_personnel` (the personnel
+ * involved in the certification activities of the case a complaint
+ * relates to — 7.13.5's case-relative set). Roles are deliberately not
+ * members: a scheme may bind one role to evaluation, review AND decision,
+ * so the norms quantify over process INVOLVEMENT, not role assignment.
+ * The linter (C59 segregation-members-resolve) checks well-formedness;
+ * per-assignment runtime enforcement is the platform's business.
+ */
+export interface SegregationEntry {
+  id: string;
+  /** 'case_personnel_disjoint' | 'consultancy_bar' ('' = undeclared). */
+  kind: string;
+  /** Clause of the source standard stating the constraint (e.g. "7.5.1"). */
+  clause: string;
+  /** The two disjoint personnel sets (disjoint entries; exactly two). */
+  pair: string[];
+  /** ISO-8601 duration of a fixed consultancy bar (7.13.6: "P2Y"); '' = none. */
+  period: string;
+  /** The barred client relations ('consultancy' | 'employment') — bar entries. */
+  barred: string[];
+  /** Verbatim-faithful normative statement of the constraint. */
+  statement: string;
+}
+
 /** The eight step kinds of the v3 step vocabulary. */
 export type ProcessStepKind =
   | 'action'
@@ -162,6 +197,15 @@ export default interface Process {
    * scope (C58 activity-kind-resolves).
    */
   activityKinds: string[];
+  /**
+   * IS: role-segregation constraints (TODO.roadmap/39b — the ISO/IEC
+   * 17065 non-involvement rules: review/decision personnel disjoint from
+   * evaluation personnel, complaint-resolution independence, consultancy
+   * bars). First-class machine-checkable declarations, not invariants;
+   * the linter (C59 segregation-members-resolve) checks well-formedness,
+   * per-assignment enforcement is the runtime's business.
+   */
+  segregation: SegregationEntry[];
   /**
    * IS: OCL Boolean guards on entry. A violated precondition voids the
    * run AS A RUN (verdicts `invalid`, never `fail`); the language carries

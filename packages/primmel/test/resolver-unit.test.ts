@@ -163,6 +163,7 @@ describe('resolve (unit, minimal context)', () => {
       signature: null,
       invariants: [],
       activityKinds: [],
+      segregation: [],
       preconditions: [],
       executor: '',
       registers: [],

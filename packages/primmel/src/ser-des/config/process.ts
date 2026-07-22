@@ -68,6 +68,35 @@
 // multi-kind is deliberate (ISO/IEC 17065 §7.4 "evaluation" = selection +
 // determination). Classification, not inheritance; the ids resolve against
 // a declared activity_archetype register when one is in scope (C58).
+//
+// `segregation { constraint <id> { … } }` (TODO.roadmap/39b) declares the
+// ISO/IEC 17065 role-segregation constraints as first-class structure —
+// review/decision personnel disjoint from evaluation personnel (7.5.1 /
+// 7.6.2), complaint-resolution independence (7.13.5, the reserved
+// `case_personnel` pair member), and the consultancy bars (4.2.10
+// body-specified period; 7.13.6 fixed P2Y):
+//
+//   segregation {
+//     constraint review_not_evaluation {
+//       kind case_personnel_disjoint
+//       clause "7.5.1"
+//       pair { review evaluation }
+//       statement "The review shall be carried out by person(s) who have
+//         not been involved in the evaluation process."
+//     }
+//     constraint complaint_two_year_bar {
+//       kind consultancy_bar
+//       clause "7.13.6"
+//       period P2Y
+//       barred { consultancy employment }
+//       statement "…"
+//     }
+//   }
+//
+// Pair members are PROCESS ids (a process's personnel set for the case at
+// hand), never roles — a scheme may bind one role to evaluation, review
+// AND decision, so the norms quantify over process involvement. C59
+// (segregation-members-resolve) checks declaration well-formedness.
 // ─────────────────────────────────────────────────────────────────────
 
 import Process, {
@@ -78,6 +107,7 @@ import Process, {
   ProcessStep,
   ProcessStepKind,
   ResolvableProcess,
+  SegregationEntry,
 } from '../../types/process';
 import type {
   TestInstances,
@@ -217,8 +247,75 @@ function parseProcessPreconditions(block: string): TestPrecondition[] {
   return out;
 }
 
-/** Per-classification instances: `by <dimension> values { V { k: n } … }`. */
-function parseProcessInstances(block: string): TestInstances {
+/**
+ * Segregation constraints (TODO.roadmap/39b): `constraint <id> { … }`
+ * entries of a `segregation { … }` block — the ISO/IEC 17065
+ * non-involvement rules as first-class structure (kind, clause, pair /
+ * period / barred, statement).
+ */
+function parseSegregation(block: string): SegregationEntry[] {
+  const out: SegregationEntry[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (cmd !== 'constraint') {
+      i = skipUnknownEntry(t, i);
+      continue;
+    }
+    const sid = stripWrapping(t[i++]);
+    const entry: SegregationEntry = {
+      id: sid,
+      kind: '',
+      clause: '',
+      pair: [],
+      period: '',
+      barred: [],
+      statement: '',
+    };
+    if (i < t.length && t[i].startsWith('{')) {
+      const et = tokenize(unwrapBlock(t[i++]));
+      let j = 0;
+      while (j < et.length) {
+        const ec = et[j++];
+        if (j >= et.length) {
+          break;
+        }
+        if (ec === 'kind') {
+          entry.kind = stripWrapping(et[j++]);
+        } else if (ec === 'clause') {
+          entry.clause = stripWrapping(et[j++]);
+        } else if (ec === 'pair') {
+          entry.pair.push(
+            ...tokenize(stripWrapping(et[j++]))
+              .map(stripColon)
+              .map(stripWrapping)
+              .filter(s => s.length > 0),
+          );
+        } else if (ec === 'period') {
+          entry.period = stripWrapping(et[j++]);
+        } else if (ec === 'barred') {
+          entry.barred.push(
+            ...tokenize(stripWrapping(et[j++]))
+              .map(stripColon)
+              .map(stripWrapping)
+              .filter(s => s.length > 0),
+          );
+        } else if (ec === 'statement') {
+          entry.statement = stripWrapping(et[j++]);
+        } else {
+          unwrapBlock(et[j++]);
+        }
+      }
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+/** Per-classification instances: `by <dimension> values { V { k: n } … }`. */ function parseProcessInstances(
+  block: string,
+): TestInstances {
   const out: TestInstances = { by: '', values: {} };
   const t = tokenize(block);
   let i = 0;
@@ -467,6 +564,7 @@ export const parseProcess: Parser = function (id, data) {
     signature: null,
     invariants: [],
     activityKinds: [],
+    segregation: [],
     preconditions: [],
     executor: '',
     registers: [],
@@ -566,6 +664,10 @@ export const parseProcess: Parser = function (id, data) {
           .map(stripColon)
           .map(stripWrapping)
           .filter(s => s.length > 0);
+      } else if (keyword === 'segregation') {
+        // segregation { constraint <id> { … } … } — ISO/IEC 17065 role
+        // segregation (TODO.roadmap/39b; C59).
+        result.segregation = parseSegregation(unwrapBlock(value()));
       } else if (keyword === 'preconditions') {
         result.preconditions = parseProcessPreconditions(unwrapBlock(value()));
       } else if (keyword === 'executor') {
@@ -816,6 +918,33 @@ export const dumpProcess: (
       '  activity_kind { ' +
       process.activityKinds.map(dumpBareSafe).join(' ') +
       ' }\n';
+  }
+  if (process.segregation && process.segregation.length > 0) {
+    out += '  segregation {\n';
+    for (const s of process.segregation) {
+      out += '    constraint ' + s.id + ' {\n';
+      if (s.kind) {
+        out += '      kind ' + dumpBareSafe(s.kind) + '\n';
+      }
+      if (s.clause) {
+        out += '      clause "' + escapeString(s.clause) + '"\n';
+      }
+      if (s.pair.length > 0) {
+        out += '      pair { ' + s.pair.map(dumpBareSafe).join(' ') + ' }\n';
+      }
+      if (s.period) {
+        out += '      period ' + dumpBareSafe(s.period) + '\n';
+      }
+      if (s.barred.length > 0) {
+        out +=
+          '      barred { ' + s.barred.map(dumpBareSafe).join(' ') + ' }\n';
+      }
+      if (s.statement) {
+        out += '      statement "' + escapeString(s.statement) + '"\n';
+      }
+      out += '    }\n';
+    }
+    out += '  }\n';
   }
   if (process.preconditions && process.preconditions.length > 0) {
     out += '  preconditions {\n';

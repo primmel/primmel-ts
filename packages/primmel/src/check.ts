@@ -147,6 +147,11 @@
 //      against a declared activity_archetype register when one is in
 //      scope; the register's own parent references resolve within the
 //      register (TODO.roadmap/39; silent in a register-less package)
+//   C59 segregation-members-resolve: a process's segregation constraints
+//      (TODO.roadmap/39b — ISO/IEC 17065 role segregation) are
+//      well-formed: pair members resolve to declared processes (or the
+//      reserved case_personnel token), are distinct, and include the
+//      owning process
 //
 // ── Coverage audits (TODO.roadmap/17, concept doc §11.5) ──
 //   The aspect↔requirement↔test↔form↔verdict closure. The requirement→test
@@ -1297,6 +1302,74 @@ export function checkPackage(
             'C58',
             `process ${p.id}: activity_kind "${kind}" is not a declared activity archetype (activity-kind-resolves)`,
           );
+        }
+      }
+    }
+  }
+
+  // ── C59: segregation-members-resolve (TODO.roadmap/39b) ────────────
+  // A process's `segregation { constraint … }` declares the ISO/IEC 17065
+  // role-segregation constraints as first-class structure (7.5.1 reviewer
+  // ∉ evaluation, 7.6.2 decider ∉ evaluation, 7.13.5 complaint resolution
+  // ∉ case activities, 7.13.6/4.2.10 consultancy bars). Well-formedness:
+  // (a) every pair member resolves to a declared process id or the
+  // reserved `case_personnel` token (the personnel involved in the
+  // certification activities of the case a complaint relates to); (b) the
+  // two members are distinct; (c) the owning process is a member of its
+  // own pair; (d) the kind is declared. Pair members are process ids,
+  // never roles — a scheme may bind one role to evaluation, review AND
+  // decision, so the norms quantify over process involvement. Per-
+  // assignment runtime enforcement is the platform's business (task 44).
+  // Mirror of the OIML SMART linker's R24 abstract-process-segregation.
+  {
+    const SEGREGATION_CASE_PERSONNEL = 'case_personnel';
+    const segregationProcessIds = new Set(
+      (standard.processes ?? []).map(p => p.id),
+    );
+    for (const p of standard.processes ?? []) {
+      for (const s of p.segregation ?? []) {
+        if (
+          s.kind !== 'case_personnel_disjoint' &&
+          s.kind !== 'consultancy_bar'
+        ) {
+          err(
+            'C59',
+            `process ${p.id}: segregation constraint "${s.id}" declares kind "${s.kind || '(none)'}" — valid kinds: case_personnel_disjoint, consultancy_bar (segregation-members-resolve)`,
+          );
+          continue;
+        }
+        if (s.kind === 'case_personnel_disjoint') {
+          if (s.pair.length !== 2) {
+            err(
+              'C59',
+              `process ${p.id}: segregation constraint "${s.id}" is case_personnel_disjoint but declares ${s.pair.length} pair members — exactly two are required (segregation-members-resolve)`,
+            );
+            continue;
+          }
+          const [a, b] = s.pair;
+          if (a === b) {
+            err(
+              'C59',
+              `process ${p.id}: segregation constraint "${s.id}" declares "${a}" disjoint from itself — the two personnel sets must be distinct (segregation-members-resolve)`,
+            );
+          }
+          for (const member of [a, b]) {
+            if (
+              member !== SEGREGATION_CASE_PERSONNEL &&
+              !segregationProcessIds.has(member)
+            ) {
+              err(
+                'C59',
+                `process ${p.id}: segregation constraint "${s.id}" names pair member "${member}", which is not a declared process (nor the reserved "${SEGREGATION_CASE_PERSONNEL}" token) (segregation-members-resolve)`,
+              );
+            }
+          }
+          if (a !== p.id && b !== p.id) {
+            err(
+              'C59',
+              `process ${p.id}: segregation constraint "${s.id}" is declared on process "${p.id}" but neither pair member is "${p.id}" — the constrained process owns its segregation constraints (segregation-members-resolve)`,
+            );
+          }
         }
       }
     }
