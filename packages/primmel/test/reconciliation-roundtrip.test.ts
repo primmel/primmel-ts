@@ -203,3 +203,31 @@ describe('table repeated source blocks', () => {
     assert.equal(dump(m2), d1);
   });
 });
+
+describe('conformance_test binds_to (TODO.roadmap/47)', () => {
+  const SRC = `conformance_test /conf/examinations/inscriptions {
+    name "Inscriptions examination"
+    type Inspection
+    targets { /req/technical/mandatory-markings /req/technical/class-designation }
+    binds_to { model.aspects.markings }
+  }
+  `;
+
+  it('parses the HAS-inventory inspection targets', () => {
+    const m = load(SRC);
+    const t = m.conformanceTests[0];
+    assert.deepEqual(t.targets, [
+      '/req/technical/mandatory-markings',
+      '/req/technical/class-designation',
+    ]);
+    assert.deepEqual(t.bindsTo, ['model.aspects.markings']);
+  });
+
+  it('dump round-trips binds_to (fixpoint)', () => {
+    const d1 = dump(load(SRC));
+    assert.match(d1, /binds_to \{\n    model\.aspects\.markings\n  \}/);
+    const m2 = load(d1);
+    assert.deepEqual(m2.conformanceTests[0], load(SRC).conformanceTests[0]);
+    assert.equal(dump(m2), d1);
+  });
+});

@@ -99,6 +99,11 @@ export default interface ConformanceTest {
    * the first entry, kept for back-compatibility). */
   sourceRefs?: { doc: string; clause: string }[];
   targets: string[];
+  /** Inspection/verification targets in the subject's HAS inventory
+   * (TODO.roadmap/47) — the same canonical path vocabulary as
+   * Requirement.bindsTo: `targets` names the requirements verified,
+   * `bindsTo` names the subject items the test exercises or inspects. */
+  bindsTo: string[];
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];
   procedure: ConformanceTestStep[];

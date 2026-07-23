@@ -380,6 +380,7 @@ export const parseConformanceTest: Parser = function (id, data) {
     guidance: '',
     reference: '',
     targets: [],
+    bindsTo: [],
     applicability: [],
     procedure: [],
     measurements: [],
@@ -455,6 +456,8 @@ export const parseConformanceTest: Parser = function (id, data) {
         }
       } else if (keyword === 'targets') {
         result.targets = tokenizePackage(value());
+      } else if (keyword === 'binds_to') {
+        result.bindsTo = tokenizePackage(value());
       } else if (keyword === 'applicability') {
         result.applicability = parseApplicability(unwrapBlock(value()));
       } else if (keyword === 'procedure') {
@@ -596,6 +599,13 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     out += '  targets {\n';
     for (const t of ct.targets) {
       out += '    ' + t + '\n';
+    }
+    out += '  }\n';
+  }
+  if (ct.bindsTo && ct.bindsTo.length > 0) {
+    out += '  binds_to {\n';
+    for (const b of ct.bindsTo) {
+      out += '    ' + b + '\n';
     }
     out += '  }\n';
   }
