@@ -114,6 +114,26 @@ canvas Root {
     assert.equal(reloaded.conformanceTests[0].procedure.length, 1);
   });
 
+  it('a legacy scalar reference clears previously collected structured blocks', () => {
+    // Mixed construct (structured blocks then a legacy scalar): the dump
+    // must not emit structured blocks its scalar fields deny — the legacy
+    // branch clears sourceRefs for symmetry with sourceRef.
+    const model = load(`conformance_test Mixed {
+  name "Mixed reference forms"
+  reference { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1" }
+  reference { R60doc#2.10.1 }
+}`);
+
+    const ct = model.conformanceTests[0];
+    assert.equal(ct.sourceRef, null);
+    assert.equal(ct.sourceRefs, undefined);
+    assert.equal(ct.reference, 'R60doc#2.10.1');
+
+    const dumped = dump(model);
+    assert.ok(!dumped.includes('doc "urn:oiml:pub:r:60-2:2021"'));
+    assert.ok(dumped.includes('reference R60doc#2.10.1'));
+  });
+
   it('handles conformance_test without optional fields', () => {
     const model = load(`root Root
 

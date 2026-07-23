@@ -163,3 +163,43 @@ describe('table data cell escaping', () => {
     assert.equal(dump(load(d1)), d1);
   });
 });
+
+describe('table repeated source blocks', () => {
+  // A table bound to several fragments emits one source {} block per
+  // binding (TODO.roadmap/24); the ser-des collects all of them like the
+  // calculation/conformanceTest/requirement constructs.
+  const SRC = `table mpe_tiers {
+    title "MPE tiers"
+    columns "tier, factor"
+    source { doc "urn:oiml:pub:r:60-1:2021" clause "5.4" }
+    source { doc "urn:oiml:pub:r:60-1:2021" clause "table-2" }
+    data {
+      "wide" "1.0"
+    }
+  }
+  `;
+
+  it('parses every source block (sourceRef = first)', () => {
+    const m = load(SRC);
+    const t = m.tables[0];
+    assert.deepEqual(t.sourceRef, {
+      doc: 'urn:oiml:pub:r:60-1:2021',
+      clause: '5.4',
+    });
+    assert.deepEqual(t.sourceRefs, [
+      { doc: 'urn:oiml:pub:r:60-1:2021', clause: '5.4' },
+      { doc: 'urn:oiml:pub:r:60-1:2021', clause: 'table-2' },
+    ]);
+  });
+
+  it('dump round-trips all source blocks (fixpoint)', () => {
+    const d1 = dump(load(SRC));
+    assert.match(
+      d1,
+      /source \{ doc "urn:oiml:pub:r:60-1:2021" clause "5\.4" \}\n  source \{ doc "urn:oiml:pub:r:60-1:2021" clause "table-2" \}/,
+    );
+    const m2 = load(d1);
+    assert.deepEqual(m2.tables[0], load(SRC).tables[0]);
+    assert.equal(dump(m2), d1);
+  });
+});

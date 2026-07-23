@@ -95,6 +95,10 @@ export interface Requirement {
   dependencies: string[];
   sourceDiscrepancy: SourceDiscrepancy | null;
   source: SourceRef | null;
+  /** All structured provenance bindings when the requirement cites several
+   * fragments (TODO.roadmap/24 — repeated `source {}` blocks; source is
+   * the first entry, kept for back-compatibility). */
+  sourceRefs?: SourceRef[];
   referenceIds: string[];
 }
 

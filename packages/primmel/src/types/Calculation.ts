@@ -57,6 +57,10 @@ interface Calculation {
   profile?: string;
   /** Structured provenance (doc URN + clause), e.g. R 60-3, 2.1.2.4. */
   sourceRef?: { doc: string; clause: string } | null;
+  /** All structured provenance bindings when the element cites several
+   * fragments (TODO.roadmap/24 — repeated `source {}` blocks; sourceRef is
+   * the first entry, kept for back-compatibility). */
+  sourceRefs?: { doc: string; clause: string }[];
   ref: Reference[];
 }
 

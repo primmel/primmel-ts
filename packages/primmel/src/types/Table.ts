@@ -48,6 +48,10 @@ interface Table {
   /** Count overrides per test context. */
   overrides?: Record<string, TableOverride> | null;
   sourceRef?: SourceRef | null;
+  /** All structured provenance bindings when the table cites several
+   * fragments (TODO.roadmap/24 — repeated `source {}` blocks; sourceRef is
+   * the first entry, kept for back-compatibility). */
+  sourceRefs?: SourceRef[];
   sourceDiscrepancy?: SourceDiscrepancy | null;
 }
 

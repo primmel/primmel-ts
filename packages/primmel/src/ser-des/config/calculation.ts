@@ -57,6 +57,7 @@ export const parseCalculation: Parser = function (id, data) {
           result._relations.ref = tokenizePackage(t[i++]);
         } else if (command === 'source') {
           // Structured provenance: source { doc "urn:..." clause "2.1.2.4" }
+          // Repeated source blocks collect into sourceRefs (TODO.roadmap/24).
           const inner = tokenize(unwrapBlock(t[i++]));
           const src: { doc: string; clause: string } = { doc: '', clause: '' };
           for (let k = 0; k + 1 < inner.length; k += 2) {
@@ -66,7 +67,8 @@ export const parseCalculation: Parser = function (id, data) {
               src.clause = stripWrapping(inner[k + 1]);
             }
           }
-          result.sourceRef = src;
+          if (!result.sourceRef) result.sourceRef = src;
+          (result.sourceRefs ??= []).push(src);
         } else if (command === 'inputs') {
           result.inputs = parseInputs(unwrapBlock(t[i++]));
         } else if (command === 'output') {
@@ -342,12 +344,12 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
   if (c.profile) {
     out += '  profile ' + c.profile + '\n';
   }
-  if (c.sourceRef && (c.sourceRef.doc || c.sourceRef.clause)) {
+  for (const src of c.sourceRefs ?? (c.sourceRef && (c.sourceRef.doc || c.sourceRef.clause) ? [c.sourceRef] : [])) {
     out +=
       '  source { doc "' +
-      escapeString(c.sourceRef.doc) +
+      escapeString(src.doc) +
       '" clause "' +
-      escapeString(c.sourceRef.clause) +
+      escapeString(src.clause) +
       '" }\n';
   }
   if (c.ref.length > 0) {

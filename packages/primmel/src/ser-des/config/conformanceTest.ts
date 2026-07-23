@@ -436,15 +436,21 @@ export const parseConformanceTest: Parser = function (id, data) {
                 src.clause = stripWrapping(inner[k + 1]);
               }
             }
-            result.sourceRef = src;
-            result.reference = src.doc;
+            if (!result.sourceRef) result.sourceRef = src;
+            (result.sourceRefs ??= []).push(src);
+            if (!result.reference) result.reference = src.doc;
           } else {
-            // Legacy block: reference { R60doc#2.10.1 } — scalar inside braces
+            // Legacy block: reference { R60doc#2.10.1 } — scalar inside braces.
+            // Clear sourceRefs as well as sourceRef: a mixed construct
+            // (structured blocks then a legacy scalar) must not dump
+            // structured blocks its scalar fields deny.
             result.sourceRef = null;
+            result.sourceRefs = undefined;
             result.reference = unwrapBlock(refValue).trim();
           }
         } else {
           result.sourceRef = null;
+          result.sourceRefs = undefined;
           result.reference = refValue;
         }
       } else if (keyword === 'targets') {
@@ -567,7 +573,16 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.guidance) {
     out += '  guidance "' + escapeString(ct.guidance) + '"\n';
   }
-  if (ct.sourceRef && ct.sourceRef.doc) {
+  if (ct.sourceRefs && ct.sourceRefs.length > 0) {
+    for (const src of ct.sourceRefs) {
+      out +=
+        '  reference { doc "' +
+        escapeString(src.doc) +
+        '" clause "' +
+        escapeString(src.clause) +
+        '" }\n';
+    }
+  } else if (ct.sourceRef && ct.sourceRef.doc) {
     out +=
       '  reference { doc "' +
       escapeString(ct.sourceRef.doc) +

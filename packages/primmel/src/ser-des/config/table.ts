@@ -275,7 +275,13 @@ export const parseTable: Parser = function (id, data) {
         } else if (command === 'display') {
           result.display = unwrapBlock(t[i++]);
         } else if (command === 'source') {
-          result.sourceRef = readSource(unwrapBlock(t[i++]));
+          // Structured provenance: source { doc "urn:..." clause "4" }
+          // Repeated source blocks collect into sourceRefs (TODO.roadmap/24).
+          const src = readSource(unwrapBlock(t[i++]));
+          if (!result.sourceRef) {
+            result.sourceRef = src;
+          }
+          (result.sourceRefs ??= []).push(src);
         } else if (command === 'source_discrepancy') {
           result.sourceDiscrepancy = parseSourceDiscrepancy(
             unwrapBlock(t[i++]),
@@ -408,12 +414,15 @@ export const dumpTable: Dumper<Table> = function (t) {
   if (t.display) {
     out += '  display "' + t.display + '"\n';
   }
-  if (t.sourceRef && (t.sourceRef.doc || t.sourceRef.clause)) {
+  for (const src of t.sourceRefs ??
+    (t.sourceRef && (t.sourceRef.doc || t.sourceRef.clause)
+      ? [t.sourceRef]
+      : [])) {
     out +=
       '  source { doc "' +
-      escapeString(t.sourceRef.doc) +
+      escapeString(src.doc) +
       '" clause "' +
-      escapeString(t.sourceRef.clause) +
+      escapeString(src.clause) +
       '" }\n';
   }
   if (t.sourceDiscrepancy) {

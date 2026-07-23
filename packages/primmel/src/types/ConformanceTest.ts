@@ -94,6 +94,10 @@ export default interface ConformanceTest {
   reference: string;
   /** Structured form when reference is a { doc, clause } block (v2). */
   sourceRef?: { doc: string; clause: string } | null;
+  /** All structured provenance bindings when the test cites several
+   * fragments (TODO.roadmap/24 — repeated `source {}` blocks; sourceRef is
+   * the first entry, kept for back-compatibility). */
+  sourceRefs?: { doc: string; clause: string }[];
   targets: string[];
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];

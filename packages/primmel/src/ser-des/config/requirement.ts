@@ -334,7 +334,11 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'source_discrepancy') {
       result.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
     } else if (cmd === 'source' || cmd === 'reference') {
-      result.source = readSource(unwrapBlock(t[i++]));
+      // Repeated source blocks collect into sourceRefs (TODO.roadmap/24);
+      // source stays the first entry for back-compatibility.
+      const src = readSource(unwrapBlock(t[i++]));
+      if (!result.source) result.source = src;
+      (result.sourceRefs ??= []).push(src);
     } else {
       unwrapBlock(t[i++]);
     }
@@ -479,12 +483,12 @@ const dumpRequirement = function (r: Requirement): string {
   if (r.sourceDiscrepancy) {
     out += dumpSourceDiscrepancy(r.sourceDiscrepancy, '  ') + '\n';
   }
-  if (r.source && (r.source.doc || r.source.clause)) {
+  for (const src of r.sourceRefs ?? (r.source && (r.source.doc || r.source.clause) ? [r.source] : [])) {
     out +=
       '  source { doc "' +
-      escapeString(r.source.doc) +
+      escapeString(src.doc) +
       '" clause "' +
-      escapeString(r.source.clause) +
+      escapeString(src.clause) +
       '" }\n';
   }
   out += '}\n';
