@@ -58,6 +58,7 @@ function emptyContext(): ParseContext {
     quantityRegisters: {},
     duals: {},
     activityArchetypes: {},
+    connectorProfiles: {},
     issues: [],
   };
 }

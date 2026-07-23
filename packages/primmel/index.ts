@@ -133,6 +133,20 @@ export type {
   ArtifactMedia,
   ProducedWhen,
 } from './src/types/Artifact';
+export type {
+  ConnectorProfile,
+  Endpoint,
+  EndpointAccessScope,
+  EndpointOperation,
+  EndpointOperationKind,
+  EndpointPayload,
+  ServeBinding,
+} from './src/types/Twin';
+export {
+  BUILTIN_CONNECTOR_PROFILES,
+  ENDPOINT_ACCESS_SCOPES,
+  ENDPOINT_OPERATION_KINDS,
+} from './src/types/Twin';
 export {
   InstanceResolutionError,
   instanceChain,
@@ -167,6 +181,7 @@ export {
   isValidTimeValue,
   checkValidityWindow,
   editionPins,
+  parseFreshnessWindow,
 } from './src/time';
 export {
   parseTypeExpression,

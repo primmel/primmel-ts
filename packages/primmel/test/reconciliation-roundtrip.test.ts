@@ -196,7 +196,7 @@ describe('table repeated source blocks', () => {
     const d1 = dump(load(SRC));
     assert.match(
       d1,
-      /source \{ doc "urn:oiml:pub:r:60-1:2021" clause "5\.4" \}\n  source \{ doc "urn:oiml:pub:r:60-1:2021" clause "table-2" \}/,
+      /source \{ doc "urn:oiml:pub:r:60-1:2021" clause "5\.4" \}\n {2}source \{ doc "urn:oiml:pub:r:60-1:2021" clause "table-2" \}/,
     );
     const m2 = load(d1);
     assert.deepEqual(m2.tables[0], load(SRC).tables[0]);
@@ -225,7 +225,7 @@ describe('conformance_test binds_to (TODO.roadmap/47)', () => {
 
   it('dump round-trips binds_to (fixpoint)', () => {
     const d1 = dump(load(SRC));
-    assert.match(d1, /binds_to \{\n    model\.aspects\.markings\n  \}/);
+    assert.match(d1, /binds_to \{\n {4}model\.aspects\.markings\n {2}\}/);
     const m2 = load(d1);
     assert.deepEqual(m2.conformanceTests[0], load(SRC).conformanceTests[0]);
     assert.equal(dump(m2), d1);

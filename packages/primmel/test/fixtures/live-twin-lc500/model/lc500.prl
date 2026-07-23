@@ -1,0 +1,98 @@
+# ─────────────────────────────────────────────────────────────────────
+# TODO.roadmap/32 fixture — the LC-500 live twin (doctrine ch. 14).
+#
+# ACME ships LC-500 load cells with an `lc500_api` endpoint (§14.9 worked
+# example A): the integration language of §14.4 — endpoint (IS), serve
+# bindings with freshness windows (HAS), and the rest_json connector
+# profile (a built-in of the OCP registry — nothing to declare).
+#
+# The surface syntax is the kernel's canonical form (see ser-des/config/
+# twin.ts header): access lists are `{ … }` blocks and the operation
+# serves/does names dump as blocks; the sketch's `[ … ]` and bare forms
+# parse identically (proven in test/twin-interface.test.ts).
+# ─────────────────────────────────────────────────────────────────────
+
+quantity_register si {
+  kind mass { dimensions { M 1 } si_unit kg description "Mass." }
+  unit kg { symbol "kg" label "kilogram" kind mass factor 1 }
+  kind dimensionless { si_unit "1" }
+  unit dimensionless { label "dimensionless" kind dimensionless }
+}
+
+attribute_definition d_min {
+  symbol "d_min"
+  name "Minimum dead load"
+  definition "Minimum dead load of the load cell (R 60-1, 3.3.2), read from the twin's test context."
+  quantity_kind mass
+  unit kg
+  value_type QuantityValue
+  origin design-fixed
+  scope sample
+  category metrological
+}
+
+attribute_definition indication {
+  symbol "I"
+  name "Indication"
+  definition "The indication of the load cell — the served live reading (R 60-1, 3.4.1)."
+  quantity_kind mass
+  unit kg
+  value_type QuantityValue
+  origin measured
+  scope sample
+  category metrological
+}
+
+state_machine lc_operational {
+  kind operational
+  initial off
+  states { off warming ready measuring fault }
+  transition off -> warming action power_on
+  transition warming -> ready action warmed
+  transition ready -> measuring action start_measurement
+  transition measuring -> ready action stop_measurement
+  transition [off, warming, ready, measuring] -> fault action fault_detected
+}
+
+behavior self_test {
+  kind procedural
+  stimulus invoke
+  response "The instrument runs its self-diagnostic and reports a diagnostic report (R 60-1, 6.3.4 software-controlled instruments)."
+}
+
+subject LoadCellModel {
+  is {
+    metadata { name "LC-500 load cell model" source "urn:oiml:pub:r:60-1:2021#clause-3.1.3" }
+    endpoint lc500_api {
+      operation get_indication {
+        kind query
+        serves indication
+        payload { quantity_kind mass unit kg timestamp true }
+      }
+      operation watch_state {
+        kind subscribe
+        serves state, environmental_context
+        payload { quantity_kind state unit dimensionless timestamp true }
+      }
+      operation run_self_test {
+        kind invoke
+        does self_test
+        payload { quantity_kind diagnostic_report unit dimensionless timestamp true }
+      }
+      access {
+        public { get_indication }
+        registered { watch_state }
+        authority { run_self_test }
+      }
+      profile rest_json
+    }
+  }
+  has {
+    state lc_operational
+    serve sample.test_context.d_min via get_indication { fresh_within 5s }
+    serve sample.state via watch_state { fresh_within 1s }
+  }
+  does {
+    behavior self_test
+  }
+}

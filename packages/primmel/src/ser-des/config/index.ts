@@ -102,6 +102,7 @@ import {
   artifactDefinitionConstruct,
   artifactInstanceConstruct,
 } from './artifact';
+import { connectorProfileConstruct } from './twin';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
 import {
@@ -406,6 +407,12 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseActivityArchetype,
     dump: dumpActivityArchetype as never,
   }),
+  // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
+  // the connector-profile registry. Endpoints and serve bindings are NOT
+  // top-level constructs — they are subject anatomy slots (is.endpoints /
+  // has.serves), parsed and dumped by the subject ser-des (config/subject.ts
+  // + config/twin.ts).
+  connectorProfileConstruct as ConstructDefinition,
 ];
 
 function buildParserConfig(

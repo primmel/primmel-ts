@@ -89,6 +89,8 @@ export default function parse(
     duals: {},
     // Primmel v3 ISO/IEC 17000 activity taxonomy (TODO.roadmap/39)
     activityArchetypes: {},
+    // Primmel v3 twin interface (TODO.roadmap/32)
+    connectorProfiles: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };

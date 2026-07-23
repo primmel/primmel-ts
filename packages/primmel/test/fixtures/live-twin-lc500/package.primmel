@@ -1,0 +1,7 @@
+package {
+  id live-twin-lc500
+  kind rec
+  title "Live twin fixture — the LC-500 load cell API (doctrine ch. 14)"
+  version "1.0.0"
+  description "TODO.roadmap/32 fixture: the lc500_api endpoint, serve bindings, and connector profile of doctrine ch. 14 §14.4/§14.9, validated end-to-end (parse, lint-clean, round-trip)."
+}

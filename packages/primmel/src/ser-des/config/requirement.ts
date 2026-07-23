@@ -337,7 +337,9 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
       // Repeated source blocks collect into sourceRefs (TODO.roadmap/24);
       // source stays the first entry for back-compatibility.
       const src = readSource(unwrapBlock(t[i++]));
-      if (!result.source) result.source = src;
+      if (!result.source) {
+        result.source = src;
+      }
       (result.sourceRefs ??= []).push(src);
     } else {
       unwrapBlock(t[i++]);
@@ -483,7 +485,8 @@ const dumpRequirement = function (r: Requirement): string {
   if (r.sourceDiscrepancy) {
     out += dumpSourceDiscrepancy(r.sourceDiscrepancy, '  ') + '\n';
   }
-  for (const src of r.sourceRefs ?? (r.source && (r.source.doc || r.source.clause) ? [r.source] : [])) {
+  for (const src of r.sourceRefs ??
+    (r.source && (r.source.doc || r.source.clause) ? [r.source] : [])) {
     out +=
       '  source { doc "' +
       escapeString(src.doc) +

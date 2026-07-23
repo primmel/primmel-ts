@@ -67,7 +67,9 @@ export const parseCalculation: Parser = function (id, data) {
               src.clause = stripWrapping(inner[k + 1]);
             }
           }
-          if (!result.sourceRef) result.sourceRef = src;
+          if (!result.sourceRef) {
+            result.sourceRef = src;
+          }
           (result.sourceRefs ??= []).push(src);
         } else if (command === 'inputs') {
           result.inputs = parseInputs(unwrapBlock(t[i++]));
@@ -344,7 +346,10 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
   if (c.profile) {
     out += '  profile ' + c.profile + '\n';
   }
-  for (const src of c.sourceRefs ?? (c.sourceRef && (c.sourceRef.doc || c.sourceRef.clause) ? [c.sourceRef] : [])) {
+  for (const src of c.sourceRefs ??
+    (c.sourceRef && (c.sourceRef.doc || c.sourceRef.clause)
+      ? [c.sourceRef]
+      : [])) {
     out +=
       '  source { doc "' +
       escapeString(src.doc) +

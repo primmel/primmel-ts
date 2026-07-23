@@ -4,11 +4,11 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C59) issues report under;
+//   id       — the per-rule id (C1…C64) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
-//              characteristics | coverage;
+//              characteristics | twins | coverage;
 //   severity — the rule's DEFAULT severity at the normal level
 //              ('warning' rules escalate to errors under --strict;
 //              individual legs of a rule may escalate — see check.ts);
@@ -29,6 +29,7 @@ export type CheckFamily =
   | 'promises'
   | 'artifacts'
   | 'characteristics'
+  | 'twins'
   | 'coverage';
 
 export type CheckLevel = 'normal' | 'audit';
@@ -454,6 +455,47 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'TODO.roadmap/10',
+  ),
+  // ── twins (TODO.roadmap/32 — doctrine ch. 14 §14.4/§14.12) ──────────
+  R(
+    'C60',
+    'serve-targets-resolve',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/32, doctrine §14.12',
+  ),
+  R(
+    'C61',
+    'payload-schema-quantity',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/32, doctrine §14.4/§14.12',
+  ),
+  R(
+    'C62',
+    'access-scope-covers-serves',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/32, doctrine §14.12',
+  ),
+  R(
+    'C63',
+    'freshness-required-on-live-bindings',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/32, doctrine §14.12',
+  ),
+  R(
+    'C64',
+    'endpoint-profile-resolves',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/32, doctrine §14.4',
   ),
   // ── coverage audits (TODO.roadmap/17, concept doc §11.5) ──────────
   // The aspect↔requirement↔test↔form↔verdict closure: the requirement→test

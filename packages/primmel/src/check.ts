@@ -152,6 +152,32 @@
 //      well-formed: pair members resolve to declared processes (or the
 //      reserved case_personnel token), are distinct, and include the
 //      owning process
+//   C60 serve-targets-resolve (TODO.roadmap/32, doctrine §14.12): every
+//      serve binding names a declared aspect of the owning subject
+//      ([level.]{parameters|classification|test_context}.<key>, a bare
+//      attribute/characteristic/dimension name, state,
+//      environmental_context) and a declared, unambiguous endpoint
+//      operation of value-channel kind (query | subscribe); the served
+//      aspect and the operation payload are unit/quantity-kind coherent.
+//      The endpoint legs ride the same rule: an operation's serves names
+//      resolve as subject aspects, its does names as declared behaviors
+//   C61 payload-schema-quantity: every endpoint operation declares a
+//      known kind (query | subscribe | invoke) and a payload schema that
+//      is a QuantityValue per INV-1 — quantity kind, unit (the register's
+//      dimensionless id when non-quantity), and timestamp true (a value
+//      without a time is not evidence, §14.3)
+//   C62 access-scope-covers-serves: every endpoint operation is covered
+//      by exactly one access scope (public | registered | authority);
+//      access entries name declared operations of the endpoint (§14.12:
+//      every endpoint operation has an access scope)
+//   C63 freshness-required-on-live-bindings: a serve binding without
+//      fresh_within is an error (§14.12 — no stale semantics, no live
+//      binding); the window must parse (shorthand 5s/1min/1h or ISO 8601
+//      with fixed-length components)
+//   C64 endpoint-profile-resolves: an endpoint's profile names a declared
+//      connector_profile or a built-in (rest_json, mqtt, opc_ua,
+//      file_drop) — the model is protocol-neutral; profiles bind
+//      protocols (§14.4)
 //
 // ── Coverage audits (TODO.roadmap/17, concept doc §11.5) ──
 //   The aspect↔requirement↔test↔form↔verdict closure. The requirement→test
@@ -236,8 +262,13 @@ import type ConformanceTest from './types/ConformanceTest';
 import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
 import type { FormField } from './types/Form';
-import { isDuration, isValidTimeValue } from './time';
+import { isDuration, isValidTimeValue, parseFreshnessWindow } from './time';
 import { isWellFormedMapType } from './type-expr';
+import {
+  BUILTIN_CONNECTOR_PROFILES,
+  ENDPOINT_ACCESS_SCOPES,
+  ENDPOINT_OPERATION_KINDS,
+} from './types/Twin';
 import { extractStateGates } from './operational-state';
 import { activeRuleIds } from './check-rules';
 import {
@@ -696,12 +727,14 @@ export function checkPackage(
     designed_conditions: 'is',
     promises: 'is',
     artifacts: 'is',
+    endpoint: 'is',
     attributes: 'has',
     dimensions: 'has',
     state: 'has',
     characteristics: 'has',
     environmental_context: 'has',
     artifact_instances: 'has',
+    serve: 'has',
     behavior: 'does',
   };
   const CONDITION_TIERS = new Set(['reference', 'rated', 'limiting']);
@@ -1370,6 +1403,337 @@ export function checkPackage(
               `process ${p.id}: segregation constraint "${s.id}" is declared on process "${p.id}" but neither pair member is "${p.id}" — the constrained process owns its segregation constraints (segregation-members-resolve)`,
             );
           }
+        }
+      }
+    }
+  }
+
+  // ── C60–C64: the twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4) ──
+  // The live twin's integration language: endpoint declarations (IS) and
+  // serve bindings (HAS) on the subject anatomy, plus the connector-profile
+  // registry. The doctrine's validation rules (§14.12, first/second/fifth
+  // bullets): every serve names a declared aspect and a declared operation
+  // with unit coherence; every endpoint operation has an access scope and a
+  // payload schema (QuantityValue with timestamp); a live binding without
+  // fresh_within is an error. Freshness SEMANTICS (stale ⇒ indeterminate)
+  // are runtime — the smart app's verdict service owns them; these rules
+  // guarantee the declarations the runtime needs.
+  {
+    const CHAIN_LEVELS = new Set(['family', 'group', 'model', 'sample']);
+    const KNOWN_KINDS = new Set<string>(ENDPOINT_OPERATION_KINDS);
+    const KNOWN_SCOPES = new Set<string>(ENDPOINT_ACCESS_SCOPES);
+    const declaredProfiles = new Set([
+      ...Object.keys(BUILTIN_CONNECTOR_PROFILES),
+      ...(standard.connectorProfiles ?? []).map(p => p.id),
+    ]);
+
+    interface ResolvedAspect {
+      kind:
+        | 'attribute'
+        | 'characteristic'
+        | 'dimension'
+        | 'state'
+        | 'environmental_context';
+      /** The unit-bearing aspect (attribute/characteristic legs), when any. */
+      unit?: string;
+      quantityKind?: string;
+    }
+
+    // The `state` aspect resolves through the subject's bound machine
+    // (has.state) OR through the package's operational machines: a
+    // twin-interface subject block (the smart side's model/twin.yaml
+    // emission, TODO.refactor/16) is PARTIAL anatomy — it carries the
+    // endpoint/serve declarations without re-stating the state binding,
+    // and the state channel binds at runtime (task 33).
+    const packageHasOperationalMachine = (standard.stateMachines ?? []).some(
+      sm => sm.kind === 'operational',
+    );
+
+    /**
+     * Resolve a serve aspect path against the owning subject — the task-03
+     * scope vocabulary: an optional chain-level prefix (family | group |
+     * model | sample), then parameters.<attr> | test_context.<attr> |
+     * classification.<dim> | characteristics.<name>, or a bare
+     * attribute/characteristic/dimension name; the reserved HAS aspects
+     * `state` (the subject's declared state machine) and
+     * `environmental_context` (the logged actual conditions — always
+     * servable, §14.3) close the vocabulary.
+     */
+    const resolveServeAspect = (
+      path: string,
+      s: Subject,
+    ): ResolvedAspect | null => {
+      let rest = path;
+      const parts = path.split('.');
+      if (parts.length > 1 && CHAIN_LEVELS.has(parts[0])) {
+        rest = parts.slice(1).join('.');
+      }
+      if (rest === 'state') {
+        return s.has.state || packageHasOperationalMachine
+          ? { kind: 'state' }
+          : null;
+      }
+      if (rest === 'environmental_context') {
+        return { kind: 'environmental_context' };
+      }
+      const segs = rest.split('.');
+      if (segs.length === 2) {
+        const [area, key] = segs;
+        if (area === 'parameters' || area === 'test_context') {
+          const a = attrId(standard, key);
+          return a
+            ? { kind: 'attribute', unit: a.unit, quantityKind: a.quantityKind }
+            : null;
+        }
+        if (area === 'classification') {
+          return dimIds.has(key) || key in (s.has.dimensions ?? {})
+            ? { kind: 'dimension' }
+            : null;
+        }
+        if (area === 'characteristics') {
+          const c = (s.has.characteristics ?? {})[key];
+          return c
+            ? {
+                kind: 'characteristic',
+                unit: c.unit,
+                quantityKind: c.quantityKind,
+              }
+            : null;
+        }
+        return null;
+      }
+      if (segs.length === 1 && rest) {
+        const a = attrId(standard, rest);
+        if (a) {
+          return {
+            kind: 'attribute',
+            unit: a.unit,
+            quantityKind: a.quantityKind,
+          };
+        }
+        const c = (s.has.characteristics ?? {})[rest];
+        if (c) {
+          return {
+            kind: 'characteristic',
+            unit: c.unit,
+            quantityKind: c.quantityKind,
+          };
+        }
+        if (dimIds.has(rest) || rest in (s.has.dimensions ?? {})) {
+          return { kind: 'dimension' };
+        }
+      }
+      return null;
+    };
+
+    for (const s of standard.subjects ?? []) {
+      const endpoints = s.is.endpoints ?? [];
+      // Operation index across the subject's endpoints (name → owners):
+      // serve bindings resolve against the subject's whole API surface.
+      const operations = new Map<
+        string,
+        {
+          endpoint: string;
+          kind: string;
+          payloadUnit?: string;
+          payloadKind?: string;
+        }[]
+      >();
+      for (const e of endpoints) {
+        for (const op of e.operations ?? []) {
+          const list = operations.get(op.name) ?? [];
+          list.push({
+            endpoint: e.id,
+            kind: op.kind,
+            ...(op.payload?.unit ? { payloadUnit: op.payload.unit } : {}),
+            ...(op.payload?.quantityKind
+              ? { payloadKind: op.payload.quantityKind }
+              : {}),
+          });
+          operations.set(op.name, list);
+        }
+
+        // C64 — endpoint-profile-resolves: the model is protocol-neutral;
+        // profiles bind protocols (§14.4). An endpoint with no profile, or
+        // one outside the registry (declared ∪ built-in), binds nothing.
+        if (!e.profile) {
+          err(
+            'C64',
+            `subject ${s.id}: endpoint ${e.id} declares no connector profile — the model is protocol-neutral; profiles bind protocols (endpoint-profile-resolves)`,
+          );
+        } else if (!declaredProfiles.has(e.profile)) {
+          err(
+            'C64',
+            `subject ${s.id}: endpoint ${e.id} profile "${e.profile}" is not a declared connector_profile nor a built-in (${Object.keys(BUILTIN_CONNECTOR_PROFILES).join(', ')}) (endpoint-profile-resolves)`,
+          );
+        }
+
+        for (const op of e.operations ?? []) {
+          // C61 — payload-schema-quantity: the operation's declared schema
+          // is well-formed (§14.4/§14.12): a known kind, and a payload that
+          // is a QuantityValue per INV-1 — quantity kind, unit (`1` when
+          // dimensionless), timestamp (a value without a time is not
+          // evidence).
+          if (!KNOWN_KINDS.has(op.kind)) {
+            err(
+              'C61',
+              `subject ${s.id}: endpoint ${e.id} operation ${op.name} kind "${op.kind || '(none)'}" is not one of query | subscribe | invoke (payload-schema-quantity)`,
+            );
+          }
+          if (!op.payload) {
+            err(
+              'C61',
+              `subject ${s.id}: endpoint ${e.id} operation ${op.name} declares no payload schema — every endpoint operation has a payload schema (QuantityValue with timestamp, §14.12) (payload-schema-quantity)`,
+            );
+          } else {
+            if (!op.payload.quantityKind) {
+              err(
+                'C61',
+                `subject ${s.id}: endpoint ${e.id} operation ${op.name} payload names no quantity_kind — INV-1: no bare numbers (payload-schema-quantity)`,
+              );
+            }
+            if (!op.payload.unit) {
+              err(
+                'C61',
+                `subject ${s.id}: endpoint ${e.id} operation ${op.name} payload names no unit — a QuantityValue always carries a unit (the register's dimensionless id when non-quantity) (payload-schema-quantity)`,
+              );
+            }
+            if (!op.payload.timestamp) {
+              err(
+                'C61',
+                `subject ${s.id}: endpoint ${e.id} operation ${op.name} payload does not declare timestamp true — a value without a time is not evidence (§14.3) (payload-schema-quantity)`,
+              );
+            }
+          }
+          // C60 (endpoint legs) — the operation's own targets resolve:
+          // serves names against the subject's aspects, does names against
+          // declared behaviors (an invoke with no resolvable process
+          // triggers nothing).
+          for (const name of op.serves ?? []) {
+            if (!resolveServeAspect(name, s)) {
+              err(
+                'C60',
+                `subject ${s.id}: endpoint ${e.id} operation ${op.name} serves "${name}", which is not a declared aspect of the subject (serve-targets-resolve)`,
+              );
+            }
+          }
+          for (const name of op.does ?? []) {
+            if (!behaviorIds.has(name)) {
+              err(
+                'C60',
+                `subject ${s.id}: endpoint ${e.id} operation ${op.name} does "${name}", which is not a declared behavior (serve-targets-resolve)`,
+              );
+            }
+          }
+        }
+
+        // C62 — access-scope-covers-serves: every operation is covered by
+        // exactly one access scope (§14.12: every endpoint operation has an
+        // access scope); access entries name declared operations of the
+        // endpoint; scopes are public | registered | authority.
+        const coverage = new Map<string, number>();
+        for (const [scope, ops] of Object.entries(e.access ?? {})) {
+          if (!KNOWN_SCOPES.has(scope)) {
+            err(
+              'C62',
+              `subject ${s.id}: endpoint ${e.id} access scope "${scope}" is not one of public | registered | authority (access-scope-covers-serves)`,
+            );
+          }
+          for (const name of ops ?? []) {
+            if (!e.operations.some(op => op.name === name)) {
+              err(
+                'C62',
+                `subject ${s.id}: endpoint ${e.id} access ${scope} names "${name}", which is not a declared operation of the endpoint (access-scope-covers-serves)`,
+              );
+            }
+            coverage.set(name, (coverage.get(name) ?? 0) + 1);
+          }
+        }
+        for (const op of e.operations ?? []) {
+          const n = coverage.get(op.name) ?? 0;
+          if (n === 0) {
+            err(
+              'C62',
+              `subject ${s.id}: endpoint ${e.id} operation ${op.name} has no access scope — every endpoint operation has an access scope (§14.12) (access-scope-covers-serves)`,
+            );
+          } else if (n > 1) {
+            err(
+              'C62',
+              `subject ${s.id}: endpoint ${e.id} operation ${op.name} is covered by ${n} access scopes — exactly one scope per operation (access-scope-covers-serves)`,
+            );
+          }
+        }
+      }
+
+      for (const b of s.has.serves ?? []) {
+        // C60 — serve-targets-resolve: the binding names a declared aspect
+        // and a declared operation (§14.12); the serving operation is a
+        // value channel (query | subscribe — an invoke triggers a process,
+        // it serves no value); the served aspect and the operation's
+        // payload are unit-coherent.
+        const aspect = resolveServeAspect(b.aspect, s);
+        if (!aspect) {
+          err(
+            'C60',
+            `subject ${s.id}: serve "${b.aspect}" does not resolve to a declared aspect of the subject ([level.]{parameters|classification|test_context}.<key>, a bare attribute/characteristic/dimension name, state, environmental_context) (serve-targets-resolve)`,
+          );
+        }
+        const owners = operations.get(b.via) ?? [];
+        if (owners.length === 0) {
+          err(
+            'C60',
+            `subject ${s.id}: serve "${b.aspect}" via "${b.via}" names no declared operation of the subject's endpoints (serve-targets-resolve)`,
+          );
+        } else if (owners.length > 1) {
+          err(
+            'C60',
+            `subject ${s.id}: serve "${b.aspect}" via "${b.via}" is ambiguous — the operation is declared on ${owners.length} endpoints (${owners.map(o => o.endpoint).join(', ')}) (serve-targets-resolve)`,
+          );
+        } else {
+          const op = owners[0];
+          if (op.kind === 'invoke') {
+            err(
+              'C60',
+              `subject ${s.id}: serve "${b.aspect}" via "${b.via}" targets an invoke operation — invoke triggers a process; a serve binding binds a value channel (query | subscribe) (serve-targets-resolve)`,
+            );
+          }
+          if (
+            aspect &&
+            op.payloadUnit &&
+            aspect.unit &&
+            op.payloadUnit !== aspect.unit
+          ) {
+            err(
+              'C60',
+              `subject ${s.id}: serve "${b.aspect}" unit "${aspect.unit}" ≠ operation ${b.via} payload unit "${op.payloadUnit}" — unit coherence between aspect and payload is required (§14.12) (serve-targets-resolve)`,
+            );
+          }
+          if (
+            aspect &&
+            op.payloadKind &&
+            aspect.quantityKind &&
+            op.payloadKind !== aspect.quantityKind
+          ) {
+            err(
+              'C60',
+              `subject ${s.id}: serve "${b.aspect}" quantity kind "${aspect.quantityKind}" ≠ operation ${b.via} payload quantity kind "${op.payloadKind}" (serve-targets-resolve)`,
+            );
+          }
+        }
+        // C63 — freshness-required-on-live-bindings: a live binding without
+        // fresh_within is an error (§14.12 — no stale semantics, no live
+        // binding); the window must parse (shorthand 5s/1min/1h or ISO
+        // 8601 with fixed-length components).
+        if (!b.freshWithin) {
+          err(
+            'C63',
+            `subject ${s.id}: serve "${b.aspect}" via "${b.via}" declares no fresh_within — a live binding without a freshness window is an error (§14.12: no stale semantics, no live binding) (freshness-required-on-live-bindings)`,
+          );
+        } else if (parseFreshnessWindow(b.freshWithin) === null) {
+          err(
+            'C63',
+            `subject ${s.id}: serve "${b.aspect}" fresh_within "${b.freshWithin}" is not a parseable freshness window (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT5S) (freshness-required-on-live-bindings)`,
+          );
         }
       }
     }

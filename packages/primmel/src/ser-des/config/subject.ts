@@ -109,6 +109,12 @@ import {
 import { stripColon, dumpBareSafe, readValueToken } from './field-parser';
 import { parseApplicability, dumpApplicabilityEntries } from './field-parser';
 import {
+  dumpEndpoint,
+  dumpServe,
+  parseEndpoint,
+  parseServeEntry,
+} from './twin';
+import {
   coerceValueToken,
   dumpQuantityBlock,
   dumpScalarToken,
@@ -1423,6 +1429,39 @@ function readCharacteristicBlock(block: string): SubjectCharacteristic {
 const SCALAR_ASPECTS = new Set(['state', 'behavior']);
 
 /**
+ * Misplaced-payload skipping for the twin aspects (TODO.roadmap/32):
+ *   endpoint <id> { … }                      — skip the id AND the block;
+ *   serve <aspect> via <op> [{ … }]          — skip aspect/via/op + block.
+ * Without the skip, a misplaced endpoint/serve cascades into phantom
+ * aspects (the id, `via`, the operation name would each re-read as an
+ * aspect keyword).
+ */
+function skipMisplacedPayload(aspect: string, t: string[], i: number): number {
+  if (aspect === 'endpoint') {
+    if (i < t.length && !t[i].startsWith('{')) {
+      i++; // the endpoint id
+    }
+    if (i < t.length && t[i].startsWith('{')) {
+      i++; // the endpoint body
+    }
+    return i;
+  }
+  if (aspect === 'serve') {
+    if (i < t.length) {
+      i++; // the aspect path
+    }
+    if (t[i] === 'via') {
+      i += 2; // `via` + the operation name
+    }
+    if (i < t.length && t[i].startsWith('{')) {
+      i++; // the freshness block
+    }
+    return i;
+  }
+  return i;
+}
+
+/**
  * Record an aspect key found under the wrong family (or undeclared) for
  * the linter (C6), and skip its payload: one block token, or one scalar
  * value token for the known-scalar aspects.
@@ -1440,6 +1479,8 @@ function recordMisplaced(
     i++;
   } else if (SCALAR_ASPECTS.has(aspect)) {
     i++;
+  } else {
+    i = skipMisplacedPayload(aspect, t, i);
   }
   return i;
 }
@@ -1596,6 +1637,13 @@ function parseSubjectIs(block: string, result: Subject): void {
       result.is.promises = readPromises(unwrapBlock(t[i++]));
     } else if (cmd === 'artifacts') {
       result.is.artifacts = readStringEntries(unwrapBlock(t[i++]));
+    } else if (cmd === 'endpoint') {
+      // endpoint <id> { … } (TODO.roadmap/32) — the declared API surface.
+      const endpointId = stripColon(t[i++] ?? '');
+      const body = i < t.length ? unwrapBlock(t[i++]) : '';
+      if (endpointId) {
+        result.is.endpoints.push(parseEndpoint(endpointId, body));
+      }
     } else {
       i = recordMisplaced(result, 'is', cmd, t, i);
     }
@@ -1622,6 +1670,12 @@ function parseSubjectHas(block: string, result: Subject): void {
       result.has.environmentalContext = readStringEntries(unwrapBlock(t[i++]));
     } else if (cmd === 'artifact_instances') {
       result.has.artifactInstances = readStringEntries(unwrapBlock(t[i++]));
+    } else if (cmd === 'serve') {
+      // serve <aspect> via <operation> [{ fresh_within <duration> }]
+      // (TODO.roadmap/32) — the HAS-level binding with freshness semantics.
+      const read = parseServeEntry(t, i);
+      result.has.serves.push(read.binding);
+      i = read.next;
     } else {
       i = recordMisplaced(result, 'has', cmd, t, i);
     }
@@ -1656,6 +1710,7 @@ const parseSubject: ConstructDefinition['parse'] = function (id, data) {
       designedConditions: {},
       promises: [],
       artifacts: [],
+      endpoints: [],
     },
     has: {
       attributes: {},
@@ -1664,6 +1719,7 @@ const parseSubject: ConstructDefinition['parse'] = function (id, data) {
       characteristics: {},
       environmentalContext: [],
       artifactInstances: [],
+      serves: [],
     },
     does: { behaviors: [] },
     referenceIds: [],
@@ -1729,6 +1785,7 @@ function mergeSubject(parent: Subject, child: Subject): Subject {
       },
       promises: [...parent.is.promises, ...child.is.promises],
       artifacts: [...parent.is.artifacts, ...child.is.artifacts],
+      endpoints: [...parent.is.endpoints, ...child.is.endpoints],
     },
     has: {
       attributes: { ...parent.has.attributes, ...child.has.attributes },
@@ -1746,6 +1803,7 @@ function mergeSubject(parent: Subject, child: Subject): Subject {
         ...parent.has.artifactInstances,
         ...child.has.artifactInstances,
       ],
+      serves: [...parent.has.serves, ...child.has.serves],
     },
     does: { behaviors: [...parent.does.behaviors, ...child.does.behaviors] },
     referenceIds: child.referenceIds,
@@ -1961,6 +2019,25 @@ function dumpSubjectCharacteristics(
   return out;
 }
 
+/** Dump is.endpoints (TODO.roadmap/32) — one `endpoint <id> { … }` block per
+ *  declared endpoint, after the other IS aspects. */
+function dumpSubjectEndpoints(endpoints: Subject['is']['endpoints']): string {
+  let out = '';
+  for (const e of endpoints) {
+    out += dumpEndpoint(e, '    ');
+  }
+  return out;
+}
+
+/** Dump has.serves (TODO.roadmap/32) — one `serve … via …` line per binding. */
+function dumpSubjectServes(serves: Subject['has']['serves']): string {
+  let out = '';
+  for (const b of serves) {
+    out += dumpServe(b, '    ');
+  }
+  return out;
+}
+
 const dumpSubject = function (s: Subject): string {
   let out = 'subject ' + s.id + ' {\n';
   if (s.extends) {
@@ -1973,7 +2050,8 @@ const dumpSubject = function (s: Subject): string {
     dumpSubjectValueMap('design_parameters', s.is.designParameters) +
     dumpSubjectStringMap('designed_conditions', s.is.designedConditions) +
     dumpSubjectPromises(s.is.promises) +
-    dumpSubjectEntries('artifacts', s.is.artifacts);
+    dumpSubjectEntries('artifacts', s.is.artifacts) +
+    dumpSubjectEndpoints(s.is.endpoints);
   if (isBody) {
     out += '  is {\n' + isBody + '  }\n';
   }
@@ -1983,7 +2061,8 @@ const dumpSubject = function (s: Subject): string {
     (s.has.state ? '    state ' + dumpBareSafe(s.has.state) + '\n' : '') +
     dumpSubjectCharacteristics(s.has.characteristics) +
     dumpSubjectEntries('environmental_context', s.has.environmentalContext) +
-    dumpSubjectEntries('artifact_instances', s.has.artifactInstances);
+    dumpSubjectEntries('artifact_instances', s.has.artifactInstances) +
+    dumpSubjectServes(s.has.serves);
   if (hasBody) {
     out += '  has {\n' + hasBody + '  }\n';
   }

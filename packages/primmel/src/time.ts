@@ -74,6 +74,62 @@ export function isDuration(s: string): boolean {
   return m[7] === undefined || components.length === 1;
 }
 
+// ── freshness windows (TODO.roadmap/32, doctrine ch. 14 §14.4–14.5) ──
+
+/**
+ * The shorthand freshness-window form: `<n><unit>` with unit ms | s | min
+ * | h | d (the doctrine's own idiom — `fresh_within 5s`, `every 1h`).
+ */
+const FRESHNESS_SHORTHAND = /^(\d+(?:\.\d+)?)(ms|min|s|h|d)$/;
+
+const SHORTHAND_MILLIS: Record<string, number> = {
+  ms: 1,
+  s: 1000,
+  min: 60_000,
+  h: 3_600_000,
+  d: 86_400_000,
+};
+
+/**
+ * Parse a freshness window to MILLISECONDS — the runtime form of a serve
+ * binding's `fresh_within` (TODO.roadmap/32). Two accepted shapes:
+ *   - the shorthand: `500ms`, `5s`, `1min`, `1h`, `1d`;
+ *   - an ISO 8601 duration restricted to FIXED-length components (D/W/T
+ *     parts — `PT5S`, `PT1M`, `P1D`, `P1W`). Calendar-relative components
+ *     (years, months) are NOT a fixed window and parse as null: a
+ *     freshness window must be an exact age bound (§14.5's "how old a
+ *     value may be before it stops meaning anything").
+ * Returns null when the window is absent or unparseable (the linter's C63
+ * reports the authoring error; the runtime never guesses).
+ */
+export function parseFreshnessWindow(s: string): number | null {
+  if (!s) {
+    return null;
+  }
+  const short = FRESHNESS_SHORTHAND.exec(s.trim());
+  if (short) {
+    return Number(short[1]) * SHORTHAND_MILLIS[short[2]];
+  }
+  const m = DURATION.exec(s.trim());
+  if (!m) {
+    return null;
+  }
+  // Groups: [_, Y, M, D, TH, TM, TS, W] — calendar-relative components
+  // (years, months) are not a fixed window: rejected.
+  if (m[1] !== undefined || m[2] !== undefined) {
+    return null;
+  }
+  const num = (x: string | undefined): number =>
+    x === undefined ? 0 : Number(x.replace(',', '.'));
+  const millis =
+    num(m[7]) * 7 * 86_400_000 +
+    num(m[3]) * 86_400_000 +
+    num(m[4]) * 3_600_000 +
+    num(m[5]) * 60_000 +
+    num(m[6]) * 1000;
+  return millis > 0 ? millis : null;
+}
+
 /**
  * ISO 8601 interval: `start/end`, `start/duration`, or `duration/end`
  * (start/end are dates or date-times). When both bounds are dates or

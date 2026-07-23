@@ -437,9 +437,13 @@ export const parseConformanceTest: Parser = function (id, data) {
                 src.clause = stripWrapping(inner[k + 1]);
               }
             }
-            if (!result.sourceRef) result.sourceRef = src;
+            if (!result.sourceRef) {
+              result.sourceRef = src;
+            }
             (result.sourceRefs ??= []).push(src);
-            if (!result.reference) result.reference = src.doc;
+            if (!result.reference) {
+              result.reference = src.doc;
+            }
           } else {
             // Legacy block: reference { R60doc#2.10.1 } — scalar inside braces.
             // Clear sourceRefs as well as sourceRef: a mixed construct

@@ -11,6 +11,7 @@
 
 import type { QuantityValue } from './Quantity';
 import type { ApplicabilityEntry } from './Form';
+import type { Endpoint, ServeBinding } from './Twin';
 
 export interface SourceRef {
   doc: string;
@@ -388,6 +389,13 @@ export interface SubjectIs {
    * TODO.roadmap/09) declaring the outputs the subject must produce.
    */
   artifacts: string[];
+  /**
+   * The subject's declared API surface (types/Twin.ts, TODO.roadmap/32 —
+   * doctrine ch. 14 §14.4): endpoint declarations nested in `is { … }`
+   * (§14.11) — "this product offers this interface" is part of the type
+   * definition, like a marking or a software identification (§14.3).
+   */
+  endpoints: Endpoint[];
 }
 
 /** has { … } — exhibition aspects. */
@@ -412,6 +420,13 @@ export interface SubjectHas {
    * TODO.roadmap/09) — produced outputs recorded as evidence.
    */
   artifactInstances: string[];
+  /**
+   * serve bindings (types/Twin.ts, TODO.roadmap/32 — doctrine ch. 14
+   * §14.4): aspect → endpoint operation bindings with freshness windows.
+   * Served values are timestamped; a stale value degrades verdicts to
+   * `indeterminate` (§14.5 — never fail, never a silent pass).
+   */
+  serves: ServeBinding[];
 }
 
 /** does { … } — process aspects. */

@@ -25,6 +25,7 @@ import type {
   Subject,
 } from './Subject';
 import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
+import type { ConnectorProfile } from './Twin';
 import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
@@ -116,6 +117,12 @@ export default interface Standard {
   // classifiable activity-kind register a process's `activity_kind`
   // classification facet resolves against (C58).
   activityArchetypes: ActivityArchetype[];
+
+  // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
+  // the OCP-extensible connector-profile registry. Endpoints and serve
+  // bindings themselves live on the subject anatomy (is.endpoints /
+  // has.serves, types/Subject.ts).
+  connectorProfiles: ConnectorProfile[];
 
   root: Subprocess | null;
 }
