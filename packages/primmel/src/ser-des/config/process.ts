@@ -52,6 +52,15 @@
 // the named transition — e.g. `action warm_up { executor machine fires warm }`
 // drives an operational machine off → ready.
 //
+// A step may declare `calls <process>` (TODO.roadmap/38): the step invokes
+// a sub-process, binding its declared signature —
+// `calls creep_method { with { in { applied_load : test_load } out { indication_series : raw } } }`
+// maps every callee IN parameter to a caller register (read) and every
+// callee OUT parameter back to a caller register (write). The linter
+// (C76 subprocess-signature-bound) checks resolution, completeness and
+// kind compatibility; the caller-side names count as step I/O for
+// C12/C13/C75.
+//
 // Step kinds: action, approval, gateway, parallel_gateway, start_event,
 // end_event, timer_event (period for recurrence), signal_event. Flow
 // edges chain (`a -> b -> c`); an optional `{ when "ocl{...}" }` body
@@ -100,6 +109,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import Process, {
+  ProcessCallBinding,
   ProcessFlow,
   ProcessFlowEdge,
   ProcessParameter,
@@ -392,6 +402,9 @@ function parseStepBody(
     period: '',
     signal: '',
     fires: '',
+    calls: '',
+    callIn: [],
+    callOut: [],
     description: '',
   };
   const t = tokenize(block);
@@ -435,6 +448,45 @@ function parseStepBody(
       step.signal = stripWrapping(t[i++]);
     } else if (cmd === 'fires') {
       step.fires = stripWrapping(t[i++]);
+    } else if (cmd === 'calls') {
+      // calls <process> — optionally followed by a `with { in {…} out {…} }`
+      // signature-binding block (TODO.roadmap/38). The binding lists reuse
+      // the `name : name` param-list shape: callee param : caller name.
+      step.calls = stripWrapping(t[i++]);
+      if (i < t.length && t[i].startsWith('{')) {
+        const bind = (b: string): ProcessCallBinding[] =>
+          parseParamList(unwrapBlock(b)).map(p => ({
+            param: p.name,
+            bind: p.type,
+          }));
+        const ct = tokenize(unwrapBlock(t[i++]));
+        let j = 0;
+        while (j < ct.length) {
+          const cc = ct[j++];
+          if (j >= ct.length) {
+            break;
+          }
+          if (cc === 'with') {
+            const wt = tokenize(unwrapBlock(ct[j++]));
+            let k = 0;
+            while (k < wt.length) {
+              const wc = wt[k++];
+              if (k >= wt.length) {
+                break;
+              }
+              if (wc === 'in') {
+                step.callIn.push(...bind(wt[k++]));
+              } else if (wc === 'out') {
+                step.callOut.push(...bind(wt[k++]));
+              } else {
+                unwrapBlock(wt[k++]);
+              }
+            }
+          } else {
+            j = skipUnknownEntry(ct, j);
+          }
+        }
+      }
     } else if (cmd === 'description') {
       step.description = stripWrapping(t[i++]);
     } else {
@@ -826,6 +878,22 @@ function dumpStep(step: ProcessStep): string {
   }
   if (step.fires) {
     inner.push('fires ' + dumpBareSafe(step.fires));
+  }
+  if (step.calls) {
+    let c = 'calls ' + dumpBareSafe(step.calls);
+    if (step.callIn.length > 0 || step.callOut.length > 0) {
+      const bind = (bs: ProcessCallBinding[]): string =>
+        bs.map(b => dumpBareSafe(b.param) + ' : ' + dumpBareSafe(b.bind)).join(' ');
+      c += ' { with {';
+      if (step.callIn.length > 0) {
+        c += ' in { ' + bind(step.callIn) + ' }';
+      }
+      if (step.callOut.length > 0) {
+        c += ' out { ' + bind(step.callOut) + ' }';
+      }
+      c += ' } }';
+    }
+    inner.push(c);
   }
   if (step.description) {
     inner.push('description "' + escapeString(step.description) + '"');

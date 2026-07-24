@@ -204,6 +204,45 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/39',
   ),
+  // C74–C76 (TODO.roadmap/38): typed transition boundaries — composition
+  // is sound only when the upstream output signature covers the
+  // downstream input signature (∘: t₁: A→B, t₂: B→C ⊢ t₂∘t₁: A→C).
+  // C74: one name carries ONE type across the signature/register
+  // declaration positions (kind/unit-coherent through the quantity
+  // register). C75: the step-chain dataflow covers every read (a writer
+  // on every incoming path, or a provided IN/instance/state name —
+  // error) and no write is dead (warning leg). Known limitation: the
+  // must-analysis intersects over all predecessors uniformly, so a
+  // parallel_gateway fork's conjunctive branches are treated as
+  // alternative paths — a post-join read of a single-branch write is
+  // reported uncovered (pessimistic: over-reports, never misses a real
+  // gap). C76: a `calls` step binds
+  // the callee's declared signature completely and kind-compatibly —
+  // across packages too, since processes merge over `uses`.
+  R(
+    'C74',
+    'process-io-type-coherence',
+    'process',
+    'error',
+    'normal',
+    'TODO.roadmap/38',
+  ),
+  R(
+    'C75',
+    'process-flow-io-cover',
+    'process',
+    'error',
+    'normal',
+    'TODO.roadmap/38',
+  ),
+  R(
+    'C76',
+    'subprocess-signature-bound',
+    'process',
+    'error',
+    'normal',
+    'TODO.roadmap/38',
+  ),
   // ── instantiation (TODO.roadmap/03) ───────────────────────────────
   R(
     'C17',

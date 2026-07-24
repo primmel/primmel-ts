@@ -83,6 +83,22 @@ export type ProcessStepKind =
   | 'signal_event';
 
 /**
+ * One signature binding of a subprocess call (TODO.roadmap/38): the callee
+ * signature parameter `param` binds to the caller-side register/parameter
+ * `bind`. `callIn` bindings feed the callee's IN parameters (the caller
+ * name is READ); `callOut` mappings return the callee's OUT parameters
+ * (the caller name is WRITTEN). The linter (C76
+ * subprocess-signature-bound) checks completeness and kind compatibility;
+ * the caller-side names join the step's I/O for C12/C13/C75.
+ */
+export interface ProcessCallBinding {
+  /** Callee signature parameter name. */
+  param: string;
+  /** Caller-side register/parameter name it binds to. */
+  bind: string;
+}
+
+/**
  * One step of an executable process.
  *
  * Executor typing (`executor`):
@@ -93,9 +109,10 @@ export type ProcessStepKind =
  *     through which the step's outputs land in evidence;
  *   - '' — untyped (events; or the author didn't declare one).
  *
- * Step I/O (`reads`/`writes`/`wait`) names registers and signature
- * parameters — the linter (C12/C13) checks those names resolve and that
- * the step set realizes the process signature.
+ * Step I/O (`reads`/`writes`/`wait`, plus the caller-side names of a
+ * call's `with` bindings) names registers and signature parameters — the
+ * linter (C12/C13) checks those names resolve and that the step set
+ * realizes the process signature.
  */
 export interface ProcessStep {
   id: string;
@@ -125,6 +142,18 @@ export interface ProcessStep {
    * in the run's state trajectory (see src/operational-state.ts).
    */
   fires: string;
+  /**
+   * `calls <process>` (TODO.roadmap/38): the step invokes a sub-process.
+   * When the callee declares a signature, `callIn`/`callOut` bind it —
+   * every IN parameter bound from a caller register, every OUT parameter
+   * mapped back to a caller register (`calls <p> { with { in {…} out {…} } }`).
+   * '' = not a call step.
+   */
+  calls: string;
+  /** IN bindings of the call (callee param ← caller name; the caller READS). */
+  callIn: ProcessCallBinding[];
+  /** OUT mappings of the call (callee param → caller name; the caller WRITES). */
+  callOut: ProcessCallBinding[];
   description: string;
 }
 
