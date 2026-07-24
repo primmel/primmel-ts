@@ -93,11 +93,11 @@ export default interface ConformanceTest {
   type: string;
   reference: string;
   /** Structured form when reference is a { doc, clause } block (v2). */
-  sourceRef?: { doc: string; clause: string } | null;
+  sourceRef?: { doc: string; clause: string; fragment?: string } | null;
   /** All structured provenance bindings when the test cites several
    * fragments (TODO.roadmap/24 — repeated `source {}` blocks; sourceRef is
    * the first entry, kept for back-compatibility). */
-  sourceRefs?: { doc: string; clause: string }[];
+  sourceRefs?: { doc: string; clause: string; fragment?: string }[];
   targets: string[];
   /** Inspection/verification targets in the subject's HAS inventory
    * (TODO.roadmap/47) — the same canonical path vocabulary as

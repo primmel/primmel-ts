@@ -92,6 +92,56 @@ describe('calculation + condition_set source blocks', () => {
   });
 });
 
+describe('sentence-level provenance on calculation + conformance_test (TODO.roadmap/26, review I1)', () => {
+  // The two inline parsers (calculation `source`, conformance_test
+  // `reference`) historically read only doc/clause while their dumpers
+  // already emitted the sentence sub-address `fragment` — a sentence
+  // binding on either construct was silently dropped on parse. Pin the
+  // restored parse/dump symmetry.
+  const SRC = `calculation errorEnvelope {
+    name "errorEnvelope"
+    identifier "/calc/error-envelope"
+    output : number { unit "g" }
+    expression "ocl{abs(indication - reference)}"
+    source { doc "urn:oiml:pub:r:60-1:2021" clause "2.2" fragment "s1" }
+  }
+
+  conformance_test /conf/metrological/mpe-envelope {
+    name "MPE envelope"
+    type Calculation
+    reference { doc "urn:oiml:pub:r:60-1:2021" clause "5.3.2" fragment "s2" }
+  }
+  `;
+
+  it('parses the sentence sub-address (fragment) on both constructs', () => {
+    const m = load(SRC);
+    assert.deepEqual(m.calculations[0].sourceRef, {
+      doc: 'urn:oiml:pub:r:60-1:2021',
+      clause: '2.2',
+      fragment: 's1',
+    });
+    assert.deepEqual(m.conformanceTests[0].sourceRefs, [
+      { doc: 'urn:oiml:pub:r:60-1:2021', clause: '5.3.2', fragment: 's2' },
+    ]);
+  });
+
+  it('dump round-trips the fragment on both constructs (fixpoint)', () => {
+    const d1 = dump(load(SRC));
+    assert.match(
+      d1,
+      /source \{ doc "urn:oiml:pub:r:60-1:2021" clause "2\.2" fragment "s1" \}/,
+    );
+    assert.match(
+      d1,
+      /reference \{ doc "urn:oiml:pub:r:60-1:2021" clause "5\.3\.2" fragment "s2" \}/,
+    );
+    const m2 = load(d1);
+    assert.deepEqual(m2.calculations[0], load(SRC).calculations[0]);
+    assert.deepEqual(m2.conformanceTests[0], load(SRC).conformanceTests[0]);
+    assert.equal(dump(m2), d1);
+  });
+});
+
 describe('applicability mapping dump', () => {
   const SRC = `form F {
     name "F"

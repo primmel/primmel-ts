@@ -52,6 +52,8 @@ function readSource(block: string): SourceRef {
       src.doc = stripWrapping(t[i++]);
     } else if (cmd === 'clause') {
       src.clause = stripWrapping(t[i++]);
+    } else if (cmd === 'fragment') {
+      src.fragment = stripWrapping(t[i++]);
     } else {
       unwrapBlock(t[i++]);
     }
@@ -236,7 +238,9 @@ function dumpSource(src: SourceRef | null, indent: string): string {
     escapeString(src.doc) +
     '" clause "' +
     escapeString(src.clause) +
-    '" }\n'
+    '"' +
+    (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
+    ' }\n'
   );
 }
 

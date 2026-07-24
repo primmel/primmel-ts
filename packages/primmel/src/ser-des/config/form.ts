@@ -39,6 +39,8 @@ function readSource(block: string): SourceRef {
       src.doc = stripWrapping(t[i++]);
     } else if (cmd === 'clause') {
       src.clause = stripWrapping(t[i++]);
+    } else if (cmd === 'fragment') {
+      src.fragment = stripWrapping(t[i++]);
     } else {
       unwrapBlock(t[i++]);
     }
@@ -454,7 +456,9 @@ export const dumpForm: Dumper<Form> = function (f) {
           escapeString(c.source.doc) +
           '" clause "' +
           escapeString(c.source.clause) +
-          '" } ';
+          '"' +
+          (c.source.fragment ? ' fragment "' + escapeString(c.source.fragment) + '"' : '') +
+          ' } ';
       }
       out += '}\n';
     }

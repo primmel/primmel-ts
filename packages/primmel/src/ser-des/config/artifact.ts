@@ -83,6 +83,8 @@ function readSource(block: string): SourceRef {
       src.doc = stripWrapping(t[i++]);
     } else if (cmd === 'clause') {
       src.clause = stripWrapping(t[i++]);
+    } else if (cmd === 'fragment') {
+      src.fragment = stripWrapping(t[i++]);
     } else {
       unwrapBlock(t[i++]);
     }
@@ -98,7 +100,8 @@ function dumpSource(
   if (!src || (!src.doc && !src.clause)) {
     return '';
   }
-  return `${indent}${keyword} { doc "${escapeString(src.doc)}" clause "${escapeString(src.clause)}" }\n`;
+  const frag = src.fragment ? ` fragment "${escapeString(src.fragment)}"` : '';
+  return `${indent}${keyword} { doc "${escapeString(src.doc)}" clause "${escapeString(src.clause)}"${frag} }\n`;
 }
 
 function readIdList(block: string): string[] {

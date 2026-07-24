@@ -58,13 +58,21 @@ export const parseCalculation: Parser = function (id, data) {
         } else if (command === 'source') {
           // Structured provenance: source { doc "urn:..." clause "2.1.2.4" }
           // Repeated source blocks collect into sourceRefs (TODO.roadmap/24).
+          // The optional third field `fragment` is the sentence sub-address
+          // (TODO.roadmap/26) — the dumper emits it, so the parser must keep
+          // it (codec symmetry, TODO.refactor/16).
           const inner = tokenize(unwrapBlock(t[i++]));
-          const src: { doc: string; clause: string } = { doc: '', clause: '' };
+          const src: { doc: string; clause: string; fragment?: string } = {
+            doc: '',
+            clause: '',
+          };
           for (let k = 0; k + 1 < inner.length; k += 2) {
             if (inner[k] === 'doc') {
               src.doc = stripWrapping(inner[k + 1]);
             } else if (inner[k] === 'clause') {
               src.clause = stripWrapping(inner[k + 1]);
+            } else if (inner[k] === 'fragment') {
+              src.fragment = stripWrapping(inner[k + 1]);
             }
           }
           if (!result.sourceRef) {
@@ -355,7 +363,9 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
       escapeString(src.doc) +
       '" clause "' +
       escapeString(src.clause) +
-      '" }\n';
+      '"' +
+      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
+      ' }\n';
   }
   if (c.ref.length > 0) {
     out += '  reference {\n';

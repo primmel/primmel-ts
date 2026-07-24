@@ -306,7 +306,13 @@ import {
   applyAllowlist,
   BUDGETED_RULES,
   loadAllowlist,
+  TEXT_BUDGETED_RULES,
 } from './check-allowlist';
+import {
+  computeTextCoverage,
+  loadTextCoverageData,
+  uncoveredSentenceMessage,
+} from './text-coverage';
 
 export interface CheckIssue {
   check: string;
@@ -3255,6 +3261,33 @@ export function checkPackage(
     }
   }
 
+  // ── C71–C73: the normative-text coverage metric (TODO.roadmap/26, ──
+  // concept doc §11.6) — layer 5 of the validation stack. The sentence
+  // decomposition ships inside the package (sources-prd/*.sentences.json
+  // + coverage.json); without them the metric is silent. C73 (config
+  // hygiene — malformed payloads, stale allowances/adjudications) runs
+  // at every level; C71 (uncovered normative sentences) is audit-level
+  // and budgeted by the package's text_coverage_budget (C72, applied
+  // with the allowlist below). Duplicate pairs are REPORTED by
+  // `primmel check --coverage`, never auto-failed here.
+  const textCoverageData = loadTextCoverageData(dir);
+  issues.push(...textCoverageData.issues);
+  if (textCoverageData.manifests.length > 0) {
+    const textCoverage = computeTextCoverage(
+      standard,
+      textCoverageData.manifests,
+      textCoverageData.config,
+    );
+    issues.push(...textCoverage.configIssues);
+    if (strictness === 'audit') {
+      for (const d of textCoverage.documents) {
+        for (const s of d.uncoveredCounted) {
+          warn('C71', uncoveredSentenceMessage(d.urn, s));
+        }
+      }
+    }
+  }
+
   // ── Finalize: the package allowlist + level severities ──
   // The allowlist (KNOWN/STALE/budget) applies to every level; --strict
   // then promotes the surviving warnings — except KNOWN issues and
@@ -3274,6 +3307,12 @@ export function checkPackage(
       }
       if (BUDGETED_RULES.has(i.check) && allowlist.coverageBudget !== null) {
         continue; // the budget governs these — C55 reports the excess
+      }
+      if (
+        TEXT_BUDGETED_RULES.has(i.check) &&
+        allowlist.textCoverageBudget !== null
+      ) {
+        continue; // the text budget governs these — C72 reports the excess
       }
       i.severity = 'error';
     }

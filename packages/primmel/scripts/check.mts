@@ -1,17 +1,23 @@
 #!/usr/bin/env node
-// primmel check [--strict] [--audit] [--rules] [--with <pkg-id>=<dir>]… <package-dir>
+// primmel check [--strict] [--audit] [--coverage] [--rules] [--with <pkg-id>=<dir>]… <package-dir>
 //
 // The one linter for Recommendation packages (TODO.roadmap/17). Levels:
 //   default   — the normal-level rules at their catalog severities
 //               (errors fail; warnings print);
 //   --strict  — every warning promotes to an error, EXCEPT KNOWN
-//               (allowlisted) issues and budget-covered C51/C52
-//               coverage warnings (the package's coverage_budget is
-//               their allowance);
+//               (allowlisted) issues and budget-covered C51/C52/C71
+//               coverage warnings (the package's budgets are their
+//               allowance);
 //   --audit   — additionally runs the audit-level rules (C25
 //               mapping-description, C51 coverage-test-evidence,
-//               C52 coverage-form-judgment) and enforces the per-package
-//               coverage budget (C55).
+//               C52 coverage-form-judgment, C71
+//               text-coverage-sentence-uncovered) and enforces the
+//               per-package coverage budgets (C55, C72).
+// --coverage  — prints the normative-text coverage report after the
+//               lint (TODO.roadmap/26): per-document covered/uncovered
+//               normative sentences with and without allowances, the
+//               allowed exclusions, and the duplicate-pair adjudication
+//               status. Silent for packages without sources-prd payloads.
 // --with (repeatable) maps a package id to a directory, providing the
 // resolvePackage locator that makes the composition rules C27–C31
 // reachable from the CLI; without it those rules stay silent and a
@@ -26,13 +32,19 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { CHECK_RULES } from '../src/check-rules.ts';
+import { loadPackageWithIssues } from '../src/ser-des/package.ts';
+import {
+  formatTextCoverageReport,
+  packageTextCoverageReport,
+} from '../src/text-coverage.ts';
 
 const USAGE =
-  'Usage: primmel check [--strict] [--audit] [--rules] [--with <pkg-id>=<dir>]… <package-dir>';
+  'Usage: primmel check [--strict] [--audit] [--coverage] [--rules] [--with <pkg-id>=<dir>]… <package-dir>';
 
 const args = process.argv.slice(2);
 const strict = args.includes('--strict');
 const audit = args.includes('--audit');
+const coverage = args.includes('--coverage');
 const printRules = args.includes('--rules');
 const locator = new Map<string, string>();
 const positional: string[] = [];
@@ -49,6 +61,9 @@ function addLocator(spec: string | undefined): void {
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--strict' || a === '--audit') {
+    continue;
+  }
+  if (a === '--coverage') {
     continue;
   }
   if (a === '--rules') {
@@ -81,7 +96,7 @@ if (printRules) {
   }
   console.log(
     `\n${CHECK_RULES.length} rules. Default level runs the normal rules; ` +
-      '--audit adds the audit rules + the coverage budget; --strict ' +
+      '--audit adds the audit rules + the coverage budgets (C55/C72); --strict ' +
       'promotes warnings to errors (KNOWN/budgeted issues excepted).',
   );
   process.exit(0);
@@ -153,4 +168,15 @@ console.log(
   `\n${errors.length} errors, ${warnings.length} warnings` +
     (knowns.length > 0 ? `, ${knowns.length} known` : ''),
 );
+
+if (coverage) {
+  // The normative-text coverage report (TODO.roadmap/26) — silent when
+  // the package ships no sources-prd payloads.
+  const report = packageTextCoverageReport(dir, d => loadPackageWithIssues(d));
+  if (report === null) {
+    console.log('\n(no sources-prd payloads — the text-coverage metric is silent)');
+  } else {
+    console.log(`\n${formatTextCoverageReport(report)}`);
+  }
+}
 process.exit(errors.length > 0 ? 1 : 0);

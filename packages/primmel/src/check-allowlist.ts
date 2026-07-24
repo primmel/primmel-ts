@@ -32,7 +32,12 @@
 //     only shrinks — tighten it). Under --strict, coverage warnings within
 //     the budget stay warnings (the budget is their allowance). The
 //     optional quoted reason records WHY the number is what it is (the
-//     burn-down justification — recommended, not required).
+//     burn-down justification — recommended, not required);
+//   - text_coverage_budget N ["reason"] — the same discipline for the
+//     normative-text coverage metric (TODO.roadmap/26): caps the C71
+//     uncovered-normative-sentence warnings (exceeded: C72 error; slack:
+//     C72 warning). A package at 100 % coverage declares 0 — any new
+//     uncovered sentence exceeds it and fails the gate.
 //
 // Entry validation (concept doc §11.9): every entry names a known rule
 // id, a non-empty match glob, a non-empty reason, and a non-empty
@@ -60,12 +65,18 @@ export interface PackageAllowlist {
   /** The optional quoted justification trailing the budget (recommended,
    *  not required) — records the burn-down story with the number. */
   coverageBudgetReason: string | null;
+  /** TODO.roadmap/26: caps the C71 uncovered-normative-sentence warnings
+   *  (the text-coverage metric's budget — C72 governs). */
+  textCoverageBudget: number | null;
+  textCoverageBudgetReason: string | null;
   entries: AllowlistEntry[];
 }
 
 const EMPTY: PackageAllowlist = {
   coverageBudget: null,
   coverageBudgetReason: null,
+  textCoverageBudget: null,
+  textCoverageBudgetReason: null,
   entries: [],
 };
 
@@ -110,28 +121,38 @@ export function loadAllowlist(dir: string): {
   const allowlist: PackageAllowlist = {
     coverageBudget: null,
     coverageBudgetReason: null,
+    textCoverageBudget: null,
+    textCoverageBudgetReason: null,
     entries: [],
   };
   let i = 0;
   while (i < tokens.length) {
     const cmd = tokens[i++];
-    if (cmd === 'coverage_budget') {
+    if (cmd === 'coverage_budget' || cmd === 'text_coverage_budget') {
       const raw = stripWrapping(tokens[i++] ?? '');
       const n = Number(raw);
       if (!Number.isInteger(n) || n < 0) {
         issues.push({
           check: 'C56',
           severity: 'error',
-          message: `${ALLOWLIST_FILENAME}: coverage_budget "${raw}" is not a non-negative integer (allowlist-malformed)`,
+          message: `${ALLOWLIST_FILENAME}: ${cmd} "${raw}" is not a non-negative integer (allowlist-malformed)`,
         });
       } else {
-        allowlist.coverageBudget = n;
+        if (cmd === 'coverage_budget') {
+          allowlist.coverageBudget = n;
+        } else {
+          allowlist.textCoverageBudget = n;
+        }
         // Optional trailing quoted reason (recommended, not required) —
         // the budget's justification rides with the number.
         const next = tokens[i];
         if (next !== undefined && next.startsWith('"')) {
           const reason = stripWrapping(next);
-          allowlist.coverageBudgetReason = reason === '' ? null : reason;
+          if (cmd === 'coverage_budget') {
+            allowlist.coverageBudgetReason = reason === '' ? null : reason;
+          } else {
+            allowlist.textCoverageBudgetReason = reason === '' ? null : reason;
+          }
           i++;
         }
       }
@@ -146,7 +167,7 @@ export function loadAllowlist(dir: string): {
       issues.push({
         check: 'C56',
         severity: 'error',
-        message: `${ALLOWLIST_FILENAME}: unknown directive "${cmd}" — expected coverage_budget | allowlist_entry (allowlist-malformed)`,
+        message: `${ALLOWLIST_FILENAME}: unknown directive "${cmd}" — expected coverage_budget | text_coverage_budget | allowlist_entry (allowlist-malformed)`,
       });
       // Skip a following block so one bad directive does not cascade.
       if (i < tokens.length && tokens[i].startsWith('{')) {
@@ -220,6 +241,10 @@ function validateEntry(entry: AllowlistEntry): CheckIssue[] {
 /** The coverage-family warning rules the per-package budget caps. */
 export const BUDGETED_RULES = new Set(['C51', 'C52']);
 
+/** TODO.roadmap/26: the text-coverage warning rules the per-package
+ * text_coverage_budget caps (C71 uncovered normative sentences). */
+export const TEXT_BUDGETED_RULES = new Set(['C71']);
+
 export interface AllowlistResult {
   /** Issues after KNOWN marking; STALE/malformed/budget issues appended. */
   issues: CheckIssue[];
@@ -287,6 +312,31 @@ export function applyAllowlist(
         check: 'C55',
         severity: 'warning',
         message: `${ALLOWLIST_FILENAME}: coverage budget ${allowlist.coverageBudget} has slack — only ${count} coverage warnings remain; tighten the budget (the allowlist only shrinks) (coverage-budget)`,
+      });
+    }
+  }
+  // TODO.roadmap/26 — the text-coverage budget (C72 governs C71, the same
+  // discipline): a package at 100 % normative-sentence coverage declares
+  // 0; any new uncovered sentence exceeds it and fails the gate.
+  if (
+    allowlist.textCoverageBudget !== null &&
+    [...TEXT_BUDGETED_RULES].some(r => activeRules.has(r))
+  ) {
+    const count = out.filter(
+      i =>
+        TEXT_BUDGETED_RULES.has(i.check) && !i.known && i.severity === 'warning',
+    ).length;
+    if (count > allowlist.textCoverageBudget) {
+      out.push({
+        check: 'C72',
+        severity: 'error',
+        message: `${ALLOWLIST_FILENAME}: ${count} uncovered normative sentences exceed the package text_coverage_budget of ${allowlist.textCoverageBudget} — bind the sentences, declare allowances with clause-referenced reasons, or raise the budget (text-coverage-budget)`,
+      });
+    } else if (count < allowlist.textCoverageBudget) {
+      out.push({
+        check: 'C72',
+        severity: 'warning',
+        message: `${ALLOWLIST_FILENAME}: text_coverage_budget ${allowlist.textCoverageBudget} has slack — only ${count} uncovered normative sentences remain; tighten the budget (the allowlist only shrinks) (text-coverage-budget)`,
       });
     }
   }

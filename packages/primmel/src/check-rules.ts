@@ -590,6 +590,38 @@ export const CHECK_RULES: CheckRule[] = [
   // run (audit) — cataloguing it as normal would judge a C55 allowlist
   // entry STALE at the default level, where no C55 issue can exist.
   R('C55', 'coverage-budget', 'coverage', 'error', 'audit', 'TODO.roadmap/17'),
+  // ── text coverage (TODO.roadmap/26, concept doc §11.6) ──────────────
+  // Layer 5 of the validation stack: every normative sentence of the
+  // source maps to at least one model element (target 100 %), no two
+  // elements are semantic duplicates (target 0). C71 follows the C51/C52
+  // pattern (audit-level warning, budgeted by the package's
+  // text_coverage_budget — C72); C73 is the declarations' hygiene rule
+  // (stale allowances/adjudications — the KNOWN/STALE spirit). Duplicate
+  // pairs are REPORTED (primmel check --coverage), never auto-failed.
+  R(
+    'C71',
+    'text-coverage-sentence-uncovered',
+    'coverage',
+    'warning',
+    'audit',
+    'TODO.roadmap/26, concept doc §11.6',
+  ),
+  R(
+    'C72',
+    'text-coverage-budget',
+    'coverage',
+    'error',
+    'audit',
+    'TODO.roadmap/26, concept doc §11.6',
+  ),
+  R(
+    'C73',
+    'text-coverage-config',
+    'coverage',
+    'error',
+    'normal',
+    'TODO.roadmap/26, concept doc §11.6',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

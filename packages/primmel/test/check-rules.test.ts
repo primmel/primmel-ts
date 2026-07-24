@@ -47,14 +47,14 @@ const FAMILIES = [
 ];
 
 describe('check rule catalog (TODO.roadmap/17)', () => {
-  it('ids are unique and sequential (C1…C70)', () => {
+  it('ids are unique and sequential (C1…C73)', () => {
     const ids = CHECK_RULES.map(r => r.id);
     assert.equal(new Set(ids).size, ids.length, 'duplicate rule ids');
-    const expected = Array.from({ length: 70 }, (_, i) => `C${i + 1}`);
+    const expected = Array.from({ length: 73 }, (_, i) => `C${i + 1}`);
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'the catalog is exactly C1…C70',
+      'the catalog is exactly C1…C73 (TODO.roadmap/26 adds C71–C73)',
     );
   });
 
@@ -89,8 +89,8 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     assert.ok(audit.size > normal.size, 'audit activates more rules');
     assert.deepEqual(
       [...audit].filter(id => !normal.has(id)).sort(),
-      ['C25', 'C51', 'C52', 'C55'],
-      'the audit-only rules',
+      ['C25', 'C51', 'C52', 'C55', 'C71', 'C72'],
+      'the audit-only rules (C71/C72 join with TODO.roadmap/26)',
     );
   });
 

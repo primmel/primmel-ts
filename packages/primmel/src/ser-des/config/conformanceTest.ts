@@ -425,8 +425,11 @@ export const parseConformanceTest: Parser = function (id, data) {
         if (refValue.startsWith('{')) {
           const inner = tokenize(unwrapBlock(refValue));
           if (inner.includes('doc') || inner.includes('clause')) {
-            // Structured block: reference { doc "urn:…" clause "2.5" } (v2)
-            const src: { doc: string; clause: string } = {
+            // Structured block: reference { doc "urn:…" clause "2.5" } (v2).
+            // The optional third field `fragment` is the sentence sub-address
+            // (TODO.roadmap/26) — the dumper emits it, so the parser must
+            // keep it (codec symmetry, TODO.refactor/16).
+            const src: { doc: string; clause: string; fragment?: string } = {
               doc: '',
               clause: '',
             };
@@ -435,6 +438,8 @@ export const parseConformanceTest: Parser = function (id, data) {
                 src.doc = stripWrapping(inner[k + 1]);
               } else if (inner[k] === 'clause') {
                 src.clause = stripWrapping(inner[k + 1]);
+              } else if (inner[k] === 'fragment') {
+                src.fragment = stripWrapping(inner[k + 1]);
               }
             }
             if (!result.sourceRef) {
@@ -587,7 +592,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
         escapeString(src.doc) +
         '" clause "' +
         escapeString(src.clause) +
-        '" }\n';
+        '"' +
+        (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
+        ' }\n';
     }
   } else if (ct.sourceRef && ct.sourceRef.doc) {
     out +=
@@ -595,7 +602,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       escapeString(ct.sourceRef.doc) +
       '" clause "' +
       escapeString(ct.sourceRef.clause) +
-      '" }\n';
+      '"' +
+      (ct.sourceRef.fragment ? ' fragment "' + escapeString(ct.sourceRef.fragment) + '"' : '') +
+      ' }\n';
   } else if (ct.reference) {
     out += '  reference ' + ct.reference + '\n';
   }

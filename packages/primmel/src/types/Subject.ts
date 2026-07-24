@@ -16,6 +16,10 @@ import type { Endpoint, ServeBinding } from './Twin';
 export interface SourceRef {
   doc: string;
   clause: string;
+  /** Optional sentence sub-address (TODO.roadmap/26 — `fragment "s1"` →
+   *  the sentence address urn:…#clause-2.2/s1, the reserved finer
+   *  address space of the .prd fragment grammar). */
+  fragment?: string;
 }
 
 /** instrument <Id> — the subject type definition (one per Recommendation). */

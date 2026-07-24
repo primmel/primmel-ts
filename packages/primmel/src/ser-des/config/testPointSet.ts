@@ -39,6 +39,8 @@ function readSource(block: string): SourceRef {
       src.doc = stripWrapping(t[i++]);
     } else if (cmd === 'clause') {
       src.clause = stripWrapping(t[i++]);
+    } else if (cmd === 'fragment') {
+      src.fragment = stripWrapping(t[i++]);
     } else {
       unwrapBlock(t[i++]);
     }
@@ -173,7 +175,9 @@ export const dumpTestPointSet: Dumper<TestPointSet> = function (s) {
       escapeString(s.source.doc) +
       '" clause "' +
       escapeString(s.source.clause) +
-      '" }\n';
+      '"' +
+      (s.source.fragment ? ' fragment "' + escapeString(s.source.fragment) + '"' : '') +
+      ' }\n';
   }
   const ckeys = Object.keys(s.cardinality);
   if (ckeys.length > 0) {
