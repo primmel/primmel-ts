@@ -96,3 +96,20 @@ subject LoadCellModel {
     behavior self_test
   }
 }
+
+# ─────────────────────────────────────────────────────────────────────
+# TODO.roadmap/34 — the fleet_watch monitor (doctrine §14.5, grammar
+# sketch §14.11): the IA's engine runs an hourly monitor over the LC-500
+# fleet (§14.9 worked example A). Triggers (the clock), evaluation refs
+# (applicability-expanded per twin at runtime), the evidence + verdict
+# sinks, and the escalation paths (fail flags the certificate and opens
+# a service case; invalid opens one — §14.9: "a service case opens").
+# ─────────────────────────────────────────────────────────────────────
+
+monitor fleet_watch {
+  over { LoadCellModel }
+  triggers { every 1h on signal artifact_arrived on change state }
+  evaluate { requirements applicable_to(this.classification) promises all }
+  emit { evidence -> workspace verdicts -> verdict_log }
+  escalate { on fail { flag_certificate open_service_case } on invalid { open_service_case } }
+}

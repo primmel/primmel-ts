@@ -497,6 +497,58 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/32, doctrine §14.4',
   ),
+  // ── twins: the monitors (TODO.roadmap/34 — doctrine ch. 14 §14.5/§14.12) ──
+  R(
+    'C65',
+    'monitor-subject-resolves',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/34, doctrine §14.5/§14.12',
+  ),
+  R(
+    'C66',
+    'monitor-trigger-wellformed',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/34, doctrine §14.5 step 1',
+  ),
+  R(
+    'C67',
+    'monitor-evaluate-resolves',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/34, doctrine §14.12',
+  ),
+  // C68 is the doctrine's verbatim warning (§14.12): a monitor without an
+  // escalation path for `fail` is a warning (it escalates to an error
+  // under --strict like any warning).
+  R(
+    'C68',
+    'monitor-fail-escalation',
+    'twins',
+    'warning',
+    'normal',
+    'TODO.roadmap/34, doctrine §14.12',
+  ),
+  R(
+    'C69',
+    'monitor-escalation-resolves',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/34, doctrine §14.5 step 7',
+  ),
+  R(
+    'C70',
+    'monitor-emit-sinks',
+    'twins',
+    'error',
+    'normal',
+    'TODO.roadmap/34, doctrine §14.5 step 6',
+  ),
   // ── coverage audits (TODO.roadmap/17, concept doc §11.5) ──────────
   // The aspect↔requirement↔test↔form↔verdict closure: the requirement→test
   // link is C5 (base); the closure's remaining links are the audit-level

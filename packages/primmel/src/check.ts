@@ -178,6 +178,30 @@
 //      connector_profile or a built-in (rest_json, mqtt, opc_ua,
 //      file_drop) — the model is protocol-neutral; profiles bind
 //      protocols (§14.4)
+//   C65 monitor-subject-resolves (TODO.roadmap/34, doctrine §14.5/§14.12):
+//      a monitor's over set is non-empty and every ref names a declared
+//      subject (a monitor watching nothing judges nothing)
+//   C66 monitor-trigger-wellformed: at least one trigger — without
+//      triggers "continuous" has no clock (§14.5 step 1); a timer's every
+//      window parses (the freshness-window syntax); a signal names its
+//      signal; a change names an aspect resolving against a monitored
+//      subject (the serve aspect vocabulary — ONE resolver)
+//   C67 monitor-evaluate-resolves: evaluate refs resolve to
+//      requirements/promises applicable to the monitored subjects
+//      (§14.12) — all / applicable_to(…) expand per twin at runtime;
+//      explicit refs resolve (requirement ids against the package's
+//      requirements, promise ids against the monitored subjects'
+//      promises)
+//   C68 monitor-fail-escalation: a monitor without an escalation path
+//      for `fail` is a warning (§14.12, verbatim) — pass accrues history;
+//      fail/invalid must act
+//   C69 monitor-escalation-resolves: escalation outcomes are verdict
+//      outcomes (pass | fail | indeterminate | invalid); actions are
+//      notify | flag_certificate | open_service_case; a notify names a
+//      declared role
+//   C70 monitor-emit-sinks: evidence and verdicts streams are each
+//      emitted exactly once with a named sink (§14.5 step 6: appended to
+//      the workspace — facts only; permanent)
 //
 // ── Coverage audits (TODO.roadmap/17, concept doc §11.5) ──
 //   The aspect↔requirement↔test↔form↔verdict closure. The requirement→test
@@ -269,6 +293,13 @@ import {
   ENDPOINT_ACCESS_SCOPES,
   ENDPOINT_OPERATION_KINDS,
 } from './types/Twin';
+import {
+  MONITOR_ESCALATION_ACTIONS,
+  MONITOR_OUTCOMES,
+  MONITOR_REFSET_KINDS,
+  MONITOR_STREAMS,
+  type Monitor,
+} from './types/Monitor';
 import { extractStateGates } from './operational-state';
 import { activeRuleIds } from './check-rules';
 import {
@@ -1408,6 +1439,110 @@ export function checkPackage(
     }
   }
 
+  // ── The serve aspect vocabulary (TODO.roadmap/32/34) — shared by the
+  // twin checks (C60) and the monitor checks (C66): ONE resolver, derived
+  // from the subject's declared aspects.
+  const TWIN_CHAIN_LEVELS = new Set(['family', 'group', 'model', 'sample']);
+
+  interface ResolvedAspect {
+    kind:
+      | 'attribute'
+      | 'characteristic'
+      | 'dimension'
+      | 'state'
+      | 'environmental_context';
+    /** The unit-bearing aspect (attribute/characteristic legs), when any. */
+    unit?: string;
+    quantityKind?: string;
+  }
+
+  // The `state` aspect resolves through the subject's bound machine
+  // (has.state) OR through the package's operational machines: a
+  // twin-interface subject block (the smart side's model/twin.yaml
+  // emission, TODO.refactor/16) is PARTIAL anatomy — it carries the
+  // endpoint/serve declarations without re-stating the state binding,
+  // and the state channel binds at runtime (task 33).
+  const packageHasOperationalMachine = (standard.stateMachines ?? []).some(
+    sm => sm.kind === 'operational',
+  );
+
+  /**
+   * Resolve a serve aspect path against the owning subject — the task-03
+   * scope vocabulary: an optional chain-level prefix (family | group |
+   * model | sample), then parameters.<attr> | test_context.<attr> |
+   * classification.<dim> | characteristics.<name>, or a bare
+   * attribute/characteristic/dimension name; the reserved HAS aspects
+   * `state` (the subject's declared state machine) and
+   * `environmental_context` (the logged actual conditions — always
+   * servable, §14.3) close the vocabulary.
+   */
+  const resolveServeAspect = (
+    path: string,
+    s: Subject,
+  ): ResolvedAspect | null => {
+    let rest = path;
+    const parts = path.split('.');
+    if (parts.length > 1 && TWIN_CHAIN_LEVELS.has(parts[0])) {
+      rest = parts.slice(1).join('.');
+    }
+    if (rest === 'state') {
+      return s.has.state || packageHasOperationalMachine
+        ? { kind: 'state' }
+        : null;
+    }
+    if (rest === 'environmental_context') {
+      return { kind: 'environmental_context' };
+    }
+    const segs = rest.split('.');
+    if (segs.length === 2) {
+      const [area, key] = segs;
+      if (area === 'parameters' || area === 'test_context') {
+        const a = attrId(standard, key);
+        return a
+          ? { kind: 'attribute', unit: a.unit, quantityKind: a.quantityKind }
+          : null;
+      }
+      if (area === 'classification') {
+        return dimIds.has(key) || key in (s.has.dimensions ?? {})
+          ? { kind: 'dimension' }
+          : null;
+      }
+      if (area === 'characteristics') {
+        const c = (s.has.characteristics ?? {})[key];
+        return c
+          ? {
+              kind: 'characteristic',
+              unit: c.unit,
+              quantityKind: c.quantityKind,
+            }
+          : null;
+      }
+      return null;
+    }
+    if (segs.length === 1 && rest) {
+      const a = attrId(standard, rest);
+      if (a) {
+        return {
+          kind: 'attribute',
+          unit: a.unit,
+          quantityKind: a.quantityKind,
+        };
+      }
+      const c = (s.has.characteristics ?? {})[rest];
+      if (c) {
+        return {
+          kind: 'characteristic',
+          unit: c.unit,
+          quantityKind: c.quantityKind,
+        };
+      }
+      if (dimIds.has(rest) || rest in (s.has.dimensions ?? {})) {
+        return { kind: 'dimension' };
+      }
+    }
+    return null;
+  };
+
   // ── C60–C64: the twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4) ──
   // The live twin's integration language: endpoint declarations (IS) and
   // serve bindings (HAS) on the subject anatomy, plus the connector-profile
@@ -1419,112 +1554,12 @@ export function checkPackage(
   // are runtime — the smart app's verdict service owns them; these rules
   // guarantee the declarations the runtime needs.
   {
-    const CHAIN_LEVELS = new Set(['family', 'group', 'model', 'sample']);
     const KNOWN_KINDS = new Set<string>(ENDPOINT_OPERATION_KINDS);
     const KNOWN_SCOPES = new Set<string>(ENDPOINT_ACCESS_SCOPES);
     const declaredProfiles = new Set([
       ...Object.keys(BUILTIN_CONNECTOR_PROFILES),
       ...(standard.connectorProfiles ?? []).map(p => p.id),
     ]);
-
-    interface ResolvedAspect {
-      kind:
-        | 'attribute'
-        | 'characteristic'
-        | 'dimension'
-        | 'state'
-        | 'environmental_context';
-      /** The unit-bearing aspect (attribute/characteristic legs), when any. */
-      unit?: string;
-      quantityKind?: string;
-    }
-
-    // The `state` aspect resolves through the subject's bound machine
-    // (has.state) OR through the package's operational machines: a
-    // twin-interface subject block (the smart side's model/twin.yaml
-    // emission, TODO.refactor/16) is PARTIAL anatomy — it carries the
-    // endpoint/serve declarations without re-stating the state binding,
-    // and the state channel binds at runtime (task 33).
-    const packageHasOperationalMachine = (standard.stateMachines ?? []).some(
-      sm => sm.kind === 'operational',
-    );
-
-    /**
-     * Resolve a serve aspect path against the owning subject — the task-03
-     * scope vocabulary: an optional chain-level prefix (family | group |
-     * model | sample), then parameters.<attr> | test_context.<attr> |
-     * classification.<dim> | characteristics.<name>, or a bare
-     * attribute/characteristic/dimension name; the reserved HAS aspects
-     * `state` (the subject's declared state machine) and
-     * `environmental_context` (the logged actual conditions — always
-     * servable, §14.3) close the vocabulary.
-     */
-    const resolveServeAspect = (
-      path: string,
-      s: Subject,
-    ): ResolvedAspect | null => {
-      let rest = path;
-      const parts = path.split('.');
-      if (parts.length > 1 && CHAIN_LEVELS.has(parts[0])) {
-        rest = parts.slice(1).join('.');
-      }
-      if (rest === 'state') {
-        return s.has.state || packageHasOperationalMachine
-          ? { kind: 'state' }
-          : null;
-      }
-      if (rest === 'environmental_context') {
-        return { kind: 'environmental_context' };
-      }
-      const segs = rest.split('.');
-      if (segs.length === 2) {
-        const [area, key] = segs;
-        if (area === 'parameters' || area === 'test_context') {
-          const a = attrId(standard, key);
-          return a
-            ? { kind: 'attribute', unit: a.unit, quantityKind: a.quantityKind }
-            : null;
-        }
-        if (area === 'classification') {
-          return dimIds.has(key) || key in (s.has.dimensions ?? {})
-            ? { kind: 'dimension' }
-            : null;
-        }
-        if (area === 'characteristics') {
-          const c = (s.has.characteristics ?? {})[key];
-          return c
-            ? {
-                kind: 'characteristic',
-                unit: c.unit,
-                quantityKind: c.quantityKind,
-              }
-            : null;
-        }
-        return null;
-      }
-      if (segs.length === 1 && rest) {
-        const a = attrId(standard, rest);
-        if (a) {
-          return {
-            kind: 'attribute',
-            unit: a.unit,
-            quantityKind: a.quantityKind,
-          };
-        }
-        const c = (s.has.characteristics ?? {})[rest];
-        if (c) {
-          return {
-            kind: 'characteristic',
-            unit: c.unit,
-            quantityKind: c.quantityKind,
-          };
-        }
-        if (dimIds.has(rest) || rest in (s.has.dimensions ?? {})) {
-          return { kind: 'dimension' };
-        }
-      }
-      return null;
-    };
 
     for (const s of standard.subjects ?? []) {
       const endpoints = s.is.endpoints ?? [];
@@ -1733,6 +1768,255 @@ export function checkPackage(
           err(
             'C63',
             `subject ${s.id}: serve "${b.aspect}" fresh_within "${b.freshWithin}" is not a parseable freshness window (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT5S) (freshness-required-on-live-bindings)`,
+          );
+        }
+      }
+    }
+  }
+
+  // ── C65–C70: the monitors (TODO.roadmap/34 — doctrine ch. 14 §14.5/§14.12) ──
+  // Continuous compliance: a monitor runs the standard next to the live
+  // twins — triggers (the clock), evaluation refs (applicability-expanded
+  // per twin at runtime), evidence sinks, escalation. The doctrine's
+  // validation rules (§14.12, third/fourth bullets): every monitor's
+  // evaluate refs resolve to requirements/promises applicable to the
+  // monitored subjects; a monitor without an escalation path for `fail`
+  // is a warning. Freshness semantics, the verdict stream, and the
+  // escalation ACTIONS are runtime — the smart app's monitor service owns
+  // them; these rules guarantee the declarations the runtime needs.
+  {
+    const roleIds = new Set((standard.roles ?? []).map(r => r.id));
+    const KNOWN_OUTCOMES = new Set<string>(MONITOR_OUTCOMES);
+    const KNOWN_ACTIONS = new Set<string>(MONITOR_ESCALATION_ACTIONS);
+    const KNOWN_STREAMS = new Set<string>(MONITOR_STREAMS);
+    const KNOWN_REFSET_KINDS = new Set<string>(MONITOR_REFSET_KINDS);
+
+    for (const m of standard.monitors ?? []) {
+      const subjects = (standard.subjects ?? []).filter(s =>
+        m.over.includes(s.id),
+      );
+
+      // C65 — monitor-subject-resolves: the watched set is non-empty and
+      // every ref names a declared subject (a monitor watching nothing
+      // judges nothing).
+      if (m.over.length === 0) {
+        err(
+          'C65',
+          `monitor ${m.id}: declares no subject set — a monitor watches a subject set (over { … }) (monitor-subject-resolves)`,
+        );
+      }
+      for (const ref of m.over) {
+        if (!subjectIds.has(ref)) {
+          err(
+            'C65',
+            `monitor ${m.id}: over "${ref}" is not a declared subject (monitor-subject-resolves)`,
+          );
+        }
+      }
+
+      // C66 — monitor-trigger-wellformed: without triggers "continuous"
+      // has no clock (§14.5 step 1) — at least one trigger; a timer's
+      // every window parses (the freshness-window syntax); a signal names
+      // its signal; a change names an aspect that resolves against a
+      // monitored subject (the serve aspect vocabulary — ONE resolver).
+      if (m.triggers.length === 0) {
+        err(
+          'C66',
+          `monitor ${m.id}: declares no triggers — without triggers, "continuous" has no clock (§14.5 step 1) (monitor-trigger-wellformed)`,
+        );
+      }
+      for (const trigger of m.triggers) {
+        if (trigger.kind === 'timer') {
+          if (!trigger.every || parseFreshnessWindow(trigger.every) === null) {
+            err(
+              'C66',
+              `monitor ${m.id}: timer trigger every "${trigger.every || '(none)'}" is not a parseable window (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT1H) (monitor-trigger-wellformed)`,
+            );
+          }
+        } else if (trigger.kind === 'signal') {
+          if (!trigger.signal) {
+            err(
+              'C66',
+              `monitor ${m.id}: signal trigger names no signal (on signal <name>) (monitor-trigger-wellformed)`,
+            );
+          }
+        } else if (trigger.kind === 'change') {
+          if (!trigger.aspect) {
+            err(
+              'C66',
+              `monitor ${m.id}: change trigger names no aspect (on change <aspect>) (monitor-trigger-wellformed)`,
+            );
+          } else if (
+            subjects.length > 0 &&
+            !subjects.some(s => resolveServeAspect(trigger.aspect, s))
+          ) {
+            err(
+              'C66',
+              `monitor ${m.id}: change trigger aspect "${trigger.aspect}" does not resolve against any monitored subject (the serve aspect vocabulary: [level.]{parameters|classification|test_context}.<key>, a bare attribute/characteristic/dimension name, state, environmental_context) (monitor-trigger-wellformed)`,
+            );
+          }
+        } else {
+          err(
+            'C66',
+            `monitor ${m.id}: trigger kind "${trigger.kind || '(none)'}" is not one of timer (every) | signal (on signal) | change (on change) (monitor-trigger-wellformed)`,
+          );
+        }
+      }
+
+      // C67 — monitor-evaluate-resolves (§14.12): the evaluate refs
+      // resolve to requirements/promises applicable to the monitored
+      // subjects. `all` and `applicable_to(…)` expand per twin at runtime
+      // (applicability-expanded — always admissible); explicit refs must
+      // resolve: requirement ids against the package's requirements,
+      // promise ids against the monitored subjects' promises.
+      const checkRefSet = (
+        label: string,
+        set: Monitor['evaluate']['requirements'],
+        resolveRef: (ref: string) => boolean,
+        refKind: string,
+      ): void => {
+        if (!set.kind) {
+          err(
+            'C67',
+            `monitor ${m.id}: evaluate names no ${label} selector (all | applicable_to(…) | { refs… }) — a monitor judges something (monitor-evaluate-resolves)`,
+          );
+          return;
+        }
+        if (!KNOWN_REFSET_KINDS.has(set.kind)) {
+          err(
+            'C67',
+            `monitor ${m.id}: ${label} selector "${set.kind}" is not one of all | applicable_to(…) | { refs… } (monitor-evaluate-resolves)`,
+          );
+          return;
+        }
+        if (set.kind === 'applicable_to' && !set.expression) {
+          err(
+            'C67',
+            `monitor ${m.id}: ${label} applicable_to() carries no applicability expression (monitor-evaluate-resolves)`,
+          );
+        }
+        if (set.kind === 'refs') {
+          if (set.refs.length === 0) {
+            err(
+              'C67',
+              `monitor ${m.id}: ${label} selector { } names no refs (monitor-evaluate-resolves)`,
+            );
+          }
+          for (const ref of set.refs) {
+            if (!resolveRef(ref)) {
+              err(
+                'C67',
+                `monitor ${m.id}: evaluate ${label} ref "${ref}" is not a declared ${refKind} — evaluate refs resolve to requirements/promises applicable to the monitored subjects (§14.12) (monitor-evaluate-resolves)`,
+              );
+            }
+          }
+        }
+      };
+      checkRefSet(
+        'requirements',
+        m.evaluate.requirements,
+        r => reqIds.has(r),
+        'requirement',
+      );
+      const promiseIds = new Set(
+        subjects
+          .flatMap(s => (s.is.promises ?? []).map(p => p.id))
+          .filter(id => id !== ''),
+      );
+      checkRefSet(
+        'promises',
+        m.evaluate.promises,
+        p => promiseIds.has(p),
+        'promise of the monitored subjects',
+      );
+
+      // C68 — monitor-fail-escalation (§14.12, verbatim): a monitor
+      // without an escalation path for `fail` is a WARNING. Pass accrues
+      // history; fail/invalid must act (notify, flag the certificate,
+      // open a case).
+      if (!m.escalate.some(r => r.outcome === 'fail')) {
+        warn(
+          'C68',
+          `monitor ${m.id}: declares no escalation path for fail — §14.12: a monitor without an escalation path for fail is a warning (monitor-fail-escalation)`,
+        );
+      }
+
+      // C69 — monitor-escalation-resolves: escalation outcomes are
+      // verdict outcomes; actions are notify | flag_certificate |
+      // open_service_case; a notify names a declared role.
+      for (const rule of m.escalate) {
+        if (!KNOWN_OUTCOMES.has(rule.outcome)) {
+          err(
+            'C69',
+            `monitor ${m.id}: escalate on "${rule.outcome || '(none)'}" — the outcome is not one of ${MONITOR_OUTCOMES.join(' | ')} (monitor-escalation-resolves)`,
+          );
+        }
+        if (rule.actions.length === 0) {
+          err(
+            'C69',
+            `monitor ${m.id}: escalate on ${rule.outcome || '(none)'} names no actions — an escalation path acts (notify / flag_certificate / open_service_case) (monitor-escalation-resolves)`,
+          );
+        }
+        for (const a of rule.actions) {
+          if (!KNOWN_ACTIONS.has(a.action)) {
+            err(
+              'C69',
+              `monitor ${m.id}: escalate on ${rule.outcome} action "${a.action}" is not one of ${MONITOR_ESCALATION_ACTIONS.join(' | ')} (monitor-escalation-resolves)`,
+            );
+          } else if (a.action === 'notify' && !a.role) {
+            err(
+              'C69',
+              `monitor ${m.id}: escalate on ${rule.outcome} notify names no role (notify <role>) (monitor-escalation-resolves)`,
+            );
+          } else if (
+            a.action === 'notify' &&
+            roleIds.size > 0 &&
+            !roleIds.has(a.role)
+          ) {
+            err(
+              'C69',
+              `monitor ${m.id}: escalate on ${rule.outcome} notify "${a.role}" is not a declared role (monitor-escalation-resolves)`,
+            );
+          } else if (a.action !== 'notify' && a.role) {
+            err(
+              'C69',
+              `monitor ${m.id}: escalate on ${rule.outcome} ${a.action} carries a role ("${a.role}") — only notify names a role (monitor-escalation-resolves)`,
+            );
+          }
+        }
+      }
+
+      // C70 — monitor-emit-sinks (§14.5 step 6): evidence is appended to
+      // the workspace and the verdict log — both streams emitted, each
+      // exactly once, with a named sink. An unknown stream kind binds
+      // nothing.
+      const emitted = new Map<string, number>();
+      for (const sink of m.emit) {
+        if (!KNOWN_STREAMS.has(sink.stream)) {
+          err(
+            'C70',
+            `monitor ${m.id}: emit stream "${sink.stream}" is not one of ${MONITOR_STREAMS.join(' | ')} (monitor-emit-sinks)`,
+          );
+        }
+        if (!sink.target) {
+          err(
+            'C70',
+            `monitor ${m.id}: emit ${sink.stream} names no sink (${sink.stream} -> <sink>) (monitor-emit-sinks)`,
+          );
+        }
+        emitted.set(sink.stream, (emitted.get(sink.stream) ?? 0) + 1);
+      }
+      for (const stream of MONITOR_STREAMS) {
+        const n = emitted.get(stream) ?? 0;
+        if (n === 0) {
+          err(
+            'C70',
+            `monitor ${m.id}: emit declares no ${stream} sink — §14.5 step 6: values seen, rule results, verdicts, timestamps are appended to the workspace (monitor-emit-sinks)`,
+          );
+        } else if (n > 1) {
+          err(
+            'C70',
+            `monitor ${m.id}: emit declares the ${stream} stream ${n} times — one sink per stream (monitor-emit-sinks)`,
           );
         }
       }

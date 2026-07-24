@@ -26,6 +26,7 @@ import type {
 } from './Subject';
 import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
 import type { ConnectorProfile } from './Twin';
+import type { Monitor } from './Monitor';
 import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
@@ -123,6 +124,11 @@ export default interface Standard {
   // bindings themselves live on the subject anatomy (is.endpoints /
   // has.serves, types/Subject.ts).
   connectorProfiles: ConnectorProfile[];
+
+  // Primmel v3 continuous compliance (TODO.roadmap/34 — doctrine ch. 14
+  // §14.5): the monitor constructs — triggers, evaluation refs, evidence
+  // sinks, escalation — running the standard next to the live twins.
+  monitors: Monitor[];
 
   root: Subprocess | null;
 }

@@ -59,6 +59,7 @@ function emptyContext(): ParseContext {
     duals: {},
     activityArchetypes: {},
     connectorProfiles: {},
+    monitors: {},
     issues: [],
   };
 }

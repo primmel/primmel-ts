@@ -535,7 +535,9 @@ subject LoadCellModel {
       .replace('kind operational', 'kind lifecycle')
       .replace('serve sample.state', 'serve sample.state')
       .replace('serves state', 'serves state');
-    const c60 = twinIssues(makeTmpPackage(noMachine)).filter(i => i.check === 'C60');
+    const c60 = twinIssues(makeTmpPackage(noMachine)).filter(
+      i => i.check === 'C60',
+    );
     assert.ok(c60.some(i => i.message.includes('"state"')));
     assert.ok(c60.some(i => i.message.includes('"sample.state"')));
   });

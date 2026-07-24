@@ -103,6 +103,7 @@ import {
   artifactInstanceConstruct,
 } from './artifact';
 import { connectorProfileConstruct } from './twin';
+import { monitorConstruct } from './monitor';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
 import {
@@ -413,6 +414,10 @@ const CONSTRUCTS: ConstructDefinition[] = [
   // has.serves), parsed and dumped by the subject ser-des (config/subject.ts
   // + config/twin.ts).
   connectorProfileConstruct as ConstructDefinition,
+  // Primmel v3 continuous compliance (TODO.roadmap/34 — doctrine ch. 14
+  // §14.5): the monitor — triggers, evaluation refs, evidence sinks,
+  // escalation over a subject set.
+  monitorConstruct as ConstructDefinition,
 ];
 
 function buildParserConfig(
