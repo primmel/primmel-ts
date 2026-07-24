@@ -10,6 +10,25 @@ export interface PackageSource {
 }
 
 /**
+ * Edition lifecycle status (TODO.roadmap/28, doctrine §13.4): `current`
+ * (the in-force edition), `preview` (published for review, not yet in
+ * force — e.g. R 91:2025), `superseded` (a later edition holds force),
+ * `withdrawn` (pulled without a successor).
+ */
+export type EditionStatus = 'current' | 'preview' | 'superseded' | 'withdrawn';
+
+/**
+ * An edition's validity window (doctrine §13.4: "a fact about the
+ * package's force", time-primitive machinery applied at the manifest).
+ * `from` is an ISO 8601 date/datetime; `to` optional — the window closes
+ * when the edition is superseded (or explicitly at `to`).
+ */
+export interface EditionValidity {
+  from: string;
+  to?: string;
+}
+
+/**
  * Package tier (TODO.roadmap/05): `core` = the shared kernel, `module` =
  * a shared capability package consumed by ≥2 recs, `rec` = a publishable
  * Recommendation. Registries skip non-rec kinds in rec listings.
@@ -61,6 +80,20 @@ export interface PackageManifest {
    * (a bare `<providesEntry>` also matches).
    */
   waives?: string[];
+  /**
+   * Edition lifecycle (TODO.roadmap/28, doctrine §13.4) — packagings, not
+   * core semantics: versioning relations live on the package manifest,
+   * never in subject models. `supersedes`/`replaces` name package URNs of
+   * earlier editions (urn:oiml:pub:r:60:2017); the supersedes graph must
+   * be acyclic (linter C79).
+   */
+  supersedes?: string[];
+  /** Stronger than supersedes: this edition takes the place of the target. */
+  replaces?: string[];
+  /** The edition's validity window; `to` absent = closes when superseded. */
+  validity?: EditionValidity;
+  /** Lifecycle status of THIS packaged edition (linter C77). */
+  status?: EditionStatus;
   description: string;
   source: PackageSource | null;
 }

@@ -255,6 +255,22 @@
 //      current level but matches no issue is an error — the data was
 //      fixed, the entry must die (§11.3)
 //
+// ── Edition lifecycle (TODO.roadmap/28, doctrine ch. 13 §13.4/§13.7) ──
+//   Versioning relations live on the package manifest, never in subject
+//   models; editions are packagings orthogonal to the core.
+//   C77 edition-status: a current/preview edition packages the edition
+//      register's newest entry (the status enum itself is a parser error,
+//      like `kind`)
+//   C78 edition-validity-window: the manifest validity window is
+//      well-formed ISO 8601; `to` not before `from`
+//   C79 edition-supersedes-resolves: supersedes/replaces targets are
+//      well-formed URNs, never the package itself, resolve against the
+//      edition register (same-document targets), and the supersedes graph
+//      over sibling manifests is acyclic
+//   C80 edition-pin-resolves (INV-8): every instance's
+//      definition_versions pin resolves against the package's edition
+//      register — an unresolvable pin breaks re-execution (§13.5)
+//
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
 // audit-level rules (C25, C51, C52) and enforces the coverage budget.
@@ -305,8 +321,9 @@ import type ConformanceTest from './types/ConformanceTest';
 import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
 import type { FormField } from './types/Form';
-import { isDuration, isValidTimeValue, parseFreshnessWindow } from './time';
+import { isDate, isDateTime, isDuration, isValidTimeValue, parseFreshnessWindow, timeInstantMs } from './time';
 import { isWellFormedMapType } from './type-expr';
+import { normalizeSourceRef } from './model-diff';
 import {
   BUILTIN_CONNECTOR_PROFILES,
   ENDPOINT_ACCESS_SCOPES,
@@ -471,6 +488,14 @@ export function checkPackage(
       issues.push(...checkManifestResolution(dir));
     }
   }
+
+  // ── C77–C80: edition lifecycle (TODO.roadmap/28, doctrine §13.4/§13.7) ──
+  // Versioning relations live on the package manifest, never in subject
+  // models: status/register coherence (C77), validity windows (C78),
+  // supersedes/replaces resolution + acyclicity across sibling manifests
+  // (C79), and the INV-8 pin — every instance's definition_versions
+  // resolves against the package's edition register (C80).
+  issues.push(...checkEditionLifecycle(dir, standard));
 
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
@@ -3778,6 +3803,186 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
           'C31',
           `package "${m.id}" requires "${req}", which no used package provides (requires-satisfied) ${MARKER}`,
         );
+      }
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * C77–C80 — edition lifecycle (TODO.roadmap/28; doctrine ch. 13
+ * §13.4/§13.7). Editions are packagings: the relations live on the
+ * manifest, and the checks run WITHOUT composing content (the
+ * checkManifestResolution sibling pattern — supersedes acyclicity is a
+ * property of the repo's manifest set).
+ *
+ *   C77 edition-status: a current/preview edition packages the register's
+ *      newest entry. (The status ENUM itself is enforced by the manifest
+ *      parser, like `kind` — an unknown token is a parse error.)
+ *   C78 edition-validity-window: the window is well-formed ISO 8601 and
+ *      `to` is not before `from`.
+ *   C79 edition-supersedes-resolves: supersedes/replaces targets are
+ *      well-formed URNs, never the package itself; a target naming an
+ *      earlier edition OF THE SAME document resolves against the edition
+ *      register (warning when the register omits it); the supersedes
+ *      graph over sibling manifests is acyclic.
+ *   C80 edition-pin-resolves (INV-8): every instance's
+ *      definition_versions pin resolves against the package's edition
+ *      register (editions ∪ {version}) — an unresolvable pin breaks the
+ *      re-execution guarantee (§13.5: after an edition change the engine
+ *      must know exactly which reports re-judge).
+ */
+export function checkEditionLifecycle(
+  dir: string,
+  standard: Standard,
+): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+  const warn = (check: string, message: string) =>
+    issues.push({ check, severity: 'warning', message });
+  const m = standard.packageManifest;
+  if (!m) {
+    return issues;
+  }
+  const register = new Set<string>([
+    ...(m.editions ?? []),
+    ...(m.version ? [m.version] : []),
+  ]);
+
+  // C77 — a current/preview edition is the register's newest entry.
+  if (m.status === 'current' || m.status === 'preview') {
+    const newest = (m.editions ?? [])[0];
+    if (newest !== undefined && m.version !== newest) {
+      err(
+        'C77',
+        `package "${m.id}": status ${m.status} but version "${m.version}" is not the edition register's newest entry (${newest}) (edition-status)`,
+      );
+    }
+  }
+
+  // C78 — the validity window is well-formed time (§13.7).
+  if (m.validity) {
+    const { from, to } = m.validity;
+    if (!from || !(isDate(from) || isDateTime(from))) {
+      err(
+        'C78',
+        `package "${m.id}": validity window from "${from}" is not an ISO 8601 date/datetime (edition-validity-window)`,
+      );
+    }
+    if (to !== undefined) {
+      if (!(isDate(to) || isDateTime(to))) {
+        err(
+          'C78',
+          `package "${m.id}": validity window to "${to}" is not an ISO 8601 date/datetime (edition-validity-window)`,
+        );
+      } else if (from) {
+        // Compare as INSTANTS, never lexicographically: a mixed
+        // date/datetime pair (from 2021-01-01T00:00:00Z, to 2021-01-01)
+        // is the same moment — string order false-positives on it.
+        const fromMs = timeInstantMs(from);
+        const toMs = timeInstantMs(to);
+        if (fromMs !== null && toMs !== null && toMs < fromMs) {
+          err(
+            'C78',
+            `package "${m.id}": validity window to ${to} is before from ${from} (edition-validity-window)`,
+          );
+        }
+      }
+    }
+  }
+
+  // C79 — supersedes/replaces: well-formed URNs, never self, resolving
+  // against the register (same-document targets) and acyclic across the
+  // repo's manifests (§13.7).
+  const relations: [string, string][] = [
+    ...(m.supersedes ?? []).map(t => ['supersedes', t] as [string, string]),
+    ...(m.replaces ?? []).map(t => ['replaces', t] as [string, string]),
+  ];
+  const ownBasis = normalizeSourceRef(m.baseUrn ?? '', '').basis;
+  for (const [rel, target] of relations) {
+    if (!target.startsWith('urn:')) {
+      err(
+        'C79',
+        `package "${m.id}": ${rel} "${target}" is not a URN — versioning relations name published package versions (edition-supersedes-resolves)`,
+      );
+      continue;
+    }
+    if (target === m.baseUrn) {
+      err(
+        'C79',
+        `package "${m.id}": ${rel} ${target} — a package cannot ${rel} itself (edition-supersedes-resolves)`,
+      );
+      continue;
+    }
+    const tNorm = normalizeSourceRef(target, '');
+    if (tNorm.basis === ownBasis && tNorm.edition) {
+      if (!register.has(tNorm.edition)) {
+        warn(
+          'C79',
+          `package "${m.id}": ${rel} ${target}, but the edition register { ${[...register].join(' ')} } does not list ${tNorm.edition} (edition-supersedes-resolves)`,
+        );
+      }
+    }
+  }
+  if (relations.length > 0) {
+    // The supersedes graph over the repo's manifests (sibling dirs keyed
+    // by baseUrn) must be acyclic — no superseding oneself through a
+    // chain. Edges to URNs no sibling declares are external and cannot
+    // close a cycle here.
+    const nodes = new Map<string, [string, string][]>(); // baseUrn → relations
+    const parent = dirname(resolve(dir));
+    for (const entry of readdirSync(parent).sort()) {
+      const full = join(parent, entry);
+      try {
+        if (!statSync(full).isDirectory()) {
+          continue;
+        }
+        const sib = readPackageManifest(full);
+        const key = sib.baseUrn || sib.id;
+        nodes.set(key, [
+          ...(sib.supersedes ?? []).map(t => ['supersedes', t] as [string, string]),
+          ...(sib.replaces ?? []).map(t => ['replaces', t] as [string, string]),
+        ]);
+      } catch {
+        // Not a package dir — not a graph node.
+      }
+    }
+    const adj = new Map<string, string[]>();
+    for (const [baseUrn, rels] of nodes) {
+      adj.set(
+        baseUrn,
+        rels
+          .map(([, t]) => t)
+          // Self-edges are reported by the dedicated self-supersession
+          // check above — the cycle detector covers chains of length ≥ 2.
+          .filter(t => nodes.has(t) && t !== baseUrn),
+      );
+    }
+    const cycle = findCycle(adj);
+    if (cycle) {
+      err(
+        'C79',
+        `supersedes cycle: ${cycle.join(' → ')} — the supersedes graph must be acyclic; a package cannot supersede itself through a chain (edition-supersedes-resolves)`,
+      );
+    }
+  }
+
+  // C80 — INV-8: definition version pins resolve against the edition
+  // register. Silent on a register-less package (nothing to resolve
+  // against); C18 still requires the pins themselves.
+  if (register.size > 0) {
+    for (const inst of standard.instances ?? []) {
+      for (const [definition, version] of Object.entries(
+        inst.definitionVersions ?? {},
+      )) {
+        if (!register.has(version)) {
+          err(
+            'C80',
+            `instance ${inst.id}: definition_versions pin ${definition} : "${version}" does not resolve against the edition register { ${[...register].join(' ')} } — every executed definition is version-pinned to a declared edition (INV-8) (edition-pin-resolves)`,
+          );
+        }
       }
     }
   }

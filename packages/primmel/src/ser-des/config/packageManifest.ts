@@ -30,6 +30,17 @@ function readList(block: string): string[] {
 }
 
 const PACKAGE_KINDS: readonly string[] = ['core', 'module', 'rec'];
+const EDITION_STATUSES: readonly string[] = [
+  'current',
+  'preview',
+  'superseded',
+  'withdrawn',
+];
+
+/** One URN or a `{ … }` list of them (supersedes/replaces). */
+function readUrnList(token: string): string[] {
+  return token.startsWith('{') ? readList(token) : [stripWrapping(token)];
+}
 
 export const parsePackage: Parser = function (data) {
   const manifest: PackageManifest = {
@@ -86,6 +97,37 @@ export const parsePackage: Parser = function (data) {
       manifest.requires = readList(t[i++]);
     } else if (cmd === 'waives') {
       manifest.waives = readList(t[i++]);
+    } else if (cmd === 'supersedes') {
+      manifest.supersedes = readUrnList(t[i++]);
+    } else if (cmd === 'replaces') {
+      manifest.replaces = readUrnList(t[i++]);
+    } else if (cmd === 'validity') {
+      const vblock = unwrapBlock(t[i++]);
+      const vt = tokenize(vblock);
+      const validity: { from: string; to?: string } = { from: '' };
+      let j = 0;
+      while (j < vt.length) {
+        const vc = vt[j++];
+        if (j >= vt.length) {
+          break;
+        }
+        if (vc === 'from') {
+          validity.from = stripWrapping(vt[j++]);
+        } else if (vc === 'to') {
+          validity.to = stripWrapping(vt[j++]);
+        } else {
+          unwrapBlock(vt[j++]);
+        }
+      }
+      manifest.validity = validity;
+    } else if (cmd === 'status') {
+      const s = stripWrapping(t[i++]);
+      if (!EDITION_STATUSES.includes(s)) {
+        throw new Error(
+          `Parsing error: package: Expected status ${EDITION_STATUSES.join('|')}, got "${s}"`,
+        );
+      }
+      manifest.status = s as PackageManifest['status'];
     } else if (cmd === 'description') {
       manifest.description = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
@@ -153,6 +195,22 @@ export function dumpPackage(m: PackageManifest): string {
   }
   if (m.waives && m.waives.length > 0) {
     out += '  waives { ' + m.waives.join(' ') + ' }\n';
+  }
+  if (m.supersedes && m.supersedes.length > 0) {
+    out += '  supersedes { ' + m.supersedes.join(' ') + ' }\n';
+  }
+  if (m.replaces && m.replaces.length > 0) {
+    out += '  replaces { ' + m.replaces.join(' ') + ' }\n';
+  }
+  if (m.validity && m.validity.from) {
+    out +=
+      '  validity { from ' +
+      m.validity.from +
+      (m.validity.to ? ' to ' + m.validity.to : '') +
+      ' }\n';
+  }
+  if (m.status) {
+    out += '  status ' + m.status + '\n';
   }
   if (m.description) {
     out +=

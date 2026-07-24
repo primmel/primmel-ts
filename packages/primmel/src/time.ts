@@ -57,6 +57,44 @@ export function isDateTime(s: string): boolean {
 }
 
 /**
+ * Parse an ISO 8601 date/datetime to MILLISECONDS since the epoch, for
+ * instant comparison. A bare date reads as midnight UTC at the START of
+ * that day; a zone-less datetime reads as UTC. Returns null when the
+ * value is neither a valid date nor datetime — the caller's format check
+ * (isDate/isDateTime) owns the error report. Compare with this, never
+ * lexicographically: a mixed date/datetime pair ('2021-01-01' vs
+ * '2021-01-01T00:00:00Z') is the SAME instant, and string order says
+ * otherwise.
+ */
+export function timeInstantMs(s: string): number | null {
+  if (isDate(s)) {
+    const m = DATE.exec(s)!;
+    return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  if (!isDateTime(s)) {
+    return null;
+  }
+  const m = DATETIME.exec(s)!;
+  let ms = Date.UTC(
+    Number(m[1]),
+    Number(m[2]) - 1,
+    Number(m[3]),
+    Number(m[4]),
+    Number(m[5]),
+    m[6] === undefined ? 0 : Number(m[6]),
+  );
+  const zone = m[7];
+  if (zone && zone !== 'Z') {
+    const zm = /^([+-])(\d{2}):?(\d{2})$/.exec(zone);
+    if (zm) {
+      const offset = (Number(zm[2]) * 60 + Number(zm[3])) * 60_000;
+      ms += zm[1] === '+' ? -offset : offset;
+    }
+  }
+  return ms;
+}
+
+/**
  * ISO 8601 duration. A bare "P" (or "PT") is NOT a duration — at least
  * one component is required, and the week form never combines with
  * calendar components (ISO 8601-1:2019, 5.5.3).
@@ -184,7 +222,11 @@ export function checkValidityWindow(w: ValidityWindow): string | null {
   if (!endOk) {
     return `validity window end "${w.end}" is not an ISO 8601 date/datetime`;
   }
-  if (w.end < w.start) {
+  // Compare as instants, never lexicographically — a mixed date/datetime
+  // pair ('2021-01-01' vs '2021-01-01T00:00:00Z') is the same moment.
+  const startMs = timeInstantMs(w.start);
+  const endMs = timeInstantMs(w.end);
+  if (startMs !== null && endMs !== null && endMs < startMs) {
     return `validity window end ${w.end} is before start ${w.start}`;
   }
   return null;

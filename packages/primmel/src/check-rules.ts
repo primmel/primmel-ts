@@ -8,7 +8,7 @@
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
-//              characteristics | twins | coverage;
+//              characteristics | twins | coverage | edition;
 //   severity — the rule's DEFAULT severity at the normal level
 //              ('warning' rules escalate to errors under --strict;
 //              individual legs of a rule may escalate — see check.ts);
@@ -30,7 +30,8 @@ export type CheckFamily =
   | 'artifacts'
   | 'characteristics'
   | 'twins'
-  | 'coverage';
+  | 'coverage'
+  | 'edition';
 
 export type CheckLevel = 'normal' | 'audit';
 
@@ -660,6 +661,44 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'TODO.roadmap/26, concept doc §11.6',
+  ),
+  // ── edition lifecycle (TODO.roadmap/28, doctrine ch. 13 §13.4/§13.7) ──
+  // Versioning relations live on the package manifest, never in subject
+  // models: status (C77), validity windows (C78), supersedes/replaces
+  // resolution + acyclicity (C79), and the INV-8 execution-side pin —
+  // every instance's definition_versions resolves against the package's
+  // edition register (C80).
+  R(
+    'C77',
+    'edition-status',
+    'edition',
+    'error',
+    'normal',
+    'TODO.roadmap/28, doctrine §13.4',
+  ),
+  R(
+    'C78',
+    'edition-validity-window',
+    'edition',
+    'error',
+    'normal',
+    'TODO.roadmap/28, doctrine §13.7',
+  ),
+  R(
+    'C79',
+    'edition-supersedes-resolves',
+    'edition',
+    'error',
+    'normal',
+    'TODO.roadmap/28, doctrine §13.7',
+  ),
+  R(
+    'C80',
+    'edition-pin-resolves',
+    'edition',
+    'error',
+    'normal',
+    'TODO.roadmap/28, INV-8, doctrine §13.5',
   ),
 ];
 

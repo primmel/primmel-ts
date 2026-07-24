@@ -17,6 +17,7 @@ export {
 } from './src/ser-des/index';
 export type { default as Standard } from './src/types/Standard';
 export type { PackageManifest, PackageSource } from './src/types/Package';
+export type { EditionStatus, EditionValidity } from './src/types/Package';
 export type { default as Metadata } from './src/types/Metadata';
 export type { default as Role } from './src/types/Role';
 export type { default as Provision } from './src/types/Provision';
@@ -71,6 +72,38 @@ export {
   type ViewProjection,
 } from './src/mapping-coverage';
 export { checkPackage, type CheckIssue, type CheckOptions } from './src/check';
+export {
+  canonical,
+  clauseTextKey,
+  diffStandards,
+  elementIndex,
+  formatDiffReport,
+  normalizeSourceRef,
+  TIER_BY_FIELD,
+  TIER_ORDER,
+  type ChangeEntry,
+  type ClauseDriftKind,
+  type ClauseDriftRow,
+  type ClauseTextIndex,
+  type CoverageDeltaEntry,
+  type DiffElement,
+  type DiffEntry,
+  type MappingDiff,
+  type MappingPairChange,
+  type ModelDiff,
+  type ModelDiffOptions,
+  type MoveEntry,
+  type NormalizedSourceRef,
+  type TierName,
+  type TierTally,
+} from './src/model-diff';
+export {
+  diffPackageDirs,
+  packageClauseTexts,
+  packageMappings,
+  type PackageDiffOptions,
+  type PackageDiffResult,
+} from './src/package-diff';
 export {
   CHECK_RULES,
   checkRule,
@@ -182,6 +215,7 @@ export {
   checkValidityWindow,
   editionPins,
   parseFreshnessWindow,
+  timeInstantMs,
 } from './src/time';
 export {
   parseTypeExpression,
