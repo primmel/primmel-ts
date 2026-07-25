@@ -734,6 +734,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/36, doctrine ch. 15 §15.3/§15.9',
   ),
+  // ── subject-intrinsic constraints (TODO.roadmap/51, BUG.R60-SSOT gap 7)
+  // The constraint construct's declaration shape — the kernel mirror of
+  // the OIML SMART constraints.yaml schema (stereotype «inv», one ocl{…}
+  // check, required violation_meaning, on_violation invalid|indeterminate,
+  // source doc+clause). Duplicate ids are the parse-time duplicate-id
+  // rule; the resolution legs stay smart-side (linker R32).
+  R(
+    'C84',
+    'constraint-shape',
+    'anatomy',
+    'error',
+    'normal',
+    'TODO.roadmap/51, BUG.R60-SSOT gap 7',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));
