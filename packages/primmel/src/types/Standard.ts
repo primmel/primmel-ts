@@ -3,6 +3,7 @@ import type Calculation from './Calculation';
 import type CompetenceKind from './CompetenceKind';
 import type ConformanceTest from './ConformanceTest';
 import type Constraint from './Constraint';
+import type DiscrepancyRecord from './DiscrepancyRecord';
 import type { DataClass, Enum, Registry, Variable } from './data';
 import EventNode from './events';
 import type Figure from './Figure';
@@ -90,6 +91,11 @@ export default interface Standard {
    *  subject's own intrinsic validity rules (stereotype «inv») — the
    *  Recommendation-level counterpart of the metamodel invariants. */
   constraints: Constraint[];
+  /** Corpus-level source-discrepancy records (TODO.roadmap/54 — gap 13's
+   *  corpus-level extension of the source_discrepancy facet): conflicts
+   *  between source fragments that no model node owns (document-vs-
+   *  document) — the corpus's errata memory. */
+  discrepancyRecords: DiscrepancyRecord[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
   conformanceClasses: ConformanceClass[];

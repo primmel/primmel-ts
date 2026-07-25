@@ -90,6 +90,10 @@ import {
   parseCompetenceKind,
 } from './competenceKind';
 import { dumpConstraint, parseConstraint } from './constraint';
+import {
+  dumpDiscrepancyRecord,
+  parseDiscrepancyRecord,
+} from './discrepancyRecord';
 import { dumpTestPointSet, parseTestPointSet } from './testPointSet';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
 import { parsePackage } from './packageManifest';
@@ -385,6 +389,15 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseConstraint,
     dump: dumpConstraint as never,
+  }),
+  // Corpus-level source-discrepancy records (TODO.roadmap/54 — gap 13's
+  // corpus-level extension of the source_discrepancy facet)
+  defineConstruct({
+    keyword: 'discrepancy_record',
+    field: 'discrepancyRecords',
+    takesID: true,
+    parse: parseDiscrepancyRecord,
+    dump: dumpDiscrepancyRecord as never,
   }),
   defineConstruct({
     keyword: 'state_machine',

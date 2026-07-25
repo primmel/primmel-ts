@@ -19,7 +19,9 @@ import type SourceDiscrepancy from '../../types/SourceDiscrepancy';
 import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 
-const VALID_RESOLUTIONS = ['follows_clause_x', 'annotated_only'];
+// Exported: the discrepancy_record corpus construct (TODO.roadmap/54)
+// shares the resolution vocabulary — one enum for both constructs.
+export const VALID_RESOLUTIONS = ['follows_clause_x', 'annotated_only'];
 
 /** Parse the content of a `source_discrepancy { … }` block. */
 export function parseSourceDiscrepancy(block: string): SourceDiscrepancy {
