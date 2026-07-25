@@ -22,9 +22,30 @@ export interface CascadeSet {
   value: string;
 }
 
+/**
+ * The closed workflow side-effect vocabulary (smart repo task 52,
+ * BUG.R60-SSOT.md gap 12): a cascade carrying an `action` is a SEMANTIC
+ * side-effect — the runtime dispatches it to a named handler. The
+ * vocabulary is deliberately small and closed: new actions are new
+ * handlers, not branches (OCP). A cascade without an `action` is the
+ * mechanical v2-G10 form (set/create field updates).
+ */
+export type CascadeAction = 'lock' | 'submit' | 'notify' | 'record';
+
+export const CASCADE_ACTIONS: readonly CascadeAction[] = [
+  'lock',
+  'submit',
+  'notify',
+  'record',
+];
+
 export interface Cascade {
+  /** Semantic side-effect action (task 52); null for the mechanical form. */
+  action: CascadeAction | null;
   targetEntity: string;
   where: string;
+  /** Action-cascade parameters (the `with { … }` block). */
+  with: Record<string, string>;
   set: CascadeSet[];
   /** Create-a-record cascade (v2 G10); null for plain set cascades. */
   create: Record<string, string> | null;
