@@ -1500,6 +1500,55 @@ export function checkPackage(
     }
   }
 
+  // ── C84: constraint-shape (TODO.roadmap/51 — BUG.R60-SSOT gap 7) ─────
+  // The subject-intrinsic constraint's DECLARATION shape — the kernel
+  // mirror of the OIML SMART constraints.yaml schema
+  // (data/schemas/constraints.yaml; the resolution legs stay smart-side
+  // as linker rule R32 constraint-references): the stereotype is always
+  // «inv» (the subject's declaration-level invariant; requirements are
+  // the «req» counterpart), the check is ONE OCL boolean expression, the
+  // violation_meaning is REQUIRED (the judgment records what a violation
+  // means, never a bare id), and on_violation is invalid (void
+  // measurement) or indeterminate (the declaration cannot be judged) —
+  // never a fail. A declared source names both doc and clause (clause-URN
+  // provenance). Duplicate constraint ids are the parse-time duplicate-id
+  // rule, not a C84 leg.
+  {
+    const OCL_CHECK = /^ocl\{[\s\S]*\}$/;
+    for (const c of standard.constraints ?? []) {
+      if (c.stereotype !== 'inv') {
+        err(
+          'C84',
+          `constraint ${c.id}: stereotype "${c.stereotype || '(none)'}" — a constraint is always «inv», the subject's declaration-level invariant (constraint-shape)`,
+        );
+      }
+      if (!OCL_CHECK.test(c.check)) {
+        err(
+          'C84',
+          `constraint ${c.id}: check is not one OCL boolean expression ocl{…} over the subject's declared anatomy (constraint-shape)`,
+        );
+      }
+      if (!c.violationMeaning || c.violationMeaning.trim() === '') {
+        err(
+          'C84',
+          `constraint ${c.id}: violation_meaning is required — the invalidated judgment records what the violation means, never a bare id (constraint-shape)`,
+        );
+      }
+      if (c.onViolation !== 'invalid' && c.onViolation !== 'indeterminate') {
+        err(
+          'C84',
+          `constraint ${c.id}: on_violation "${c.onViolation || '(none)'}" — valid: invalid (void measurement), indeterminate (the declaration cannot be judged); never a fail (constraint-shape)`,
+        );
+      }
+      if (c.source && (!c.source.doc || !c.source.clause)) {
+        err(
+          'C84',
+          `constraint ${c.id}: source names ${!c.source.doc ? 'no doc' : 'no clause'} — clause-URN provenance carries both doc and clause (constraint-shape)`,
+        );
+      }
+    }
+  }
+
   // ── The serve aspect vocabulary (TODO.roadmap/32/34) — shared by the
   // twin checks (C60) and the monitor checks (C66): ONE resolver, derived
   // from the subject's declared aspects.

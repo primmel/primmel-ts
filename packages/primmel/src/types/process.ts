@@ -2,6 +2,8 @@ import { Resolvable } from './Resolvable';
 import { Registry } from './data';
 import { Subprocess } from './flow';
 import type { TestInstances, TestPrecondition } from './ConformanceTest';
+import type { QuantityValue } from './Quantity';
+import type { SourceRef } from './Subject';
 import Provision from './Provision';
 import Role from './Role';
 
@@ -28,6 +30,15 @@ export interface ProcessParameter {
   name: string;
   /** Quantity-kind / type annotation (single token, e.g. mass, time). */
   type: string;
+  /**
+   * Registers only (TODO.roadmap/50): the slot's INITIAL value — a literal
+   * consistent with the declared type (number, text, boolean token, or a
+   * quantity value + unit; the block form carries the full QuantityValue
+   * contract). `= <value> [unit]` in the `registers { … }` entry.
+   * undefined = no initial value declared. Signature parameters never
+   * carry one (their values arrive at the call).
+   */
+  initial?: QuantityValue;
 }
 
 /** Process I/O signature: what the process consumes (IN) and produces (OUT). */
@@ -264,6 +275,17 @@ export default interface Process {
   childComposition: 'all' | 'gateway';
   /** DOES: the executable body. null = abstract process (always valid). */
   does: ProcessFlow | null;
+
+  /**
+   * Clause-URN provenance (the same facet requirement/provision carry):
+   * `source { doc "urn:…" clause "…" [fragment "…"] }`. null = undeclared.
+   */
+  source: SourceRef | null;
+  /**
+   * Repeated `source { … }` blocks collect here (TODO.roadmap/24);
+   * `source` stays the first entry for back-compatibility.
+   */
+  sourceRefs?: SourceRef[];
 }
 
 export type ResolvableProcess = Resolvable<

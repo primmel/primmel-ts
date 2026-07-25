@@ -175,6 +175,7 @@ describe('resolve (unit, minimal context)', () => {
       instances: null,
       childComposition: 'all',
       does: null,
+      source: null,
       _relations: {
         actor: 'author',
         output: [],

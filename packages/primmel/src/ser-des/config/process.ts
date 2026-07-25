@@ -132,9 +132,16 @@ import tokenize, {
 } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { dumpBareSafe, readValueToken, stripColon } from './field-parser';
+import {
+  coerceValueToken,
+  dumpQuantityValue,
+  readQuantityBlock,
+} from './quantity';
 import { Parser, Resolver } from '../types';
 import type { ParseContext } from '../types';
 import type { Registry } from '../../types/data';
+import type { QuantityValue } from '../../types/Quantity';
+import type { SourceRef } from '../../types/Subject';
 import type Provision from '../../types/Provision';
 import type Role from '../../types/Role';
 import type { Subprocess } from '../../types/flow';
@@ -147,10 +154,56 @@ function numOrString(s: string): string | number {
   return s;
 }
 
+/** A token that heads a `key :` entry: unquoted, trailing colon. */
+function isKeyHead(tok: string): boolean {
+  return !tok.startsWith('"') && tok.endsWith(':') && tok.length > 1;
+}
+
+/**
+ * Provenance facet (`source { doc "urn:…" clause "…" [fragment "…"] }`) —
+ * the same shape requirement/table/calculation carry.
+ */
+function readSource(block: string): SourceRef {
+  const src: SourceRef = { doc: '', clause: '' };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'doc') {
+      src.doc = stripWrapping(t[i++]);
+    } else if (cmd === 'clause') {
+      src.clause = stripWrapping(t[i++]);
+    } else if (cmd === 'fragment') {
+      src.fragment = stripWrapping(t[i++]);
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return src;
+}
+
 // ── v3 block sub-parsers ─────────────────────────────────────────────
 
-/** Read `name [: type]` entries (signature params, registers). */
-function parseParamList(block: string): ProcessParameter[] {
+/**
+ * Read `name [: type]` entries (signature params, registers, call
+ * bindings). When `allowInitial` is set (registers only — TODO.roadmap/50),
+ * an entry may carry an INITIAL value: `name : type = <value> [unit]`.
+ * The value shape follows the instance `key : value [unit]` contract
+ * (ser-des/config/instance.ts readValueMap): the value is one token
+ * (quoted strings stay one token), the optional unit a second, and a
+ * single brace-block token is the QuantityValue block form
+ * (`= { value 2.2 unit t }`); anything more is a parse error — multi-word
+ * values must be quoted so the unit position stays unambiguous. Entry
+ * boundaries: the next entry head is a bare `name` token followed by a
+ * `:` token, or an attached-colon `name:` token.
+ */
+function parseParamList(
+  block: string,
+  allowInitial = false,
+): ProcessParameter[] {
   const out: ProcessParameter[] = [];
   const t = tokenize(block);
   let i = 0;
@@ -166,7 +219,43 @@ function parseParamList(block: string): ProcessParameter[] {
     if (i < t.length) {
       type = stripWrapping(t[i++]);
     }
-    out.push({ name, type });
+    const param: ProcessParameter = { name, type };
+    if (i < t.length && t[i] === '=') {
+      if (!allowInitial) {
+        throw new Error(
+          `Parsing error: parameter "${name}" declares an initial value — initial values are a registers facet (signature parameters and call bindings take their values at the call)`,
+        );
+      }
+      i++;
+      const parts: string[] = [];
+      while (i < t.length && t[i + 1] !== ':' && !isKeyHead(t[i])) {
+        parts.push(t[i++]);
+      }
+      if (parts.length === 0) {
+        throw new Error(
+          `Parsing error: register "${name}" declares "=" with no value (shape: name : type = value [unit])`,
+        );
+      }
+      if (parts.length > 2) {
+        throw new Error(
+          `Parsing error: register "${name}" initial value has ${parts.length} tokens ` +
+            `(shape: name : type = value [unit]) — quote multi-word values`,
+        );
+      }
+      // QuantityValue block form: `= { value … unit … }`.
+      if (parts.length === 1 && parts[0].startsWith('{')) {
+        param.initial = readQuantityBlock(unwrapBlock(parts[0]));
+      } else {
+        const [rawValue, rawUnit] = parts;
+        const value = coerceValueToken(rawValue);
+        const initial: QuantityValue =
+          rawUnit === undefined
+            ? { value }
+            : { value, unit: stripWrapping(rawUnit) };
+        param.initial = initial;
+      }
+    }
+    out.push(param);
   }
   return out;
 }
@@ -624,6 +713,7 @@ export const parseProcess: Parser = function (id, data) {
     instances: null,
     childComposition: 'all',
     does: null,
+    source: null,
     provisionRefs: [],
     _relations: {
       actor: '',
@@ -725,7 +815,10 @@ export const parseProcess: Parser = function (id, data) {
       } else if (keyword === 'executor') {
         result.executor = stripWrapping(value());
       } else if (keyword === 'registers') {
-        result.registers = parseParamList(unwrapBlock(value()));
+        // registers { name : type [= value [unit]] … } — HAS state slots;
+        // the optional initial value is the register's starting content
+        // (TODO.roadmap/50).
+        result.registers = parseParamList(unwrapBlock(value()), true);
       } else if (keyword === 'state') {
         result.state = stripWrapping(value());
       } else if (keyword === 'instances') {
@@ -742,6 +835,15 @@ export const parseProcess: Parser = function (id, data) {
         // The presence of the body marks the process EXECUTABLE — even an
         // empty `does { }` (the linter then reports the missing start event).
         result.does = parseDoes(unwrapBlock(value()));
+      } else if (keyword === 'source') {
+        // Clause-URN provenance — the same facet requirement carries.
+        // Repeated source blocks collect into sourceRefs (TODO.roadmap/24);
+        // source stays the first entry for back-compatibility.
+        const src = readSource(unwrapBlock(value()));
+        if (!result.source) {
+          result.source = src;
+        }
+        (result.sourceRefs ??= []).push(src);
       } else {
         return false;
       }
@@ -835,7 +937,14 @@ export function dumpProcessTree(
 // ── v3 block dumpers ─────────────────────────────────────────────────
 
 function dumpParamList(params: ProcessParameter[]): string {
-  return params.map(p => p.name + (p.type ? ' : ' + p.type : '')).join(' ');
+  return params
+    .map(
+      p =>
+        p.name +
+        (p.type ? ' : ' + p.type : '') +
+        (p.initial !== undefined ? ' = ' + dumpQuantityValue(p.initial) : ''),
+    )
+    .join(' ');
 }
 
 function dumpSignature(sig: ProcessSignature): string {
@@ -1054,6 +1163,21 @@ export const dumpProcess: (
   }
   if (process.does) {
     out += dumpDoes(process.does);
+  }
+  // Clause-URN provenance (the requirement facet shape) — repeated blocks
+  // from sourceRefs, single-block fallback.
+  for (const src of process.sourceRefs ??
+    (process.source && (process.source.doc || process.source.clause)
+      ? [process.source]
+      : [])) {
+    out +=
+      '  source { doc "' +
+      escapeString(src.doc) +
+      '" clause "' +
+      escapeString(src.clause) +
+      '"' +
+      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
+      ' }\n';
   }
   // A `parent` link is emitted explicitly whenever nesting does not
   // already express it: leaf processes keep the historical flat form,
