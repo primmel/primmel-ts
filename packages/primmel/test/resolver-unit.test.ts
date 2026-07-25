@@ -46,6 +46,7 @@ function emptyContext(): ParseContext {
     conformanceClasses: {},
     competenceKinds: {},
     constraints: {},
+    discrepancyRecords: {},
     requirements: {},
     requirementClasses: {},
     instruments: {},
