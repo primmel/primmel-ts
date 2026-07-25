@@ -12,6 +12,22 @@
 //     description "Load cell Recommendation package"
 //     source { collection "sources/r060/collection.yml" parts { 1 2 3 a } }
 //   }
+//
+// Product reference packages (TODO.roadmap/36, doctrine ch. 15) add the
+// supply-chain facets:
+//
+//   package {
+//     id acme-lc500
+//     kind product_reference
+//     manufacturer "ACME Weighing GmbH"
+//     product "LC-500"
+//     maps_to { oiml-r60 }
+//     ...
+//   }
+//
+// and a consumer's ABSTRACT IMPORT pins the product's edition inline in
+// `uses` — `uses { acme-lc500@2021 }` (the pin lands in manifest.usePins;
+// C83 abstract-import-pinned).
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
@@ -29,7 +45,12 @@ function readList(block: string): string[] {
     .filter(s => s.length > 0);
 }
 
-const PACKAGE_KINDS: readonly string[] = ['core', 'module', 'rec'];
+const PACKAGE_KINDS: readonly string[] = [
+  'core',
+  'module',
+  'rec',
+  'product_reference',
+];
 const EDITION_STATUSES: readonly string[] = [
   'current',
   'preview',
@@ -82,15 +103,47 @@ export const parsePackage: Parser = function (data) {
     } else if (cmd === 'extends') {
       manifest.extends = stripWrapping(t[i++]);
     } else if (cmd === 'uses') {
-      manifest.uses = readList(t[i++]);
+      // Entries are bare package ids, or version-pinned abstract imports
+      // `<id>@<edition>` of a product reference package (TODO.roadmap/36
+      // — the pin lands in usePins; C83 checks it).
+      const ids: string[] = [];
+      const pins: Record<string, string> = {};
+      for (const entry of readList(t[i++])) {
+        const at = entry.indexOf('@');
+        if (at === -1) {
+          ids.push(entry);
+          continue;
+        }
+        const id = entry.slice(0, at);
+        const pin = entry.slice(at + 1);
+        if (!id || !pin || pin.includes('@')) {
+          throw new Error(
+            `Parsing error: package: malformed uses entry "${entry}" — the version-pin form is <package-id>@<edition>`,
+          );
+        }
+        ids.push(id);
+        if (!(id in pins)) {
+          pins[id] = pin;
+        }
+      }
+      manifest.uses = ids;
+      if (Object.keys(pins).length > 0) {
+        manifest.usePins = pins;
+      }
     } else if (cmd === 'kind') {
       const k = stripWrapping(t[i++]);
       if (!PACKAGE_KINDS.includes(k)) {
         throw new Error(
-          `Parsing error: package: Expected kind core|module|rec, got "${k}"`,
+          `Parsing error: package: Expected kind ${PACKAGE_KINDS.join('|')}, got "${k}"`,
         );
       }
       manifest.kind = k as PackageKind;
+    } else if (cmd === 'manufacturer') {
+      manifest.manufacturer = stripWrapping(t[i++]);
+    } else if (cmd === 'product') {
+      manifest.product = stripWrapping(t[i++]);
+    } else if (cmd === 'maps_to' || cmd === 'mapsTo') {
+      manifest.mapsTo = readList(t[i++]);
     } else if (cmd === 'provides') {
       manifest.provides = readList(t[i++]);
     } else if (cmd === 'requires') {
@@ -168,6 +221,21 @@ export function dumpPackage(m: PackageManifest): string {
   if (m.kind) {
     out += '  kind ' + m.kind + '\n';
   }
+  if (m.manufacturer) {
+    out +=
+      '  manufacturer "' +
+      m.manufacturer.replace(/\\/g, '\\\\').replace(/"/g, '\\"') +
+      '"\n';
+  }
+  if (m.product) {
+    out +=
+      '  product "' +
+      m.product.replace(/\\/g, '\\\\').replace(/"/g, '\\"') +
+      '"\n';
+  }
+  if (m.mapsTo && m.mapsTo.length > 0) {
+    out += '  maps_to { ' + m.mapsTo.join(' ') + ' }\n';
+  }
   if (m.title) {
     out +=
       '  title "' + m.title.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"\n';
@@ -185,7 +253,10 @@ export function dumpPackage(m: PackageManifest): string {
     out += '  extends ' + m.extends + '\n';
   }
   if (m.uses && m.uses.length > 0) {
-    out += '  uses { ' + m.uses.join(' ') + ' }\n';
+    out +=
+      '  uses { ' +
+      m.uses.map(u => (m.usePins?.[u] ? `${u}@${m.usePins[u]}` : u)).join(' ') +
+      ' }\n';
   }
   if (m.provides && m.provides.length > 0) {
     out += '  provides { ' + m.provides.join(' ') + ' }\n';

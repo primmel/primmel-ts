@@ -144,7 +144,7 @@ describe('uses composition — manifest', () => {
         assert.ok(e instanceof Error);
         assert.match(
           e.message,
-          /Expected kind core\|module\|rec, got "banana"/,
+          /Expected kind core\|module\|rec\|product_reference, got "banana"/,
         );
         return true;
       },

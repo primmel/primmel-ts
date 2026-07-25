@@ -661,6 +661,14 @@ export function applyView(
  * the model. Mappings attach at process granularity by default, but any
  * typed component can be mapped — a registry, an approval, a provision,
  * a conformance test (concept doc §5.2).
+ *
+ * TODO.roadmap/36 (doctrine ch. 15): a product reference model maps its
+ * conformance-relevant ASPECTS — "our E_max is your E_max; our creep
+ * characteristic answers your creep requirement" — so the subject
+ * anatomy members are mapping endpoints too: design parameters,
+ * exhibited attributes, characteristics, referenced behaviors, endpoint
+ * ids, and the block-form promise ids (an unmapped promise is a
+ * brochure claim — C82 product-unmapped-promises).
  */
 export function componentIds(standard: Standard): Set<string> {
   const ids = new Set<string>();
@@ -684,5 +692,28 @@ export function componentIds(standard: Standard): Set<string> {
   add(standard.roles);
   add(standard.subjects);
   add(standard.instruments);
+  add(standard.behaviors);
+  for (const s of standard.subjects ?? []) {
+    for (const k of Object.keys(s.is?.designParameters ?? {})) {
+      ids.add(k);
+    }
+    for (const k of Object.keys(s.has?.attributes ?? {})) {
+      ids.add(k);
+    }
+    for (const k of Object.keys(s.has?.characteristics ?? {})) {
+      ids.add(k);
+    }
+    for (const b of s.does?.behaviors ?? []) {
+      ids.add(b);
+    }
+    for (const e of s.is?.endpoints ?? []) {
+      ids.add(e.id);
+    }
+    for (const p of s.is?.promises ?? []) {
+      if (p.id) {
+        ids.add(p.id);
+      }
+    }
+  }
   return ids;
 }

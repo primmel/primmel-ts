@@ -366,6 +366,18 @@ function composePackage(
         }
         dirs.set(dep, dir);
         manifests.set(dep, m);
+        if (m.kind === 'product_reference') {
+          // Abstract import (TODO.roadmap/36, doctrine ch. 15 §15.3
+          // mode 1): a product reference package is CITED at a pinned
+          // edition, never content-merged — the import is reference
+          // content, not structural inclusion (the consumer maps to it:
+          // C24 exempts the edge). The edge is located, id-checked and
+          // pin-checked (C83), but contributes nothing to the merge
+          // order and its own uses closure is not traversed — a
+          // point-in-time import composes nothing downstream.
+          color.set(dep, 2);
+          continue;
+        }
       }
       visit(dep);
     }

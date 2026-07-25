@@ -270,6 +270,17 @@
 //   C80 edition-pin-resolves (INV-8): every instance's
 //      definition_versions pin resolves against the package's edition
 //      register — an unresolvable pin breaks re-execution (§13.5)
+//   C81 product-maps-resolves: a product reference package declares its
+//      manufacturer, product designation, and the standards-reference
+//      packages it maps to (maps_to) — the register resolves and agrees
+//      with the model's map profiles (TODO.roadmap/36, doctrine ch. 15)
+//   C82 product-unmapped-promises: an IS promise of a product reference
+//      package that no mapping sources is a brochure claim — a warning
+//      at authoring (doctrine ch. 15 §15.2)
+//   C83 abstract-import-pinned: a uses edge to a product reference
+//      package carries a version pin (uses { <id>@<edition> }) that
+//      resolves against the product's edition register — no unpinned
+//      reference consumption (doctrine ch. 15 §15.3)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -2471,6 +2482,51 @@ export function checkPackage(
     }
   }
 
+  // Dependency-manifest resolution for the supply-chain rules (C24's
+  // product_reference exemption, C81, C83): the composition locator when
+  // given, else the SIBLING-package scan (the checkManifestResolution
+  // stopgap pattern) — manifest-only linting (no --with) must still see
+  // package kinds and edition registers. Memoized per package id.
+  const resolveDepManifest = (() => {
+    const cache = new Map<string, PackageManifest | null>();
+    const siblings = new Map<string, PackageManifest>();
+    try {
+      const parent = dirname(resolve(dir));
+      for (const entry of readdirSync(parent).sort()) {
+        const full = join(parent, entry);
+        try {
+          if (!statSync(full).isDirectory()) {
+            continue;
+          }
+          const m = readPackageManifest(full);
+          siblings.set(m.id, m);
+        } catch {
+          // Not a package dir (no/invalid manifest) — not a candidate.
+        }
+      }
+    } catch {
+      // No readable parent — no sibling fallback.
+    }
+    return (id: string): PackageManifest | null => {
+      const cached = cache.get(id);
+      if (cached !== undefined) {
+        return cached;
+      }
+      let m: PackageManifest | null = null;
+      const located = options.resolvePackage?.(id);
+      if (located) {
+        try {
+          m = readPackageManifest(located);
+        } catch {
+          m = null;
+        }
+      }
+      m ??= siblings.get(id) ?? null;
+      cache.set(id, m);
+      return m;
+    };
+  })();
+
   for (const mp of allProfiles) {
     for (const [source, pairs] of Object.entries(mp.mappings)) {
       // C22 — direction: the source is a LOCAL component. A namespaced
@@ -2598,6 +2654,14 @@ export function checkPackage(
   // inclusion; a mapping is a fulfilment claim. Neither may be expressed
   // as the other (concept doc §5.6 b) — one rule, both directions: the
   // imported set and the mapped set must be disjoint.
+  //
+  // Supply-chain exemption (TODO.roadmap/36, doctrine ch. 15 §15.3): an
+  // ABSTRACT IMPORT of a product reference package is reference content
+  // cited at a pinned edition, never structural inclusion — the composer
+  // does not merge it (ser-des/package.ts). Mode-1 consumption IS a
+  // mapping ("the user's model maps its usage to the product's promised
+  // aspects"), so a map_profile whose namespace is an imported
+  // product_reference package is the intended pattern, not a violation.
   const imported = new Set(
     [
       standard.packageManifest?.extends,
@@ -2606,6 +2670,9 @@ export function checkPackage(
   );
   for (const mp of allProfiles) {
     if (imported.has(mp.namespace)) {
+      if (resolveDepManifest(mp.namespace)?.kind === 'product_reference') {
+        continue;
+      }
       err(
         'C24',
         `map_profile ${mp.namespace}: namespace "${mp.namespace}" is imported (uses/extends) — an import may not be expressed as a mapping, nor a mapping as an import; inclusion ≠ fulfilment (import-not-mapping)`,
@@ -2633,6 +2700,123 @@ export function checkPackage(
         'C26',
         `view_profile ${vp.id}: against "${vp.against}" names no declared map_profile/mapSet namespace — a view reads coverage, it does not create it (view-read-only)`,
       );
+    }
+  }
+
+  // ── C81–C83: the model supply chain (TODO.roadmap/36; doctrine ch. 15
+  // §15.9) ──
+  // Three publishers — the standard (reference), the manufacturer
+  // (product reference), the user (implementation) — and mapping is the
+  // only relation between them. C81: a product reference package's
+  // declaration resolves (manufacturer, product designation, and the
+  // standards-reference packages it maps to — its map profiles and its
+  // maps_to manifest register must agree, and every maps_to target must
+  // resolve). C82: an unmapped IS promise is a brochure claim — flagged
+  // at authoring (a warning; the mapping is the conformance claim made
+  // computable). C83: abstract imports pin a version — no unpinned
+  // reference consumption, and the pin resolves against the product
+  // package's edition register.
+  const productManifest = standard.packageManifest;
+  if (productManifest?.kind === 'product_reference') {
+    if (!productManifest.manufacturer) {
+      err(
+        'C81',
+        `package "${productManifest.id}": a product reference package declares its manufacturer — the model speaks for them (product-maps-resolves)`,
+      );
+    }
+    if (!productManifest.product) {
+      err(
+        'C81',
+        `package "${productManifest.id}": a product reference package declares its product designation (product-maps-resolves)`,
+      );
+    }
+    const mapsTo = productManifest.mapsTo ?? [];
+    if (mapsTo.length === 0) {
+      err(
+        'C81',
+        `package "${productManifest.id}": a product reference package declares the standards-reference packages it maps to (maps_to) — an unmapped product model is a brochure (product-maps-resolves)`,
+      );
+    }
+    for (const target of mapsTo) {
+      const dm = resolveDepManifest(target);
+      if (!dm) {
+        err(
+          'C81',
+          `package "${productManifest.id}": maps_to "${target}" does not resolve to a known package — the standards reference a product maps to must resolve (product-maps-resolves)`,
+        );
+      } else if (dm.kind === 'product_reference') {
+        err(
+          'C81',
+          `package "${productManifest.id}": maps_to "${target}" is itself a product reference package — a product maps to the standard, never to another product (product-maps-resolves)`,
+        );
+      }
+      if (!mappedNamespaces.has(target)) {
+        err(
+          'C81',
+          `package "${productManifest.id}": maps_to "${target}" names a standards reference the model never maps to — declare the map_profile/.prm mapSet or drop the entry (product-maps-resolves)`,
+        );
+      }
+    }
+    for (const ns of mappedNamespaces) {
+      if (!mapsTo.includes(ns)) {
+        err(
+          'C81',
+          `map_profile ${ns}: the model maps to a standards reference it does not declare in its manifest maps_to register (product-maps-resolves)`,
+        );
+      }
+    }
+
+    // C82 — every block-form IS promise is a mapping SOURCE (statement-
+    // only shorthand entries are prose, not mappable claims).
+    const mappedSources = new Set<string>();
+    for (const mp of allProfiles) {
+      for (const source of Object.keys(mp.mappings)) {
+        mappedSources.add(source);
+      }
+    }
+    for (const s of standard.subjects ?? []) {
+      for (const p of s.is?.promises ?? []) {
+        if (!p.id) {
+          continue;
+        }
+        if (!mappedSources.has(p.id)) {
+          warn(
+            'C82',
+            `subject ${s.id}: promise "${p.id}" is not mapped to any standard — an unmapped promise is a brochure claim; the mapping is the conformance claim made computable (product-unmapped-promises)`,
+          );
+        }
+      }
+    }
+  }
+
+  // C83 — abstract-import-pinned: a uses/extends edge to a product
+  // reference package carries a version pin (uses { <id>@<edition> }),
+  // and the pin resolves against the product package's edition register
+  // (the C80 register discipline applied to the import edge).
+  if (productManifest) {
+    for (const dep of effectiveUses(productManifest)) {
+      const dm = resolveDepManifest(dep);
+      if (dm?.kind !== 'product_reference') {
+        continue;
+      }
+      const pin = productManifest.usePins?.[dep];
+      if (!pin) {
+        err(
+          'C83',
+          `package "${productManifest.id}" imports product reference package "${dep}" without a version pin — abstract imports pin a version (uses { ${dep}@<edition> }); no unpinned reference consumption (abstract-import-pinned)`,
+        );
+        continue;
+      }
+      const register = new Set([
+        ...(dm.editions ?? []),
+        ...(dm.version ? [dm.version] : []),
+      ]);
+      if (register.size > 0 && !register.has(pin)) {
+        err(
+          'C83',
+          `package "${productManifest.id}" pins "${dep}" at "${pin}", which does not resolve against the product package's edition register { ${[...register].join(' ')} } — the pin names a declared edition (abstract-import-pinned)`,
+        );
+      }
     }
   }
 

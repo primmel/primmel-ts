@@ -32,8 +32,13 @@ export interface EditionValidity {
  * Package tier (TODO.roadmap/05): `core` = the shared kernel, `module` =
  * a shared capability package consumed by ≥2 recs, `rec` = a publishable
  * Recommendation. Registries skip non-rec kinds in rec listings.
+ * `product_reference` (TODO.roadmap/36, doctrine ch. 15) = a
+ * manufacturer's product model, mapped aspect-by-aspect to the
+ * Recommendation — a REFERENCE model consumed by users in two modes
+ * (abstract import / live integration), never a refinement of the
+ * standard: the two are related by mapping only.
  */
-export type PackageKind = 'core' | 'module' | 'rec';
+export type PackageKind = 'core' | 'module' | 'rec' | 'product_reference';
 
 export interface PackageManifest {
   id: string;
@@ -57,10 +62,40 @@ export interface PackageManifest {
    * Import is NOT mapping: a namespace listed here (or in `extends`) may
    * not also be the target of a map_profile/.prm mapSet — linter rule
    * C24 (import-not-mapping).
+   *
+   * Two entry forms: a bare package id (`oiml-smart-core`), or a
+   * version-pinned ABSTRACT IMPORT `acme-lc500@2021` (TODO.roadmap/36)
+   * of a `product_reference` package — reference content cited at a
+   * pinned edition, located and checked but NEVER content-merged by the
+   * composer, and exempt from C24 (the import is expressed as a mapping
+   * to the product's promised aspects; doctrine ch. 15 §15.3). The pins
+   * land in `usePins`; this list always carries the bare ids.
    */
   uses?: string[];
+  /**
+   * Version pins parsed from `uses` entries of the form
+   * `<package-id>@<edition>` (abstract imports of product reference
+   * packages — linter rule C83 abstract-import-pinned requires the pin
+   * and checks it against the product package's edition register).
+   * Keyed by the bare package id.
+   */
+  usePins?: Record<string, string>;
   /** Package tier; absent means an ordinary (rec) package. */
   kind?: PackageKind;
+  /**
+   * Product reference packages only (TODO.roadmap/36, doctrine ch. 15
+   * §15.1): the manufacturer this model speaks for, and the product
+   * designation (e.g. "LC-500"). Linter rule C81 requires both.
+   */
+  manufacturer?: string;
+  product?: string;
+  /**
+   * Product reference packages only: the standards-reference packages
+   * this product model maps to (`maps_to { oiml-r60 }`) — the
+   * declaration its map_profile/.prm maps must resolve into (C81
+   * product-maps-resolves).
+   */
+  mapsTo?: string[];
   /**
    * Capability ids this package contributes for downstream consumers
    * (module manifests). Every provides entry must be consumed by a

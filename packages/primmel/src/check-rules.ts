@@ -4,11 +4,12 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C64) issues report under;
+//   id       — the per-rule id (C1…C83) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
-//              characteristics | twins | coverage | edition;
+//              characteristics | twins | coverage | edition |
+//              supply-chain;
 //   severity — the rule's DEFAULT severity at the normal level
 //              ('warning' rules escalate to errors under --strict;
 //              individual legs of a rule may escalate — see check.ts);
@@ -31,7 +32,8 @@ export type CheckFamily =
   | 'characteristics'
   | 'twins'
   | 'coverage'
-  | 'edition';
+  | 'edition'
+  | 'supply-chain';
 
 export type CheckLevel = 'normal' | 'audit';
 
@@ -699,6 +701,38 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'TODO.roadmap/28, INV-8, doctrine §13.5',
+  ),
+  // ── the model supply chain (TODO.roadmap/36, doctrine ch. 15) ───────
+  // Three publishers — standard (reference), manufacturer (product
+  // reference), user (implementation) — with mapping as the only
+  // relation between them. C81: the product reference package's
+  // declaration resolves (manufacturer, product, maps_to register ⇆
+  // map profiles). C82: unmapped IS promises flagged at authoring (an
+  // unmapped promise is a brochure claim). C83: abstract imports pin a
+  // version that resolves against the product's edition register.
+  R(
+    'C81',
+    'product-maps-resolves',
+    'supply-chain',
+    'error',
+    'normal',
+    'TODO.roadmap/36, doctrine ch. 15 §15.9',
+  ),
+  R(
+    'C82',
+    'product-unmapped-promises',
+    'supply-chain',
+    'warning',
+    'normal',
+    'TODO.roadmap/36, doctrine ch. 15 §15.2/§15.9',
+  ),
+  R(
+    'C83',
+    'abstract-import-pinned',
+    'supply-chain',
+    'error',
+    'normal',
+    'TODO.roadmap/36, doctrine ch. 15 §15.3/§15.9',
   ),
 ];
 
