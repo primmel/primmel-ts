@@ -59,13 +59,16 @@ export const parseTerm: Parser = function (id, data) {
       } else if (command === 'part_of_speech') {
         result.partOfSpeech = unwrapped(value);
       } else if (command === 'alt') {
-        result.alt = tokenizePackage(value());
+        // List entries may be bare IDs or quoted strings with spaces
+        // (`alt { "conformity assessment programme" }`) — stripWrapping
+        // unquotes the latter without mangling the former.
+        result.alt = tokenizePackage(value()).map(stripWrapping);
       } else if (command === 'deprecated') {
-        result.deprecated = tokenizePackage(value());
+        result.deprecated = tokenizePackage(value()).map(stripWrapping);
       } else if (command === 'abbreviations') {
-        result.abbreviations = tokenizePackage(value());
+        result.abbreviations = tokenizePackage(value()).map(stripWrapping);
       } else if (command === 'see_also') {
-        result.seeAlso = tokenizePackage(value());
+        result.seeAlso = tokenizePackage(value()).map(stripWrapping);
       } else {
         return false;
       }
@@ -123,17 +126,20 @@ export const dumpTerm: Dumper<Term> = function (term) {
   if (term.partOfSpeech) {
     out += '  part_of_speech "' + escapeString(term.partOfSpeech) + '"\n';
   }
+  // Brace-list entries containing whitespace must be quoted, or a
+  // load→dump cycle splits them into separate tokens.
+  const listEntry = (s: string) => (/\s/.test(s) ? '"' + escapeString(s) + '"' : s);
   if (term.alt && term.alt.length > 0) {
-    out += '  alt { ' + term.alt.join(' ') + ' }\n';
+    out += '  alt { ' + term.alt.map(listEntry).join(' ') + ' }\n';
   }
   if (term.deprecated && term.deprecated.length > 0) {
-    out += '  deprecated { ' + term.deprecated.join(' ') + ' }\n';
+    out += '  deprecated { ' + term.deprecated.map(listEntry).join(' ') + ' }\n';
   }
   if (term.abbreviations && term.abbreviations.length > 0) {
-    out += '  abbreviations { ' + term.abbreviations.join(' ') + ' }\n';
+    out += '  abbreviations { ' + term.abbreviations.map(listEntry).join(' ') + ' }\n';
   }
   if (term.seeAlso && term.seeAlso.length > 0) {
-    out += '  see_also { ' + term.seeAlso.join(' ') + ' }\n';
+    out += '  see_also { ' + term.seeAlso.map(listEntry).join(' ') + ' }\n';
   }
   if (term.referenceIds.length > 0) {
     out += '  reference {\n';
