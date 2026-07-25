@@ -1,6 +1,7 @@
 import type AcceptanceDecision from './Acceptance';
 import type TestDesign from './Design';
 import type Reference from './Reference';
+import type { CompetenceRequirement } from './CompetenceKind';
 import type { ApplicabilityEntry } from './Form';
 import type { SeriesDecl } from './Series';
 import type SourceDiscrepancy from './SourceDiscrepancy';
@@ -128,6 +129,11 @@ export default interface ConformanceTest {
   preconditions: TestPrecondition[];
   /** Reference material ids this test relies on. */
   referenceMaterials: string[];
+  /** Laboratory competence this test requires (TODO.roadmap/48 —
+   * BUG.R60-SSOT gap 1): the dispatch cover relation matches these
+   * against the TestLaboratory's accreditation_scope; a class-specific
+   * test inherits its base test's entries through inherits_from. */
+  requiredCompetence: CompetenceRequirement[];
   acceptanceCriteria: AcceptanceCriterion[];
   /** Block-level acceptance_criteria kind (e.g. composite). */
   acceptanceCriteriaType: string;

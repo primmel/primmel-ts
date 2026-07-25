@@ -24,6 +24,10 @@ import {
 } from './sourceDiscrepancy';
 import { parseAcceptance, dumpAcceptance } from './acceptance';
 import { parseDesign, dumpDesign } from './design';
+import {
+  parseRequiredCompetence,
+  dumpRequiredCompetence,
+} from './competenceKind';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { Dumper, Parser } from '../types';
 
@@ -393,6 +397,7 @@ export const parseConformanceTest: Parser = function (id, data) {
     conditionsToEnforce: [],
     preconditions: [],
     referenceMaterials: [],
+    requiredCompetence: [],
     acceptanceCriteria: [],
     acceptanceCriteriaType: '',
     acceptanceCriteriaDescription: '',
@@ -524,6 +529,10 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.preconditions = parsePreconditions(unwrapBlock(value()));
       } else if (keyword === 'reference_materials') {
         result.referenceMaterials = readStringList(value());
+      } else if (keyword === 'required_competence') {
+        result.requiredCompetence = parseRequiredCompetence(
+          unwrapBlock(value()),
+        );
       } else if (keyword === 'acceptance_criteria') {
         parseAcceptanceCriteria(unwrapBlock(value()), result);
       } else if (keyword === 'design') {
@@ -739,6 +748,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.referenceMaterials.length > 0) {
     out +=
       '  reference_materials { ' + ct.referenceMaterials.join(' ') + ' }\n';
+  }
+  if (ct.requiredCompetence.length > 0) {
+    out += dumpRequiredCompetence(ct.requiredCompetence);
   }
   if (
     ct.acceptanceCriteria.length > 0 ||

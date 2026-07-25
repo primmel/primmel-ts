@@ -85,6 +85,10 @@ import {
   dumpReferenceMaterial,
   parseReferenceMaterial,
 } from './referenceMaterial';
+import {
+  dumpCompetenceKind,
+  parseCompetenceKind,
+} from './competenceKind';
 import { dumpTestPointSet, parseTestPointSet } from './testPointSet';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
 import { parsePackage } from './packageManifest';
@@ -365,6 +369,13 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseTestPointSet,
     dump: dumpTestPointSet as never,
+  }),
+  defineConstruct({
+    keyword: 'competence_kind',
+    field: 'competenceKinds',
+    takesID: true,
+    parse: parseCompetenceKind,
+    dump: dumpCompetenceKind as never,
   }),
   defineConstruct({
     keyword: 'state_machine',

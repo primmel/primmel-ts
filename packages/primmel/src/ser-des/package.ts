@@ -292,6 +292,7 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   'verdicts',
   'referenceMaterials',
   'testPointSets',
+  'competenceKinds',
   'stateMachines',
   'conformanceTests',
   'conformanceClasses',

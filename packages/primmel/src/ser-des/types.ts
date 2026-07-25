@@ -1,4 +1,5 @@
 import type Calculation from '../types/Calculation';
+import type CompetenceKind from '../types/CompetenceKind';
 import type ConformanceTest from '../types/ConformanceTest';
 import type { DataClass, Enum, Registry, Variable } from '../types/data';
 import EventNode from '../types/events';
@@ -138,6 +139,7 @@ export interface ParseContext {
   verdicts: Record<string, Verdict>;
   referenceMaterials: Record<string, ReferenceMaterial>;
   testPointSets: Record<string, TestPointSet>;
+  competenceKinds: Record<string, CompetenceKind>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;
   conformanceClasses: Record<string, ConformanceClass>;

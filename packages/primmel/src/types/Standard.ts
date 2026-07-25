@@ -1,5 +1,6 @@
 import type Approval from './Approval';
 import type Calculation from './Calculation';
+import type CompetenceKind from './CompetenceKind';
 import type ConformanceTest from './ConformanceTest';
 import type { DataClass, Enum, Registry, Variable } from './data';
 import EventNode from './events';
@@ -80,6 +81,10 @@ export default interface Standard {
   referenceMaterials: ReferenceMaterial[];
   /** Named shared test-point sets referenced by conformance tests. */
   testPointSets: TestPointSet[];
+  /** Laboratory testing-competence kind registry (TODO.roadmap/48) — the
+   *  vocabulary of conformance-test required_competence and laboratory
+   *  accreditation_scope entries. */
+  competenceKinds: CompetenceKind[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
   conformanceClasses: ConformanceClass[];
