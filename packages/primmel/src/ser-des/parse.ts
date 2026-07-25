@@ -67,6 +67,7 @@ export default function parse(
     referenceMaterials: {},
     testPointSets: {},
     competenceKinds: {},
+    constraints: {},
     stateMachines: {},
     conformanceTests: {},
     conformanceClasses: {},

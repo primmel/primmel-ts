@@ -1,6 +1,7 @@
 import type Calculation from '../types/Calculation';
 import type CompetenceKind from '../types/CompetenceKind';
 import type ConformanceTest from '../types/ConformanceTest';
+import type Constraint from '../types/Constraint';
 import type { DataClass, Enum, Registry, Variable } from '../types/data';
 import EventNode from '../types/events';
 import type Figure from '../types/Figure';
@@ -140,6 +141,7 @@ export interface ParseContext {
   referenceMaterials: Record<string, ReferenceMaterial>;
   testPointSets: Record<string, TestPointSet>;
   competenceKinds: Record<string, CompetenceKind>;
+  constraints: Record<string, Constraint>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;
   conformanceClasses: Record<string, ConformanceClass>;

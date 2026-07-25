@@ -2,6 +2,7 @@ import type Approval from './Approval';
 import type Calculation from './Calculation';
 import type CompetenceKind from './CompetenceKind';
 import type ConformanceTest from './ConformanceTest';
+import type Constraint from './Constraint';
 import type { DataClass, Enum, Registry, Variable } from './data';
 import EventNode from './events';
 import type Figure from './Figure';
@@ -85,6 +86,10 @@ export default interface Standard {
    *  vocabulary of conformance-test required_competence and laboratory
    *  accreditation_scope entries. */
   competenceKinds: CompetenceKind[];
+  /** Domain constraints (TODO.roadmap/51 — BUG.R60-SSOT gap 7): the
+   *  subject's own intrinsic validity rules (stereotype «inv») — the
+   *  Recommendation-level counterpart of the metamodel invariants. */
+  constraints: Constraint[];
   stateMachines: StateMachine[];
   conformanceTests: ConformanceTest[];
   conformanceClasses: ConformanceClass[];

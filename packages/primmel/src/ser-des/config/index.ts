@@ -89,6 +89,7 @@ import {
   dumpCompetenceKind,
   parseCompetenceKind,
 } from './competenceKind';
+import { dumpConstraint, parseConstraint } from './constraint';
 import { dumpTestPointSet, parseTestPointSet } from './testPointSet';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
 import { parsePackage } from './packageManifest';
@@ -376,6 +377,14 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseCompetenceKind,
     dump: dumpCompetenceKind as never,
+  }),
+  // Primmel v3 domain constraints (TODO.roadmap/51 — BUG.R60-SSOT gap 7)
+  defineConstruct({
+    keyword: 'constraint',
+    field: 'constraints',
+    takesID: true,
+    parse: parseConstraint,
+    dump: dumpConstraint as never,
   }),
   defineConstruct({
     keyword: 'state_machine',
