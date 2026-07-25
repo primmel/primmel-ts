@@ -89,6 +89,15 @@ export default interface ConformanceTest {
   purpose?: string;
   /** How the test is performed (narrative method). */
   method?: string;
+  /**
+   * The test's executable METHOD (smart-repo TODO.roadmap/55 — BUG.R60-SSOT
+   * gap 10): a reference into the rec's behavior/method vocabulary — the id
+   * of the model-layer process (model/processes.prl, task-50 executable
+   * anatomy: steps, gateways, preconditions) that runs the test. Additive:
+   * flat tests carry the narrative `method` only; the linker's
+   * test-method-link rule resolves the ref where declared.
+   */
+  methodRef?: string;
   /** Free-text guidance (application notes). */
   guidance: string;
   type: string;

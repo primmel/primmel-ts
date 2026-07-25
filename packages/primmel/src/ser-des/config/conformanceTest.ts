@@ -421,6 +421,8 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.purpose = unwrapped(value);
       } else if (keyword === 'method') {
         result.method = unwrapped(value);
+      } else if (keyword === 'method_ref') {
+        result.methodRef = stripWrapping(value());
       } else if (keyword === 'guidance') {
         result.guidance = unwrapped(value);
       } else if (keyword === 'type') {
@@ -590,6 +592,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   if (ct.method) {
     out += '  method "' + escapeString(ct.method) + '"\n';
+  }
+  if (ct.methodRef) {
+    out += '  method_ref ' + ct.methodRef + '\n';
   }
   if (ct.guidance) {
     out += '  guidance "' + escapeString(ct.guidance) + '"\n';

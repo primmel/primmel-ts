@@ -134,6 +134,31 @@ canvas Root {
     assert.ok(dumped.includes('reference R60doc#2.10.1'));
   });
 
+  it('parses and round-trips the method_ref facet (TODO.roadmap/55)', () => {
+    // method_ref is the executable-METHOD link: the id of the model-layer
+    // process whose anatomy runs the test — additive beside the narrative
+    // `method` prose; flat tests without it stay legal.
+    const model = load(`conformance_test Weighing {
+  name "Measurement error, repeatability and mdlo"
+  method "Apply increasing and decreasing test loads. Record indications."
+  method_ref load_weight
+}`);
+
+    const ct = model.conformanceTests[0];
+    assert.equal(ct.method, 'Apply increasing and decreasing test loads. Record indications.');
+    assert.equal(ct.methodRef, 'load_weight');
+
+    const dumped = dump(model);
+    assert.ok(dumped.includes('method_ref load_weight'));
+    const reloaded = load(dumped);
+    assert.equal(reloaded.conformanceTests[0].methodRef, 'load_weight');
+
+    // Absent by default — the facet is additive (OCP).
+    const flat = load(`conformance_test Flat { name "No method link" }`);
+    assert.equal(flat.conformanceTests[0].methodRef, undefined);
+    assert.ok(!dump(flat).includes('method_ref'));
+  });
+
   it('handles conformance_test without optional fields', () => {
     const model = load(`root Root
 
