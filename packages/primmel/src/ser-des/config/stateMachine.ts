@@ -8,7 +8,13 @@ import {
 } from '../tokenize';
 import { stripColon } from './field-parser';
 import type StateMachine from '../../types/StateMachine';
-import type { Transition, Cascade, CascadeSet } from '../../types/StateMachine';
+import type {
+  Transition,
+  Cascade,
+  CascadeAction,
+  CascadeSet,
+} from '../../types/StateMachine';
+import { CASCADE_ACTIONS } from '../../types/StateMachine';
 
 export const parseStateMachine: Parser = function (entityName, data) {
   const result: StateMachine = {
@@ -132,8 +138,10 @@ export const parseStateMachine: Parser = function (entityName, data) {
 
 function parseCascade(target: string, block: string): Cascade {
   const cascade: Cascade = {
+    action: null,
     targetEntity: target,
     where: '',
+    with: {},
     set: [],
     create: null,
   };
@@ -142,8 +150,23 @@ function parseCascade(target: string, block: string): Cascade {
   while (i < t.length) {
     const cmd = t[i++];
     if (i < t.length) {
-      if (cmd === 'where') {
+      if (cmd === 'action') {
+        // action <lock|submit|notify|record> — the semantic side-effect
+        // vocabulary (task 52). Closed: an unknown action is a parse
+        // error, so a misspelt action can never silently degrade to a
+        // no-op cascade.
+        const action = t[i++];
+        if (!CASCADE_ACTIONS.includes(action as CascadeAction)) {
+          throw new Error(
+            `Parsing error: state_machine cascade. Unknown action ${action} (valid: ${CASCADE_ACTIONS.join(', ')})`,
+          );
+        }
+        cascade.action = action as CascadeAction;
+      } else if (cmd === 'where') {
         cascade.where = unwrapBlock(t[i++]);
+      } else if (cmd === 'with') {
+        // with { key: value ... } — action-cascade parameters (task 52)
+        cascade.with = parseFieldMap(t[i++]);
       } else if (cmd === 'set') {
         const setBlock = unwrapBlock(t[i++]);
         const st = tokenize(setBlock);
@@ -163,29 +186,43 @@ function parseCascade(target: string, block: string): Cascade {
         }
       } else if (cmd === 'create') {
         // create { key: value ... } — cascade that CREATES a record (G10)
-        const createBlock = unwrapBlock(t[i++]);
-        const ct = tokenize(createBlock);
-        const fields: Record<string, string> = {};
-        let k = 0;
-        while (k < ct.length) {
-          const key = stripColon(ct[k++]);
-          if (k >= ct.length) {
-            break;
-          }
-          if (ct[k] === ':') {
-            k++;
-          }
-          if (k < ct.length) {
-            fields[key] = stripWrapping(ct[k++]);
-          }
-        }
-        cascade.create = fields;
+        cascade.create = parseFieldMap(t[i++]);
       } else {
         unwrapBlock(t[i++]);
       }
     }
   }
+  // The semantic action form and the mechanical set/create form are
+  // mutually exclusive (the YAML schema's oneOf forbids a mixed block).
+  // Reject the mix at parse time too: prl-to-yaml emits only the action
+  // branch, so accepting a mixed block here would silently drop the
+  // set/create half (task-52 review).
+  if (cascade.action && (cascade.set.length > 0 || cascade.create !== null)) {
+    throw new Error(
+      `Parsing error: state_machine cascade. Target ${target} mixes action with set/create — the two forms are mutually exclusive (schema oneOf)`,
+    );
+  }
   return cascade;
+}
+
+/** Parse a `{ key: value ... }` block (quoted values) into a field map. */
+function parseFieldMap(block: string): Record<string, string> {
+  const fields: Record<string, string> = {};
+  const ct = tokenize(unwrapBlock(block));
+  let k = 0;
+  while (k < ct.length) {
+    const key = stripColon(ct[k++]);
+    if (k >= ct.length) {
+      break;
+    }
+    if (ct[k] === ':') {
+      k++;
+    }
+    if (k < ct.length) {
+      fields[key] = stripWrapping(ct[k++]);
+    }
+  }
+  return fields;
 }
 
 export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
@@ -253,8 +290,18 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
     }
     for (const c of g.cascades) {
       out += '    cascade ' + c.targetEntity + ' {\n';
+      if (c.action) {
+        out += '      action ' + c.action + '\n';
+      }
       if (c.where) {
         out += '      where "' + escapeString(c.where) + '"\n';
+      }
+      if (c.with && Object.keys(c.with).length > 0) {
+        out += '      with {\n';
+        for (const [k, v] of Object.entries(c.with)) {
+          out += '        ' + k + ': "' + escapeString(v) + '"\n';
+        }
+        out += '      }\n';
       }
       if (c.set.length > 0) {
         out += '      set {\n';
