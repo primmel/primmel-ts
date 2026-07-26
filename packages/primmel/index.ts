@@ -73,6 +73,19 @@ export {
 } from './src/mapping-coverage';
 export { checkPackage, type CheckIssue, type CheckOptions } from './src/check';
 export {
+  exportPackageReqif,
+  exportStandardReqif,
+  reqifModality,
+  requirementClassOf,
+  xmlCommentSafe,
+  REQIF_MODALITY_BY_OBLIGATION,
+  REQIF_NAMESPACE,
+  REQIF_VERSION,
+  type ReqifExport,
+  type ReqifExportOptions,
+  type ReqifExportStats,
+} from './src/export/reqif';
+export {
   canonical,
   clauseTextKey,
   diffStandards,
