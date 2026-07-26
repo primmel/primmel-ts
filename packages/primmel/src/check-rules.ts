@@ -762,6 +762,43 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/27, task-27c review',
   ),
+  // ── the model-native DPP (TODO.roadmap/35, doctrine ch. 14 §14.6, ch. 15
+  // §15.6/§15.9) ──
+  // The passport is the product model's public projection — "it cannot
+  // drift from the model because it *is* the model" (§14.6). §15.9's
+  // passport rule: "the passport projection contains only aspects that
+  // resolve — public classes contain nothing marked restricted". C86:
+  // every content entry's class is one of the six declared classes and a
+  // qualified `<class>.<ref>` resolves against the package's declared
+  // aspects/promises (sustainability refs are not kernel-resolved — the
+  // ESPR delegated-act content models do not exist yet). C87: an entry
+  // marked restricted/authority that a public class reaches (exact entry
+  // or covering bare class) is a leak. C88: the UPI scheme declares its
+  // pattern and its ESPR level (model | batch | item).
+  R(
+    'C86',
+    'passport-content-resolves',
+    'supply-chain',
+    'error',
+    'normal',
+    'TODO.roadmap/35, doctrine ch. 15 §15.9',
+  ),
+  R(
+    'C87',
+    'passport-access-leak',
+    'supply-chain',
+    'error',
+    'normal',
+    'TODO.roadmap/35, doctrine ch. 15 §15.9',
+  ),
+  R(
+    'C88',
+    'passport-upi-scheme',
+    'supply-chain',
+    'error',
+    'normal',
+    'TODO.roadmap/35, doctrine ch. 14 §14.6',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

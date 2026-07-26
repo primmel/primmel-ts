@@ -31,6 +31,7 @@ import type {
 import type { ArtifactDefinition, ArtifactInstance } from '../types/Artifact';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
+import type { Passport } from '../types/Passport';
 import type ActivityArchetype from '../types/ActivityArchetype';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
@@ -182,6 +183,9 @@ export interface ParseContext {
 
   // Primmel v3 continuous compliance (TODO.roadmap/34): the monitors.
   monitors: Record<string, Monitor>;
+
+  // Primmel v3 model-native DPP (TODO.roadmap/35): the passports.
+  passports: Record<string, Passport>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().

@@ -217,6 +217,20 @@ export {
   ENDPOINT_ACCESS_SCOPES,
   ENDPOINT_OPERATION_KINDS,
 } from './src/types/Twin';
+export type {
+  Passport,
+  PassportCarrier,
+  PassportContentEntry,
+  PassportUpi,
+  PassportAccessClass,
+  PassportContentClass,
+  PassportUpiLevel,
+} from './src/types/Passport';
+export {
+  PASSPORT_ACCESS_CLASSES,
+  PASSPORT_CONTENT_CLASSES,
+  PASSPORT_UPI_LEVELS,
+} from './src/types/Passport';
 export {
   InstanceResolutionError,
   instanceChain,

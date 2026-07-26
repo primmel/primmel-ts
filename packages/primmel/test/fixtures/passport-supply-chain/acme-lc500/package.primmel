@@ -1,0 +1,12 @@
+package {
+  id acme-lc500
+  kind product_reference
+  manufacturer "ACME Weighing GmbH"
+  product "LC-500"
+  version "2021"
+  editions { 2021 }
+  status current
+  validity { from 2021-03-01 }
+  maps_to { oiml-r60 }
+  description "ACME's LC-500 load cell — the product reference model, mapped aspect-by-aspect to R 60 (doctrine ch. 15), carrying the model-native passport of TODO.roadmap/35 (doctrine ch. 14 §14.6, ch. 15 §15.6/§15.8)."
+}

@@ -57,7 +57,6 @@ import {
   buildProcessTree,
   collectMappings,
   computeCoverage,
-  parseTargetRef,
   type MappingRecord,
   type ProcessTreeNode,
 } from './mapping-coverage';
@@ -65,11 +64,7 @@ import {
 // ── tiers (chapter 1) ────────────────────────────────────────────────
 
 export type TierName =
-  | 'foundations'
-  | 'primary'
-  | 'secondary'
-  | 'tertiary'
-  | 'cross-cutting';
+  'foundations' | 'primary' | 'secondary' | 'tertiary' | 'cross-cutting';
 
 export const TIER_ORDER: TierName[] = [
   'foundations',
@@ -87,8 +82,8 @@ export const TIER_ORDER: TierName[] = [
  * secondary = models ANCHORED to primary aspect paths (requirements,
  * tests, forms, verdict quantities, tables of limits); tertiary =
  * execution and judgment (processes, entities, registries, state
- * machines, approvals, monitors); cross-cutting = annotation and
- * traceability furniture (notes, links).
+ * machines, approvals, monitors, passports); cross-cutting = annotation
+ * and traceability furniture (notes, links).
  *
  * mapProfiles are deliberately ABSENT: mappings are not tiered elements
  * — the mapping diff owns them (pairs + coverage delta).
@@ -134,6 +129,11 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   approvals: 'tertiary',
   stateMachines: 'tertiary',
   monitors: 'tertiary',
+  // Passports (TODO.roadmap/35) are tertiary beside monitors: the
+  // twin-wave serving machinery — a monitor is continuous judgment, a
+  // passport is continuous serving (§14.6: "served by the endpoint,
+  // verified through the engine").
+  passports: 'tertiary',
   viewProfiles: 'tertiary',
   provisions: 'tertiary',
   notes: 'cross-cutting',
@@ -171,7 +171,9 @@ export function canonical(value: unknown): string {
     const out =
       '{' +
       keys
-        .map(k => JSON.stringify(k) + ':' + ser((v as Record<string, unknown>)[k]))
+        .map(
+          k => JSON.stringify(k) + ':' + ser((v as Record<string, unknown>)[k]),
+        )
         .join(',') +
       '}';
     stack.pop();
@@ -676,7 +678,10 @@ function diffMappings(
       namespacesSkipped.push(ns);
       continue;
     }
-    const levels = new Map<string, { from?: CoverageLevel; to?: CoverageLevel }>();
+    const levels = new Map<
+      string,
+      { from?: CoverageLevel; to?: CoverageLevel }
+    >();
     if (treeA) {
       const report = computeCoverage(a, treeA, recordsA, ns);
       for (const c of report.components) {
@@ -778,10 +783,22 @@ function diffClauseDrift(
           });
         }
         for (const c of removedC.slice(pairs)) {
-          raw.push({ doc: basis, from: c, to: '', kind: 'decited', citedBy: entry });
+          raw.push({
+            doc: basis,
+            from: c,
+            to: '',
+            kind: 'decited',
+            citedBy: entry,
+          });
         }
         for (const c of addedC.slice(pairs)) {
-          raw.push({ doc: basis, from: '', to: c, kind: 'recited', citedBy: entry });
+          raw.push({
+            doc: basis,
+            from: '',
+            to: c,
+            kind: 'recited',
+            citedBy: entry,
+          });
         }
       }
     }
@@ -790,7 +807,11 @@ function diffClauseDrift(
   // Aggregate per (doc, from, to): the drift TABLE rows with their
   // citing elements — "2.10.3 → 2.10.4, cited by 2 elements".
   const textOf = (row: RawRow): 'same' | 'differed' | 'unavailable' => {
-    if (row.kind !== 'renumbered' || !options.sentencesA || !options.sentencesB) {
+    if (
+      row.kind !== 'renumbered' ||
+      !options.sentencesA ||
+      !options.sentencesB
+    ) {
       return 'unavailable';
     }
     const tA = options.sentencesA.get(clauseTextKey(row.doc, row.from));
@@ -847,7 +868,10 @@ export function diffStandards(
   const shared: [DiffElement, DiffElement][] = [];
   let unchanged = 0;
   const tally: Record<TierName, TierTally> = Object.fromEntries(
-    TIER_ORDER.map(t => [t, { added: 0, removed: 0, changed: 0, moved: 0, unchanged: 0 }]),
+    TIER_ORDER.map(t => [
+      t,
+      { added: 0, removed: 0, changed: 0, moved: 0, unchanged: 0 },
+    ]),
   ) as Record<TierName, TierTally>;
 
   for (const [key, elB] of indexB) {
@@ -869,7 +893,8 @@ export function diffStandards(
       ...Object.keys(elB.aspects),
     ]);
     const differing = [...aspects].filter(
-      name => (elA.aspects[name] ?? '<absent>') !== (elB.aspects[name] ?? '<absent>'),
+      name =>
+        (elA.aspects[name] ?? '<absent>') !== (elB.aspects[name] ?? '<absent>'),
     );
     if (differing.length === 0) {
       unchanged++;
@@ -916,11 +941,9 @@ export function diffStandards(
   const mA = a.packageManifest;
   const mB = b.packageManifest;
   const aLabel =
-    options.aLabel ??
-    (mA?.id ? `${mA.id}@${packageVersion(mA) || '?'}` : 'a');
+    options.aLabel ?? (mA?.id ? `${mA.id}@${packageVersion(mA) || '?'}` : 'a');
   const bLabel =
-    options.bLabel ??
-    (mB?.id ? `${mB.id}@${packageVersion(mB) || '?'}` : 'b');
+    options.bLabel ?? (mB?.id ? `${mB.id}@${packageVersion(mB) || '?'}` : 'b');
   const editionComparison =
     !!mA?.id && mA.id === mB?.id && packageVersion(mA) !== packageVersion(mB);
   // Duplicate kind:id keys are a data error (the duplicate-id linter owns

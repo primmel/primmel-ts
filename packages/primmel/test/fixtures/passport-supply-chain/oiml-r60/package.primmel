@@ -1,0 +1,5 @@
+package {
+  id oiml-r60
+  version "2021"
+  editions { 2021 }
+}
