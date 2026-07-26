@@ -86,6 +86,30 @@ export {
   type ReqifExportStats,
 } from './src/export/reqif';
 export {
+  exportPackageRdf,
+  exportStandardRdf,
+  rdfRequirementClassOf,
+  rdfSlug,
+  turtleEscape,
+  type RdfExport,
+  type RdfExportFormat,
+  type RdfExportStats,
+  type RdfObject,
+  type RdfTriple,
+} from './src/export/rdf';
+export {
+  RDF_PROVISION_CLASS_BY_OBLIGATION,
+  rdfObligationToken,
+  rdfProvisionClass,
+  PRIMMEL_NS,
+  SMART_NS,
+} from './src/export/rdf-vocabulary';
+export { RDF_EXPORT_SHAPES_TTL } from './src/export/rdf-shapes';
+export {
+  RDF_COMPETENCY_QUESTIONS,
+  type RdfCompetencyQuestion,
+} from './src/export/rdf-competency-questions';
+export {
   canonical,
   clauseTextKey,
   diffStandards,

@@ -116,12 +116,12 @@ describe('edition manifest — parse + dump round-trip', () => {
 });
 
 describe('edition lifecycle lint — valid packages stay clean', () => {
-  it('no C77–C80 findings on the valid manifest', () => {
+  it('no C77–C80/C85 findings on the valid manifest', () => {
     const dir = manifestDir(VALID_MANIFEST, [
       { name: 'instances.prl', text: SAMPLE_INSTANCE },
     ]);
     const issues = checkPackage(dir).filter(i =>
-      ['C77', 'C78', 'C79', 'C80'].includes(i.check),
+      ['C77', 'C78', 'C79', 'C80', 'C85'].includes(i.check),
     );
     assert.deepEqual(issues, []);
   });
@@ -141,6 +141,45 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
     assert.equal(c77.length, 1);
     assert.equal(c77[0].severity, 'error');
     assert.match(c77[0].message, /not the edition register's newest entry \(2021\)/);
+  });
+
+  it('C85: a malformed baseUrn errors; a well-formed one stays clean (task-27c review Important 1)', () => {
+    const bad = manifestDir(`package {
+  id p
+  version "1"
+  editions { 1 }
+  baseUrn "urn:bad urn"
+  description "d"
+}`);
+    const c85bad = checkPackage(bad).filter(i => i.check === 'C85');
+    assert.equal(c85bad.length, 1);
+    assert.equal(c85bad[0].severity, 'error');
+    assert.match(
+      c85bad[0].message,
+      /baseUrn "urn:bad urn" is not a well-formed IRI/,
+    );
+    const good = manifestDir(`package {
+  id p
+  version "1"
+  editions { 1 }
+  baseUrn "urn:oiml:pub:r:60:2021"
+  description "d"
+}`);
+    assert.deepEqual(
+      checkPackage(good).filter(i => i.check === 'C85'),
+      [],
+    );
+    // No baseUrn at all: the field is optional in the manifest — silent.
+    const absent = manifestDir(`package {
+  id p
+  version "1"
+  editions { 1 }
+  description "d"
+}`);
+    assert.deepEqual(
+      checkPackage(absent).filter(i => i.check === 'C85'),
+      [],
+    );
   });
 
   it('C78: malformed window and a to before from', () => {
