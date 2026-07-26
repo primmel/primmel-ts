@@ -30,6 +30,7 @@ import type {
 import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
+import type { Passport } from './Passport';
 import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
@@ -145,6 +146,12 @@ export default interface Standard {
   // §14.5): the monitor constructs — triggers, evaluation refs, evidence
   // sinks, escalation — running the standard next to the live twins.
   monitors: Monitor[];
+
+  // Primmel v3 model-native DPP (TODO.roadmap/35 — doctrine ch. 14 §14.6,
+  // ch. 15 §15.6): the passport constructs — named, access-classed
+  // projections of the product model + live instance state, declared on
+  // product reference packages.
+  passports: Passport[];
 
   root: Subprocess | null;
 }

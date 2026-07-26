@@ -85,10 +85,7 @@ import {
   dumpReferenceMaterial,
   parseReferenceMaterial,
 } from './referenceMaterial';
-import {
-  dumpCompetenceKind,
-  parseCompetenceKind,
-} from './competenceKind';
+import { dumpCompetenceKind, parseCompetenceKind } from './competenceKind';
 import { dumpConstraint, parseConstraint } from './constraint';
 import {
   dumpDiscrepancyRecord,
@@ -113,6 +110,7 @@ import {
 } from './artifact';
 import { connectorProfileConstruct } from './twin';
 import { monitorConstruct } from './monitor';
+import { passportConstruct } from './passport';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
 import {
@@ -451,6 +449,11 @@ const CONSTRUCTS: ConstructDefinition[] = [
   // §14.5): the monitor — triggers, evaluation refs, evidence sinks,
   // escalation over a subject set.
   monitorConstruct as ConstructDefinition,
+  // Primmel v3 model-native DPP (TODO.roadmap/35 — doctrine ch. 14 §14.6,
+  // ch. 15 §15.6): the passport — a named, access-classed projection of
+  // the product model + live instance state, on product reference
+  // packages.
+  passportConstruct as ConstructDefinition,
 ];
 
 function buildParserConfig(

@@ -63,6 +63,7 @@ function emptyContext(): ParseContext {
     activityArchetypes: {},
     connectorProfiles: {},
     monitors: {},
+    passports: {},
     issues: [],
   };
 }

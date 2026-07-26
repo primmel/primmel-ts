@@ -332,7 +332,14 @@ import type ConformanceTest from './types/ConformanceTest';
 import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
 import type { FormField } from './types/Form';
-import { isDate, isDateTime, isDuration, isValidTimeValue, parseFreshnessWindow, timeInstantMs } from './time';
+import {
+  isDate,
+  isDateTime,
+  isDuration,
+  isValidTimeValue,
+  parseFreshnessWindow,
+  timeInstantMs,
+} from './time';
 import { isWellFormedMapType } from './type-expr';
 import { normalizeSourceRef } from './model-diff';
 import {
@@ -347,6 +354,10 @@ import {
   MONITOR_STREAMS,
   type Monitor,
 } from './types/Monitor';
+import {
+  PASSPORT_CONTENT_CLASSES,
+  PASSPORT_UPI_LEVELS,
+} from './types/Passport';
 import { extractStateGates } from './operational-state';
 import { activeRuleIds } from './check-rules';
 import {
@@ -2869,6 +2880,131 @@ export function checkPackage(
     }
   }
 
+  // ── C86–C88: the model-native DPP (TODO.roadmap/35; doctrine ch. 14
+  // §14.6, ch. 15 §15.6/§15.9) ──
+  // The passport is the product model's named, access-classed PROJECTION —
+  // "it cannot drift from the model because it *is* the model" (§14.6).
+  // §15.9's passport rule: "the passport projection contains only aspects
+  // that resolve — public classes contain nothing marked restricted".
+  // C86: every content entry's class is one of the six declared classes,
+  // and a qualified `<class>.<ref>` resolves against the package's
+  // declared aspects/promises (sustainability refs pass unjudged — the
+  // ESPR delegated-act content models do not exist yet, TODO.roadmap/35
+  // "Out"). C87: an entry marked restricted/authority the public class
+  // reaches (the same entry, or a covering bare class) is a leak. C88:
+  // the UPI scheme declares its pattern and its ESPR level
+  // (model | batch | item). Packages without a passport are untouched —
+  // the loop is empty.
+  {
+    const KNOWN_CONTENT = new Set<string>(PASSPORT_CONTENT_CLASSES);
+    const KNOWN_LEVELS = new Set<string>(PASSPORT_UPI_LEVELS);
+    const entryToken = (e: { contentClass: string; ref: string }): string =>
+      e.ref === '' ? e.contentClass : `${e.contentClass}.${e.ref}`;
+
+    // The per-class resolution domains for qualified entries (C86): the
+    // package's declared aspects/promises, one vocabulary per class.
+    const passportPromiseIds = new Set(
+      (standard.subjects ?? []).flatMap(s =>
+        (s.is.promises ?? []).map(pr => pr.id).filter(id => id !== ''),
+      ),
+    );
+    const compositionIds = new Set(
+      (standard.subjects ?? []).flatMap(s => [
+        ...(s.is.structure ?? []),
+        ...Object.keys(s.is.designParameters ?? {}),
+        ...Object.keys(s.has.characteristics ?? {}),
+        ...(s.has.serves ?? []).map(sv => sv.aspect),
+      ]),
+    );
+    const passportArtifactIds = new Set([
+      ...(standard.artifactDefinitions ?? []).map(a => a.id),
+      ...(standard.subjects ?? []).flatMap(s => s.is.artifacts ?? []),
+    ]);
+    const passportMonitorIds = new Set(
+      (standard.monitors ?? []).map(m => m.id),
+    );
+    // null = the class has no kernel resolution domain (sustainability —
+    // the forward class; its refs pass unjudged).
+    const CONTENT_DOMAINS: Record<string, Set<string> | null> = {
+      identity: subjectIds,
+      composition: compositionIds,
+      promises_as_verified: passportPromiseIds,
+      live_compliance_status: new Set([
+        ...passportMonitorIds,
+        ...passportPromiseIds,
+      ]),
+      artifacts: passportArtifactIds,
+      sustainability: null,
+    };
+
+    for (const p of standard.passports ?? []) {
+      // C86 — passport-content-resolves (§15.9).
+      for (const e of p.entries) {
+        if (!KNOWN_CONTENT.has(e.contentClass)) {
+          err(
+            'C86',
+            `passport ${p.id}: content entry "${entryToken(e)}" names an unknown content class — one of ${PASSPORT_CONTENT_CLASSES.join(' | ')} (passport-content-resolves)`,
+          );
+          continue;
+        }
+        if (e.ref !== '') {
+          const domain = CONTENT_DOMAINS[e.contentClass];
+          if (domain !== null && !domain.has(e.ref)) {
+            err(
+              'C86',
+              `passport ${p.id}: content entry "${entryToken(e)}" — "${e.ref}" does not resolve against the package's declared aspects/promises (the passport projection contains only aspects that resolve, §15.9) (passport-content-resolves)`,
+            );
+          }
+        }
+      }
+
+      // C87 — passport-access-leak (§15.9): an entry marked restricted/
+      // authority is reachable from the public class when the public
+      // block carries the same entry or a covering bare class. (The
+      // reverse narrowing — a bare restricted class with one ref made
+      // public — is an authored exception, not a leak.)
+      const publicEntries = p.entries.filter(e => e.access === 'public');
+      const publicTokens = new Set(publicEntries.map(entryToken));
+      const publicBareClasses = new Set(
+        publicEntries.filter(e => e.ref === '').map(e => e.contentClass),
+      );
+      for (const e of p.entries) {
+        if (e.access !== 'restricted' && e.access !== 'authority') {
+          continue;
+        }
+        if (
+          publicTokens.has(entryToken(e)) ||
+          publicBareClasses.has(e.contentClass)
+        ) {
+          err(
+            'C87',
+            `passport ${p.id}: entry "${entryToken(e)}" is marked ${e.access} but reachable from the public class — public classes contain nothing marked restricted (§15.9) (passport-access-leak)`,
+          );
+        }
+      }
+
+      // C88 — passport-upi-scheme (§14.6; ESPR): the unique product
+      // identifier declares its pattern and its level.
+      if (p.upi.pattern === '') {
+        err(
+          'C88',
+          `passport ${p.id}: declares no UPI pattern — a passport is reached through its unique product identifier (upi { pattern … level … }) (passport-upi-scheme)`,
+        );
+      }
+      if (p.upi.level === '') {
+        err(
+          'C88',
+          `passport ${p.id}: the UPI pattern declares no level — the ESPR unique product identifier is model | batch | item level (passport-upi-scheme)`,
+        );
+      } else if (!KNOWN_LEVELS.has(p.upi.level)) {
+        err(
+          'C88',
+          `passport ${p.id}: UPI level "${p.upi.level}" is not one of ${PASSPORT_UPI_LEVELS.join(' | ')} (passport-upi-scheme)`,
+        );
+      }
+    }
+  }
+
   // ── C32–C36: quantities, time, and the IS↔HAS duality ──
   // (TODO.roadmap/06; doctrine ch. 6). Coherence is judged on quantity
   // KINDS — resolved through the package's quantity_registers — never on
@@ -4199,7 +4335,9 @@ export function checkEditionLifecycle(
         const sib = readPackageManifest(full);
         const key = sib.baseUrn || sib.id;
         nodes.set(key, [
-          ...(sib.supersedes ?? []).map(t => ['supersedes', t] as [string, string]),
+          ...(sib.supersedes ?? []).map(
+            t => ['supersedes', t] as [string, string],
+          ),
           ...(sib.replaces ?? []).map(t => ['replaces', t] as [string, string]),
         ]);
       } catch {

@@ -65,8 +65,7 @@ describe('model diff — added/removed/changed', () => {
   it('detects added and removed elements by stable id', () => {
     const b = diff(
       BASE,
-      BASE +
-        '\nrequirement /req/technical/software { name "Software" }\n',
+      BASE + '\nrequirement /req/technical/software { name "Software" }\n',
     );
     assert.equal(b.added.length, 1);
     assert.equal(b.added[0].id, '/req/technical/software');
@@ -80,7 +79,10 @@ describe('model diff — added/removed/changed', () => {
   it('classifies a statement change as statement, nothing else', () => {
     const d = diff(
       BASE,
-      BASE.replace('The error shall not exceed', 'The error shall never exceed'),
+      BASE.replace(
+        'The error shall not exceed',
+        'The error shall never exceed',
+      ),
     );
     assert.equal(d.changed.length, 1);
     assert.equal(d.changed[0].id, '/req/metrological/mpe');
@@ -292,20 +294,17 @@ describe('model diff — edition-normalized provenance', () => {
   it('an edition-only doc change at the SAME clause is not a model change', () => {
     const d = diff(
       BASE,
-      BASE.replace(/urn:oiml:pub:r:60-1:2021/g, 'urn:oiml:pub:r:60-1:2017').replace(
-        /urn:oiml:pub:r:60-2:2021/g,
-        'urn:oiml:pub:r:60-2:2017',
-      ),
+      BASE.replace(
+        /urn:oiml:pub:r:60-1:2021/g,
+        'urn:oiml:pub:r:60-1:2017',
+      ).replace(/urn:oiml:pub:r:60-2:2021/g, 'urn:oiml:pub:r:60-2:2017'),
     );
     assert.equal(d.empty, true);
     assert.equal(d.clauseDrift.length, 0);
   });
 
   it('a clause move between editions is a provenance change AND a drift row', () => {
-    const d = diff(
-      BASE,
-      BASE.replace('clause "2.7.1"', 'clause "2.7.2"'),
-    );
+    const d = diff(BASE, BASE.replace('clause "2.7.1"', 'clause "2.7.2"'));
     assert.equal(d.changed.length, 1);
     assert.equal(d.changed[0].id, '/conf/mpe-test');
     assert.deepEqual(d.changed[0].aspects, ['provenance']);
@@ -389,7 +388,8 @@ calculation c4 {
   it('sub-clauses fold into their drifted parent (2.1.3/2.1.3.1 → 2.1.2)', () => {
     const d = diff(DRIFT_A, DRIFT_B);
     const rows = d.clauseDrift.filter(
-      r => r.doc === 'urn:oiml:pub:r:60-3' && r.citedBy.some(e => e.id === 'c2'),
+      r =>
+        r.doc === 'urn:oiml:pub:r:60-3' && r.citedBy.some(e => e.id === 'c2'),
     );
     assert.equal(rows.length, 1);
     assert.equal(rows[0].from, '2.1.3');
@@ -426,7 +426,10 @@ calculation c4 {
       ['urn:oiml:pub:r:60-3#2.1.2', 'The load cell   error is computed thus.'],
     ]);
     const sentencesDiff: ClauseTextIndex = new Map([
-      ['urn:oiml:pub:r:60-3#2.1.2', 'The load cell error SHALL be computed thus.'],
+      [
+        'urn:oiml:pub:r:60-3#2.1.2',
+        'The load cell error SHALL be computed thus.',
+      ],
     ]);
     const same = diffStandards(load(DRIFT_A), load(DRIFT_B), {
       sentencesA,
@@ -461,7 +464,10 @@ describe('edition-comparison report', () => {
     assert.match(report, /by tier:/);
     assert.match(report, /secondary/);
     assert.match(report, /clause drift:/);
-    assert.match(report, /urn:oiml:pub:r:60-2\s+2\.7\.1\s+2\.7\.2\s+renumbered/);
+    assert.match(
+      report,
+      /urn:oiml:pub:r:60-2\s+2\.7\.1\s+2\.7\.2\s+renumbered/,
+    );
     assert.match(report, /\/conf\/mpe-test/);
   });
 
@@ -485,7 +491,10 @@ describe('edition-comparison report', () => {
     };
     const d = diffStandards(a, b);
     assert.equal(d.editionComparison, true);
-    assert.match(formatDiffReport(d), /edition comparison — oiml-r60@2017 → oiml-r60@2021/);
+    assert.match(
+      formatDiffReport(d),
+      /edition comparison — oiml-r60@2017 → oiml-r60@2021/,
+    );
   });
 });
 
@@ -505,8 +514,14 @@ describe('package-dir diff — file layout is not model identity', () => {
     mkdirSync(join(b, 'specification', 'requirements'), { recursive: true });
     mkdirSync(join(b, 'specification', 'conformance'));
     const [req, test, calc] = BASE.split('\n}\n').filter(p => p.trim());
-    writeFileSync(join(b, 'specification', 'requirements', 'mpe.prl'), req + '\n}\n');
-    writeFileSync(join(b, 'specification', 'conformance', 'mpe.prl'), test + '\n}\n');
+    writeFileSync(
+      join(b, 'specification', 'requirements', 'mpe.prl'),
+      req + '\n}\n',
+    );
+    writeFileSync(
+      join(b, 'specification', 'conformance', 'mpe.prl'),
+      test + '\n}\n',
+    );
     writeFileSync(join(b, 'specification', 'v.prl'), calc + '\n}\n');
     const { diff: d } = diffPackageDirs(a, b);
     assert.equal(d.empty, true);
@@ -521,11 +536,53 @@ describe('element index', () => {
     assert.ok(idx.has('requirements:/req/metrological/mpe'));
     assert.ok(idx.has('conformanceTests:/conf/mpe-test'));
     assert.ok(idx.has('calculations:vMin'));
-    assert.equal(idx.get('requirements:/req/metrological/mpe')?.tier, 'secondary');
+    assert.equal(
+      idx.get('requirements:/req/metrological/mpe')?.tier,
+      'secondary',
+    );
     assert.equal(
       idx.get('conformanceTests:/conf/mpe-test')?.provenance[0].basis,
       'urn:oiml:pub:r:60-2',
     );
+  });
+
+  it('passports are diff elements (tertiary, beside monitors) — TODO.roadmap/35', () => {
+    // The TIER_BY_FIELD registration pin: elementIndex iterates the table
+    // keys only, so an unregistered first-class collection is silently
+    // invisible to `primmel diff`. Two models differing ONLY in a
+    // passport produce exactly the passport diff elements; an unchanged
+    // passport produces none.
+    const PASSPORT = `
+passport lc500_passport {
+  upi { pattern upi:acme:lc500 level model }
+  public { identity composition promises_as_verified }
+  authority { live_compliance_status }
+}
+`;
+    const idx = elementIndex(load(PASSPORT));
+    assert.equal(idx.size, 1);
+    assert.ok(idx.has('passports:lc500_passport'));
+    assert.equal(idx.get('passports:lc500_passport')?.tier, 'tertiary');
+
+    const added = diff(BASE, BASE + PASSPORT);
+    assert.equal(added.added.length, 1);
+    assert.deepEqual(
+      added.added.map(e => `${e.kind}:${e.id}:${e.tier}`),
+      ['passports:lc500_passport:tertiary'],
+    );
+    const removed = diff(BASE + PASSPORT, BASE);
+    assert.equal(removed.removed.length, 1);
+    assert.equal(removed.removed[0].kind, 'passports');
+    const changed = diff(
+      BASE + PASSPORT,
+      BASE + PASSPORT.replace('level model', 'level batch'),
+    );
+    assert.equal(changed.changed.length, 1);
+    assert.equal(changed.changed[0].kind, 'passports');
+    // An unchanged passport produces no diff elements.
+    const noop = diff(BASE + PASSPORT, BASE + PASSPORT);
+    assert.equal(noop.empty, true);
+    assert.equal(noop.unchanged, 4);
   });
 
   it('a duplicate kind:id is collected and surfaces as a diff warning', () => {

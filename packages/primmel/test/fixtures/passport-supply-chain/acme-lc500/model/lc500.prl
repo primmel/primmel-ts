@@ -1,0 +1,162 @@
+# ─────────────────────────────────────────────────────────────────────
+# TODO.roadmap/35 fixture — the LC-500 model-native passport (doctrine
+# ch. 14 §14.6, ch. 15 §15.6, grammar sketch §15.8).
+#
+# ACME's product reference package (the manufacturer side of the model
+# supply chain, task 36): the LC-500 subject with its promised envelope
+# mapped aspect-by-aspect to R 60, the lc500_api twin endpoint + serve
+# bindings (task 32), the fleet_watch monitor (task 34), the type
+# evaluation dossier artifact (task 09) — and the PASSPORT: the named,
+# access-classed projection of all of it, with the UPI scheme (ESPR
+# model level) and the QR data-carrier linkage (payload = the passport
+# endpoint URL).
+# ─────────────────────────────────────────────────────────────────────
+
+quantity_register si {
+  kind mass { dimensions { M 1 } si_unit kg }
+  unit kg { symbol "kg" kind mass factor 1 }
+  kind dimensionless { si_unit "1" }
+  unit dimensionless { label "dimensionless" kind dimensionless }
+}
+
+attribute_definition indication {
+  quantity_kind mass
+  unit kg
+  scope sample
+}
+
+state_machine lc_operational {
+  kind operational
+  initial off
+  states { off ready fault }
+  transition off -> ready action power_on
+}
+
+behavior creep {
+  kind temporal
+  stimulus force
+  response "Change in output with time under constant load."
+}
+
+behavior self_test {
+  kind procedural
+}
+
+subject LC500 {
+  is {
+    metadata { name "LC-500 load cell model" }
+    design_parameters { e_max : "500 kg" }
+    endpoint lc500_api {
+      operation get_indication {
+        kind query
+        serves indication
+        payload { quantity_kind mass unit kg timestamp true }
+      }
+      operation watch_state {
+        kind subscribe
+        serves state, environmental_context
+        payload { quantity_kind state unit dimensionless timestamp true }
+      }
+      access {
+        public { get_indication }
+        registered { watch_state }
+      }
+      profile rest_json
+    }
+    promises {
+      mpe_within {
+        target error_hold
+        level symbolic C6
+        statement "Holds accuracy class C6 across the rated range."
+        verified_by { oiml-r60#/req/metrological/mpe }
+      }
+      creep_c6 {
+        target creep
+        statement "Creep stays within the class C6 envelope over the 30-minute test."
+        verified_by { oiml-r60#/req/metrological/creep }
+      }
+    }
+    artifacts { type_evaluation_dossier }
+  }
+  has {
+    state lc_operational
+    attributes { indication : mass test_dependent ref_load : mass test_dependent }
+    characteristics { error_hold e = ocl{self.indication - self.ref_load} }
+    serve sample.test_context.indication via get_indication { fresh_within 5s }
+    serve sample.state via watch_state { fresh_within 1s }
+  }
+  does {
+    behavior creep
+    behavior self_test
+  }
+}
+
+artifact_definition type_evaluation_dossier {
+  name "Type evaluation dossier"
+  description "The executed type evaluation record the certificate derives from (doctrine ch. 15 §15.7 step 2)."
+  content_contract {
+    fields {
+      certificate_number : string
+      evaluation_report_id : string
+      verdict_record : structure
+    }
+  }
+  produced_when per_measurement
+}
+
+requirement oiml-r60#/req/metrological/mpe {
+  name "alias: R 60 maximum permissible errors"
+  statement "Local alias of the Recommendation's MPE requirement (the implementation declares local copies of the reference elements it maps to — C21)."
+  verification { method examination description "Verified in the Recommendation's own evaluation program." }
+}
+
+requirement oiml-r60#/req/metrological/creep {
+  name "alias: R 60 creep requirement"
+  statement "Local alias of the Recommendation's creep requirement."
+  verification { method examination description "Verified in the Recommendation's own evaluation program." }
+}
+
+map_profile oiml-r60 {
+  description "LC-500 → R 60: the manufacturer's conformance claim, made computable."
+  mapping {
+    mpe_within -> oiml-r60#/req/metrological/mpe {
+      description "The class-limited error promise answers the MPE requirement."
+      justification "Same quantity, same clause definition."
+    }
+    creep_c6 -> oiml-r60#/req/metrological/creep {
+      description "The creep promise answers the creep requirement."
+      justification "The characteristic quantifies the behavior the test exercises."
+    }
+    e_max -> oiml-r60#/req/metrological/mpe {
+      description "Our E_max is R 60's E_max."
+      justification "Same quantity, same clause definition (doctrine §15.2)."
+    }
+  }
+}
+
+monitor fleet_watch {
+  over { LC500 }
+  triggers { every 1h on signal artifact_arrived on change state }
+  evaluate { requirements applicable_to(this.classification) promises all }
+  emit { evidence -> workspace verdicts -> verdict_log }
+  escalate { on fail { flag_certificate open_service_case } on invalid { open_service_case } }
+}
+
+# ─────────────────────────────────────────────────────────────────────
+# The passport (TODO.roadmap/35; doctrine §15.8 sketch made real — the
+# sketch's `identifier` head facet is the upi block with the ESPR level
+# the sketch predates; the data carrier is the QR on the product, its
+# payload the passport endpoint URL):
+#   public    — the abstract passport (point-in-time, as-certified):
+#               identity, composition, promises-as-verified (§15.6);
+#   authority — adds the live view: live compliance status computed by
+#               the engine, and the type evaluation dossier (what market
+#               surveillance actually wants when it scans the QR code).
+# ─────────────────────────────────────────────────────────────────────
+
+passport lc500_passport {
+  upi { pattern upi:acme:lc500 level model }
+  carrier { kind qr payload "https://passport.acme.example/passport/upi:acme:lc500.json" }
+  public { identity composition promises_as_verified }
+  authority { live_compliance_status artifacts.type_evaluation_dossier }
+}

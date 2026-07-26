@@ -96,6 +96,8 @@ export default function parse(
     connectorProfiles: {},
     // Primmel v3 continuous compliance (TODO.roadmap/34)
     monitors: {},
+    // Primmel v3 model-native DPP (TODO.roadmap/35)
+    passports: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };
