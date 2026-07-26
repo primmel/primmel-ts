@@ -150,6 +150,15 @@ export {
   type CheckLevel,
 } from './src/check-rules';
 export {
+  parseSpellingCode,
+  parseConversionCode,
+  isSpellingCode,
+  isConversionCode,
+  conversionCodeEquals,
+  type ParsedSpellingCode,
+} from './src/spelling';
+export type { default as TextContent, SpellingEntry } from './src/types/Text';
+export {
   ALLOWLIST_FILENAME,
   loadAllowlist,
   applyAllowlist,

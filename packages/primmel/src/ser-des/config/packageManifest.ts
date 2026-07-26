@@ -181,6 +181,12 @@ export const parsePackage: Parser = function (data) {
         );
       }
       manifest.status = s as PackageManifest['status'];
+    } else if (cmd === 'default_spelling' || cmd === 'defaultSpelling') {
+      // ISO 24229 multilinguality (TODO.roadmap/25, doctrine ch. 10):
+      // the spelling every inline prose string is authored in.
+      manifest.defaultSpelling = stripWrapping(t[i++]);
+    } else if (cmd === 'spellings') {
+      manifest.spellings = readList(t[i++]);
     } else if (cmd === 'description') {
       manifest.description = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
@@ -282,6 +288,12 @@ export function dumpPackage(m: PackageManifest): string {
   }
   if (m.status) {
     out += '  status ' + m.status + '\n';
+  }
+  if (m.defaultSpelling) {
+    out += '  default_spelling ' + m.defaultSpelling + '\n';
+  }
+  if (m.spellings && m.spellings.length > 0) {
+    out += '  spellings { ' + m.spellings.join(' ') + ' }\n';
   }
   if (m.description) {
     out +=

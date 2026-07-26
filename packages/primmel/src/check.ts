@@ -371,6 +371,7 @@ import {
   loadTextCoverageData,
   uncoveredSentenceMessage,
 } from './text-coverage';
+import { parseSpellingCode, parseConversionCode } from './spelling';
 
 export interface CheckIssue {
   check: string;
@@ -518,6 +519,9 @@ export function checkPackage(
   // (C79), and the INV-8 pin — every instance's definition_versions
   // resolves against the package's edition register (C80).
   issues.push(...checkEditionLifecycle(dir, standard));
+
+  // ── C89: ISO 24229 spelling codes (TODO.roadmap/25, doctrine ch. 10) ──
+  issues.push(...checkSpellingCodes(standard));
 
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
@@ -4176,6 +4180,192 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
     }
   }
 
+  return issues;
+}
+
+/**
+ * C89 — spelling-code-wellformed (TODO.roadmap/25; doctrine ch. 10 §10.7).
+ *
+ * Every human-readable string is spelling-coded per ISO 24229; BCP 47 is
+ * not used. The kernel checks the SYNTAX layer (src/spelling.ts) —
+ * register resolution (does this language/script/country/conversion
+ * system exist) is the consumer's vendored-snapshot discipline:
+ *
+ *   - the manifest's default_spelling and declared spellings parse as
+ *     spelling codes (language-script[-country][-extension]; the script
+ *     is MANDATORY — a bare language code is an error), and the default
+ *     belongs to the declared set;
+ *   - every `text` block addresses an existing element's prose field
+ *     (<element-id>.<field>);
+ *   - every spell entry's code parses; a duplicate code within one
+ *     content set is an error (use an extension to distinguish);
+ *   - an entry repeating the package's default_spelling is an error —
+ *     the default's value belongs inline on the element (`name "…"`);
+ *   - every `via` conversion system code parses
+ *     (titular:source:target:identifying); a `zz-` user-assigned code
+ *     validates with a warning (user-assigned codes are not portable).
+ */
+export function checkSpellingCodes(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+  const warn = (check: string, message: string) =>
+    issues.push({ check, severity: 'warning', message });
+  const m = standard.packageManifest;
+
+  if (m?.defaultSpelling) {
+    const parsed = parseSpellingCode(m.defaultSpelling);
+    if (typeof parsed === 'string') {
+      err(
+        'C89',
+        `package "${m.id}": default_spelling "${m.defaultSpelling}" — ${parsed} (spelling-code-wellformed)`,
+      );
+    }
+    if (
+      (m.spellings ?? []).length > 0 &&
+      !m.spellings!.includes(m.defaultSpelling)
+    ) {
+      err(
+        'C89',
+        `package "${m.id}": default_spelling "${m.defaultSpelling}" is not in the declared spellings set (spelling-code-wellformed)`,
+      );
+    }
+  }
+  for (const s of m?.spellings ?? []) {
+    const parsed = parseSpellingCode(s);
+    if (typeof parsed === 'string') {
+      err(
+        'C89',
+        `package "${m!.id}": declared spelling "${s}" — ${parsed} (spelling-code-wellformed)`,
+      );
+    }
+  }
+
+  const texts = standard.texts ?? [];
+  if (texts.length === 0) {
+    return issues;
+  }
+
+  // The element-id registry a text block may address — every id-keyed
+  // collection (prose lives on requirements, terms, forms, subjects…).
+  const elementIds = new Set<string>();
+  const ID_COLLECTIONS: (keyof Standard)[] = [
+    'requirements',
+    'requirementClasses',
+    'conformanceTests',
+    'conformanceClasses',
+    'terms',
+    'forms',
+    'subforms',
+    'symbols',
+    'tables',
+    'calculations',
+    'notes',
+    'provisions',
+    'processes',
+    'instruments',
+    'attributeDefinitions',
+    'capabilities',
+    'behaviors',
+    'conditionSets',
+    'subjects',
+    'referenceMaterials',
+    'artifactDefinitions',
+    'monitors',
+    'passports',
+    'stateMachines',
+    'figures',
+    'links',
+  ];
+  for (const field of ID_COLLECTIONS) {
+    for (const item of (standard[field] as { id?: string }[]) ?? []) {
+      if (item?.id) {
+        elementIds.add(item.id);
+      }
+    }
+  }
+  // The prose-field vocabulary a text block may address (machine content
+  // — identifiers, bind paths, OCL, snake_case keys — is never
+  // spelling-coded, doctrine §10.7).
+  const PROSE_FIELDS = new Set([
+    'name',
+    'title',
+    'label',
+    'term',
+    'definition',
+    'statement',
+    'description',
+    'guidance',
+    'note',
+    'notes',
+    'scope_note',
+    'subject',
+    'message',
+    'designation',
+    'placeholder',
+  ]);
+
+  for (const t of texts) {
+    const dot = t.id.lastIndexOf('.');
+    if (dot <= 0 || dot === t.id.length - 1) {
+      err(
+        'C89',
+        `text "${t.id}": the address is <element-id>.<field> (spelling-code-wellformed)`,
+      );
+    } else {
+      const elementId = t.id.slice(0, dot);
+      const field = t.id.slice(dot + 1);
+      if (!elementIds.has(elementId)) {
+        err(
+          'C89',
+          `text "${t.id}": no element "${elementId}" in the package (spelling-code-wellformed)`,
+        );
+      }
+      if (!PROSE_FIELDS.has(field)) {
+        err(
+          'C89',
+          `text "${t.id}": "${field}" is not a prose field (spelling-code-wellformed)`,
+        );
+      }
+    }
+    const seen = new Set<string>();
+    for (const e of t.entries) {
+      const parsed = parseSpellingCode(e.spelling);
+      if (typeof parsed === 'string') {
+        err(
+          'C89',
+          `text "${t.id}": spelling code "${e.spelling}" — ${parsed} (spelling-code-wellformed)`,
+        );
+      }
+      if (m?.defaultSpelling && e.spelling === m.defaultSpelling) {
+        err(
+          'C89',
+          `text "${t.id}": "${e.spelling}" is the package's default spelling — its value belongs inline on the element, not in a text block (spelling-code-wellformed)`,
+        );
+      }
+      if (seen.has(e.spelling)) {
+        err(
+          'C89',
+          `text "${t.id}": duplicate "${e.spelling}" value — one value per code per content set; use an extension code to distinguish variants (spelling-code-wellformed)`,
+        );
+      }
+      seen.add(e.spelling);
+      if (e.via) {
+        const via = parseConversionCode(e.via);
+        if (typeof via === 'string') {
+          err(
+            'C89',
+            `text "${t.id}": via "${e.via}" — ${via} (spelling-code-wellformed)`,
+          );
+        } else if (via.titular.toLowerCase().startsWith('zz-')) {
+          warn(
+            'C89',
+            `text "${t.id}": via "${e.via}" is a user-assigned (zz-) conversion code — it validates, but user-assigned codes are not portable (spelling-code-wellformed)`,
+          );
+        }
+      }
+    }
+  }
   return issues;
 }
 
