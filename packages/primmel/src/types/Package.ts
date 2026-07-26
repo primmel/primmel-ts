@@ -129,6 +129,21 @@ export interface PackageManifest {
   validity?: EditionValidity;
   /** Lifecycle status of THIS packaged edition (linter C77). */
   status?: EditionStatus;
+  /**
+   * ISO 24229 multilinguality (TODO.roadmap/25, doctrine ch. 10 §10.6):
+   * the package's DEFAULT spelling code — the spelling every inline prose
+   * string (`name "…"`, `statement "…"`, …) is authored in. Alternate
+   * spellings are added by `text` blocks; every content set carries the
+   * default. Syntax checked by C89 (script mandatory).
+   */
+  defaultSpelling?: string;
+  /**
+   * The declared spelling set of the package (the default plus every
+   * spelling a localization ships) — the linter's coverage declaration
+   * (doctrine §10.6: declared spellings missing from a set are coverage
+   * gaps). Absent means the default spelling only.
+   */
+  spellings?: string[];
   description: string;
   source: PackageSource | null;
 }

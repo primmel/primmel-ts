@@ -309,6 +309,7 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   'instances',
   'quantityRegisters',
   'duals',
+  'texts',
 ];
 
 /** Parse one package's content files (manifest excluded) as a single stream. */

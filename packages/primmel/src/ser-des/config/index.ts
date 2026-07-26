@@ -111,6 +111,7 @@ import {
 import { connectorProfileConstruct } from './twin';
 import { monitorConstruct } from './monitor';
 import { passportConstruct } from './passport';
+import { parseText, dumpText } from './text';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
 import {
@@ -454,6 +455,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
   // the product model + live instance state, on product reference
   // packages.
   passportConstruct as ConstructDefinition,
+  // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
+  // ch. 10): the text block — per-spelling alternate values of one prose
+  // field, addressed `<element-id>.<field>`.
+  defineConstruct({
+    keyword: 'text',
+    field: 'texts',
+    takesID: true,
+    parse: parseText,
+    dump: dumpText as never,
+  }),
 ];
 
 function buildParserConfig(

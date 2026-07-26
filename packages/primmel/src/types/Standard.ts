@@ -43,6 +43,7 @@ import type Symbol from './Symbol';
 import type Table from './Table';
 import type Term from './Term';
 import type TestPointSet from './TestPointSet';
+import type TextContent from './Text';
 import type Verdict from './Verdict';
 import type ViewProfile from './ViewProfile';
 
@@ -152,6 +153,12 @@ export default interface Standard {
   // projections of the product model + live instance state, declared on
   // product reference packages.
   passports: Passport[];
+
+  // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
+  // ch. 10): per-spelling alternate values of prose fields, addressed
+  // `<element-id>.<field>`; the default spelling's value stays inline on
+  // the element (the package manifest's `default_spelling`).
+  texts: TextContent[];
 
   root: Subprocess | null;
 }

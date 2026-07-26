@@ -799,6 +799,24 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/35, doctrine ch. 14 §14.6',
   ),
+  // ── ISO 24229 multilinguality (TODO.roadmap/25, doctrine ch. 10) ────
+  // Every human-readable string is spelling-coded per ISO 24229; BCP 47
+  // is not used. C89 is the SYNTAX layer: the manifest default_spelling
+  // and declared spellings parse (script mandatory), every text block
+  // addresses an existing element's prose field, every spell entry's
+  // code parses with no duplicate per set, the default spelling's value
+  // stays inline (never in a text block), and every via conversion code
+  // parses (zz- user-assigned codes warn). Register resolution is the
+  // consumer's vendored-snapshot discipline — primmel-ts stays
+  // register-free (src/spelling.ts validates shape only).
+  R(
+    'C89',
+    'spelling-code-wellformed',
+    'base',
+    'error',
+    'normal',
+    'TODO.roadmap/25, doctrine ch. 10 §10.7',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

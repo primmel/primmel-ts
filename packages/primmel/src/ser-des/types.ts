@@ -32,6 +32,7 @@ import type { ArtifactDefinition, ArtifactInstance } from '../types/Artifact';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
+import type TextContent from '../types/Text';
 import type ActivityArchetype from '../types/ActivityArchetype';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
@@ -186,6 +187,10 @@ export interface ParseContext {
 
   // Primmel v3 model-native DPP (TODO.roadmap/35): the passports.
   passports: Record<string, Passport>;
+
+  // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25): per-spelling
+  // alternate values of prose fields, addressed `<element-id>.<field>`.
+  texts: Record<string, TextContent>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().

@@ -98,6 +98,8 @@ export default function parse(
     monitors: {},
     // Primmel v3 model-native DPP (TODO.roadmap/35)
     passports: {},
+    // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25)
+    texts: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };
