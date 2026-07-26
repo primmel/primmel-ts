@@ -748,6 +748,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/51, BUG.R60-SSOT gap 7',
   ),
+  // ── manifest base URN (TODO.roadmap/27, task-27c review Important 1) ──
+  // baseUrn grounds every downstream IRI (the RDF projection's document
+  // node + instance IRIs, edition-normalized provenance comparisons) but
+  // the manifest field is a free string: a malformed value (`urn:bad
+  // urn`) sailed through check AND produced spec-malformed export
+  // documents. Same well-formedness class as C78's window check.
+  R(
+    'C85',
+    'baseurn-wellformed',
+    'edition',
+    'error',
+    'normal',
+    'TODO.roadmap/27, task-27c review',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

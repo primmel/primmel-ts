@@ -4044,11 +4044,12 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
 }
 
 /**
- * C77–C80 — edition lifecycle (TODO.roadmap/28; doctrine ch. 13
- * §13.4/§13.7). Editions are packagings: the relations live on the
- * manifest, and the checks run WITHOUT composing content (the
- * checkManifestResolution sibling pattern — supersedes acyclicity is a
- * property of the repo's manifest set).
+ * C77–C80 + C85 — edition lifecycle (TODO.roadmap/28; doctrine ch. 13
+ * §13.4/§13.7) and the manifest base URN (TODO.roadmap/27). Editions are
+ * packagings: the relations live on the manifest, and the checks run
+ * WITHOUT composing content (the checkManifestResolution sibling
+ * pattern — supersedes acyclicity is a property of the repo's manifest
+ * set).
  *
  *   C77 edition-status: a current/preview edition packages the register's
  *      newest entry. (The status ENUM itself is enforced by the manifest
@@ -4065,6 +4066,10 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
  *      register (editions ∪ {version}) — an unresolvable pin breaks the
  *      re-execution guarantee (§13.5: after an edition change the engine
  *      must know exactly which reports re-judge).
+ *   C85 baseurn-wellformed: the base URN is a well-formed IRI — it
+ *      grounds every downstream IRI (the RDF projection, provenance
+ *      comparisons), and the free-string field was the one manifest
+ *      IRI surface nothing validated.
  */
 export function checkEditionLifecycle(
   dir: string,
@@ -4124,6 +4129,25 @@ export function checkEditionLifecycle(
         }
       }
     }
+  }
+
+  // C85 — the base URN is a well-formed IRI (TODO.roadmap/27, task-27c
+  // review Important 1): a scheme, then no whitespace or IRI delimiters.
+  // baseUrn grounds every downstream IRI (the RDF projection's document
+  // node and instance IRIs, edition-normalized provenance comparisons);
+  // the field is a free string, and a malformed value (`urn:bad urn`)
+  // passed check while exports emitted spec-malformed IRIREFs silently.
+  // The same shape the RDF export guards on (export/rdf.ts IRI_SHAPED) —
+  // duplicated as one line rather than shared across the kernel/export
+  // boundary.
+  if (
+    m.baseUrn &&
+    !/^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/.test(m.baseUrn)
+  ) {
+    err(
+      'C85',
+      `package "${m.id}": baseUrn "${m.baseUrn}" is not a well-formed IRI (a scheme followed by no whitespace or IRI delimiters) (baseurn-wellformed)`,
+    );
   }
 
   // C79 — supersedes/replaces: well-formed URNs, never self, resolving

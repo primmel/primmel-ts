@@ -4,6 +4,7 @@
 //   primmel check [--strict] [--audit] [--coverage] [--rules] [--with <pkg-id>=<dir>]… <package-dir>
 //   primmel diff  [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>
 //   primmel export reqif <package-dir> [--out <file>]
+//   primmel export rdf <package-dir> [--out <file>] [--format turtle|jsonld]
 //
 // (The `check` token is optional for back-compatibility: `primmel
 // [--strict]… <package-dir>` runs check as before.)
@@ -64,12 +65,30 @@
 // targets, and bindings naming exported ids. ONE-WAY projection — the
 // package stays the truth; re-imports are suggestions, never merges.
 // Default output is stdout; --out writes the document to a file.
+//
+// `primmel export rdf <package-dir> [--out <file>] [--format
+// turtle|jsonld]` projects the package into an RDF graph in the IEC-ISO
+// Core Ontology vocabulary (the smartSDU share's core-ontology.ttl —
+// src/export/rdf-vocabulary.ts pins every IRI with citations;
+// src/export/rdf.ts carries the mapping, the primmel: extension
+// namespace, and the survive/lost doctrine, also shipped as the leading
+// Turtle comment): the package as smart:PublicationDocument, classes as
+// the smart:Clause tree, requirements as Provision subclasses BY
+// MODALITY (shall→smart:Requirement, should→smart:Recommendation,
+// may→smart:Permission), conformance tests as primmel:ConformanceTest,
+// terms as smart:TermEntry + skosxl labels, guidance as
+// ProvisionSupplement notes, provenance as dcterms:source IRIs. Turtle
+// is canonical (default); --format jsonld renders the same graph. The
+// projection's SHACL shapes (src/export/rdf-shapes.ts) and SPARQL
+// competency questions (src/export/rdf-competency-questions.ts) are
+// executed in the tests. Same one-way doctrine.
 import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { CHECK_RULES } from '../src/check-rules.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
 import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
+import { exportPackageRdf, type RdfExport } from '../src/export/rdf.ts';
 import {
   formatTextCoverageReport,
   packageTextCoverageReport,
@@ -83,7 +102,7 @@ const CHECK_USAGE =
 const DIFF_USAGE =
   'Usage: primmel diff [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>';
 const EXPORT_USAGE =
-  'Usage: primmel export reqif <package-dir> [--out <file>]';
+  'Usage: primmel export reqif|rdf <package-dir> [--out <file>] [--format turtle|jsonld]';
 
 // An unreadable/missing package directory — a positional argument or a
 // --with locator target — must not crash with a stack trace: print a
@@ -288,7 +307,8 @@ function diffCli(args: string[]): void {
 }
 
 function exportCli(args: string[]): void {
-  if (args[0] !== 'reqif') {
+  const surface = args[0];
+  if (surface !== 'reqif' && surface !== 'rdf') {
     console.error(EXPORT_USAGE);
     process.exit(2);
   }
@@ -296,10 +316,22 @@ function exportCli(args: string[]): void {
     args.slice(1),
     [],
     EXPORT_USAGE,
-    ['--out'],
+    ['--out', '--format'],
   );
   const dir = positional[0];
   if (!dir || positional.length !== 1) {
+    console.error(EXPORT_USAGE);
+    process.exit(2);
+  }
+  // --format is the rdf surface's knob; turtle is canonical (default).
+  const rdfFormat = values.get('--format') ?? 'turtle';
+  if (surface === 'reqif' && values.has('--format')) {
+    console.error('--format applies to `primmel export rdf` only');
+    console.error(EXPORT_USAGE);
+    process.exit(2);
+  }
+  if (surface === 'rdf' && rdfFormat !== 'turtle' && rdfFormat !== 'jsonld') {
+    console.error(`unknown format: ${values.get('--format')}`);
     console.error(EXPORT_USAGE);
     process.exit(2);
   }
@@ -308,9 +340,43 @@ function exportCli(args: string[]): void {
     console.error(`cannot read package at ${dir}: ${problem}`);
     process.exit(2);
   }
-  let result: ReqifExport;
+  const n = (count: number, singular: string, plural: string): string =>
+    `${count} ${count === 1 ? singular : plural}`;
+  let document: string;
+  let summary: string;
   try {
-    result = exportPackageReqif(dir);
+    if (surface === 'reqif') {
+      const result: ReqifExport = exportPackageReqif(dir);
+      document = result.xml;
+      const s = result.stats;
+      summary =
+        `${n(s.requirements, 'requirement', 'requirements')}, ` +
+        `${n(s.requirementClasses, 'requirement class', 'requirement classes')}, ` +
+        `${n(s.conformanceTests, 'conformance test', 'conformance tests')}, ` +
+        `${n(s.specRelations, 'spec-relation', 'spec-relations')}` +
+        (s.droppedReferences.length > 0
+          ? `, ${n(s.droppedReferences.length, 'dropped reference', 'dropped references')}`
+          : '') +
+        (s.unknownObligations > 0
+          ? `, ${n(s.unknownObligations, 'unknown obligation (modality undefined)', 'unknown obligations (modality undefined)')}`
+          : '');
+    } else {
+      const result: RdfExport = exportPackageRdf(dir);
+      document = rdfFormat === 'jsonld' ? result.jsonld : result.turtle;
+      const s = result.stats;
+      summary =
+        `${n(s.requirements, 'requirement', 'requirements')}, ` +
+        `${n(s.requirementClasses, 'requirement class', 'requirement classes')}, ` +
+        `${n(s.conformanceTests, 'conformance test', 'conformance tests')}, ` +
+        `${n(s.terms, 'term', 'terms')}, ` +
+        `${n(s.triples, 'triple', 'triples')}` +
+        (s.droppedReferences.length > 0
+          ? `, ${n(s.droppedReferences.length, 'dropped reference', 'dropped references')}`
+          : '') +
+        (s.unknownObligations > 0
+          ? `, ${n(s.unknownObligations, 'unknown obligation (typed bare smart:Provision)', 'unknown obligations (typed bare smart:Provision)')}`
+          : '');
+    }
   } catch (e) {
     // A load/parse failure is a content failure (exit 1), not a usage
     // error — print the loader's message, never a stack trace.
@@ -320,30 +386,16 @@ function exportCli(args: string[]): void {
   const out = values.get('--out');
   if (out !== undefined) {
     try {
-      writeFileSync(out, result.xml);
+      writeFileSync(out, document);
     } catch (e) {
       // An unwritable target is a content failure (exit 1), not a
       // usage error — clean one-line diagnostic, never a stack trace.
       console.error(`cannot write ${out}: ${(e as Error).message}`);
       process.exit(1);
     }
-    const s = result.stats;
-    const n = (count: number, singular: string, plural: string): string =>
-      `${count} ${count === 1 ? singular : plural}`;
-    console.log(
-      `wrote ${out} — ${n(s.requirements, 'requirement', 'requirements')}, ` +
-        `${n(s.requirementClasses, 'requirement class', 'requirement classes')}, ` +
-        `${n(s.conformanceTests, 'conformance test', 'conformance tests')}, ` +
-        `${n(s.specRelations, 'spec-relation', 'spec-relations')}` +
-        (s.droppedReferences.length > 0
-          ? `, ${n(s.droppedReferences.length, 'dropped reference', 'dropped references')}`
-          : '') +
-        (s.unknownObligations > 0
-          ? `, ${n(s.unknownObligations, 'unknown obligation (modality undefined)', 'unknown obligations (modality undefined)')}`
-          : ''),
-    );
+    console.log(`wrote ${out} — ${summary}`);
   } else {
-    console.log(result.xml);
+    console.log(document);
   }
   process.exit(0);
 }
