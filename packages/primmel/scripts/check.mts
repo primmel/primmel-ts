@@ -3,6 +3,7 @@
 //
 //   primmel check [--strict] [--audit] [--coverage] [--rules] [--with <pkg-id>=<dir>]… <package-dir>
 //   primmel diff  [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>
+//   primmel export reqif <package-dir> [--out <file>]
 //
 // (The `check` token is optional for back-compatibility: `primmel
 // [--strict]… <package-dir>` runs check as before.)
@@ -51,11 +52,24 @@
 //                     and classify renumbered clauses same-text /
 //                     differed (the rewording detector);
 //   --with          — as for check: the uses-composition locator.
-import { existsSync, readdirSync, statSync } from 'node:fs';
+//
+// ── export (TODO.roadmap/27, interop projections) ──
+// `primmel export reqif <package-dir> [--out <file>]` projects the
+// package's requirements into ReqIF XML (DIN DKE SPEC 99200 profile
+// where compatible — src/export/reqif.ts carries the profile mapping,
+// the deviations, and the survive/lost doctrine, which is also shipped
+// in the document's own header note): document/heading/provision
+// spec-objects, modality shall→requirement / should→recommendation /
+// may→permission, cross-references from dependencies, conformance-test
+// targets, and bindings naming exported ids. ONE-WAY projection — the
+// package stays the truth; re-imports are suggestions, never merges.
+// Default output is stdout; --out writes the document to a file.
+import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { CHECK_RULES } from '../src/check-rules.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
+import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
 import {
   formatTextCoverageReport,
   packageTextCoverageReport,
@@ -68,6 +82,8 @@ const CHECK_USAGE =
   'Usage: primmel check [--strict] [--audit] [--coverage] [--rules] [--with <pkg-id>=<dir>]… <package-dir>';
 const DIFF_USAGE =
   'Usage: primmel diff [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>';
+const EXPORT_USAGE =
+  'Usage: primmel export reqif <package-dir> [--out <file>]';
 
 // An unreadable/missing package directory — a positional argument or a
 // --with locator target — must not crash with a stack trace: print a
@@ -98,9 +114,16 @@ function parseArgs(
   args: string[],
   flags: string[],
   usage: string,
-): { flags: Set<string>; locator: Map<string, string>; positional: string[] } {
+  valueFlags: string[] = [],
+): {
+  flags: Set<string>;
+  locator: Map<string, string>;
+  values: Map<string, string>;
+  positional: string[];
+} {
   const seen = new Set<string>();
   const locator = new Map<string, string>();
+  const values = new Map<string, string>();
   const positional: string[] = [];
   const addLocator = (spec: string | undefined): void => {
     const eq = spec?.indexOf('=') ?? -1;
@@ -124,6 +147,20 @@ function parseArgs(
       addLocator(a.slice('--with='.length));
       continue;
     }
+    if (valueFlags.includes(a)) {
+      const v = args[++i];
+      if (v === undefined) {
+        console.error(usage);
+        process.exit(2);
+      }
+      values.set(a, v);
+      continue;
+    }
+    const eq = a.indexOf('=');
+    if (eq > 2 && valueFlags.includes(a.slice(0, eq))) {
+      values.set(a.slice(0, eq), a.slice(eq + 1));
+      continue;
+    }
     if (a.startsWith('--')) {
       console.error(`unknown flag: ${a}`);
       console.error(usage);
@@ -131,7 +168,7 @@ function parseArgs(
     }
     positional.push(a);
   }
-  return { flags: seen, locator, positional };
+  return { flags: seen, locator, values, positional };
 }
 
 function checkCli(args: string[]): void {
@@ -250,11 +287,74 @@ function diffCli(args: string[]): void {
   process.exit(flags.has('--exit-code') && !diff.empty ? 1 : 0);
 }
 
+function exportCli(args: string[]): void {
+  if (args[0] !== 'reqif') {
+    console.error(EXPORT_USAGE);
+    process.exit(2);
+  }
+  const { values, positional } = parseArgs(
+    args.slice(1),
+    [],
+    EXPORT_USAGE,
+    ['--out'],
+  );
+  const dir = positional[0];
+  if (!dir || positional.length !== 1) {
+    console.error(EXPORT_USAGE);
+    process.exit(2);
+  }
+  const problem = readablePackageDirProblem(dir, true);
+  if (problem !== null) {
+    console.error(`cannot read package at ${dir}: ${problem}`);
+    process.exit(2);
+  }
+  let result: ReqifExport;
+  try {
+    result = exportPackageReqif(dir);
+  } catch (e) {
+    // A load/parse failure is a content failure (exit 1), not a usage
+    // error — print the loader's message, never a stack trace.
+    console.error(`cannot export package at ${dir}: ${(e as Error).message}`);
+    process.exit(1);
+  }
+  const out = values.get('--out');
+  if (out !== undefined) {
+    try {
+      writeFileSync(out, result.xml);
+    } catch (e) {
+      // An unwritable target is a content failure (exit 1), not a
+      // usage error — clean one-line diagnostic, never a stack trace.
+      console.error(`cannot write ${out}: ${(e as Error).message}`);
+      process.exit(1);
+    }
+    const s = result.stats;
+    const n = (count: number, singular: string, plural: string): string =>
+      `${count} ${count === 1 ? singular : plural}`;
+    console.log(
+      `wrote ${out} — ${n(s.requirements, 'requirement', 'requirements')}, ` +
+        `${n(s.requirementClasses, 'requirement class', 'requirement classes')}, ` +
+        `${n(s.conformanceTests, 'conformance test', 'conformance tests')}, ` +
+        `${n(s.specRelations, 'spec-relation', 'spec-relations')}` +
+        (s.droppedReferences.length > 0
+          ? `, ${n(s.droppedReferences.length, 'dropped reference', 'dropped references')}`
+          : '') +
+        (s.unknownObligations > 0
+          ? `, ${n(s.unknownObligations, 'unknown obligation (modality undefined)', 'unknown obligations (modality undefined)')}`
+          : ''),
+    );
+  } else {
+    console.log(result.xml);
+  }
+  process.exit(0);
+}
+
 const args = process.argv.slice(2);
 if (args[0] === 'diff') {
   diffCli(args.slice(1));
 } else if (args[0] === 'check') {
   checkCli(args.slice(1));
+} else if (args[0] === 'export') {
+  exportCli(args.slice(1));
 } else {
   checkCli(args); // back-compat: `primmel [flags] <dir>`
 }
