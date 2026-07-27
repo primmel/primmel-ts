@@ -301,7 +301,7 @@ describe('cascade via facet — grammar (smart gap-close E12)', () => {
   });
 
   it(
-    'round-trips the REAL corpus machines byte-clean (the 35 shipped steps)',
+    'round-trips the REAL corpus machines byte-clean (the 34 shipped steps)',
     { skip: CORPUS_SKIP },
     () => {
       const text = readFileSync(
@@ -312,21 +312,22 @@ describe('cascade via facet — grammar (smart gap-close E12)', () => {
       assert.equal(
         m1.stateMachines.flatMap(s => s.transitions).flatMap(t => t.cascades)
           .length,
-        45,
-        'the shipped machines carry 45 cascade step instances after multi-source fan-out (35 spelled steps)',
+        44,
+        'the shipped machines carry 44 cascade step instances after multi-source fan-out (34 spelled steps — 35 minus the E12 step-4 deletion)',
       );
       const dumped = dump(m1);
       const m2 = load(dumped);
       assert.deepEqual(m2.stateMachines, m1.stateMachines);
       assert.equal(dump(m2), dumped);
-      // Every shipped step is via-less today — the corpus dump changes
-      // nowhere (the facet is additive/OCP).
+      // The shipped corpus declares its via facets (the smart
+      // declaration leg landed, gap E12) — the corpus dump round-trips
+      // them byte-clean (the facet is additive/OCP).
       assert.ok(
         m1.stateMachines
           .flatMap(s => s.transitions)
           .flatMap(t => t.cascades)
-          .every(c => c.via === ''),
-        'the shipped corpus declares no via facets (TODO-12: the declaration leg adds them)',
+          .some(c => c.via !== ''),
+        'the shipped corpus declares via facets (gap E12 declaration leg)',
       );
     },
   );
@@ -371,12 +372,10 @@ describe('C95 cascade-transition-resolve — the eight legs (§5)', () => {
   }> = [
     {
       leg: '1 via-present',
-      // TODO-12: an ERROR once the declaration leg lands and the corpus
-      // pin reads zero — the warn is the rollout window only.
       mutate: src => src.replace('      via start\n', ''),
       fragment:
         "writes status 'IN_PROGRESS' on machinated entity 'TestAssignment' but declares no via",
-      severity: 'warning',
+      severity: 'error',
     },
     {
       leg: '2 via-resolves',
@@ -545,9 +544,9 @@ describe('C95 cascade-transition-resolve — the eight legs (§5)', () => {
   });
 });
 
-describe('corpus leg — the rollout pin (smart gap-close E12)', () => {
+describe('corpus leg — the rollout pin, burned to zero (smart gap-close E12)', () => {
   it(
-    'shows zero C95 errors and exactly the known leg-1 warnings across the 19 packages',
+    'shows zero C95 issues of any severity across the 19 packages (the corpus is via-complete)',
     { skip: CORPUS_SKIP },
     () => {
       const dirs = readdirSync(CORPUS)
@@ -559,44 +558,20 @@ describe('corpus leg — the rollout pin (smart gap-close E12)', () => {
         19,
         `expected the 19-package corpus at ${CORPUS}`,
       );
-      // TODO-12 (the smart declaration leg): the shipped corpus declares
-      // NO via facets, so leg 1 fires on every cross-entity
-      // status-writing step the design's §3.2 enumerates — 14 spelled
-      // steps, 18 step INSTANCES after the multi-source fan-out
-      // (ia_cancels ×2, test_run.complete ×2, test_run.invalidate ×2).
-      // The four rec packages repeat the core's 18 through the REC-WINS
-      // textual include of oiml-smart-core/evaluation/state-machines.prl
-      // (TODO.refactor/17). Every count here goes to ZERO when the
-      // declaration leg lands — at which point leg 1's warn flips to err
-      // in check.ts (the C33 de-escalation is the rollout window only).
-      const EXPECTED_WARNINGS: Record<string, number> = {
-        'oiml-smart-core': 18,
-        'oiml-r60': 18,
-        'oiml-r91': 18,
-        'oiml-r129': 18,
-        'oiml-r144': 18,
-      };
+      // The smart declaration leg (gap E12) landed the 13 via facets +
+      // the test_report_recalled edge and deleted the redundant step —
+      // the corpus is via-complete, so NO C95 issue of any severity may
+      // fire on any package. (Rollout history: during the declaration
+      // window leg 1 warned at 18 step instances × the 5 machine-bearing
+      // packages; leg 1 is the catalogued error now.)
       for (const dir of dirs) {
         const name = dir.split('/').pop()!;
         const issues = c95Issues(dir);
-        const errors = issues.filter(i => i.severity === 'error');
         assert.deepEqual(
-          errors,
+          issues,
           [],
-          `${name}: expected zero C95 errors (legs 2–8 never fire on the shipped corpus), got:\n${errors.map(e => e.message).join('\n')}`,
+          `${name}: expected zero C95 issues (the corpus is via-complete), got:\n${issues.map(e => `[${e.severity}] ${e.message}`).join('\n')}`,
         );
-        const warnings = issues.filter(i => i.severity === 'warning');
-        assert.equal(
-          warnings.length,
-          EXPECTED_WARNINGS[name] ?? 0,
-          `${name}: expected ${EXPECTED_WARNINGS[name] ?? 0} leg-1 warnings, got ${warnings.length}:\n${warnings.map(w => w.message).join('\n')}`,
-        );
-        for (const w of warnings) {
-          assert.ok(
-            w.message.includes('declares no via'),
-            `${name}: every C95 warning is the leg-1 via-missing rollout debt, got:\n${w.message}`,
-          );
-        }
       }
     },
   );

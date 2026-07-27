@@ -3967,21 +3967,15 @@ export function checkPackage(
   //      the target machine;
   //   8. fields-resolve: `where` field paths and `set`/`with` field
   //      names resolve against the target entity's declared fields.
-  // ROLLOUT (TODO(smart gap E12 declaration leg)): the shipped corpus
-  // carries the 14 via-less cross-entity steps the design enumerates
-  // (§3.2) — the smart declaration leg adds the facets in its own
-  // commit. Registering leg 1 at error severity would fail every
-  // corpus-clean gate before that leg can land, so leg 1 WARNS during
-  // the rollout window (the C33 de-escalation precedent: the catalogued
-  // severity is the steady state — error — and the individual leg is
-  // de-escalated in check.ts); the corpus leg in cascade-via.test.ts
-  // pins the exact warning counts (18 step instances after the
-  // multi-source fan-out, repeated through the recs' REC-WINS include).
-  // Flip the warn to err when the declaration leg lands and the pin
-  // goes to zero. Legs 2–8 never fire on the shipped corpus and are
-  // errors from day one (leg 8 by the design's explicit decision —
-  // every field the shipped steps write is declared, so a miss is a
-  // genuine typo).
+  // ROLLOUT (closed 2026-07-27): leg 1 WARNS → ERRS. During the rollout
+  // window the shipped corpus carried the via-less cross-entity steps
+  // the design enumerated (§3.2), so leg 1 warned (the C33 de-escalation
+  // precedent). The smart declaration leg (gap E12) landed the 13 via
+  // facets + the test_report_recalled edge and deleted the redundant
+  // step, so leg 1 is now the catalogued error and the corpus pin
+  // asserts zero C95 issues of any severity. Legs 2–8 were errors from
+  // day one (leg 8 by the design's explicit decision — every field the
+  // shipped steps write is declared, so a miss is a genuine typo).
   {
     // The semantic side-effect actions' documented status meaning (the
     // walker's vocabulary, state-walk.ts: submit ⇒ SUBMITTED, lock ⇒
@@ -4037,10 +4031,11 @@ export function checkPackage(
             (semanticStatus !== undefined || setStatus !== undefined);
           const writtenStatus = semanticStatus ?? setStatus?.value ?? '';
 
-          // Leg 1 — via-present (warn during the rollout window — see
-          // the section header).
+          // Leg 1 — via-present (error severity — the rollout window
+          // closed when the smart declaration leg landed: the corpus is
+          // via-complete).
           if (writesStatus && targetMachine && !self && c.via === '') {
-            warn(
+            err(
               'C95',
               `${stepLabel} writes status '${writtenStatus}' on machinated entity '${c.targetEntity}' but declares no via — a status-writing cascade routes through a declared transition of the target's machine (cascade-transition-resolve)`,
             );
@@ -4050,7 +4045,7 @@ export function checkPackage(
           // contract, judged only where a via is legal (one issue per
           // defect: a forbidden via reports under leg 5 only).
           if (c.via !== '') {
-            if (self || isCreate || !writesStatus || !targetMachine) {
+            if (self || isCreate || !writesStatus || !targetMachine || c.action === 'notify' || c.action === 'record') {
               const forbidden = self
                 ? "a self-step (the target is the owning machine's own entity)"
                 : isCreate
