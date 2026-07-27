@@ -13,10 +13,11 @@
 // the `uses` composition leg (the traces merge like the invariant and
 // test-sequence collections — MERGE_FIELDS), the C89 text-addressing
 // leg (text <test-ref>.description resolves against the construct),
-// the parse-time duplicate-id uniqueness leg (the collection key IS
-// the test reference), and the corpus-clean leg: the 19 shipped
-// packages show zero errors and zero formulas-used-rule issues
-// (additive/OCP — packages without a trace are untouched).
+// the duplicate-id uniqueness leg (the collection key IS the test
+// reference — parse-time, surfaced through checkPackage as C96), and
+// the corpus-clean leg: the 19 shipped packages show zero errors and
+// zero formulas-used-rule issues (additive/OCP — packages without a
+// trace are untouched).
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -331,6 +332,23 @@ describe('formulas_used lint rule (C94)', () => {
       ),
       `expected a duplicate-id issue for the repeated test ref, got: ${JSON.stringify(issues)}`,
     );
+  });
+
+  it('checkPackage surfaces the duplicate-id as C96 (the E11 visibility finding)', () => {
+    // The C94 uniqueness leg delegates to the parse-time duplicate-id
+    // rule — that delegation is only real if the linter SHOWS the issue:
+    // checkPackage maps it to a C96 error instead of dropping it.
+    const issues = checkPackage(makeTmpPackage(MDLO + MDLO)).filter(
+      i => i.check === 'C96',
+    );
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0].severity, 'error');
+    assert.ok(
+      issues[0].message.includes(
+        '/conf/metrological-tests/measurement-error-repeatability-mdlo',
+      ),
+    );
+    assert.ok(issues[0].message.includes('(duplicate-id)'));
   });
 
   it('formulas-used traces are additive: a package without one shows no formulas-used issues', () => {
