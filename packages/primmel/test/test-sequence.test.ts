@@ -318,29 +318,38 @@ test_sequence hash {
     assert.equal(m2.testSequences[0].steps[0].test, '/conf/x');
   });
 
-  it('quotes a vocabulary value carrying the comment character # (the dumpBareSafe exposure)', () => {
-    // sample_applicability is a vocabulary token (dumpBareSafe): a value
-    // like `see#1` has no whitespace/braces/quotes, so it previously
-    // dumped BARE — and the re-parse truncates at the `#` comment. The
-    // guard now forces quoting, and the fixpoint holds.
-    const withHash = `
+  it('quotes a vocabulary value STARTING with the comment character # (the dumpBareSafe exposure)', () => {
+    // The tokenizer treats `#` as a comment only BETWEEN tokens: a
+    // mid-token `#` is literal, so `see#1` dumps BARE and round-trips
+    // (the v2 map_profile `StdS#Process5` form depends on exactly this);
+    // a LEADING `#` starts a comment on re-parse and the value vanishes,
+    // so `#1` must dump quoted.
+    const wrap = (applicability: string) => `
 test_sequence hash-vocab {
   name "H"
   description "d"
   step 1 { test "/conf/x" }
-  sample_applicability "see#1"
+  sample_applicability "${applicability}"
 }
 `;
-    const m1 = load(withHash);
-    assert.equal(m1.testSequences[0].sampleApplicability, 'see#1');
-    const dumped = dump(m1);
+    const mid = load(wrap('see#1'));
+    assert.equal(mid.testSequences[0].sampleApplicability, 'see#1');
+    const midDump = dump(mid);
     assert.ok(
-      dumped.includes('sample_applicability "see#1"'),
-      `expected the #-carrying vocabulary value quoted in the dump, got:\n${dumped}`,
+      midDump.includes('sample_applicability see#1'),
+      `expected the mid-token # value to stay bare, got:\n${midDump}`,
     );
-    const m2 = load(dumped);
-    assert.deepEqual(m2.testSequences, m1.testSequences);
-    assert.equal(dump(m2), dumped);
+    assert.deepEqual(load(midDump).testSequences, mid.testSequences);
+
+    const leading = load(wrap('#1'));
+    assert.equal(leading.testSequences[0].sampleApplicability, '#1');
+    const leadingDump = dump(leading);
+    assert.ok(
+      leadingDump.includes('sample_applicability "#1"'),
+      `expected the leading-# value quoted in the dump, got:\n${leadingDump}`,
+    );
+    assert.deepEqual(load(leadingDump).testSequences, leading.testSequences);
+    assert.equal(dump(load(leadingDump)), leadingDump);
   });
 });
 
