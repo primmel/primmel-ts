@@ -8,9 +8,9 @@ import {
 } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
+import { readSource } from './field-parser';
 import type Symbol from '../../types/Symbol';
 import type { SymbolType, ResolvableSymbol } from '../../types/Symbol';
-import type { SourceRef } from '../../types/Subject';
 import type Reference from '../../types/Reference';
 import { resolveFromContext } from '../resolve';
 
@@ -23,28 +23,6 @@ const VALID_SYMBOL_TYPES: SymbolType[] = [
   'collection',
   'array',
 ];
-
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
-}
 
 export const parseSymbol: Parser = function (id, data) {
   const result: ResolvableSymbol = {

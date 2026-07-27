@@ -36,30 +36,8 @@ import type { SourceRef } from '../../types/Subject';
 import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
-import { stripColon } from './field-parser';
+import { readSource, stripColon } from './field-parser';
 import type { Dumper, Parser } from '../types';
-
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
-}
 
 function parseIdentityFields(block: string): MaterialIdentityField[] {
   const out: MaterialIdentityField[] = [];

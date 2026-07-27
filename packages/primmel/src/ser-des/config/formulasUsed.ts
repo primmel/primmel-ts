@@ -47,61 +47,11 @@
 // is proven in test/formulas-used.test.ts.
 // ─────────────────────────────────────────────────────────────────────
 
-import tokenize, {
-  escapeString,
-  stripWrapping,
-  tokenizePackage,
-  unwrapBlock,
-} from '../tokenize';
+import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
-import { dumpBareSafe } from './field-parser';
+import { dumpBareSafe, readEntryTokens, readSource } from './field-parser';
 import type { ConstructDefinition } from './index';
-import type { SourceRef } from '../../types/Subject';
 import type { FormulasUsed } from '../../types/FormulasUsed';
-
-/** Strip the optional `;` separators from a sub-block stream. */
-function subBlockTokens(block: string): string[] {
-  return tokenizePackage(block)
-    .map(s => s.replace(/^;+|;+$/g, ''))
-    .filter(s => s.length > 0);
-}
-
-/** Read the formulas facet value: a `{ a b }` block, or a single bare
- *  entry. Commas are optional noise (the invariant idiom). */
-function readEntryTokens(value: string): string[] {
-  if (value.startsWith('{')) {
-    return subBlockTokens(unwrapBlock(value))
-      .flatMap(s => s.split(','))
-      .map(s => stripWrapping(s.trim()))
-      .filter(s => s.length > 0);
-  }
-  const single = stripWrapping(value);
-  return single === '' ? [] : [single];
-}
-
-/** Read one `source { doc "…" clause "…" [fragment "…"] }` block — the
- *  requirement/test_sequence provenance idiom, verbatim. */
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
-}
 
 const parseFormulasUsed: ConstructDefinition['parse'] = function (id, data) {
   const trace: FormulasUsed = {

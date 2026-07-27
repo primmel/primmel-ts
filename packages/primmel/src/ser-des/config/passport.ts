@@ -38,9 +38,9 @@
 // to the same model — the fixpoint is proven in test/passport.test.ts.
 // ─────────────────────────────────────────────────────────────────────
 
-import { stripWrapping, tokenizePackage, unwrapBlock } from '../tokenize';
+import { stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
-import { dumpBareSafe } from './field-parser';
+import { dumpBareSafe, readEntryTokens } from './field-parser';
 import type { ConstructDefinition } from './index';
 import {
   PASSPORT_ACCESS_CLASSES,
@@ -48,26 +48,6 @@ import {
   type PassportCarrier,
   type PassportContentEntry,
 } from '../../types/Passport';
-
-/** Strip the sketch's optional `;` separators from a sub-block stream. */
-function subBlockTokens(block: string): string[] {
-  return tokenizePackage(block)
-    .map(s => s.replace(/^;+|;+$/g, ''))
-    .filter(s => s.length > 0);
-}
-
-/** Read a content-entry token stream: `{ a b }` block, or a single bare
- *  entry. Commas are optional noise (the §15.8 sketch spelling). */
-function readEntryTokens(value: string): string[] {
-  if (value.startsWith('{')) {
-    return subBlockTokens(unwrapBlock(value))
-      .flatMap(s => s.split(','))
-      .map(s => stripWrapping(s.trim()))
-      .filter(s => s.length > 0);
-  }
-  const single = stripWrapping(value);
-  return single === '' ? [] : [single];
-}
 
 /**
  * Parse one access-class value (the `{ … }` block token, or a single bare

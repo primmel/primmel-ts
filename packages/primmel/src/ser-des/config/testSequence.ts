@@ -62,7 +62,6 @@
 // exactly — the fixpoint is proven in test/test-sequence.test.ts.
 // ─────────────────────────────────────────────────────────────────────
 
-import tokenize from '../tokenize';
 import {
   escapeString,
   stripWrapping,
@@ -70,34 +69,9 @@ import {
   unwrapBlock,
 } from '../tokenize';
 import { forEachEntry } from '../parse-block';
-import { dumpBareSafe } from './field-parser';
+import { dumpBareSafe, readSource } from './field-parser';
 import type { ConstructDefinition } from './index';
-import type { SourceRef } from '../../types/Subject';
 import type { TestSequence, TestSequenceStep } from '../../types/TestSequence';
-
-/** Read one `source { doc "…" clause "…" [fragment "…"] }` block — the
- *  requirement/test_point_set provenance idiom, verbatim. */
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
-}
 
 /** Read one step's `{ … }` facets (the passport nested-block idiom).
  *  Scalar facets are last-wins; the linter (C92/C93) judges the shape. */

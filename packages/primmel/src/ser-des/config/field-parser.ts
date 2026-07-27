@@ -9,6 +9,13 @@
 // Extracted here so both can import without circular-dependency issues
 // (this file imports only from tokenize + types, never from form/subform).
 //
+// The module has since become the shared home for the small field-level
+// helpers every construct ser-des needs — dumpBareSafe, stripColon,
+// readBalanced, and the verbatim-identical subBlockTokens /
+// readEntryTokens / readSource copies the passport/invariant/monitor/
+// formulasUsed and source-carrying constructs each carried (the E11
+// review minor).
+//
 // v2 parser repair (W1a):
 // - Scalar values use stripWrapping (unwrapBlock mangles bare tokens:
 //   `true` → `ru`, `computed` → `ompute`, `42` → ``).
@@ -27,6 +34,7 @@ import type {
   RoleReference,
   SubformRef,
 } from '../../types/Form';
+import type { SourceRef } from '../../types/Subject';
 import tokenize from '../tokenize';
 import {
   escapeString,
@@ -144,6 +152,51 @@ export function readBalanced(
     text += ' ' + t[j++];
   }
   return { text, next: j };
+}
+
+/** Strip the sketch's optional `;` separators from a sub-block stream. */
+export function subBlockTokens(block: string): string[] {
+  return tokenizePackage(block)
+    .map(s => s.replace(/^;+|;+$/g, ''))
+    .filter(s => s.length > 0);
+}
+
+/** Read a content-entry token stream: `{ a b }` block, or a single bare
+ *  entry. Commas are optional noise (the §15.8 sketch spelling). */
+export function readEntryTokens(value: string): string[] {
+  if (value.startsWith('{')) {
+    return subBlockTokens(unwrapBlock(value))
+      .flatMap(s => s.split(','))
+      .map(s => stripWrapping(s.trim()))
+      .filter(s => s.length > 0);
+  }
+  const single = stripWrapping(value);
+  return single === '' ? [] : [single];
+}
+
+/** Read one `source { doc "…" clause "…" [fragment "…"] }` block — the
+ *  requirement/test_point_set provenance idiom. Unknown keys are skipped
+ *  (forward compatibility); last wins on a repeated key. */
+export function readSource(block: string): SourceRef {
+  const src: SourceRef = { doc: '', clause: '' };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'doc') {
+      src.doc = stripWrapping(t[i++]);
+    } else if (cmd === 'clause') {
+      src.clause = stripWrapping(t[i++]);
+    } else if (cmd === 'fragment') {
+      src.fragment = stripWrapping(t[i++]);
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return src;
 }
 
 /**
