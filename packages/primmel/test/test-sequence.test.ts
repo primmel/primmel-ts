@@ -317,6 +317,31 @@ test_sequence hash {
     );
     assert.equal(m2.testSequences[0].steps[0].test, '/conf/x');
   });
+
+  it('quotes a vocabulary value carrying the comment character # (the dumpBareSafe exposure)', () => {
+    // sample_applicability is a vocabulary token (dumpBareSafe): a value
+    // like `see#1` has no whitespace/braces/quotes, so it previously
+    // dumped BARE — and the re-parse truncates at the `#` comment. The
+    // guard now forces quoting, and the fixpoint holds.
+    const withHash = `
+test_sequence hash-vocab {
+  name "H"
+  description "d"
+  step 1 { test "/conf/x" }
+  sample_applicability "see#1"
+}
+`;
+    const m1 = load(withHash);
+    assert.equal(m1.testSequences[0].sampleApplicability, 'see#1');
+    const dumped = dump(m1);
+    assert.ok(
+      dumped.includes('sample_applicability "see#1"'),
+      `expected the #-carrying vocabulary value quoted in the dump, got:\n${dumped}`,
+    );
+    const m2 = load(dumped);
+    assert.deepEqual(m2.testSequences, m1.testSequences);
+    assert.equal(dump(m2), dumped);
+  });
 });
 
 describe('test_sequence lint rules (C92–C93)', () => {

@@ -119,12 +119,18 @@ function dumpValueEntry(e: string | { value: string; label: string }): string {
 
 /**
  * Emit a bare value safely: quote it when it contains spaces/braces/quotes
- * OR ends in a colon. A bare trailing-colon token re-parses as a KEY head
- * (`note : ref:` reads back as two entries — see isKeyHead in the instance
- * ser-des), so any value ending in `:` must be quoted on dump.
+ * OR ends in a colon OR carries the tokenizer's comment character `#`.
+ * A bare trailing-colon token re-parses as a KEY head (`note : ref:` reads
+ * back as two entries — see isKeyHead in the instance ser-des), so any
+ * value ending in `:` must be quoted on dump; a bare `#` starts a
+ * to-end-of-line comment on re-parse, truncating the value (the E10
+ * vocabulary-value exposure — a quoted `role "see #1"` must never dump
+ * bare).
  */
 export function dumpBareSafe(v: string): string {
-  return /[\s{}"]/.test(v) || v.endsWith(':') ? '"' + escapeString(v) + '"' : v;
+  return /[\s{}"#]/.test(v) || v.endsWith(':')
+    ? '"' + escapeString(v) + '"'
+    : v;
 }
 
 /** Strip one trailing colon: `status:` → `status` (tokenizer keeps colons attached). */
