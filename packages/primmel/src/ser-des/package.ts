@@ -318,6 +318,12 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   // supplemental YAML; as model content they compose through `uses`
   // like every doctrine collection, with uses-no-redefine protection.
   'testSequences',
+  // The per-test evaluation-formula traces (smart gap-close E11) merge
+  // like the invariants/test sequences — today the traces live in a rec
+  // package's supplemental YAML; as model content they compose through
+  // `uses` like every doctrine collection, with uses-no-redefine
+  // protection.
+  'formulasUsed',
   'texts',
 ];
 

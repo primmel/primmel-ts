@@ -49,14 +49,14 @@ const FAMILIES = [
 ];
 
 describe('check rule catalog (TODO.roadmap/17)', () => {
-  it('ids are unique and sequential (C1…C93)', () => {
+  it('ids are unique and sequential (C1…C94)', () => {
     const ids = CHECK_RULES.map(r => r.id);
     assert.equal(new Set(ids).size, ids.length, 'duplicate rule ids');
-    const expected = Array.from({ length: 93 }, (_, i) => `C${i + 1}`);
+    const expected = Array.from({ length: 94 }, (_, i) => `C${i + 1}`);
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'the catalog is exactly C1…C93 (TODO.roadmap/38 adds C74–C76, TODO.roadmap/28 adds C77–C80, TODO.roadmap/36 adds C81–C83, TODO.roadmap/51 adds C84, TODO.roadmap/27 adds C85, TODO.roadmap/35 adds C86–C88, TODO.roadmap/25 adds C89, smart gap-close E9 adds C90–C91, smart gap-close E10 adds C92–C93)',
+      'the catalog is exactly C1…C94 (TODO.roadmap/38 adds C74–C76, TODO.roadmap/28 adds C77–C80, TODO.roadmap/36 adds C81–C83, TODO.roadmap/51 adds C84, TODO.roadmap/27 adds C85, TODO.roadmap/35 adds C86–C88, TODO.roadmap/25 adds C89, smart gap-close E9 adds C90–C91, smart gap-close E10 adds C92–C93, smart gap-close E11 adds C94)',
     );
   });
 

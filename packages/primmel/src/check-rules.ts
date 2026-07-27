@@ -878,6 +878,27 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart architecture-gaps-2026-07.md E10, data/schemas/test-sequences.yaml',
   ),
+  // ── the per-test evaluation-formula traces (smart gap-close E11,
+  // analysis/architecture-gaps-2026-07.md; the smart contract
+  // data/schemas/formulas-used.yaml) ──
+  // The `formulas_used` construct is the first-class replacement for
+  // the hand-authored supplemental formulas-used.yaml. C94 is the
+  // declaration shape: every trace carries a non-empty test reference
+  // (the block symbol), name, description, and a non-empty formulas
+  // list; every formula identifier is well-formed — the snake_case
+  // shape the calculations registry uses for output names. Entry
+  // uniqueness per test is the parse-time duplicate-id rule's (the
+  // collection key IS the test reference). Formula-id RESOLUTION
+  // (calculations ∪ formulas registries) is the smart-side linker rule
+  // R41's crosswalk — the kernel checks syntax/shape only.
+  R(
+    'C94',
+    'formulas-used-shape',
+    'base',
+    'error',
+    'normal',
+    'smart architecture-gaps-2026-07.md E11, data/schemas/formulas-used.yaml',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

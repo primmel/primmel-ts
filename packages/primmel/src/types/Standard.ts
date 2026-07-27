@@ -33,6 +33,7 @@ import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
 import type { Invariant } from './Invariant';
 import type { TestSequence } from './TestSequence';
+import type { FormulasUsed } from './FormulasUsed';
 import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
@@ -169,6 +170,14 @@ export default interface Standard {
   // the first-class replacement for the hand-authored supplemental
   // test-sequences.yaml, a sibling collection of `invariants`.
   testSequences: TestSequence[];
+
+  // The per-test evaluation-formula traces (smart gap-close E11,
+  // analysis/architecture-gaps-2026-07.md; smart contract
+  // data/schemas/formulas-used.yaml): which registry formulas each
+  // conformance test's evaluation invokes — the first-class replacement
+  // for the hand-authored supplemental formulas-used.yaml, a sibling
+  // collection of `testSequences`.
+  formulasUsed: FormulasUsed[];
 
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
   // ch. 10): per-spelling alternate values of prose fields, addressed

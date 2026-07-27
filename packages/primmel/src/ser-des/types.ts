@@ -34,6 +34,7 @@ import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
 import type { Invariant } from '../types/Invariant';
 import type { TestSequence } from '../types/TestSequence';
+import type { FormulasUsed } from '../types/FormulasUsed';
 import type TextContent from '../types/Text';
 import type ActivityArchetype from '../types/ActivityArchetype';
 import type { Instance } from '../types/Instance';
@@ -199,6 +200,11 @@ export interface ParseContext {
   // replacement for the hand-authored supplemental test-sequences.yaml —
   // a sibling collection of `invariants`.
   testSequences: Record<string, TestSequence>;
+
+  // The per-test evaluation-formula traces (smart gap-close E11): the
+  // first-class replacement for the hand-authored supplemental
+  // formulas-used.yaml — a sibling collection of `testSequences`.
+  formulasUsed: Record<string, FormulasUsed>;
 
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25): per-spelling
   // alternate values of prose fields, addressed `<element-id>.<field>`.

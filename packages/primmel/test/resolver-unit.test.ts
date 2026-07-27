@@ -66,6 +66,7 @@ function emptyContext(): ParseContext {
     passports: {},
     invariants: {},
     testSequences: {},
+    formulasUsed: {},
     issues: [],
   };
 }
