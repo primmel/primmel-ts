@@ -102,6 +102,8 @@ export default function parse(
     invariants: {},
     // The required test orderings (smart gap-close E10)
     testSequences: {},
+    // The per-test evaluation-formula traces (smart gap-close E11)
+    formulasUsed: {},
     // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25)
     texts: {},
     // Issue collection (duplicate IDs, etc.)

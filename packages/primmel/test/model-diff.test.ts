@@ -698,6 +698,70 @@ test_sequence mdlo-creep-dr {
     assert.equal(noop.unchanged, 4);
   });
 
+  it('formulas-used traces are diff elements (cross-cutting, beside test sequences) — smart gap-close E11', () => {
+    // The TIER_BY_FIELD registration pin: elementIndex iterates the table
+    // keys only, so an unregistered first-class collection is silently
+    // invisible to `primmel diff`. Two models differing ONLY in a
+    // formulas-used trace produce exactly the formulas-used diff
+    // elements; an unchanged trace produces none. The element key is the
+    // test reference — the trace is matched by test ref.
+    const FORMULAS_USED = `
+formulas_used /conf/metrological-tests/measurement-error-repeatability-mdlo {
+  name "MDLO evaluation formulas"
+  description "The evaluation-level quantities of R 60-3, 2.1 the MDLO test derives from the indication output."
+  formulas { conversion_factor_f e_l e_r c_m }
+  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
+}
+`;
+    const KEY =
+      'formulasUsed:/conf/metrological-tests/measurement-error-repeatability-mdlo';
+    const idx = elementIndex(load(FORMULAS_USED));
+    assert.equal(idx.size, 1);
+    assert.ok(idx.has(KEY));
+    assert.equal(idx.get(KEY)?.tier, 'cross-cutting');
+
+    const added = diff(BASE, BASE + FORMULAS_USED);
+    assert.equal(added.added.length, 1);
+    assert.deepEqual(
+      added.added.map(e => `${e.kind}:${e.id}:${e.tier}`),
+      [`${KEY}:cross-cutting`],
+    );
+    const removed = diff(BASE + FORMULAS_USED, BASE);
+    assert.equal(removed.removed.length, 1);
+    assert.equal(removed.removed[0].kind, 'formulasUsed');
+    // A formulas-list change classifies as structure (the generic
+    // scheme — the trace declares no binding/anchor fields).
+    const changed = diff(
+      BASE + FORMULAS_USED,
+      BASE + FORMULAS_USED.replace(' e_r c_m', ' e_r'),
+    );
+    assert.equal(changed.changed.length, 1);
+    assert.equal(changed.changed[0].kind, 'formulasUsed');
+    assert.deepEqual(changed.changed[0].aspects, ['structure']);
+    // A description change classifies as statement, nothing else.
+    const reworded = diff(
+      BASE + FORMULAS_USED,
+      BASE +
+        FORMULAS_USED.replace(
+          'The evaluation-level quantities',
+          'The four evaluation-level quantities',
+        ),
+    );
+    assert.equal(reworded.changed.length, 1);
+    assert.deepEqual(reworded.changed[0].aspects, ['statement']);
+    // The provenance is an aspect: a clause move shows up as provenance.
+    const clauseMoved = diff(
+      BASE + FORMULAS_USED,
+      BASE + FORMULAS_USED.replace('clause "2.1"', 'clause "2.2"'),
+    );
+    assert.equal(clauseMoved.changed.length, 1);
+    assert.deepEqual(clauseMoved.changed[0].aspects, ['provenance']);
+    // An unchanged trace produces no diff elements.
+    const noop = diff(BASE + FORMULAS_USED, BASE + FORMULAS_USED);
+    assert.equal(noop.empty, true);
+    assert.equal(noop.unchanged, 4);
+  });
+
   it('a duplicate kind:id is collected and surfaces as a diff warning', () => {
     // Duplicate ids are a data error (the duplicate-id linter owns them) —
     // but a diff over an UNLINTED package must not stay silent: the last

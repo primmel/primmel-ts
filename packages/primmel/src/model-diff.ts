@@ -83,7 +83,8 @@ export const TIER_ORDER: TierName[] = [
  * tests, forms, verdict quantities, tables of limits); tertiary =
  * execution and judgment (processes, entities, registries, state
  * machines, approvals, monitors, passports); cross-cutting = annotation
- * and traceability furniture (notes, invariants, test sequences, links).
+ * and traceability furniture (notes, invariants, test sequences,
+ * formulas-used traces, links).
  *
  * mapProfiles are deliberately ABSENT: mappings are not tiered elements
  * — the mapping diff owns them (pairs + coverage delta).
@@ -147,6 +148,12 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // conformance tests must run on a sample, not a test itself — the
   // steps reference the tests; the sequence itself declares.
   testSequences: 'cross-cutting',
+  // Formulas-used traces (smart gap-close E11) are cross-cutting beside
+  // test sequences: a trace is doctrine about which registry formulas a
+  // conformance test's evaluation invokes, not a test itself — the
+  // entry references the test and the formulas; the trace itself
+  // declares.
+  formulasUsed: 'cross-cutting',
   links: 'cross-cutting',
 };
 

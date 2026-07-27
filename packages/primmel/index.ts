@@ -246,6 +246,7 @@ export {
   type TestSequence,
   type TestSequenceStep,
 } from './src/types/TestSequence';
+export { FORMULA_ID_SHAPE, type FormulasUsed } from './src/types/FormulasUsed';
 export {
   InstanceResolutionError,
   instanceChain,
