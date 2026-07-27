@@ -241,6 +241,33 @@ test_sequence bare {
     assert.equal(dump(m2), dumped);
   });
 
+  it('parses a garbage order head as NaN, dumps as `step NaN`, and re-parses to itself (the total-parser doctrine, pinned)', () => {
+    // Number() stays total: a non-numeric order head lands as NaN for C92
+    // to judge, never a parse error. The dump must emit `step NaN` — and
+    // Number('NaN') re-parses to NaN, so the fixpoint holds even on the
+    // malformed spelling.
+    const garbage = `
+test_sequence g {
+  name "G"
+  description "d"
+  step garbage { test "/conf/x" }
+}
+`;
+    const m1 = load(garbage);
+    assert.ok(
+      Number.isNaN(m1.testSequences[0].steps[0].order),
+      `expected a NaN order for the garbage head, got: ${m1.testSequences[0].steps[0].order}`,
+    );
+    const dumped = dump(m1);
+    assert.ok(
+      dumped.includes('step NaN {'),
+      `expected the NaN order dumped as \`step NaN\`, got:\n${dumped}`,
+    );
+    const m2 = load(dumped);
+    assert.deepEqual(m2.testSequences, m1.testSequences);
+    assert.equal(dump(m2), dumped);
+  });
+
   it('round-trips a MALFORMED model byte-clean (both-set step, order-null step)', () => {
     // The parser stays total on a step carrying both test and phase and
     // on a step with no order head; the dump must re-emit BOTH facets
