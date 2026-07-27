@@ -32,6 +32,7 @@ import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
 import type { Invariant } from './Invariant';
+import type { TestSequence } from './TestSequence';
 import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
@@ -160,6 +161,14 @@ export default interface Standard {
   // with severity + enforcement claims — the first-class replacement
   // for the note-family encoding, a sibling collection of `notes`.
   invariants: Invariant[];
+
+  // The required test orderings (smart gap-close E10,
+  // analysis/architecture-gaps-2026-07.md; smart contract
+  // data/schemas/test-sequences.yaml): ordered steps of conformance
+  // tests and environment-program phases, with depends_on chaining —
+  // the first-class replacement for the hand-authored supplemental
+  // test-sequences.yaml, a sibling collection of `invariants`.
+  testSequences: TestSequence[];
 
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
   // ch. 10): per-spelling alternate values of prose fields, addressed

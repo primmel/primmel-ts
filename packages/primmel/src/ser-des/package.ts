@@ -313,6 +313,11 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   // note collection they replace — doctrine declared in a foundation
   // package (oiml-smart-core) composes into every rec model.
   'invariants',
+  // The required test orderings (smart gap-close E10) merge like the
+  // invariants — today the sequences live in a rec package's
+  // supplemental YAML; as model content they compose through `uses`
+  // like every doctrine collection, with uses-no-redefine protection.
+  'testSequences',
   'texts',
 ];
 

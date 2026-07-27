@@ -83,7 +83,7 @@ export const TIER_ORDER: TierName[] = [
  * tests, forms, verdict quantities, tables of limits); tertiary =
  * execution and judgment (processes, entities, registries, state
  * machines, approvals, monitors, passports); cross-cutting = annotation
- * and traceability furniture (notes, invariants, links).
+ * and traceability furniture (notes, invariants, test sequences, links).
  *
  * mapProfiles are deliberately ABSENT: mappings are not tiered elements
  * — the mapping diff owns them (pairs + coverage delta).
@@ -142,6 +142,11 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // model, not machinery inside it (the enforcement claims point at the
   // gates/linker rules that execute; the invariant itself declares).
   invariants: 'cross-cutting',
+  // Test sequences (smart gap-close E10) are cross-cutting beside
+  // invariants: a required ordering is doctrine about how the
+  // conformance tests must run on a sample, not a test itself — the
+  // steps reference the tests; the sequence itself declares.
+  testSequences: 'cross-cutting',
   links: 'cross-cutting',
 };
 

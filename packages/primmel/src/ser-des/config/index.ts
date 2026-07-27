@@ -112,6 +112,7 @@ import { connectorProfileConstruct } from './twin';
 import { monitorConstruct } from './monitor';
 import { passportConstruct } from './passport';
 import { invariantConstruct } from './invariant';
+import { testSequenceConstruct } from './testSequence';
 import { parseText, dumpText } from './text';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
@@ -461,6 +462,12 @@ const CONSTRUCTS: ConstructDefinition[] = [
   // for the note-family encoding — named platform invariants with
   // severity + enforcement claims, a sibling collection of `notes`.
   invariantConstruct as ConstructDefinition,
+  // The required test orderings (smart gap-close E10,
+  // analysis/architecture-gaps-2026-07.md): the first-class replacement
+  // for the hand-authored supplemental test-sequences.yaml — ordered
+  // steps of conformance tests and environment-program phases with
+  // depends_on chaining, a sibling collection of `invariants`.
+  testSequenceConstruct as ConstructDefinition,
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
   // ch. 10): the text block — per-spelling alternate values of one prose
   // field, addressed `<element-id>.<field>`.

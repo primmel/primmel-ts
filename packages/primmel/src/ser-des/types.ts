@@ -33,6 +33,7 @@ import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
 import type { Invariant } from '../types/Invariant';
+import type { TestSequence } from '../types/TestSequence';
 import type TextContent from '../types/Text';
 import type ActivityArchetype from '../types/ActivityArchetype';
 import type { Instance } from '../types/Instance';
@@ -193,6 +194,11 @@ export interface ParseContext {
   // replacement for the note-family encoding — a sibling collection of
   // `notes`.
   invariants: Record<string, Invariant>;
+
+  // The required test orderings (smart gap-close E10): the first-class
+  // replacement for the hand-authored supplemental test-sequences.yaml —
+  // a sibling collection of `invariants`.
+  testSequences: Record<string, TestSequence>;
 
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25): per-spelling
   // alternate values of prose fields, addressed `<element-id>.<field>`.

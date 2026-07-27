@@ -100,6 +100,8 @@ export default function parse(
     passports: {},
     // The architecture invariants (smart gap-close E9)
     invariants: {},
+    // The required test orderings (smart gap-close E10)
+    testSequences: {},
     // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25)
     texts: {},
     // Issue collection (duplicate IDs, etc.)
