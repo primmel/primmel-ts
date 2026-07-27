@@ -635,6 +635,69 @@ invariant INV-1 {
     assert.equal(noop.unchanged, 4);
   });
 
+  it('test sequences are diff elements (cross-cutting, beside invariants) — smart gap-close E10', () => {
+    // The TIER_BY_FIELD registration pin: elementIndex iterates the table
+    // keys only, so an unregistered first-class collection is silently
+    // invisible to `primmel diff`. Two models differing ONLY in a test
+    // sequence produce exactly the test-sequence diff elements; an
+    // unchanged test sequence produces none.
+    const TEST_SEQUENCE = `
+test_sequence mdlo-creep-dr {
+  name "MDLO → Creep → DR sequence"
+  description "The three performance tests must run in this order on the same sample."
+  step 1 { test "/conf/metrological-tests/measurement-error-repeatability-mdlo" role baseline }
+  step 2 { test "/conf/metrological-tests/creep" role follow_up depends_on 1 }
+  step 3 { test "/conf/metrological-tests/dr" role follow_up depends_on 2 }
+  sample_applicability all
+  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10" }
+  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.11.1" }
+}
+`;
+    const idx = elementIndex(load(TEST_SEQUENCE));
+    assert.equal(idx.size, 1);
+    assert.ok(idx.has('testSequences:mdlo-creep-dr'));
+    assert.equal(idx.get('testSequences:mdlo-creep-dr')?.tier, 'cross-cutting');
+
+    const added = diff(BASE, BASE + TEST_SEQUENCE);
+    assert.equal(added.added.length, 1);
+    assert.deepEqual(
+      added.added.map(e => `${e.kind}:${e.id}:${e.tier}`),
+      ['testSequences:mdlo-creep-dr:cross-cutting'],
+    );
+    const removed = diff(BASE + TEST_SEQUENCE, BASE);
+    assert.equal(removed.removed.length, 1);
+    assert.equal(removed.removed[0].kind, 'testSequences');
+    const changed = diff(
+      BASE + TEST_SEQUENCE,
+      BASE +
+        TEST_SEQUENCE.replace('role follow_up depends_on 2', 'depends_on 2'),
+    );
+    assert.equal(changed.changed.length, 1);
+    assert.equal(changed.changed[0].kind, 'testSequences');
+    // A description change classifies as statement, nothing else.
+    const reworded = diff(
+      BASE + TEST_SEQUENCE,
+      BASE +
+        TEST_SEQUENCE.replace(
+          'The three performance tests',
+          'The three metrological performance tests',
+        ),
+    );
+    assert.equal(reworded.changed.length, 1);
+    assert.deepEqual(reworded.changed[0].aspects, ['statement']);
+    // The provenance is an aspect: a clause move shows up as provenance.
+    const clauseMoved = diff(
+      BASE + TEST_SEQUENCE,
+      BASE + TEST_SEQUENCE.replace('clause "2.11.1"', 'clause "2.11.2"'),
+    );
+    assert.equal(clauseMoved.changed.length, 1);
+    assert.deepEqual(clauseMoved.changed[0].aspects, ['provenance']);
+    // An unchanged test sequence produces no diff elements.
+    const noop = diff(BASE + TEST_SEQUENCE, BASE + TEST_SEQUENCE);
+    assert.equal(noop.empty, true);
+    assert.equal(noop.unchanged, 4);
+  });
+
   it('a duplicate kind:id is collected and surfaces as a diff warning', () => {
     // Duplicate ids are a data error (the duplicate-id linter owns them) —
     // but a diff over an UNLINTED package must not stay silent: the last

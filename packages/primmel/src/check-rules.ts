@@ -846,6 +846,38 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart architecture-gaps-2026-07.md E9, docs/oiml-core/09-invariants.md',
   ),
+  // ── the required test orderings (smart gap-close E10,
+  // analysis/architecture-gaps-2026-07.md; the smart contract
+  // data/schemas/test-sequences.yaml) ──
+  // The `test_sequence` construct is the first-class replacement for
+  // the hand-authored supplemental test-sequences.yaml. C92 is the
+  // declaration shape: every sequence carries name, description, and a
+  // non-empty steps list; every step's order is a positive integer
+  // unique in the sequence; every step carries test XOR phase; role
+  // appears only on test steps and only in the baseline | follow_up
+  // vocabulary; depends_on is an integer. C93 is the dependency
+  // integrity: every depends_on names the order of an EARLIER step of
+  // the same sequence (no self-reference, no forward reference, no
+  // dangling order — with single-parent earlier-order edges a cycle is
+  // impossible by construction, so the per-edge checks subsume it).
+  // Test-ref RESOLUTION is the smart-side linker rule R39's crosswalk —
+  // the kernel checks syntax/shape only.
+  R(
+    'C92',
+    'test-sequence-shape',
+    'base',
+    'error',
+    'normal',
+    'smart architecture-gaps-2026-07.md E10, data/schemas/test-sequences.yaml',
+  ),
+  R(
+    'C93',
+    'test-sequence-integrity',
+    'base',
+    'error',
+    'normal',
+    'smart architecture-gaps-2026-07.md E10, data/schemas/test-sequences.yaml',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

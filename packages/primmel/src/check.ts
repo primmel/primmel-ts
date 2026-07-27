@@ -358,6 +358,7 @@ import {
   PASSPORT_CONTENT_CLASSES,
   PASSPORT_UPI_LEVELS,
 } from './types/Passport';
+import { TEST_SEQUENCE_STEP_ROLES } from './types/TestSequence';
 import { extractStateGates } from './operational-state';
 import { activeRuleIds } from './check-rules';
 import {
@@ -3082,6 +3083,128 @@ export function checkPackage(
     }
   }
 
+  // ── C92–C93: the required test orderings (smart gap-close E10,
+  // analysis/architecture-gaps-2026-07.md; the smart contract
+  // data/schemas/test-sequences.yaml) ──
+  // The `test_sequence` construct is the first-class replacement for the
+  // hand-authored supplemental test-sequences.yaml. C92
+  // test-sequence-shape: every sequence carries name, description, and a
+  // non-empty steps list; every step's order is a positive integer
+  // unique in the sequence; every step carries test XOR phase; role
+  // appears only on test steps and only in the baseline | follow_up
+  // vocabulary; depends_on is an integer. C93 test-sequence-integrity:
+  // every depends_on names the order of an EARLIER step of the same
+  // sequence — never itself (self-reference), never a later step
+  // (forward reference), never an order no step declares. With
+  // single-parent earlier-order edges a cycle is impossible by
+  // construction (a cycle needs at least one non-descending edge, which
+  // the per-edge checks flag), so the three explicit per-edge checks
+  // subsume cycle detection. Test-ref RESOLUTION (does /conf/… name a
+  // declared conformance test of the standard) is the smart-side linker
+  // rule R39's job — the kernel checks syntax/shape only, exactly like
+  // E9's C90/C91 vs R38 split. Packages without test sequences are
+  // untouched — the loop is empty.
+  {
+    for (const seq of standard.testSequences ?? []) {
+      // C92 — test-sequence-shape.
+      if (seq.name === '') {
+        err(
+          'C92',
+          `test_sequence ${seq.id}: declares no name — a test sequence carries a short name (test-sequence-shape)`,
+        );
+      }
+      if (seq.description === '') {
+        err(
+          'C92',
+          `test_sequence ${seq.id}: declares no description — a test sequence carries the ordering's prose (the default spelling inline; alternates ride text ${seq.id}.description blocks) (test-sequence-shape)`,
+        );
+      }
+      if (seq.steps.length === 0) {
+        err(
+          'C92',
+          `test_sequence ${seq.id}: declares no steps — a test sequence is a non-empty ordered step list (test-sequence-shape)`,
+        );
+      }
+      const orders = new Set<number>();
+      for (const step of seq.steps) {
+        const at = step.order !== null ? `step ${step.order}` : 'a step';
+        if (
+          step.order === null ||
+          !Number.isInteger(step.order) ||
+          step.order < 1
+        ) {
+          err(
+            'C92',
+            `test_sequence ${seq.id}: ${at} declares no positive-integer order (got ${step.order === null ? 'none' : step.order}) — the step order is a positive integer (test-sequence-shape)`,
+          );
+        } else if (orders.has(step.order)) {
+          err(
+            'C92',
+            `test_sequence ${seq.id}: step order ${step.order} is declared twice — the order is unique within the sequence (test-sequence-shape)`,
+          );
+        } else {
+          orders.add(step.order);
+        }
+        if ((step.test === '') === (step.phase === '')) {
+          err(
+            'C92',
+            `test_sequence ${seq.id}: ${at} carries ${
+              step.test === ''
+                ? 'neither test nor phase'
+                : 'both test and phase'
+            } — exactly one per step (a conformance-test reference XOR an environment-program phase) (test-sequence-shape)`,
+          );
+        }
+        if (step.role !== '') {
+          if (step.test === '') {
+            err(
+              'C92',
+              `test_sequence ${seq.id}: ${at} declares role "${step.role}" on a phase step — the role is meaningful on test steps only (test-sequence-shape)`,
+            );
+          } else if (
+            !(TEST_SEQUENCE_STEP_ROLES as readonly string[]).includes(step.role)
+          ) {
+            err(
+              'C92',
+              `test_sequence ${seq.id}: ${at} declares role "${step.role}" — the vocabulary is ${TEST_SEQUENCE_STEP_ROLES.join(' | ')} (test-sequence-shape)`,
+            );
+          }
+        }
+        if (step.dependsOn !== null && !Number.isInteger(step.dependsOn)) {
+          err(
+            'C92',
+            `test_sequence ${seq.id}: ${at} declares depends_on ${step.dependsOn} — the dependency is the integer order of an earlier step (test-sequence-shape)`,
+          );
+        }
+      }
+
+      // C93 — test-sequence-integrity (per-edge, explicit: no
+      // self-reference, no forward reference, no dangling order).
+      for (const step of seq.steps) {
+        if (step.dependsOn === null || !Number.isInteger(step.dependsOn)) {
+          continue; // absent, or malformed — C92 owns the shape
+        }
+        const at = step.order !== null ? `step ${step.order}` : 'a step';
+        if (step.order !== null && step.dependsOn === step.order) {
+          err(
+            'C93',
+            `test_sequence ${seq.id}: ${at} depends on itself — depends_on names an EARLIER step (test-sequence-integrity)`,
+          );
+        } else if (!orders.has(step.dependsOn)) {
+          err(
+            'C93',
+            `test_sequence ${seq.id}: ${at} depends_on ${step.dependsOn} names no step of the sequence (test-sequence-integrity)`,
+          );
+        } else if (step.order !== null && step.dependsOn > step.order) {
+          err(
+            'C93',
+            `test_sequence ${seq.id}: ${at} depends_on ${step.dependsOn} names a LATER step — a forward reference; depends_on names an EARLIER step (test-sequence-integrity)`,
+          );
+        }
+      }
+    }
+  }
+
   // ── C32–C36: quantities, time, and the IS↔HAS duality ──
   // (TODO.roadmap/06; doctrine ch. 6). Coherence is judged on quantity
   // KINDS — resolved through the package's quantity_registers — never on
@@ -4347,6 +4470,7 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
     'monitors',
     'passports',
     'invariants',
+    'testSequences',
     'stateMachines',
     'figures',
     'links',

@@ -65,6 +65,7 @@ function emptyContext(): ParseContext {
     monitors: {},
     passports: {},
     invariants: {},
+    testSequences: {},
     issues: [],
   };
 }

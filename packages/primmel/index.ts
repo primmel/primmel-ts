@@ -242,6 +242,11 @@ export {
 } from './src/types/Passport';
 export type { Invariant, InvariantEnforcement } from './src/types/Invariant';
 export {
+  TEST_SEQUENCE_STEP_ROLES,
+  type TestSequence,
+  type TestSequenceStep,
+} from './src/types/TestSequence';
+export {
   InstanceResolutionError,
   instanceChain,
   parseInstancePath,
