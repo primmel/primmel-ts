@@ -4672,6 +4672,32 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
 }
 
 /**
+ * A list item's address key in a nested text path (C89): the declared
+ * `name` (a form/subform field, a requirement parameter) or the declared
+ * numeric position (a test-sequence step's `order`, a requirement
+ * subject's `slot`) as its bare token. Keys are declared content, not
+ * positional indexes — a reorder never silently re-points an address; a
+ * rename breaks it loudly, which is the point (the smart-side hygiene
+ * finding that motivated path addressing).
+ */
+function textAddressKey(item: unknown, segment: string): boolean {
+  if (typeof item !== 'object' || item === null) {
+    return false;
+  }
+  const rec = item as Record<string, unknown>;
+  if (rec.name === segment) {
+    return true;
+  }
+  if (typeof rec.order === 'number' && String(rec.order) === segment) {
+    return true;
+  }
+  if (typeof rec.slot === 'number' && String(rec.slot) === segment) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * C89 — spelling-code-wellformed (TODO.roadmap/25; doctrine ch. 10 §10.7).
  *
  * Every human-readable string is spelling-coded per ISO 24229; BCP 47 is
@@ -4683,8 +4709,15 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
  *     spelling codes (language-script[-country][-extension]; the script
  *     is MANDATORY — a bare language code is an error), and the default
  *     belongs to the declared set;
- *   - every `text` block addresses an existing element's prose field
- *     (<element-id>.<field>);
+ *   - every `text` block addresses an existing element's prose field.
+ *     The address is `<element-id>.<field>` for a top-level field, or
+ *     `<element-id>.<path…>.<field>` for prose NESTED inside the element
+ *     (smart gap-close E13): the element is the longest dot-boundary
+ *     prefix registered in the package (element ids may carry dots), an
+ *     intermediate segment names a nested structure, a list item is
+ *     keyed by its declared key (name/order/slot — never a positional
+ *     index), and the terminal segment is a prose field. A dangling,
+ *     scalar, or ambiguous segment is an error;
  *   - every spell entry's code parses; a duplicate code within one
  *     content set is an error (use an extension to distinguish);
  *   - an entry repeating the package's default_spelling is an error —
@@ -4734,9 +4767,12 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
     return issues;
   }
 
-  // The element-id registry a text block may address — every id-keyed
+  // The element registry a text block may address — every id-keyed
   // collection (prose lives on requirements, terms, forms, subjects…).
-  const elementIds = new Set<string>();
+  // The walk needs the element OBJECTS, not just the ids: a nested
+  // address (<element-id>.<path…>.<field>) resolves segment by segment
+  // into the addressed element's structure.
+  const elements = new Map<string, unknown>();
   const ID_COLLECTIONS: (keyof Standard)[] = [
     'requirements',
     'requirementClasses',
@@ -4771,7 +4807,7 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
   for (const field of ID_COLLECTIONS) {
     for (const item of (standard[field] as { id?: string }[]) ?? []) {
       if (item?.id) {
-        elementIds.add(item.id);
+        elements.set(item.id, item);
       }
     }
   }
@@ -4801,22 +4837,104 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
     if (dot <= 0 || dot === t.id.length - 1) {
       err(
         'C89',
-        `text "${t.id}": the address is <element-id>.<field> (spelling-code-wellformed)`,
+        `text "${t.id}": the address is <element-id>.<field> (a nested prose field addresses <element-id>.<path…>.<field>) (spelling-code-wellformed)`,
       );
     } else {
-      const elementId = t.id.slice(0, dot);
-      const field = t.id.slice(dot + 1);
-      if (!elementIds.has(elementId)) {
+      const segments = t.id.split('.');
+      if (segments.some(s => s === '')) {
         err(
           'C89',
-          `text "${t.id}": no element "${elementId}" in the package (spelling-code-wellformed)`,
+          `text "${t.id}": empty path segment — the address is <element-id>.<path…>.<field> (spelling-code-wellformed)`,
         );
-      }
-      if (!PROSE_FIELDS.has(field)) {
-        err(
-          'C89',
-          `text "${t.id}": "${field}" is not a prose field (spelling-code-wellformed)`,
-        );
+      } else {
+        // The addressed element is the LONGEST dot-boundary prefix of the
+        // address registered in the package (element ids may themselves
+        // carry dots — r144-3/sec-3.4); the rest is the path into the
+        // element's structure. On a one-segment path this degenerates to
+        // the <element-id>.<field> split.
+        let elementId = '';
+        let path: string[] = [];
+        for (let i = segments.length - 1; i >= 1; i--) {
+          const candidate = segments.slice(0, i).join('.');
+          if (elements.has(candidate)) {
+            elementId = candidate;
+            path = segments.slice(i);
+            break;
+          }
+        }
+        if (elementId === '') {
+          err(
+            'C89',
+            `text "${t.id}": no element "${t.id.slice(0, dot)}" in the package (spelling-code-wellformed)`,
+          );
+        } else {
+          // Walk the intermediate segments: an object segment names a
+          // nested structure (an own property whose value is an object or
+          // list), a list segment keys ONE item by its declared key. The
+          // terminal segment must be a prose field the addressed
+          // structure CARRIES (own property — a prose slot the parser
+          // fills only when authored is addressable exactly then; there
+          // is nothing to alternate where no default value lives).
+          const field = path[path.length - 1];
+          let node: unknown = elements.get(elementId);
+          let soFar = elementId;
+          let resolved = true;
+          for (let s = 0; s < path.length - 1 && resolved; s++) {
+            const seg = path[s];
+            if (Array.isArray(node)) {
+              const matches = node.filter(item => textAddressKey(item, seg));
+              if (matches.length !== 1) {
+                err(
+                  'C89',
+                  matches.length === 0
+                    ? `text "${t.id}": no item keyed "${seg}" under "${soFar}" — a list item addresses by its declared key (a field or parameter name, a step's order, a subject's slot) (spelling-code-wellformed)`
+                    : `text "${t.id}": "${seg}" keys ${matches.length} items under "${soFar}" — the address is ambiguous (spelling-code-wellformed)`,
+                );
+                resolved = false;
+              } else {
+                node = matches[0];
+                soFar += `.${seg}`;
+              }
+            } else if (
+              !Object.prototype.hasOwnProperty.call(node, seg) ||
+              typeof (node as Record<string, unknown>)[seg] !== 'object' ||
+              (node as Record<string, unknown>)[seg] === null
+            ) {
+              err(
+                'C89',
+                `text "${t.id}": "${soFar}" has no nested structure "${seg}" (spelling-code-wellformed)`,
+              );
+              resolved = false;
+            } else {
+              node = (node as Record<string, unknown>)[seg];
+              soFar += `.${seg}`;
+            }
+          }
+          if (resolved) {
+            if (Array.isArray(node)) {
+              err(
+                'C89',
+                `text "${t.id}": "${soFar}" is a list — address one item's prose field by its key ("${soFar}.<key>.${field}") (spelling-code-wellformed)`,
+              );
+            } else if (!PROSE_FIELDS.has(field)) {
+              err(
+                'C89',
+                `text "${t.id}": "${field}" is not a prose field (spelling-code-wellformed)`,
+              );
+            } else if (
+              !Object.prototype.hasOwnProperty.call(node, field) &&
+              !Object.prototype.hasOwnProperty.call(
+                node,
+                field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase()),
+              )
+            ) {
+              err(
+                'C89',
+                `text "${t.id}": "${soFar}" carries no prose field "${field}" — the default spelling's value belongs inline on the addressed structure (spelling-code-wellformed)`,
+              );
+            }
+          }
+        }
       }
     }
     const seen = new Set<string>();

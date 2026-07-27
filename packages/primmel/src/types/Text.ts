@@ -24,7 +24,12 @@
 //
 // The id is the addressed element's id plus the field:
 // `<element-id>.<field>` (e.g. `/req/metrological/measuring-range-max`
-// `.statement`). Code syntax (script mandatory, `via` four-segment) is
+// `.statement`). Prose NESTED inside the element addresses by path
+// (smart gap-close E13): `<element-id>.<path…>.<field>` — intermediate
+// segments name nested structures, list items key by their declared
+// name/order/slot, e.g.
+// `r60-3/load-test.fields.runs.fields.indication.label`. Code syntax
+// (script mandatory, `via` four-segment) and the address grammar are
 // linter rule C89; register resolution is the consumer's discipline
 // (primmel-ts stays register-free — src/spelling.ts validates shape).
 // ─────────────────────────────────────────────────────────────────────
@@ -41,7 +46,8 @@ export interface SpellingEntry {
 }
 
 interface TextContent {
-  /** The addressed prose field: `<element-id>.<field>`. */
+  /** The addressed prose field: `<element-id>.<field>`, or
+   *  `<element-id>.<path…>.<field>` for a nested prose field (E13). */
   id: string;
   /** Alternate spellings (the default spelling's value lives inline on
    *  the addressed element; an entry repeating the package's default
