@@ -44,6 +44,16 @@ export interface Cascade {
   action: CascadeAction | null;
   targetEntity: string;
   where: string;
+  /**
+   * The machine-routing facet (smart gap-close E12,
+   * analysis/cascade-machine-routing-design.md §4): the transition action
+   * of the TARGET entity's machine the status write routes through.
+   * Required on a status-writing step (a mechanical `set` containing
+   * `status`, or a semantic `submit`/`lock`) whose target declares a
+   * machine — self-steps excepted; forbidden everywhere else (C95
+   * cascade-transition-resolve owns the contract). '' when absent.
+   */
+  via: string;
   /** Action-cascade parameters (the `with { … }` block). */
   with: Record<string, string>;
   set: CascadeSet[];

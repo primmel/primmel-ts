@@ -390,7 +390,9 @@ function provenanceEdgeKey(r: NormalizedSourceRef): string {
 }
 
 function elementOf(field: string, el: Record<string, unknown>): DiffElement {
-  const id = String(el.id ?? '');
+  // `id` everywhere except the state machines, which key by the bound
+  // entity's name (the construct declares entityName, no id).
+  const id = String(el.id ?? el.entityName ?? '');
   const tier = TIER_BY_FIELD[field] ?? 'cross-cutting';
   const provenance = provenanceOf(el);
   const consumed = new Set<string>(PROVENANCE_FIELDS);
@@ -470,7 +472,12 @@ export function elementIndex(
       continue;
     }
     for (const el of items) {
-      if (el && typeof el === 'object' && 'id' in el) {
+      // The element id is `id` for every diffable collection except the
+      // state machines, whose key is the bound entity's name
+      // (`entityName` — the state_machine construct declares no `id`;
+      // without this the machines were silently invisible to the diff,
+      // cascades and all — smart gap-close E12).
+      if (el && typeof el === 'object' && ('id' in el || 'entityName' in el)) {
         const d = elementOf(field, el as Record<string, unknown>);
         if (out.has(d.key)) {
           duplicates?.push(d.key);
