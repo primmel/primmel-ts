@@ -64,6 +64,7 @@ function emptyContext(): ParseContext {
     connectorProfiles: {},
     monitors: {},
     passports: {},
+    invariants: {},
     issues: [],
   };
 }

@@ -585,6 +585,56 @@ passport lc500_passport {
     assert.equal(noop.unchanged, 4);
   });
 
+  it('invariants are diff elements (cross-cutting, beside notes) — smart gap-close E9', () => {
+    // The TIER_BY_FIELD registration pin: elementIndex iterates the table
+    // keys only, so an unregistered first-class collection is silently
+    // invisible to `primmel diff`. Two models differing ONLY in an
+    // invariant produce exactly the invariant diff elements; an unchanged
+    // invariant produces none.
+    const INVARIANT = `
+invariant INV-1 {
+  name "No bare numbers"
+  statement "every physical quantity is a QuantityValue (value + unit [+ uncertainty])."
+  severity error
+  applies_to { QuantityValue }
+  source "docs/oiml-core/09-invariants.md#9.2"
+  enforcement { kernel:C32 linker:quantity-coherence gate:schema-quantity-value }
+}
+`;
+    const idx = elementIndex(load(INVARIANT));
+    assert.equal(idx.size, 1);
+    assert.ok(idx.has('invariants:INV-1'));
+    assert.equal(idx.get('invariants:INV-1')?.tier, 'cross-cutting');
+
+    const added = diff(BASE, BASE + INVARIANT);
+    assert.equal(added.added.length, 1);
+    assert.deepEqual(
+      added.added.map(e => `${e.kind}:${e.id}:${e.tier}`),
+      ['invariants:INV-1:cross-cutting'],
+    );
+    const removed = diff(BASE + INVARIANT, BASE);
+    assert.equal(removed.removed.length, 1);
+    assert.equal(removed.removed[0].kind, 'invariants');
+    const changed = diff(
+      BASE + INVARIANT,
+      BASE + INVARIANT.replace('severity error', 'severity warning'),
+    );
+    assert.equal(changed.changed.length, 1);
+    assert.equal(changed.changed[0].kind, 'invariants');
+    // A statement change classifies as statement, nothing else.
+    const reworded = diff(
+      BASE + INVARIANT,
+      BASE +
+        INVARIANT.replace('every physical quantity', 'each physical quantity'),
+    );
+    assert.equal(reworded.changed.length, 1);
+    assert.deepEqual(reworded.changed[0].aspects, ['statement']);
+    // An unchanged invariant produces no diff elements.
+    const noop = diff(BASE + INVARIANT, BASE + INVARIANT);
+    assert.equal(noop.empty, true);
+    assert.equal(noop.unchanged, 4);
+  });
+
   it('a duplicate kind:id is collected and surfaces as a diff warning', () => {
     // Duplicate ids are a data error (the duplicate-id linter owns them) —
     // but a diff over an UNLINTED package must not stay silent: the last
