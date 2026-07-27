@@ -141,6 +141,7 @@ function parseCascade(target: string, block: string): Cascade {
     action: null,
     targetEntity: target,
     where: '',
+    via: '',
     with: {},
     set: [],
     create: null,
@@ -164,6 +165,14 @@ function parseCascade(target: string, block: string): Cascade {
         cascade.action = action as CascadeAction;
       } else if (cmd === 'where') {
         cascade.where = unwrapBlock(t[i++]);
+      } else if (cmd === 'via') {
+        // via <transition-action> — the target machine's transition the
+        // status write routes through (smart gap-close E12). A bare
+        // action-name token, like the step's `action` spelling; the
+        // parser stays total (a missing value leaves ''), and C95 owns
+        // the routing contract (resolves / matches the written status /
+        // unguarded / forbidden elsewhere).
+        cascade.via = t[i++];
       } else if (cmd === 'with') {
         // with { key: value ... } — action-cascade parameters (task 52)
         cascade.with = parseFieldMap(t[i++]);
@@ -295,6 +304,12 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
       }
       if (c.where) {
         out += '      where "' + escapeString(c.where) + '"\n';
+      }
+      // via sits between the selector (where) and the payload
+      // (with/set/create): select the records, route the status write,
+      // deliver the payload (smart gap-close E12).
+      if (c.via) {
+        out += '      via ' + c.via + '\n';
       }
       if (c.with && Object.keys(c.with).length > 0) {
         out += '      with {\n';

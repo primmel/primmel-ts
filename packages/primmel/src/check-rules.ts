@@ -899,6 +899,33 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart architecture-gaps-2026-07.md E11, data/schemas/formulas-used.yaml',
   ),
+  // ── cascade machine routing (smart gap-close E12,
+  // analysis/cascade-machine-routing-design.md §4–§5) ──
+  // A status-writing cascade step (a mechanical `set` containing
+  // `status`, or a semantic `submit`/`lock`) on a machinated target
+  // declares `via <transition-action>` and ROUTES the write through a
+  // declared transition of the target's own machine, closing the
+  // raw-write leak (the walker's cascade handlers Object.assign'd
+  // status onto target records with no machine consultation). C95 is
+  // the whole routing contract, eight legs (§5): via-present,
+  // via-resolves, via-matches-status, via-unguarded,
+  // via-forbidden-elsewhere, self-consistency (a self-step writes the
+  // owning transition's `to`), status-is-a-state, and fields-resolve
+  // (where paths and set/with names against the target entity's
+  // declared fields). The catalogued severity is the steady state —
+  // error; leg 1 is de-escalated to a warning in check.ts during the
+  // rollout window (the shipped corpus carries the 14 via-less steps of
+  // the design's §3.2 — the smart declaration leg adds the facets),
+  // the C33 de-escalation precedent. The smart-side mirror is linker
+  // rule R44 cascade-routing (the C89+R43 spelling-check precedent).
+  R(
+    'C95',
+    'cascade-transition-resolve',
+    'state',
+    'error',
+    'normal',
+    'smart architecture-gaps-2026-07.md E12, analysis/cascade-machine-routing-design.md',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

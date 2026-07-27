@@ -762,6 +762,55 @@ formulas_used /conf/metrological-tests/measurement-error-repeatability-mdlo {
     assert.equal(noop.unchanged, 4);
   });
 
+  it('state machines are diff elements (tertiary) keyed by entityName — a cascade via change surfaces in the owning machine (smart gap-close E12)', () => {
+    // The machines were silently invisible to `primmel diff`: the element
+    // index keyed on `id`, which the state_machine construct does not
+    // declare — its key is the bound entity's name (entityName). Cascade
+    // steps ride their owning transition, so a cascade change is a
+    // field-level (structure) change of the OWNING MACHINE's element.
+    const MACHINE = `
+state_machine TestRequest {
+  initial DRAFT
+  states { DRAFT ISSUED }
+  transition DRAFT -> ISSUED action ia_issues {
+    cascade TestAssignment {
+      where "test_request_id = \${this.id}"
+      set { status: "ISSUED" }
+    }
+  }
+}
+`;
+    const KEY = 'stateMachines:TestRequest';
+    const idx = elementIndex(load(MACHINE));
+    assert.equal(idx.size, 1);
+    assert.ok(idx.has(KEY));
+    assert.equal(idx.get(KEY)?.tier, 'tertiary');
+
+    const added = diff(BASE, BASE + MACHINE);
+    assert.equal(added.added.length, 1);
+    assert.deepEqual(
+      added.added.map(e => `${e.kind}:${e.id}:${e.tier}`),
+      [`${KEY}:tertiary`],
+    );
+    const removed = diff(BASE + MACHINE, BASE);
+    assert.equal(removed.removed.length, 1);
+    assert.equal(removed.removed[0].kind, 'stateMachines');
+    // Adding the via facet to the cascade is a structure change of the
+    // owning machine — nothing else (the generic scheme: a machine
+    // declares no binding/anchor fields).
+    const routed = diff(
+      BASE + MACHINE,
+      BASE + MACHINE.replace('set { status', 'via start\n      set { status'),
+    );
+    assert.equal(routed.changed.length, 1);
+    assert.equal(routed.changed[0].kind, 'stateMachines');
+    assert.deepEqual(routed.changed[0].aspects, ['structure']);
+    // An unchanged machine produces no diff elements.
+    const noop = diff(BASE + MACHINE, BASE + MACHINE);
+    assert.equal(noop.empty, true);
+    assert.equal(noop.unchanged, 4);
+  });
+
   it('a duplicate kind:id is collected and surfaces as a diff warning', () => {
     // Duplicate ids are a data error (the duplicate-id linter owns them) —
     // but a diff over an UNLINTED package must not stay silent: the last
