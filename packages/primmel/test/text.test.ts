@@ -38,7 +38,7 @@ describe('spelling codes (ISO 24229 — TODO.roadmap/25)', () => {
   it('rejects a bare language code — the script is mandatory', () => {
     const r = parseSpellingCode('eng');
     assert.equal(typeof r, 'string');
-    assert.match(r, /script segment missing/);
+    assert.match(r as string, /script segment missing/);
     assert.equal(isSpellingCode('ara'), false);
   });
 
