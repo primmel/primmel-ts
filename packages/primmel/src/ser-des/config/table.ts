@@ -6,14 +6,18 @@ import tokenize, {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { stripColon, readBalanced, dumpBareSafe } from './field-parser';
+import {
+  stripColon,
+  readBalanced,
+  dumpBareSafe,
+  readSource,
+} from './field-parser';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
 } from './sourceDiscrepancy';
 import type Table from '../../types/Table';
 import type { TableColumnDef, TableProfileDef } from '../../types/Table';
-import type { SourceRef } from '../../types/Subject';
 
 /** Numeric-looking values parse as numbers, everything else stays a string. */
 function numOrString(s: string): string | number {
@@ -21,28 +25,6 @@ function numOrString(s: string): string | number {
     return Number(s);
   }
   return s;
-}
-
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
 }
 
 /** columns { accuracy_class: string load_min: number "v" … } — typed form. */

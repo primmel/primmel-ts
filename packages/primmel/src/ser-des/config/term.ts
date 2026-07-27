@@ -128,15 +128,20 @@ export const dumpTerm: Dumper<Term> = function (term) {
   }
   // Brace-list entries containing whitespace must be quoted, or a
   // load→dump cycle splits them into separate tokens.
-  const listEntry = (s: string) => (/\s/.test(s) ? '"' + escapeString(s) + '"' : s);
+  const listEntry = (s: string) =>
+    /\s/.test(s) ? '"' + escapeString(s) + '"' : s;
   if (term.alt && term.alt.length > 0) {
     out += '  alt { ' + term.alt.map(listEntry).join(' ') + ' }\n';
   }
   if (term.deprecated && term.deprecated.length > 0) {
-    out += '  deprecated { ' + term.deprecated.map(listEntry).join(' ') + ' }\n';
+    out +=
+      '  deprecated { ' + term.deprecated.map(listEntry).join(' ') + ' }\n';
   }
   if (term.abbreviations && term.abbreviations.length > 0) {
-    out += '  abbreviations { ' + term.abbreviations.map(listEntry).join(' ') + ' }\n';
+    out +=
+      '  abbreviations { ' +
+      term.abbreviations.map(listEntry).join(' ') +
+      ' }\n';
   }
   if (term.seeAlso && term.seeAlso.length > 0) {
     out += '  see_also { ' + term.seeAlso.map(listEntry).join(' ') + ' }\n';

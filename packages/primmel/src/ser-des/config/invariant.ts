@@ -43,36 +43,11 @@
 // test/invariant.test.ts.
 // ─────────────────────────────────────────────────────────────────────
 
-import {
-  escapeString,
-  stripWrapping,
-  tokenizePackage,
-  unwrapBlock,
-} from '../tokenize';
+import { escapeString, stripWrapping } from '../tokenize';
 import { forEachEntry } from '../parse-block';
-import { dumpBareSafe } from './field-parser';
+import { dumpBareSafe, readEntryTokens } from './field-parser';
 import type { ConstructDefinition } from './index';
 import type { Invariant } from '../../types/Invariant';
-
-/** Strip the optional `;` separators from a sub-block stream. */
-function subBlockTokens(block: string): string[] {
-  return tokenizePackage(block)
-    .map(s => s.replace(/^;+|;+$/g, ''))
-    .filter(s => s.length > 0);
-}
-
-/** Read a list-facet value: a `{ a b }` block, or a single bare entry.
- *  Commas are optional noise (the passport idiom). */
-function readEntryTokens(value: string): string[] {
-  if (value.startsWith('{')) {
-    return subBlockTokens(unwrapBlock(value))
-      .flatMap(s => s.split(','))
-      .map(s => stripWrapping(s.trim()))
-      .filter(s => s.length > 0);
-  }
-  const single = stripWrapping(value);
-  return single === '' ? [] : [single];
-}
 
 const parseInvariant: ConstructDefinition['parse'] = function (id, data) {
   const invariant: Invariant = {

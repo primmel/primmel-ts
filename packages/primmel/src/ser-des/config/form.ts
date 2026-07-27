@@ -12,6 +12,7 @@ import {
   parseSubformRef,
   parseRoleReferences,
   readFieldHead,
+  readSource,
   dumpFormField,
   dumpApplicabilityEntries,
   dumpRoleReferences,
@@ -24,29 +25,6 @@ import type {
   PassFail,
   PassFailDerivation,
 } from '../../types/Form';
-import type { SourceRef } from '../../types/Subject';
-
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
-}
 
 export const parseForm: Parser = function (id, data) {
   const result: Form = {
@@ -457,7 +435,9 @@ export const dumpForm: Dumper<Form> = function (f) {
           '" clause "' +
           escapeString(c.source.clause) +
           '"' +
-          (c.source.fragment ? ' fragment "' + escapeString(c.source.fragment) + '"' : '') +
+          (c.source.fragment
+            ? ' fragment "' + escapeString(c.source.fragment) + '"'
+            : '') +
           ' } ';
       }
       out += '}\n';

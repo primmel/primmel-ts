@@ -44,7 +44,9 @@ describe('constraint construct', () => {
     assert.equal(c.onViolation, 'indeterminate');
     assert.equal(c.name, '');
     assert.equal(c.source, null);
-    const minimal = load(`constraint bare { check "ocl{true}" violation_meaning "x" }`);
+    const minimal = load(
+      `constraint bare { check "ocl{true}" violation_meaning "x" }`,
+    );
     assert.equal(minimal.constraints[0].onViolation, 'invalid');
     assert.equal(minimal.constraints[0].stereotype, '');
   });

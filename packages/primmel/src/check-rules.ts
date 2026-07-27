@@ -739,7 +739,8 @@ export const CHECK_RULES: CheckRule[] = [
   // the OIML SMART constraints.yaml schema (stereotype «inv», one ocl{…}
   // check, required violation_meaning, on_violation invalid|indeterminate,
   // source doc+clause). Duplicate ids are the parse-time duplicate-id
-  // rule; the resolution legs stay smart-side (linker R32).
+  // rule (surfaced as C96); the resolution legs stay smart-side (linker
+  // R32).
   R(
     'C84',
     'constraint-shape',
@@ -887,8 +888,9 @@ export const CHECK_RULES: CheckRule[] = [
   // (the block symbol), name, description, and a non-empty formulas
   // list; every formula identifier is well-formed — the snake_case
   // shape the calculations registry uses for output names. Entry
-  // uniqueness per test is the parse-time duplicate-id rule's (the
-  // collection key IS the test reference). Formula-id RESOLUTION
+  // uniqueness per test is the parse-time duplicate-id rule's, surfaced
+  // as C96 (the collection key IS the test reference). Formula-id
+  // RESOLUTION
   // (calculations ∪ formulas registries) is the smart-side linker rule
   // R41's crosswalk — the kernel checks syntax/shape only.
   R(
@@ -925,6 +927,22 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'smart architecture-gaps-2026-07.md E12, analysis/cascade-machine-routing-design.md',
+  ),
+  // ── id uniqueness (the parse-time rule, surfaced) ──────────────────
+  // The parser stays total on a second declaration of one id in one
+  // id-keyed collection (last wins the slot) and collects a duplicate-id
+  // parse issue; checkPackage surfaces those under C96 — the visibility
+  // half of every per-collection uniqueness delegation (C84 constraints,
+  // C94 formulas-used; the E11 review finding). Parse-time detection is
+  // load-bearing: the parser overwrites the ctx slot, so post-parse the
+  // earlier declaration is unrecoverable.
+  R(
+    'C96',
+    'duplicate-id',
+    'base',
+    'error',
+    'normal',
+    'src/duplicate-id.ts, the smart gap-close E11 review finding',
   ),
 ];
 

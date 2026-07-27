@@ -145,7 +145,10 @@ canvas Root {
 }`);
 
     const ct = model.conformanceTests[0];
-    assert.equal(ct.method, 'Apply increasing and decreasing test loads. Record indications.');
+    assert.equal(
+      ct.method,
+      'Apply increasing and decreasing test loads. Record indications.',
+    );
     assert.equal(ct.methodRef, 'load_weight');
 
     const dumped = dump(model);

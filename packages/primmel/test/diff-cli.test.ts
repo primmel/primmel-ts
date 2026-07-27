@@ -59,7 +59,11 @@ describe('primmel diff CLI', () => {
   });
 
   it('an unreadable package dir: clean diagnostic, exit 2', () => {
-    const { status, stderr } = run(['diff', '/nonexistent/a', '/nonexistent/b']);
+    const { status, stderr } = run([
+      'diff',
+      '/nonexistent/a',
+      '/nonexistent/b',
+    ]);
     assert.equal(status, 2);
     assert.match(stderr, /cannot read package at \/nonexistent\/a:/);
     assert.equal(stderr.trim().split('\n').length, 1);
@@ -77,7 +81,10 @@ describe('primmel diff CLI', () => {
     const { status, stdout } = run(['diff', a, b]);
     assert.equal(status, 0);
     assert.match(stdout, /edition comparison — oiml-r60@2017 → oiml-r60@2021/);
-    assert.match(stdout, /urn:oiml:pub:r:60-1\s+3\.7\.5\s+3\.5\.11\s+renumbered/);
+    assert.match(
+      stdout,
+      /urn:oiml:pub:r:60-1\s+3\.7\.5\s+3\.5\.11\s+renumbered/,
+    );
     assert.match(stdout, /vMin/);
   });
 

@@ -52,7 +52,10 @@ function writePackage(
 
 /** A parent dir holding the sibling set the supply-chain rules scan. */
 function makeRepo(
-  packages: Record<string, { manifest: string; files?: Record<string, string> }>,
+  packages: Record<
+    string,
+    { manifest: string; files?: Record<string, string> }
+  >,
 ): { parent: string; dir: (id: string) => string } {
   const parent = mkdtempSync(join(tmpdir(), 'primmel-supply-chain-'));
   for (const [id, p] of Object.entries(packages)) {
@@ -303,10 +306,13 @@ describe('abstract import — reference-only composition', () => {
       ['acme-lc500', 'oiml-r60', 'quarry-belt-scale'].includes(id)
         ? repo.dir(id)
         : undefined;
-    const { standard, issues: loadIssues, composition } =
-      loadPackageWithIssues(repo.dir('quarry-belt-scale'), {
-        resolvePackage: locator,
-      });
+    const {
+      standard,
+      issues: loadIssues,
+      composition,
+    } = loadPackageWithIssues(repo.dir('quarry-belt-scale'), {
+      resolvePackage: locator,
+    });
     assert.deepEqual(
       loadIssues.filter(i => i.severity === 'error'),
       [],
@@ -354,7 +360,10 @@ describe('C81 product-maps-resolves', () => {
     assert.ok(c81.some(i => i.message.includes('manufacturer')));
     assert.ok(c81.some(i => i.message.includes('product designation')));
     assert.ok(c81.some(i => i.message.includes('maps_to')));
-    assert.equal(c81.every(i => i.severity === 'error'), true);
+    assert.equal(
+      c81.every(i => i.severity === 'error'),
+      true,
+    );
   });
 
   it('flags a maps_to entry that resolves to no package', () => {

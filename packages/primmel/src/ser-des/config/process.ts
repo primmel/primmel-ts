@@ -131,7 +131,12 @@ import tokenize, {
   tokenizePackage,
 } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
-import { dumpBareSafe, readValueToken, stripColon } from './field-parser';
+import {
+  dumpBareSafe,
+  readSource,
+  readValueToken,
+  stripColon,
+} from './field-parser';
 import {
   coerceValueToken,
   dumpQuantityValue,
@@ -141,7 +146,6 @@ import { Parser, Resolver } from '../types';
 import type { ParseContext } from '../types';
 import type { Registry } from '../../types/data';
 import type { QuantityValue } from '../../types/Quantity';
-import type { SourceRef } from '../../types/Subject';
 import type Provision from '../../types/Provision';
 import type Role from '../../types/Role';
 import type { Subprocess } from '../../types/flow';
@@ -157,32 +161,6 @@ function numOrString(s: string): string | number {
 /** A token that heads a `key :` entry: unquoted, trailing colon. */
 function isKeyHead(tok: string): boolean {
   return !tok.startsWith('"') && tok.endsWith(':') && tok.length > 1;
-}
-
-/**
- * Provenance facet (`source { doc "urn:…" clause "…" [fragment "…"] }`) —
- * the same shape requirement/table/calculation carry.
- */
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
 }
 
 // ── v3 block sub-parsers ─────────────────────────────────────────────
@@ -992,7 +970,9 @@ function dumpStep(step: ProcessStep): string {
     let c = 'calls ' + dumpBareSafe(step.calls);
     if (step.callIn.length > 0 || step.callOut.length > 0) {
       const bind = (bs: ProcessCallBinding[]): string =>
-        bs.map(b => dumpBareSafe(b.param) + ' : ' + dumpBareSafe(b.bind)).join(' ');
+        bs
+          .map(b => dumpBareSafe(b.param) + ' : ' + dumpBareSafe(b.bind))
+          .join(' ');
       c += ' { with {';
       if (step.callIn.length > 0) {
         c += ' in { ' + bind(step.callIn) + ' }';

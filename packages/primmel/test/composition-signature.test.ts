@@ -113,7 +113,9 @@ describe('calls syntax (parse + round-trip)', () => {
       { param: 'applied_load', bind: 'test_load' },
       { param: 'duration', bind: 'soak' },
     ]);
-    assert.deepEqual(run.callOut, [{ param: 'indication_series', bind: 'raw' }]);
+    assert.deepEqual(run.callOut, [
+      { param: 'indication_series', bind: 'raw' },
+    ]);
   });
 
   it('round-trips the calls step losslessly (fixpoint)', () => {
@@ -452,7 +454,9 @@ describe('C76 subprocess-signature-bound', () => {
       'duplicate binding caught',
     );
     assert.ok(
-      c76.some(i => i.message.includes('"speed" is not a declared IN parameter')),
+      c76.some(i =>
+        i.message.includes('"speed" is not a declared IN parameter'),
+      ),
       'phantom binding caught',
     );
   });
@@ -649,8 +653,8 @@ describe('C76 across a uses boundary (post-merge)', () => {
 }
 `);
     assert.deepEqual(
-      checkPackage(recDir, { resolvePackage }).filter(
-        i => ['C74', 'C75', 'C76'].includes(i.check),
+      checkPackage(recDir, { resolvePackage }).filter(i =>
+        ['C74', 'C75', 'C76'].includes(i.check),
       ),
       [],
     );

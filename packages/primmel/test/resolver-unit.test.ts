@@ -67,6 +67,7 @@ function emptyContext(): ParseContext {
     invariants: {},
     testSequences: {},
     formulasUsed: {},
+    texts: {},
     issues: [],
   };
 }

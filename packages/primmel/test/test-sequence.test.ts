@@ -241,6 +241,33 @@ test_sequence bare {
     assert.equal(dump(m2), dumped);
   });
 
+  it('parses a garbage order head as NaN, dumps as `step NaN`, and re-parses to itself (the total-parser doctrine, pinned)', () => {
+    // Number() stays total: a non-numeric order head lands as NaN for C92
+    // to judge, never a parse error. The dump must emit `step NaN` — and
+    // Number('NaN') re-parses to NaN, so the fixpoint holds even on the
+    // malformed spelling.
+    const garbage = `
+test_sequence g {
+  name "G"
+  description "d"
+  step garbage { test "/conf/x" }
+}
+`;
+    const m1 = load(garbage);
+    assert.ok(
+      Number.isNaN(m1.testSequences[0].steps[0].order),
+      `expected a NaN order for the garbage head, got: ${m1.testSequences[0].steps[0].order}`,
+    );
+    const dumped = dump(m1);
+    assert.ok(
+      dumped.includes('step NaN {'),
+      `expected the NaN order dumped as \`step NaN\`, got:\n${dumped}`,
+    );
+    const m2 = load(dumped);
+    assert.deepEqual(m2.testSequences, m1.testSequences);
+    assert.equal(dump(m2), dumped);
+  });
+
   it('round-trips a MALFORMED model byte-clean (both-set step, order-null step)', () => {
     // The parser stays total on a step carrying both test and phase and
     // on a step with no order head; the dump must re-emit BOTH facets
@@ -289,6 +316,40 @@ test_sequence hash {
       'see docs/tests.md#anchor for the rationale',
     );
     assert.equal(m2.testSequences[0].steps[0].test, '/conf/x');
+  });
+
+  it('quotes a vocabulary value STARTING with the comment character # (the dumpBareSafe exposure)', () => {
+    // The tokenizer treats `#` as a comment only BETWEEN tokens: a
+    // mid-token `#` is literal, so `see#1` dumps BARE and round-trips
+    // (the v2 map_profile `StdS#Process5` form depends on exactly this);
+    // a LEADING `#` starts a comment on re-parse and the value vanishes,
+    // so `#1` must dump quoted.
+    const wrap = (applicability: string) => `
+test_sequence hash-vocab {
+  name "H"
+  description "d"
+  step 1 { test "/conf/x" }
+  sample_applicability "${applicability}"
+}
+`;
+    const mid = load(wrap('see#1'));
+    assert.equal(mid.testSequences[0].sampleApplicability, 'see#1');
+    const midDump = dump(mid);
+    assert.ok(
+      midDump.includes('sample_applicability see#1'),
+      `expected the mid-token # value to stay bare, got:\n${midDump}`,
+    );
+    assert.deepEqual(load(midDump).testSequences, mid.testSequences);
+
+    const leading = load(wrap('#1'));
+    assert.equal(leading.testSequences[0].sampleApplicability, '#1');
+    const leadingDump = dump(leading);
+    assert.ok(
+      leadingDump.includes('sample_applicability "#1"'),
+      `expected the leading-# value quoted in the dump, got:\n${leadingDump}`,
+    );
+    assert.deepEqual(load(leadingDump).testSequences, leading.testSequences);
+    assert.equal(dump(load(leadingDump)), leadingDump);
   });
 });
 
@@ -388,6 +449,18 @@ describe('test_sequence lint rules (C92–C93)', () => {
 
     const phaseRole = issues('  step 1 { phase "T_high" role baseline }\n');
     assert.ok(phaseRole.some(i => i.message.includes('on a phase step')));
+
+    // The neither-test-nor-phase case names the step accurately (the E10
+    // message mislabel — it is not "a phase step").
+    const neitherRole = issues('  step 1 { role baseline }\n');
+    assert.ok(
+      neitherRole.some(i =>
+        i.message.includes(
+          'declares role "baseline" on a step carrying neither test nor phase',
+        ),
+      ),
+      `expected the neither-case role message, got: ${neitherRole.map(i => i.message).join('\n')}`,
+    );
 
     const badRole = issues('  step 1 { test "/conf/x" role primary }\n');
     assert.ok(

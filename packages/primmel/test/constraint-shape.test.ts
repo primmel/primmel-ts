@@ -7,7 +7,8 @@
 // task-51 review, deviation 5). The resolution legs (OCL identifier
 // resolution against the HAS inventory, source-clause bindings against
 // the .prd oracle) stay smart-side as linker rule R32; duplicate
-// constraint ids are the parse-time duplicate-id rule.
+// constraint ids are the parse-time duplicate-id rule (surfaced
+// through checkPackage as C96 — pinned below).
 //
 // Seeded-violation discipline: each mutant violates ONE leg and fires
 // EXACTLY ONE C84 error.
@@ -135,5 +136,27 @@ describe('C84 constraint-shape', () => {
 
   it('is silent when the package declares no constraints', () => {
     assert.deepEqual(c84(''), []);
+  });
+
+  it('a duplicate constraint id surfaces as C96 (the delegated parse-time rule)', () => {
+    // The header's delegation — duplicate ids are the parse-time
+    // duplicate-id rule — is visible in the lint output as one C96
+    // error; C84 itself stays silent (each declaration is well-formed).
+    const ONE = `constraint c1 {
+  stereotype inv
+  check "ocl{true}"
+  violation_meaning "x"
+}
+`;
+    const dir = makePackage(ONE + ONE);
+    assert.deepEqual(
+      checkPackage(dir).filter(i => i.check === 'C84'),
+      [],
+    );
+    const issues = checkPackage(dir).filter(i => i.check === 'C96');
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0].severity, 'error');
+    assert.ok(issues[0].message.includes('"c1"'));
+    assert.ok(issues[0].message.includes('(duplicate-id)'));
   });
 });

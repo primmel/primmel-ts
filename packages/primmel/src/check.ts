@@ -477,6 +477,10 @@ export function checkPackage(
   // so the loader throws CompositionError; the linter reports them as
   // rule-identified issues instead. Composition WARNINGS (unconsumed
   // provides, extends deprecation) come back in the load's issue list.
+  // The parse-time duplicate-id issues ride the same list — surfaced
+  // under C96 (the E11 review finding: every id-keyed collection's
+  // uniqueness delegation — C84 constraints, C94 formulas-used — is
+  // invisible if the linter drops them here).
   const COMPOSITION_RULE_CHECKS: Record<string, string> = {
     'uses-resolves': 'C27',
     'uses-no-redefine': 'C28',
@@ -494,6 +498,8 @@ export function checkPackage(
         warn('C30', i.message);
       } else if (i.code === 'extends-deprecated') {
         warn('C27', i.message);
+      } else if (i.code === 'duplicate-id') {
+        err('C96', `${i.message} (duplicate-id)`);
       }
     }
   } catch (e) {
@@ -1531,7 +1537,7 @@ export function checkPackage(
   // measurement) or indeterminate (the declaration cannot be judged) —
   // never a fail. A declared source names both doc and clause (clause-URN
   // provenance). Duplicate constraint ids are the parse-time duplicate-id
-  // rule, not a C84 leg.
+  // rule (surfaced as C96), not a C84 leg.
   {
     const OCL_CHECK = /^ocl\{[\s\S]*\}$/;
     for (const c of standard.constraints ?? []) {
@@ -3162,7 +3168,11 @@ export function checkPackage(
           if (step.test === '') {
             err(
               'C92',
-              `test_sequence ${seq.id}: ${at} declares role "${step.role}" on a phase step — the role is meaningful on test steps only (test-sequence-shape)`,
+              `test_sequence ${seq.id}: ${at} declares role "${step.role}" on ${
+                step.phase === ''
+                  ? 'a step carrying neither test nor phase'
+                  : 'a phase step'
+              } — the role is meaningful on test steps only (test-sequence-shape)`,
             );
           } else if (
             !(TEST_SEQUENCE_STEP_ROLES as readonly string[]).includes(step.role)
@@ -3218,11 +3228,12 @@ export function checkPackage(
   // spelling), name, description, and a non-empty formulas list; every
   // formula identifier is well-formed — the snake_case shape the
   // calculations registry uses for output names (FORMULA_ID_SHAPE).
-  // Entry UNIQUENESS per test is the parse-time duplicate-id rule's —
-  // the collection key IS the test reference, so a second trace for the
-  // same test is the same-id declaration every id-keyed collection
-  // judges. Formula-id RESOLUTION (does e_l exist in the calculations ∪
-  // formulas registries) is the smart-side linker rule R41's crosswalk
+  // Entry UNIQUENESS per test is the parse-time duplicate-id rule's
+  // (surfaced as C96) — the collection key IS the test reference, so a
+  // second trace for the same test is the same-id declaration every
+  // id-keyed collection judges. Formula-id RESOLUTION (does e_l exist in
+  // the calculations ∪ formulas registries) is the smart-side linker rule
+  // R41's crosswalk
   // — the kernel checks syntax/shape only, exactly like E9's C90/C91 vs
   // R38 and E10's C92/C93 vs R39 split. Packages without formulas-used
   // traces are untouched — the loop is empty.
@@ -4045,7 +4056,14 @@ export function checkPackage(
           // contract, judged only where a via is legal (one issue per
           // defect: a forbidden via reports under leg 5 only).
           if (c.via !== '') {
-            if (self || isCreate || !writesStatus || !targetMachine || c.action === 'notify' || c.action === 'record') {
+            if (
+              self ||
+              isCreate ||
+              !writesStatus ||
+              !targetMachine ||
+              c.action === 'notify' ||
+              c.action === 'record'
+            ) {
               const forbidden = self
                 ? "a self-step (the target is the owning machine's own entity)"
                 : isCreate

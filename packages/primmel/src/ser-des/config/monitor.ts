@@ -32,7 +32,7 @@
 
 import { stripWrapping, tokenizePackage, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
-import { dumpBareSafe, stripColon } from './field-parser';
+import { dumpBareSafe, stripColon, subBlockTokens } from './field-parser';
 import type { ConstructDefinition } from './index';
 import type {
   Monitor,
@@ -43,13 +43,6 @@ import type {
   MonitorRefSet,
   MonitorTrigger,
 } from '../../types/Monitor';
-
-/** Strip the sketch's optional `;` separators from a sub-block stream. */
-function subBlockTokens(block: string): string[] {
-  return tokenizePackage(block)
-    .map(s => s.replace(/^;+|;+$/g, ''))
-    .filter(s => s.length > 0);
-}
 
 /** Read an id stream: `{ a b }` block form, or a single bare id. */
 function readIdStream(value: string): string[] {

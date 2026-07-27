@@ -106,7 +106,12 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { stripColon, dumpBareSafe, readValueToken } from './field-parser';
+import {
+  stripColon,
+  dumpBareSafe,
+  readSource,
+  readValueToken,
+} from './field-parser';
 import { parseApplicability, dumpApplicabilityEntries } from './field-parser';
 import {
   dumpEndpoint,
@@ -144,28 +149,6 @@ import type {
 } from '../../types/Subject';
 
 // ── shared little readers ────────────────────────────────────────────
-
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
-}
 
 function dumpSource(
   keyword: string,

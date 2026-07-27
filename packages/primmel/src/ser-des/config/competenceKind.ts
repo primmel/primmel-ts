@@ -31,9 +31,7 @@ import type {
   CompetenceQuantity,
   CompetenceRange,
   CompetenceRequirement,
-  MethodStandard,
 } from '../../types/CompetenceKind';
-import type { SourceRef } from '../../types/Subject';
 import tokenize from '../tokenize';
 import {
   escapeString,
@@ -42,29 +40,8 @@ import {
   tokenizePackage,
   unescapeString,
 } from '../tokenize';
+import { readSource } from './field-parser';
 import type { Dumper, Parser } from '../types';
-
-function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
-}
 
 /** A bound token: unquoted numbers parse as numbers, quoted tokens stay
  *  parameter ids (stripWrapping removes the quotes). */
@@ -164,10 +141,7 @@ export function parseRequiredCompetence(
   return out;
 }
 
-function dumpQuantity(
-  keyword: string,
-  q: CompetenceQuantity | null,
-): string {
+function dumpQuantity(keyword: string, q: CompetenceQuantity | null): string {
   if (!q) {
     return '';
   }
@@ -300,8 +274,7 @@ export const dumpCompetenceKind: Dumper<CompetenceKind> = function (k) {
       ' }\n';
   }
   for (const ms of k.methodStandards) {
-    out +=
-      '  method_standard ' + ms.id + ' "' + escapeString(ms.title) + '"\n';
+    out += '  method_standard ' + ms.id + ' "' + escapeString(ms.title) + '"\n';
   }
   out += '}\n';
   return out;
