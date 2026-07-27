@@ -20,7 +20,10 @@ import { readPackageManifest } from '../src/ser-des/package';
 import { checkPackage } from '../src/check';
 import type { PackageManifest } from '../src/types/Package';
 
-function manifestDir(body: string, content?: { name: string; text: string }[]): string {
+function manifestDir(
+  body: string,
+  content?: { name: string; text: string }[],
+): string {
   // Each fixture gets its OWN parent dir: the C79 sibling scan reads the
   // parent's subdirectories, so fixtures must not see each other.
   const parent = mkdtempSync(join(tmpdir(), 'primmel-ed-'));
@@ -88,7 +91,6 @@ describe('edition manifest — parse + dump round-trip', () => {
     assert.match(text, /validity \{ from 2021-01-01 \}/);
     assert.match(text, /status current/);
     const ctx = { packageManifest: null as PackageManifest | null };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     parsePackage(text)(ctx as any);
     assert.deepEqual(ctx.packageManifest?.supersedes, m.supersedes);
     assert.deepEqual(ctx.packageManifest?.validity, m.validity);
@@ -97,7 +99,9 @@ describe('edition manifest — parse + dump round-trip', () => {
 
   it('a manifest without lifecycle fields parses with them absent', () => {
     const m = readPackageManifest(
-      manifestDir('package { id p version "1" editions { 1 } baseUrn "urn:p:1" description "d" }'),
+      manifestDir(
+        'package { id p version "1" editions { 1 } baseUrn "urn:p:1" description "d" }',
+      ),
     );
     assert.equal(m.supersedes, undefined);
     assert.equal(m.validity, undefined);
@@ -108,7 +112,9 @@ describe('edition manifest — parse + dump round-trip', () => {
     assert.throws(
       () =>
         readPackageManifest(
-          manifestDir('package { id p version "1" editions { 1 } baseUrn "urn:p:1" status bogus description "d" }'),
+          manifestDir(
+            'package { id p version "1" editions { 1 } baseUrn "urn:p:1" status bogus description "d" }',
+          ),
         ),
       /Expected status current\|preview\|superseded\|withdrawn/,
     );
@@ -140,7 +146,10 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
     const c77 = checkPackage(dir).filter(i => i.check === 'C77');
     assert.equal(c77.length, 1);
     assert.equal(c77[0].severity, 'error');
-    assert.match(c77[0].message, /not the edition register's newest entry \(2021\)/);
+    assert.match(
+      c77[0].message,
+      /not the edition register's newest entry \(2021\)/,
+    );
   });
 
   it('C85: a malformed baseUrn errors; a well-formed one stays clean (task-27c review Important 1)', () => {
@@ -272,7 +281,10 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
 }`);
     const c79self = checkPackage(self).filter(i => i.check === 'C79');
     assert.equal(c79self.length, 1);
-    assert.match(c79self[0].message, /cannot supersedes itself|cannot supersede itself/);
+    assert.match(
+      c79self[0].message,
+      /cannot supersedes itself|cannot supersede itself/,
+    );
 
     const incoherent = manifestDir(`package {
   id p
@@ -302,7 +314,10 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
     );
     const c79 = checkPackage(join(parent, 'x')).filter(i => i.check === 'C79');
     assert.equal(c79.length, 1);
-    assert.match(c79[0].message, /supersedes cycle: urn:x:1 → urn:y:1 → urn:x:1/);
+    assert.match(
+      c79[0].message,
+      /supersedes cycle: urn:x:1 → urn:y:1 → urn:x:1/,
+    );
 
     // …and a legal one-way chain across siblings is clean.
     const parent2 = mkdtempSync(join(tmpdir(), 'primmel-ed-chain-'));
@@ -316,7 +331,9 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
       join(parent2, 'y', 'package.primmel'),
       'package { id y version "1" editions { 1 } baseUrn "urn:y:1" description "d" }',
     );
-    const clean = checkPackage(join(parent2, 'x')).filter(i => i.check === 'C79');
+    const clean = checkPackage(join(parent2, 'x')).filter(
+      i => i.check === 'C79',
+    );
     assert.deepEqual(clean, []);
   });
 
@@ -334,7 +351,10 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
     const c80 = checkPackage(bad).filter(i => i.check === 'C80');
     assert.equal(c80.length, 1);
     assert.equal(c80[0].severity, 'error');
-    assert.match(c80[0].message, /"1999" does not resolve against the edition register/);
+    assert.match(
+      c80[0].message,
+      /"1999" does not resolve against the edition register/,
+    );
 
     const good = manifestDir(VALID_MANIFEST, [
       {
@@ -351,19 +371,16 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
   });
 
   it('C80 is silent on a register-less package (C18 still requires pins)', () => {
-    const dir = manifestDir(
-      'package { id p description "d" }',
-      [
-        {
-          name: 'instances.prl',
-          text: `instance smp-1 {
+    const dir = manifestDir('package { id p description "d" }', [
+      {
+        name: 'instances.prl',
+        text: `instance smp-1 {
   of LoadCell
   level sample
   definition_versions { LoadCell : "anything" }
 }`,
-        },
-      ],
-    );
+      },
+    ]);
     const c80 = checkPackage(dir).filter(i => i.check === 'C80');
     assert.deepEqual(c80, []);
   });

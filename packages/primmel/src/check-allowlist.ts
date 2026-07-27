@@ -324,7 +324,9 @@ export function applyAllowlist(
   ) {
     const count = out.filter(
       i =>
-        TEXT_BUDGETED_RULES.has(i.check) && !i.known && i.severity === 'warning',
+        TEXT_BUDGETED_RULES.has(i.check) &&
+        !i.known &&
+        i.severity === 'warning',
     ).length;
     if (count > allowlist.textCoverageBudget) {
       out.push({

@@ -215,7 +215,9 @@ export function normalizeBinding(
   return { doc: d, fragmentPath: path };
 }
 
-function* urnStringBindings(value: string): Generator<{ doc: string; fragmentPath: string }> {
+function* urnStringBindings(
+  value: string,
+): Generator<{ doc: string; fragmentPath: string }> {
   for (const token of value.trim().split(/\s+/)) {
     const m = URN_ADDRESS.exec(token);
     if (m) {
@@ -244,7 +246,9 @@ function isSourceRefLike(v: unknown): v is SourceRefLike {
  * `source "urn …"` strings, `reference "urn#fragment"` strings and
  * references[].urn lists — on ANY id-bearing element (the generic walk is
  * construct-agnostic; non-URN strings never match the address grammar). */
-export function collectProvenanceBindings(standard: Standard): ProvenanceBinding[] {
+export function collectProvenanceBindings(
+  standard: Standard,
+): ProvenanceBinding[] {
   const out: ProvenanceBinding[] = [];
   const seen = new Set<string>();
   const push = (
@@ -386,7 +390,10 @@ export function collectProvenanceBindings(standard: Standard): ProvenanceBinding
 /** True when sentence address A is covered by allowance address P: exact,
  * or P a boundary prefix of A ('.' descends the clause tree, '/' a
  * sub-address). */
-export function allowanceAddressMatches(allowance: string, sentence: string): boolean {
+export function allowanceAddressMatches(
+  allowance: string,
+  sentence: string,
+): boolean {
   if (sentence === allowance) {
     return true;
   }
@@ -477,7 +484,11 @@ export interface FlaggedPair {
  * definitions. Attribute/symbol/characteristic definitions are parameter
  * semantics — formulaic by design ("maximum load that can be applied"),
  * not source provisions; the congruence gate watches their provenance. */
-export const DUPLICATE_TEXT_KINDS = new Set(['requirements', 'terms', 'instruments']);
+export const DUPLICATE_TEXT_KINDS = new Set([
+  'requirements',
+  'terms',
+  'instruments',
+]);
 
 /** Flag near-duplicate pairs over the bound-text elements (see the module
  * header). Deterministic: pairs sorted by (a, b). */
@@ -510,9 +521,7 @@ export function flagDuplicatePairs(
     for (let j = i + 1; j < elements.length; j++) {
       const ta = tokens.get(elements[i])!;
       const tb = tokens.get(elements[j])!;
-      if (
-        Math.min(ta.length, tb.length) < DUPLICATE_MIN_TOKENS
-      ) {
+      if (Math.min(ta.length, tb.length) < DUPLICATE_MIN_TOKENS) {
         continue;
       }
       const sim = containmentSimilarity(ta, tb);
@@ -548,7 +557,10 @@ export interface DocumentCoverage {
   /** Normative, unbound, NOT allowed — each is a C71 warning at --audit. */
   uncoveredCounted: SentenceRecord[];
   /** Normative, unbound, allowed — with the discharging allowance. */
-  uncoveredAllowed: Array<{ sentence: SentenceRecord; allowance: CoverageAllowance }>;
+  uncoveredAllowed: Array<{
+    sentence: SentenceRecord;
+    allowance: CoverageAllowance;
+  }>;
   /** Informative, unbound (reported, never gated). */
   informativeUncovered: number;
   /** covered / normative (the without-allowances ratio). */
@@ -595,7 +607,10 @@ export function computeTextCoverage(
   }
 
   const documents: DocumentCoverage[] = [];
-  const matchedAllowanceSentences = new Map<CoverageAllowance, SentenceRecord[]>();
+  const matchedAllowanceSentences = new Map<
+    CoverageAllowance,
+    SentenceRecord[]
+  >();
 
   for (const manifest of manifests) {
     const urn = manifest.document.urn;
@@ -623,7 +638,10 @@ export function computeTextCoverage(
     }
 
     const uncoveredCounted: SentenceRecord[] = [];
-    const uncoveredAllowed: Array<{ sentence: SentenceRecord; allowance: CoverageAllowance }> = [];
+    const uncoveredAllowed: Array<{
+      sentence: SentenceRecord;
+      allowance: CoverageAllowance;
+    }> = [];
     let normative = 0;
     let covered = 0;
     let informativeUncovered = 0;
@@ -649,8 +667,12 @@ export function computeTextCoverage(
     const allowed = uncoveredAllowed.length;
     documents.push({
       urn,
-      ...(manifest.document.short !== undefined ? { short: manifest.document.short } : {}),
-      ...(manifest.document.part !== undefined ? { part: manifest.document.part } : {}),
+      ...(manifest.document.short !== undefined
+        ? { short: manifest.document.short }
+        : {}),
+      ...(manifest.document.part !== undefined
+        ? { part: manifest.document.part }
+        : {}),
       total: sentences.length,
       normative,
       covered,
@@ -659,7 +681,8 @@ export function computeTextCoverage(
       uncoveredAllowed,
       informativeUncovered,
       ratio: normative === 0 ? 1 : covered / normative,
-      ratioGated: normative - allowed === 0 ? 1 : covered / (normative - allowed),
+      ratioGated:
+        normative - allowed === 0 ? 1 : covered / (normative - allowed),
     });
   }
 
@@ -695,7 +718,9 @@ export function computeTextCoverage(
         message: `${label}: every matched sentence is informative — informative sentences need no allowance (stale — remove the entry) (text-coverage-config)`,
       });
     } else if (a.sentences) {
-      const informativePins = matched.filter(s => s.modality !== 'normative').map(s => s.address);
+      const informativePins = matched
+        .filter(s => s.modality !== 'normative')
+        .map(s => s.address);
       if (informativePins.length > 0) {
         configIssues.push({
           check: 'C73',
@@ -725,14 +750,20 @@ export function computeTextCoverage(
     }
   }
 
-  const flaggedPairs = flagDuplicatePairs(bindings, manifestUrns, adjudications);
+  const flaggedPairs = flagDuplicatePairs(
+    bindings,
+    manifestUrns,
+    adjudications,
+  );
   const unresolvedPairs = flaggedPairs.filter(p => !p.adjudication);
 
   // C73 — adjudication hygiene: sorted distinct ids, a reason, and the
   // pair still flagged (a pair that dropped below the threshold makes
   // its adjudication STALE — the declaration must die with the condition
   // that justified it).
-  const flaggedKeys = new Set(flaggedPairs.map(p => [p.a, p.b].sort().join('')));
+  const flaggedKeys = new Set(
+    flaggedPairs.map(p => [p.a, p.b].sort().join('')),
+  );
   for (const d of adjudications) {
     const label = `duplicate adjudication {${(d.elements ?? []).join(', ')}}`;
     if (!Array.isArray(d.elements) || d.elements.length !== 2) {
@@ -777,7 +808,10 @@ export function computeTextCoverage(
 }
 
 /** The C71 finding text of one uncovered counted sentence. */
-export function uncoveredSentenceMessage(urn: string, s: SentenceRecord): string {
+export function uncoveredSentenceMessage(
+  urn: string,
+  s: SentenceRecord,
+): string {
   const text = s.text.length > 100 ? `${s.text.slice(0, 97)}…` : s.text;
   return `sentence ${urn}#${s.address} (normative, ${s.kind}): bound by no model element and excluded by no allowance — "${text}" (text-coverage-sentence-uncovered)`;
 }
@@ -805,7 +839,9 @@ export function packageTextCoverageReport(
  * adjudication status). */
 export function formatTextCoverageReport(report: TextCoverageReport): string {
   const lines: string[] = [];
-  lines.push('── normative-text coverage (TODO.roadmap/26, concept doc §11.6) ──');
+  lines.push(
+    '── normative-text coverage (TODO.roadmap/26, concept doc §11.6) ──',
+  );
   lines.push('');
   lines.push(
     `  ${'document'.padEnd(26)} ${'sentences'.padStart(9)} ${'normative'.padStart(9)} ${'covered'.padStart(8)} ${'allowed'.padStart(8)} ${'uncovered'.padStart(9)} ${'coverage'.padStart(10)} gated`,
@@ -824,16 +860,22 @@ export function formatTextCoverageReport(report: TextCoverageReport): string {
   for (const d of report.documents) {
     if (d.uncoveredCounted.length > 0) {
       lines.push('');
-      lines.push(`  UNCOVERED normative sentences (${d.short ?? d.urn}) — each is a C71 finding:`);
+      lines.push(
+        `  UNCOVERED normative sentences (${d.short ?? d.urn}) — each is a C71 finding:`,
+      );
       for (const s of d.uncoveredCounted) {
         lines.push(`    ✗ ${d.urn}#${s.address}  "${truncate(s.text, 90)}"`);
       }
     }
     if (d.uncoveredAllowed.length > 0) {
       lines.push('');
-      lines.push(`  Allowed exclusions (${d.short ?? d.urn}) — reported, not gated:`);
+      lines.push(
+        `  Allowed exclusions (${d.short ?? d.urn}) — reported, not gated:`,
+      );
       for (const { sentence, allowance } of d.uncoveredAllowed) {
-        lines.push(`    ◦ ${d.urn}#${sentence.address}  "${truncate(sentence.text, 70)}"`);
+        lines.push(
+          `    ◦ ${d.urn}#${sentence.address}  "${truncate(sentence.text, 70)}"`,
+        );
         lines.push(`      allowance: ${allowance.reason ?? '(no reason)'}`);
       }
     }
@@ -843,13 +885,16 @@ export function formatTextCoverageReport(report: TextCoverageReport): string {
     );
   }
   lines.push('');
-  const adjudicated = report.flaggedPairs.length - report.unresolvedPairs.length;
+  const adjudicated =
+    report.flaggedPairs.length - report.unresolvedPairs.length;
   lines.push(
     `  duplicate pairs: ${report.flaggedPairs.length} flagged, ${adjudicated} adjudicated, ${report.unresolvedPairs.length} unresolved (target 0 unresolved — pairs are REPORTED, never auto-failed)`,
   );
   for (const p of report.flaggedPairs) {
     const status = p.adjudication ? `${p.adjudication.verdict}` : 'UNRESOLVED';
-    lines.push(`    ${p.adjudication ? '◦' : '?'} ${p.a} × ${p.b} — similarity ${p.similarity} [${status}]${p.adjudication ? ` — ${p.adjudication.reason ?? ''}` : ''}`);
+    lines.push(
+      `    ${p.adjudication ? '◦' : '?'} ${p.a} × ${p.b} — similarity ${p.similarity} [${status}]${p.adjudication ? ` — ${p.adjudication.reason ?? ''}` : ''}`,
+    );
   }
   return lines.join('\n');
 }

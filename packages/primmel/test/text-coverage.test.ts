@@ -18,10 +18,8 @@ import { checkPackage, type CheckOptions } from '../src/check';
 import {
   allowanceAddressMatches,
   allowanceMatches,
-  computeTextCoverage,
   containmentSimilarity,
   formatTextCoverageReport,
-  loadTextCoverageData,
   normalizeBinding,
   normalizeForSimilarity,
   packageTextCoverageReport,
@@ -55,7 +53,16 @@ const checked = (
 
 const URN = 'urn:oiml:pub:r:60-1:2021';
 
-function manifest(sentences: Array<Partial<SentencesManifest['sentences'][number]> & { address: string; fragment: string; modality: 'normative' | 'informative'; text: string }>): string {
+function manifest(
+  sentences: Array<
+    Partial<SentencesManifest['sentences'][number]> & {
+      address: string;
+      fragment: string;
+      modality: 'normative' | 'informative';
+      text: string;
+    }
+  >,
+): string {
   const m: SentencesManifest = {
     prd_sentences: '0.1.0',
     document: { urn: URN, short: 'T 60-1', part: '1' },
@@ -75,13 +82,50 @@ function coverageJson(config: Partial<CoverageConfigJson>): string {
 /** A small seeded document: clause-2.2 (2 sentences, one normative), clause-5.3.2
  * (2 normative), clause-2.12.1 (2 normative), a note (informative modal). */
 const SEEDED_MANIFEST = manifest([
-  { address: 'clause-2.2/s1', fragment: 'clause-2.2', modality: 'normative', text: 'Several measurement errors shall be considered together in the error envelope.' },
-  { address: 'clause-2.2/s2', fragment: 'clause-2.2', modality: 'informative', text: 'The envelope balances the individual contributions.' },
-  { address: 'clause-5.3.2/s1', fragment: 'clause-5.3.2', modality: 'normative', text: 'The error of any load cell shall not exceed the maximum permissible error.' },
-  { address: 'clause-5.3.2/s2', fragment: 'clause-5.3.2', modality: 'normative', text: 'The apportioning factor shall be in the range 0.3 to 0.8.' },
-  { address: 'clause-2.12.1/s1', fragment: 'clause-2.12.1', modality: 'normative', text: 'The certificate shall be prepared according to OIML B 18.' },
-  { address: 'clause-2.12.1/s2', fragment: 'clause-2.12.1', modality: 'normative', text: 'The template shall be supplemented with the Annex B information.' },
-  { address: 'clause-2.2/note-1/s1', fragment: 'clause-2.2/note-1', kind: 'note', fragment_normative: false, modality: 'informative', text: 'The envelope may be defined as the boundary.' },
+  {
+    address: 'clause-2.2/s1',
+    fragment: 'clause-2.2',
+    modality: 'normative',
+    text: 'Several measurement errors shall be considered together in the error envelope.',
+  },
+  {
+    address: 'clause-2.2/s2',
+    fragment: 'clause-2.2',
+    modality: 'informative',
+    text: 'The envelope balances the individual contributions.',
+  },
+  {
+    address: 'clause-5.3.2/s1',
+    fragment: 'clause-5.3.2',
+    modality: 'normative',
+    text: 'The error of any load cell shall not exceed the maximum permissible error.',
+  },
+  {
+    address: 'clause-5.3.2/s2',
+    fragment: 'clause-5.3.2',
+    modality: 'normative',
+    text: 'The apportioning factor shall be in the range 0.3 to 0.8.',
+  },
+  {
+    address: 'clause-2.12.1/s1',
+    fragment: 'clause-2.12.1',
+    modality: 'normative',
+    text: 'The certificate shall be prepared according to OIML B 18.',
+  },
+  {
+    address: 'clause-2.12.1/s2',
+    fragment: 'clause-2.12.1',
+    modality: 'normative',
+    text: 'The template shall be supplemented with the Annex B information.',
+  },
+  {
+    address: 'clause-2.2/note-1/s1',
+    fragment: 'clause-2.2/note-1',
+    kind: 'note',
+    fragment_normative: false,
+    modality: 'informative',
+    text: 'The envelope may be defined as the boundary.',
+  },
 ]);
 
 const REQ_MPE = `requirement /req/mpe {
@@ -101,10 +145,22 @@ attribute_definition e_max {
 
 describe('normalizeBinding (TODO.roadmap/26)', () => {
   it('normalizes the doc/clause/fragment shapes', () => {
-    assert.deepEqual(normalizeBinding(URN, '5.3.2'), { doc: URN, fragmentPath: 'clause-5.3.2' });
-    assert.deepEqual(normalizeBinding(URN, 'table-4'), { doc: URN, fragmentPath: 'table-4' });
-    assert.deepEqual(normalizeBinding(`${URN}#table-4`, ''), { doc: URN, fragmentPath: 'table-4' });
-    assert.deepEqual(normalizeBinding(URN, '2.2', 's1'), { doc: URN, fragmentPath: 'clause-2.2/s1' });
+    assert.deepEqual(normalizeBinding(URN, '5.3.2'), {
+      doc: URN,
+      fragmentPath: 'clause-5.3.2',
+    });
+    assert.deepEqual(normalizeBinding(URN, 'table-4'), {
+      doc: URN,
+      fragmentPath: 'table-4',
+    });
+    assert.deepEqual(normalizeBinding(`${URN}#table-4`, ''), {
+      doc: URN,
+      fragmentPath: 'table-4',
+    });
+    assert.deepEqual(normalizeBinding(URN, '2.2', 's1'), {
+      doc: URN,
+      fragmentPath: 'clause-2.2/s1',
+    });
     assert.equal(normalizeBinding(URN, ''), null);
   });
 });
@@ -113,10 +169,24 @@ describe('normalizeBinding (TODO.roadmap/26)', () => {
 
 describe('allowance matching (TODO.roadmap/26)', () => {
   it('boundary-matches clause prefixes (not string prefixes)', () => {
-    assert.ok(allowanceAddressMatches(`${URN}#clause-2.12`, `${URN}#clause-2.12.1/s1`));
-    assert.ok(allowanceAddressMatches(`${URN}#clause-2.12.1`, `${URN}#clause-2.12.1/s1`));
-    assert.ok(!allowanceAddressMatches(`${URN}#clause-2.1`, `${URN}#clause-2.12.1/s1`));
-    assert.ok(!allowanceAddressMatches(`${URN}#clause-2.12.2`, `${URN}#clause-2.12.1/s1`));
+    assert.ok(
+      allowanceAddressMatches(`${URN}#clause-2.12`, `${URN}#clause-2.12.1/s1`),
+    );
+    assert.ok(
+      allowanceAddressMatches(
+        `${URN}#clause-2.12.1`,
+        `${URN}#clause-2.12.1/s1`,
+      ),
+    );
+    assert.ok(
+      !allowanceAddressMatches(`${URN}#clause-2.1`, `${URN}#clause-2.12.1/s1`),
+    );
+    assert.ok(
+      !allowanceAddressMatches(
+        `${URN}#clause-2.12.2`,
+        `${URN}#clause-2.12.1/s1`,
+      ),
+    );
   });
 
   it('pins discharge exactly the pinned sentences', () => {
@@ -126,7 +196,10 @@ describe('allowance matching (TODO.roadmap/26)', () => {
       sentences,
       URN,
     );
-    assert.deepEqual(matched.map(s => s.address), ['clause-2.12.1/s2']);
+    assert.deepEqual(
+      matched.map(s => s.address),
+      ['clause-2.12.1/s2'],
+    );
   });
 });
 
@@ -137,9 +210,13 @@ describe('containment similarity (TODO.roadmap/26)', () => {
     const a = normalizeForSimilarity('The error shall not exceed the MPE.');
     const b = normalizeForSimilarity('the error shall not exceed the mpe');
     assert.equal(containmentSimilarity(a, b), 1);
-    const c = normalizeForSimilarity('The error shall not exceed the MPE for class A load cells.');
+    const c = normalizeForSimilarity(
+      'The error shall not exceed the MPE for class A load cells.',
+    );
     assert.ok(containmentSimilarity(a, c) >= 0.8);
-    const d = normalizeForSimilarity('Creep recovery differs fundamentally from hysteresis.');
+    const d = normalizeForSimilarity(
+      'Creep recovery differs fundamentally from hysteresis.',
+    );
     assert.ok(containmentSimilarity(a, d) < 0.5);
   });
 });
@@ -149,23 +226,32 @@ describe('containment similarity (TODO.roadmap/26)', () => {
 describe('text coverage in primmel check (TODO.roadmap/26)', () => {
   it('is silent without sources-prd payloads', () => {
     const issues = checked({ 'm.prl': REQ_MPE }, { strictness: 'audit' });
-    assert.equal(issues.filter(i => i.check === 'C71' || i.check === 'C73').length, 0);
+    assert.equal(
+      issues.filter(i => i.check === 'C71' || i.check === 'C73').length,
+      0,
+    );
   });
 
   it('reports uncovered normative sentences as C71 at --audit, never at the default level', () => {
-    const files = { 'm.prl': REQ_MPE, 'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST };
+    const files = {
+      'm.prl': REQ_MPE,
+      'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
+    };
     const auditIssues = checked(files, { strictness: 'audit' });
     const c71 = auditIssues.filter(i => i.check === 'C71');
     // clause-5.3.2 is bound (2 sentences covered); clause-2.2/s1, 2.12.1/s1, 2.12.1/s2 uncovered
     assert.equal(c71.length, 3);
     assert.ok(c71.every(i => i.severity === 'warning'));
     assert.ok(c71[0].message.includes(`${URN}#clause-2.2/s1`));
-    assert.ok(c71.some(i => i.message.includes('"The certificate shall be prepared')));
+    assert.ok(
+      c71.some(i => i.message.includes('"The certificate shall be prepared')),
+    );
     const normalIssues = checked(files);
     assert.equal(normalIssues.filter(i => i.check === 'C71').length, 0);
   });
 
-  it('a sentence-level binding covers exactly the bound sentence (source … fragment "s1")', () => {    const req = `requirement /req/envelope {
+  it('a sentence-level binding covers exactly the bound sentence (source … fragment "s1")', () => {
+    const req = `requirement /req/envelope {
   binds_to { model.parameters.e_max }
   statement "The error envelope considers several measurement errors together"
   source { doc "${URN}" clause "2.2" fragment "s1" }
@@ -193,8 +279,15 @@ attribute_definition e_max {
       'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
       'sources-prd/coverage.json': coverageJson({
         allowances: [
-          { address: `${URN}#clause-2.2`, sentences: ['s1'], reason: 'error-envelope principle prose' },
-          { address: `${URN}#clause-2.12.1`, reason: 'certificate surface modelled YAML-side' },
+          {
+            address: `${URN}#clause-2.2`,
+            sentences: ['s1'],
+            reason: 'error-envelope principle prose',
+          },
+          {
+            address: `${URN}#clause-2.12.1`,
+            reason: 'certificate surface modelled YAML-side',
+          },
         ],
       }),
     };
@@ -208,7 +301,13 @@ attribute_definition e_max {
       'm.prl': REQ_MPE,
       'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
       'sources-prd/coverage.json': coverageJson({
-        allowances: [{ address: `${URN}#clause-2.12.1`, sentences: ['s9'], reason: 'drifted pin' }],
+        allowances: [
+          {
+            address: `${URN}#clause-2.12.1`,
+            sentences: ['s9'],
+            reason: 'drifted pin',
+          },
+        ],
       }),
     };
     const issues = checked(files);
@@ -222,7 +321,12 @@ attribute_definition e_max {
       'm.prl': REQ_MPE,
       'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
       'sources-prd/coverage.json': coverageJson({
-        allowances: [{ address: `${URN}#clause-2.2/note-1`, reason: 'a note needs no allowance' }],
+        allowances: [
+          {
+            address: `${URN}#clause-2.2/note-1`,
+            reason: 'a note needs no allowance',
+          },
+        ],
       }),
     };
     const issues = checked(files);
@@ -238,7 +342,9 @@ attribute_definition e_max {
       'm.prl': REQ_MPE,
       'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
       'sources-prd/coverage.json': coverageJson({
-        allowances: [{ address: `${URN}#clause-5.3.2`, reason: 'outlived its condition' }],
+        allowances: [
+          { address: `${URN}#clause-5.3.2`, reason: 'outlived its condition' },
+        ],
       }),
     };
     const issues = checked(files);
@@ -250,7 +356,12 @@ attribute_definition e_max {
     const live = checked({
       ...files,
       'sources-prd/coverage.json': coverageJson({
-        allowances: [{ address: `${URN}#clause-2.12.1`, reason: 'certificate surface modelled YAML-side' }],
+        allowances: [
+          {
+            address: `${URN}#clause-2.12.1`,
+            reason: 'certificate surface modelled YAML-side',
+          },
+        ],
       }),
     });
     assert.equal(live.filter(i => i.check === 'C73').length, 0);
@@ -268,7 +379,8 @@ attribute_definition e_max {
     const files = {
       'm.prl': REQ_MPE,
       'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
-      '.primmel-allowlist.prl': 'text_coverage_budget 0 "100 % — any uncovered sentence is a regression"\n',
+      '.primmel-allowlist.prl':
+        'text_coverage_budget 0 "100 % — any uncovered sentence is a regression"\n',
     };
     const issues = checked(files, { strictness: 'audit' });
     const c72 = issues.filter(i => i.check === 'C72');
@@ -294,7 +406,10 @@ attribute_definition e_max {
     assert.equal(slackC72[0].severity, 'warning');
     const strict = checked(files, { strictness: 'audit', strict: true });
     // budget-covered C71s stay warnings under --strict (the budget is their allowance)
-    assert.equal(strict.filter(i => i.check === 'C71' && i.severity === 'error').length, 0);
+    assert.equal(
+      strict.filter(i => i.check === 'C71' && i.severity === 'error').length,
+      0,
+    );
     assert.equal(strict.filter(i => i.check === 'C72').length, 0);
   });
 
@@ -316,18 +431,34 @@ attribute_definition e_max {
   symbol "E_max" origin design-fixed scope model unit t quantity_kind mass
 }
 `;
-    const files = { 'm.prl': dup, 'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST };
+    const files = {
+      'm.prl': dup,
+      'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
+    };
     // unresolved pair: reported, never an issue (never auto-fails)
     const issues = checked(files, { strictness: 'audit' });
-    assert.equal(issues.filter(i => i.check === 'C73' && i.message.includes('adjudication')).length, 0);
+    assert.equal(
+      issues.filter(
+        i => i.check === 'C73' && i.message.includes('adjudication'),
+      ).length,
+      0,
+    );
     // adjudicated: resolved; stale adjudication: C73
     const withAdjudication = checked(
       {
         ...files,
         'sources-prd/coverage.json': coverageJson({
           duplicate_adjudications: [
-            { elements: ['/req/mpe', '/req/mpe-copy'], verdict: 'merge-planned', reason: 'seeded copy' },
-            { elements: ['/req/ghost-a', '/req/ghost-b'], verdict: 'distinct', reason: 'not flagged' },
+            {
+              elements: ['/req/mpe', '/req/mpe-copy'],
+              verdict: 'merge-planned',
+              reason: 'seeded copy',
+            },
+            {
+              elements: ['/req/ghost-a', '/req/ghost-b'],
+              verdict: 'distinct',
+              reason: 'not flagged',
+            },
           ],
         }),
       },
@@ -344,11 +475,15 @@ attribute_definition e_max {
       'm.prl': REQ_MPE,
       'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
       'sources-prd/coverage.json': coverageJson({
-        allowances: [{ address: `${URN}#clause-2.12.1`, reason: 'certificate surface' }],
+        allowances: [
+          { address: `${URN}#clause-2.12.1`, reason: 'certificate surface' },
+        ],
       }),
     });
     try {
-      const report = packageTextCoverageReport(dir, d => loadPackageWithIssues(d));
+      const report = packageTextCoverageReport(dir, d =>
+        loadPackageWithIssues(d),
+      );
       assert.ok(report);
       const doc = report.documents[0];
       assert.equal(doc.normative, 5);
@@ -423,21 +558,34 @@ describe('primmel check --coverage (TODO.roadmap/26)', () => {
       'm.prl': REQ_MPE,
       'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST,
       'sources-prd/coverage.json': coverageJson({
-        allowances: [{ address: `${URN}#clause-2.12.1`, reason: 'certificate surface' }],
+        allowances: [
+          { address: `${URN}#clause-2.12.1`, reason: 'certificate surface' },
+        ],
       }),
     });
     const bare = makeTmpPackage({ 'm.prl': REQ_MPE });
     try {
       const out = execFileSync(
         'npx',
-        ['tsx', join(__dirname, '..', 'scripts', 'check.mts'), '--audit', '--coverage', dir],
+        [
+          'tsx',
+          join(__dirname, '..', 'scripts', 'check.mts'),
+          '--audit',
+          '--coverage',
+          dir,
+        ],
         { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
       );
       assert.ok(out.includes('normative-text coverage'));
       assert.ok(out.includes('Allowed exclusions'));
       const silent = execFileSync(
         'npx',
-        ['tsx', join(__dirname, '..', 'scripts', 'check.mts'), '--coverage', bare],
+        [
+          'tsx',
+          join(__dirname, '..', 'scripts', 'check.mts'),
+          '--coverage',
+          bare,
+        ],
         { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
       );
       assert.ok(silent.includes('no sources-prd payloads'));

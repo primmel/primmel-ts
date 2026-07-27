@@ -214,7 +214,9 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
       '" clause "' +
       escapeString(s.sourceRef.clause) +
       '"' +
-      (s.sourceRef.fragment ? ' fragment "' + escapeString(s.sourceRef.fragment) + '"' : '') +
+      (s.sourceRef.fragment
+        ? ' fragment "' + escapeString(s.sourceRef.fragment) + '"'
+        : '') +
       ' }\n';
   }
   if (s.formula) {

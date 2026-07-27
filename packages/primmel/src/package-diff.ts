@@ -13,10 +13,7 @@ import type Standard from './types/Standard';
 import type { ValidationIssue } from './validate';
 import { loadPackageWithIssues, type ResolvePackage } from './ser-des/package';
 import { loadPrm, prmToMapProfiles } from './ser-des/prm';
-import {
-  mappingsFromProfile,
-  type MappingRecord,
-} from './mapping-coverage';
+import { mappingsFromProfile, type MappingRecord } from './mapping-coverage';
 import {
   clauseTextKey,
   diffStandards,
@@ -100,9 +97,9 @@ export function packageClauseTexts(dir: string): ClauseTextIndex {
       if (!s.clause || s.text === undefined) {
         continue;
       }
-      (byClause.get(s.clause) ?? byClause.set(s.clause, []).get(s.clause)!).push(
-        s.text,
-      );
+      (
+        byClause.get(s.clause) ?? byClause.set(s.clause, []).get(s.clause)!
+      ).push(s.text);
     }
     for (const [clause, texts] of byClause) {
       out.set(clauseTextKey(basis, clause), texts.join('\n'));

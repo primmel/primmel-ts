@@ -174,7 +174,9 @@ export const dumpVerdict: Dumper<Verdict> = function (v) {
       '" clause "' +
       escapeString(v.source.clause) +
       '"' +
-      (v.source.fragment ? ' fragment "' + escapeString(v.source.fragment) + '"' : '') +
+      (v.source.fragment
+        ? ' fragment "' + escapeString(v.source.fragment) + '"'
+        : '') +
       ' }\n';
   }
   out += '}\n';

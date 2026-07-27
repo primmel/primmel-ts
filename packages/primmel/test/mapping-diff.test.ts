@@ -111,15 +111,17 @@ describe('mapping diff — coverage delta (computed, never authored)', () => {
     // The spec's example: a reference component drops from full cover
     // because the implementation deleted the mapped process — a computed
     // finding, not a discovered one.
-    const b = IMPL_A.replace('process OpB { name "Operation B" }\n', '').replace(
-      '    OpB -> StdS#Process3 { description "B fulfils 3" }\n',
+    const b = IMPL_A.replace(
+      'process OpB { name "Operation B" }\n',
       '',
-    );
+    ).replace('    OpB -> StdS#Process3 { description "B fulfils 3" }\n', '');
     const d = diffStandards(load(IMPL_A), load(b));
     assert.equal(d.removed.length, 1);
     assert.equal(d.removed[0].id, 'OpB');
     assert.equal(d.mappings.removed.length, 1);
-    const delta = d.mappings.coverageDelta.find(c => c.component === 'Process3');
+    const delta = d.mappings.coverageDelta.find(
+      c => c.component === 'Process3',
+    );
     assert.equal(delta?.from, 'full');
     assert.equal(delta?.to, 'none');
   });
@@ -151,7 +153,9 @@ process Process1 {
     const d = diffStandards(load(IMPL_A), load(b), {
       references: { StdS: reference },
     });
-    const delta = d.mappings.coverageDelta.find(c => c.component === 'Process3');
+    const delta = d.mappings.coverageDelta.find(
+      c => c.component === 'Process3',
+    );
     assert.equal(delta?.from, 'full');
     assert.equal(delta?.to, 'none');
   });

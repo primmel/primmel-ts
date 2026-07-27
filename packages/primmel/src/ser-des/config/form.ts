@@ -457,7 +457,9 @@ export const dumpForm: Dumper<Form> = function (f) {
           '" clause "' +
           escapeString(c.source.clause) +
           '"' +
-          (c.source.fragment ? ' fragment "' + escapeString(c.source.fragment) + '"' : '') +
+          (c.source.fragment
+            ? ' fragment "' + escapeString(c.source.fragment) + '"'
+            : '') +
           ' } ';
       }
       out += '}\n';

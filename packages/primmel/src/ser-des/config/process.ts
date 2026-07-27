@@ -992,7 +992,9 @@ function dumpStep(step: ProcessStep): string {
     let c = 'calls ' + dumpBareSafe(step.calls);
     if (step.callIn.length > 0 || step.callOut.length > 0) {
       const bind = (bs: ProcessCallBinding[]): string =>
-        bs.map(b => dumpBareSafe(b.param) + ' : ' + dumpBareSafe(b.bind)).join(' ');
+        bs
+          .map(b => dumpBareSafe(b.param) + ' : ' + dumpBareSafe(b.bind))
+          .join(' ');
       c += ' { with {';
       if (step.callIn.length > 0) {
         c += ' in { ' + bind(step.callIn) + ' }';

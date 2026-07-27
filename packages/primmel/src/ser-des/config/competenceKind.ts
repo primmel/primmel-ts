@@ -31,7 +31,6 @@ import type {
   CompetenceQuantity,
   CompetenceRange,
   CompetenceRequirement,
-  MethodStandard,
 } from '../../types/CompetenceKind';
 import type { SourceRef } from '../../types/Subject';
 import tokenize from '../tokenize';
@@ -164,10 +163,7 @@ export function parseRequiredCompetence(
   return out;
 }
 
-function dumpQuantity(
-  keyword: string,
-  q: CompetenceQuantity | null,
-): string {
+function dumpQuantity(keyword: string, q: CompetenceQuantity | null): string {
   if (!q) {
     return '';
   }
@@ -300,8 +296,7 @@ export const dumpCompetenceKind: Dumper<CompetenceKind> = function (k) {
       ' }\n';
   }
   for (const ms of k.methodStandards) {
-    out +=
-      '  method_standard ' + ms.id + ' "' + escapeString(ms.title) + '"\n';
+    out += '  method_standard ' + ms.id + ' "' + escapeString(ms.title) + '"\n';
   }
   out += '}\n';
   return out;

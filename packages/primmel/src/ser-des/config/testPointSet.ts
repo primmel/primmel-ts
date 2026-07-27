@@ -176,7 +176,9 @@ export const dumpTestPointSet: Dumper<TestPointSet> = function (s) {
       '" clause "' +
       escapeString(s.source.clause) +
       '"' +
-      (s.source.fragment ? ' fragment "' + escapeString(s.source.fragment) + '"' : '') +
+      (s.source.fragment
+        ? ' fragment "' + escapeString(s.source.fragment) + '"'
+        : '') +
       ' }\n';
   }
   const ckeys = Object.keys(s.cardinality);

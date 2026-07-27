@@ -89,9 +89,7 @@ export const parseDiscrepancyRecord: Parser = function (id, data) {
   };
 };
 
-export const dumpDiscrepancyRecord: Dumper<DiscrepancyRecord> = function (
-  r,
-) {
+export const dumpDiscrepancyRecord: Dumper<DiscrepancyRecord> = function (r) {
   let out = 'discrepancy_record ' + r.id + ' {\n';
   if (r.status) {
     out += '  status ' + r.status + '\n';

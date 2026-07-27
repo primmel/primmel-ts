@@ -4045,7 +4045,14 @@ export function checkPackage(
           // contract, judged only where a via is legal (one issue per
           // defect: a forbidden via reports under leg 5 only).
           if (c.via !== '') {
-            if (self || isCreate || !writesStatus || !targetMachine || c.action === 'notify' || c.action === 'record') {
+            if (
+              self ||
+              isCreate ||
+              !writesStatus ||
+              !targetMachine ||
+              c.action === 'notify' ||
+              c.action === 'record'
+            ) {
               const forbidden = self
                 ? "a self-step (the target is the owning machine's own entity)"
                 : isCreate

@@ -617,7 +617,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       '" clause "' +
       escapeString(ct.sourceRef.clause) +
       '"' +
-      (ct.sourceRef.fragment ? ' fragment "' + escapeString(ct.sourceRef.fragment) + '"' : '') +
+      (ct.sourceRef.fragment
+        ? ' fragment "' + escapeString(ct.sourceRef.fragment) + '"'
+        : '') +
       ' }\n';
   } else if (ct.reference) {
     out += '  reference ' + ct.reference + '\n';
