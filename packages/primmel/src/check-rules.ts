@@ -804,9 +804,13 @@ export const CHECK_RULES: CheckRule[] = [
   // Every human-readable string is spelling-coded per ISO 24229; BCP 47
   // is not used. C89 is the SYNTAX layer: the manifest default_spelling
   // and declared spellings parse (script mandatory), every text block
-  // addresses an existing element's prose field, every spell entry's
-  // code parses with no duplicate per set, the default spelling's value
-  // stays inline (never in a text block), and every via conversion code
+  // addresses an existing element's prose field — <element-id>.<field>,
+  // or <element-id>.<path…>.<field> for prose nested inside the element
+  // (E13: intermediate segments name nested structures, list items key
+  // by declared name/order/slot, the terminal is a prose field) — every
+  // spell entry's code parses with no duplicate per set, the default
+  // spelling's value stays inline (never in a text block), and every via
+  // conversion code
   // parses (zz- user-assigned codes warn). Register resolution is the
   // consumer's vendored-snapshot discipline — primmel-ts stays
   // register-free (src/spelling.ts validates shape only).

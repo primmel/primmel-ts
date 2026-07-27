@@ -8,6 +8,20 @@
 //     spell zho-Latn via BGN-PCGN:zho-Hans:Latn:1979 "…"
 //   }
 //
+// Prose NESTED inside an element addresses by path (smart gap-close
+// E13) — `<element-id>.<path…>.<field>`; the id stays ONE bare token
+// (dots are ordinary token characters), so parsing is unchanged and the
+// linter (C89) owns the address grammar: the element is the longest
+// dot-boundary prefix registered in the package, an intermediate
+// segment names a nested structure, a list item is keyed by its
+// declared key (a field/parameter name, a step's order, a subject's
+// slot — never a positional index), and the terminal segment is a prose
+// field:
+//
+//   text r60-3/load-test.fields.runs.fields.indication.label {
+//     spell fra-Latn "Indication"
+//   }
+//
 // The default spelling's value stays inline on the addressed element
 // (`name "…"`); a `text` block never replaces it — it adds spellings.
 // Code syntax is linter rule C89 (src/spelling.ts validates shape;
