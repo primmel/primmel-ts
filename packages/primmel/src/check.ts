@@ -3168,7 +3168,11 @@ export function checkPackage(
           if (step.test === '') {
             err(
               'C92',
-              `test_sequence ${seq.id}: ${at} declares role "${step.role}" on a phase step — the role is meaningful on test steps only (test-sequence-shape)`,
+              `test_sequence ${seq.id}: ${at} declares role "${step.role}" on ${
+                step.phase === ''
+                  ? 'a step carrying neither test nor phase'
+                  : 'a phase step'
+              } — the role is meaningful on test steps only (test-sequence-shape)`,
             );
           } else if (
             !(TEST_SEQUENCE_STEP_ROLES as readonly string[]).includes(step.role)

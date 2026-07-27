@@ -441,6 +441,18 @@ describe('test_sequence lint rules (C92–C93)', () => {
     const phaseRole = issues('  step 1 { phase "T_high" role baseline }\n');
     assert.ok(phaseRole.some(i => i.message.includes('on a phase step')));
 
+    // The neither-test-nor-phase case names the step accurately (the E10
+    // message mislabel — it is not "a phase step").
+    const neitherRole = issues('  step 1 { role baseline }\n');
+    assert.ok(
+      neitherRole.some(i =>
+        i.message.includes(
+          'declares role "baseline" on a step carrying neither test nor phase',
+        ),
+      ),
+      `expected the neither-case role message, got: ${neitherRole.map(i => i.message).join('\n')}`,
+    );
+
     const badRole = issues('  step 1 { test "/conf/x" role primary }\n');
     assert.ok(
       badRole.some(
