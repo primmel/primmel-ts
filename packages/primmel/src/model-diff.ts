@@ -83,7 +83,7 @@ export const TIER_ORDER: TierName[] = [
  * tests, forms, verdict quantities, tables of limits); tertiary =
  * execution and judgment (processes, entities, registries, state
  * machines, approvals, monitors, passports); cross-cutting = annotation
- * and traceability furniture (notes, links).
+ * and traceability furniture (notes, invariants, links).
  *
  * mapProfiles are deliberately ABSENT: mappings are not tiered elements
  * — the mapping diff owns them (pairs + coverage delta).
@@ -137,6 +137,11 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   viewProfiles: 'tertiary',
   provisions: 'tertiary',
   notes: 'cross-cutting',
+  // Invariants (smart gap-close E9) are cross-cutting beside notes: the
+  // typed replacement for the note-family encoding — doctrine about the
+  // model, not machinery inside it (the enforcement claims point at the
+  // gates/linker rules that execute; the invariant itself declares).
+  invariants: 'cross-cutting',
   links: 'cross-cutting',
 };
 

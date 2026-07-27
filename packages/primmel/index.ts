@@ -240,6 +240,7 @@ export {
   PASSPORT_CONTENT_CLASSES,
   PASSPORT_UPI_LEVELS,
 } from './src/types/Passport';
+export type { Invariant, InvariantEnforcement } from './src/types/Invariant';
 export {
   InstanceResolutionError,
   instanceChain,

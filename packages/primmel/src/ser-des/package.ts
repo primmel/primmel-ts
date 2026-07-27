@@ -309,6 +309,10 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   'instances',
   'quantityRegisters',
   'duals',
+  // The architecture invariants (smart gap-close E9) merge like the
+  // note collection they replace — doctrine declared in a foundation
+  // package (oiml-smart-core) composes into every rec model.
+  'invariants',
   'texts',
 ];
 

@@ -31,6 +31,7 @@ import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
+import type { Invariant } from './Invariant';
 import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
@@ -153,6 +154,12 @@ export default interface Standard {
   // projections of the product model + live instance state, declared on
   // product reference packages.
   passports: Passport[];
+
+  // The architecture invariants (smart gap-close E9,
+  // analysis/architecture-gaps-2026-07.md): named platform invariants
+  // with severity + enforcement claims — the first-class replacement
+  // for the note-family encoding, a sibling collection of `notes`.
+  invariants: Invariant[];
 
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
   // ch. 10): per-spelling alternate values of prose fields, addressed

@@ -817,6 +817,35 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/25, doctrine ch. 10 §10.7',
   ),
+  // ── the architecture invariants (smart gap-close E9,
+  // analysis/architecture-gaps-2026-07.md; smart docs/oiml-core/
+  // 09-invariants.md) ──
+  // The `invariant` construct is the first-class replacement for the
+  // note-family encoding (pipe-delimited structure inside a message
+  // string). C90 is the declaration shape: every invariant carries
+  // name, statement, and severity (severity is presence-judged only —
+  // the smart side owns the vocabulary), and enforcement is a non-empty
+  // claim list XOR the literal `aspirational` marker. C91 is the claim
+  // grammar: kernel:C<n> | linker:<kebab-name> | gate:<kebab-name>, and
+  // the aspirational marker never mixes with claims. Claim TARGET
+  // resolution is the smart-side linker rule R38's crosswalk — the
+  // kernel checks syntax/shape only.
+  R(
+    'C90',
+    'invariant-shape',
+    'base',
+    'error',
+    'normal',
+    'smart architecture-gaps-2026-07.md E9, docs/oiml-core/09-invariants.md',
+  ),
+  R(
+    'C91',
+    'invariant-enforcement-grammar',
+    'base',
+    'error',
+    'normal',
+    'smart architecture-gaps-2026-07.md E9, docs/oiml-core/09-invariants.md',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

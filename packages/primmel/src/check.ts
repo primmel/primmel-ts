@@ -3009,6 +3009,79 @@ export function checkPackage(
     }
   }
 
+  // ── C90–C91: the architecture invariants (smart gap-close E9,
+  // analysis/architecture-gaps-2026-07.md; smart
+  // docs/oiml-core/09-invariants.md) ──
+  // The `invariant` construct is the first-class replacement for the
+  // note-family encoding. C90 invariant-shape: every invariant carries
+  // name, statement, and severity (severity is PRESENCE-judged only —
+  // the smart side owns the severity vocabulary), and enforcement is a
+  // non-empty claim list XOR the literal `aspirational` marker — never
+  // empty, never both. C91 invariant-enforcement-grammar: every claim
+  // matches kernel:C<n> | linker:<kebab-name> | gate:<kebab-name>, and
+  // the aspirational marker never appears inside a claims list. Claim
+  // TARGET resolution (does the linker rule exist, does the gate have
+  // evidence) is the smart-side linker rule R38's crosswalk — the
+  // kernel checks syntax/shape only. Packages without invariants are
+  // untouched — the loop is empty.
+  {
+    const CLAIM_GRAMMAR = [
+      /^kernel:C\d+$/,
+      /^linker:[a-z0-9-]+$/,
+      /^gate:[a-z0-9-]+$/,
+    ];
+    for (const inv of standard.invariants ?? []) {
+      // C90 — invariant-shape.
+      if (inv.name === '') {
+        err(
+          'C90',
+          `invariant ${inv.id}: declares no name — an invariant carries a short rule name (invariant-shape)`,
+        );
+      }
+      if (inv.statement === '') {
+        err(
+          'C90',
+          `invariant ${inv.id}: declares no statement — an invariant carries the rule's prose (the default spelling inline; alternates ride text ${inv.id}.statement blocks) (invariant-shape)`,
+        );
+      }
+      if (inv.severity === '') {
+        err(
+          'C90',
+          `invariant ${inv.id}: declares no severity (invariant-shape)`,
+        );
+      }
+      const e = inv.enforcement;
+      if (!e.aspirational && e.claims.length === 0) {
+        err(
+          'C90',
+          `invariant ${inv.id}: declares no enforcement — a non-empty claim list (enforcement { kernel:C<n> … }) or the literal marker (enforcement aspirational) (invariant-shape)`,
+        );
+      }
+      if (e.aspirational && e.claims.length > 0) {
+        err(
+          'C90',
+          `invariant ${inv.id}: enforcement mixes the aspirational marker with ${e.claims.length} claim(s) — one or the other, never both (invariant-shape)`,
+        );
+      }
+
+      // C91 — invariant-enforcement-grammar (syntax only; the smart
+      // side's R38 owns target resolution).
+      for (const claim of e.claims) {
+        if (claim === 'aspirational') {
+          err(
+            'C91',
+            `invariant ${inv.id}: the aspirational marker never appears inside a claims list — spell it bare (enforcement aspirational) (invariant-enforcement-grammar)`,
+          );
+        } else if (!CLAIM_GRAMMAR.some(re => re.test(claim))) {
+          err(
+            'C91',
+            `invariant ${inv.id}: enforcement claim "${claim}" does not match kernel:C<n> | linker:<kebab-name> | gate:<kebab-name> (invariant-enforcement-grammar)`,
+          );
+        }
+      }
+    }
+  }
+
   // ── C32–C36: quantities, time, and the IS↔HAS duality ──
   // (TODO.roadmap/06; doctrine ch. 6). Coherence is judged on quantity
   // KINDS — resolved through the package's quantity_registers — never on
@@ -4273,6 +4346,7 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
     'artifactDefinitions',
     'monitors',
     'passports',
+    'invariants',
     'stateMachines',
     'figures',
     'links',
