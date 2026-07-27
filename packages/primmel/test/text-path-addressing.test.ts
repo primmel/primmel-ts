@@ -295,6 +295,35 @@ text load-test-row.fields.runs.fields.indication.label {
     );
   });
 
+  it('validates the true_label/false_label/examples prose vocabulary (the C89 set)', () => {
+    const issues = c89(
+      makeTmpPackage(`
+form verdict-form {
+  name "Verdict form"
+  field pass : boolean {
+    true_label "Pass"
+    false_label "Fail"
+    examples "Pass at every point"
+  }
+}
+text verdict-form.fields.pass.true_label {
+  spell fra-Latn "Réussi"
+}
+text verdict-form.fields.pass.false_label {
+  spell fra-Latn "Échoué"
+}
+text verdict-form.fields.pass.examples {
+  spell fra-Latn "Réussi à tous les points"
+}
+`),
+    );
+    assert.deepEqual(
+      issues,
+      [],
+      `expected the true_label/false_label/examples vocabulary to validate, got: ${issues.map(i => i.message).join('\n')}`,
+    );
+  });
+
   it('resolves requirement param/subject/limit-notes prose', () => {
     const issues = c89(
       makeTmpPackage(

@@ -4830,6 +4830,9 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
     'message',
     'designation',
     'placeholder',
+    'true_label',
+    'false_label',
+    'examples',
   ]);
 
   for (const t of texts) {
