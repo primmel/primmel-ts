@@ -12,7 +12,7 @@
 // the `uses` composition leg (invariants merge like the note collection
 // they replace — MERGE_FIELDS), the C89 text-addressing leg
 // (text INV-1.statement resolves against the construct), and the
-// corpus-clean leg: the 19 shipped packages show zero errors and zero
+// corpus-clean leg: the 23 shipped packages show zero errors and zero
 // invariant-rule issues (additive/OCP — packages without an invariant
 // are untouched).
 // ─────────────────────────────────────────────────────────────────────
@@ -445,7 +445,7 @@ text INV-1.statement {
   });
 });
 
-describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
+describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
   it(
     'shows zero errors and zero invariant-rule issues across the corpus',
     { skip: CORPUS_SKIP },
@@ -456,8 +456,8 @@ describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        19,
-        `expected the 19-package corpus at ${CORPUS}`,
+        23,
+        `expected the 23-package corpus at ${CORPUS}`,
       );
       for (const dir of dirs) {
         const issues = checkPackage(dir);

@@ -15,7 +15,7 @@
 // leg (text <test-ref>.description resolves against the construct),
 // the duplicate-id uniqueness leg (the collection key IS the test
 // reference — parse-time, surfaced through checkPackage as C96), and
-// the corpus-clean leg: the 19 shipped packages show zero errors and
+// the corpus-clean leg: the 23 shipped packages show zero errors and
 // zero formulas-used-rule issues (additive/OCP — packages without a
 // trace are untouched).
 // ─────────────────────────────────────────────────────────────────────
@@ -451,7 +451,7 @@ text /conf/metrological-tests/measurement-error-repeatability-mdlo.description {
   });
 });
 
-describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
+describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
   it(
     'shows zero errors and zero formulas-used-rule issues across the corpus',
     { skip: CORPUS_SKIP },
@@ -462,8 +462,8 @@ describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        19,
-        `expected the 19-package corpus at ${CORPUS}`,
+        23,
+        `expected the 23-package corpus at ${CORPUS}`,
       );
       for (const dir of dirs) {
         const issues = checkPackage(dir);

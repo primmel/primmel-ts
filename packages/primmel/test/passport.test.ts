@@ -9,7 +9,7 @@
 //   C88 passport-upi-scheme
 // the passport-supply-chain fixture (acme-lc500 + the oiml-r60 sibling
 // stub) validated end-to-end (parse, lint-clean, round-trip), and the
-// corpus-clean leg: the 19 shipped packages show zero errors and zero
+// corpus-clean leg: the 23 shipped packages show zero errors and zero
 // passport-rule issues (additive/OCP — packages without a passport are
 // untouched).
 // ─────────────────────────────────────────────────────────────────────
@@ -683,7 +683,7 @@ describe('lc500_passport fixture (doctrine §14.6/§15.6/§15.8) — end-to-end'
   });
 });
 
-describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
+describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
   it(
     'shows zero errors and zero passport-rule issues across the corpus',
     { skip: CORPUS_SKIP },
@@ -694,8 +694,8 @@ describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        19,
-        `expected the 19-package corpus at ${CORPUS}`,
+        23,
+        `expected the 23-package corpus at ${CORPUS}`,
       );
       for (const dir of dirs) {
         const issues = checkPackage(dir);

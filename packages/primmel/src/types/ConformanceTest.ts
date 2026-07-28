@@ -15,6 +15,30 @@ export interface ConformanceTestStep {
   inputs?: string[];
 }
 
+/**
+ * Probe-channel provenance on a measured test variable (smart TODO.v2/01
+ * TCD-2; analysis/twin-certification-design.md Q2): the physical-side
+ * channel a reference reading arrives by — the three-source vocabulary
+ * `reference_instrument` (a traceable reference, cited by equipment-register
+ * id) | `observer_attestation` (a verification officer reads the physical
+ * display into the evidence form — admitted with the DECLARED traceability
+ * limitation, "twin ≡ display, not twin ≡ mass") | `sim_ground_truth` (the
+ * acceptance environment only, never a production channel). The ref's
+ * RESOLUTION (equipment register / personnel registry / sim deployment) is
+ * the smart-side linker's crosswalk — the kernel checks shape and
+ * vocabulary (C99), register-free.
+ */
+export interface VariableProvenance {
+  /** reference_instrument | observer_attestation | sim_ground_truth (C99). */
+  channel: string;
+  /** The channel's citation — equipment-register id, personnel/participant id, or sim deployment id. */
+  ref: string;
+  /** The test variable carrying this channel reading's observation timestamp. */
+  observedAt: string;
+  /** The DECLARED traceability limitation — required iff channel is observer_attestation (C99). */
+  limitation: string;
+}
+
 /** Typed test variable (v2 G4): declared | measured | derived | computed | lookup. */
 export interface TestVariable {
   name: string;
@@ -26,6 +50,8 @@ export interface TestVariable {
   itemType: string;
   /** Series shape (axes + cell) when the variable holds a series of readings. */
   series: SeriesDecl | null;
+  /** Probe-channel provenance (TCD-2) — a measured reference variable's physical channel. */
+  provenance: VariableProvenance | null;
 }
 
 /** Observable output of a test run (v2 G4). */

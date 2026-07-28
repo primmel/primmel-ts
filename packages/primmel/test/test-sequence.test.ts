@@ -14,7 +14,7 @@
 // the `uses` composition leg (test sequences merge like the invariant
 // collection — MERGE_FIELDS), the C89 text-addressing leg
 // (text <id>.description resolves against the construct), and the
-// corpus-clean leg: the 19 shipped packages show zero errors and zero
+// corpus-clean leg: the 23 shipped packages show zero errors and zero
 // test-sequence-rule issues (additive/OCP — packages without a test
 // sequence are untouched).
 // ─────────────────────────────────────────────────────────────────────
@@ -643,7 +643,7 @@ text mdlo-creep-dr.description {
   });
 });
 
-describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
+describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
   it(
     'shows zero errors and zero test-sequence-rule issues across the corpus',
     { skip: CORPUS_SKIP },
@@ -654,8 +654,8 @@ describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        19,
-        `expected the 19-package corpus at ${CORPUS}`,
+        23,
+        `expected the 23-package corpus at ${CORPUS}`,
       );
       for (const dir of dirs) {
         const issues = checkPackage(dir);

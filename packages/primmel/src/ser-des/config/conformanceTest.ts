@@ -68,6 +68,7 @@ function parseTestVariables(block: string): TestVariable[] {
       description: '',
       itemType: '',
       series: null,
+      provenance: null,
     };
     if (i < t.length && t[i].startsWith('{')) {
       const vb = unwrapBlock(t[i++]);
@@ -92,6 +93,24 @@ function parseTestVariables(block: string): TestVariable[] {
           v.itemType = stripWrapping(vt[j++]);
         } else if (vc === 'series') {
           v.series = parseSeriesDecl(unwrapBlock(vt[j++]));
+        } else if (vc === 'provenance') {
+          // Probe-channel provenance (TCD-2): provenance { channel … ref …
+          // observed_at … limitation "…" } — the three-source physical
+          // channel vocabulary is C99's to police, not the parser's.
+          const pb = tokenize(unwrapBlock(vt[j++]));
+          const p = { channel: '', ref: '', observedAt: '', limitation: '' };
+          for (let k = 0; k + 1 < pb.length; k += 2) {
+            if (pb[k] === 'channel') {
+              p.channel = stripWrapping(pb[k + 1]);
+            } else if (pb[k] === 'ref') {
+              p.ref = stripWrapping(pb[k + 1]);
+            } else if (pb[k] === 'observed_at') {
+              p.observedAt = stripWrapping(pb[k + 1]);
+            } else if (pb[k] === 'limitation') {
+              p.limitation = stripWrapping(pb[k + 1]);
+            }
+          }
+          v.provenance = p;
         } else {
           unwrapBlock(vt[j++]);
         }
@@ -708,6 +727,22 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       }
       if (v.series) {
         line += dumpSeriesDecl(v.series) + ' ';
+      }
+      if (v.provenance) {
+        let pv = 'provenance { ';
+        if (v.provenance.channel) {
+          pv += 'channel ' + v.provenance.channel + ' ';
+        }
+        if (v.provenance.ref) {
+          pv += 'ref "' + escapeString(v.provenance.ref) + '" ';
+        }
+        if (v.provenance.observedAt) {
+          pv += 'observed_at ' + v.provenance.observedAt + ' ';
+        }
+        if (v.provenance.limitation) {
+          pv += 'limitation "' + escapeString(v.provenance.limitation) + '" ';
+        }
+        line += pv + '} ';
       }
       out += line + '}\n';
     }
