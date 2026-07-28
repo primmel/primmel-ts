@@ -4,7 +4,7 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C83) issues report under;
+//   id       — the per-rule id (C1…C98) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
@@ -947,6 +947,33 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'src/duplicate-id.ts, the smart gap-close E11 review finding',
+  ),
+  // ── the certification program (TODO.v2/01, smart
+  // analysis/twin-certification-design.md Q4) ──
+  // A fourth publisher with the product_reference shape: the scheme
+  // operator's program is related to recs (maps_to) and product packages
+  // (pinned abstract imports, C83's edition-pin discipline) by mapping
+  // only — composed into nothing. C97: the program's maps_to register
+  // resolves (the C81-class resolution discipline) and names no program
+  // or product package. C98: a no-surveillance ISO/IEC 17067 scheme
+  // shape (type_1a/1b) declared alongside surveillance machinery
+  // (monitors, surveillance-classified processes) is a warning — the
+  // type_1a/1b shape structurally can't say "continuously".
+  R(
+    'C97',
+    'program-maps-resolves',
+    'base',
+    'error',
+    'normal',
+    'smart TODO.v2/01, analysis/twin-certification-design.md Q4',
+  ),
+  R(
+    'C98',
+    'program-surveillance-required',
+    'base',
+    'warning',
+    'normal',
+    'smart TODO.v2/01, analysis/twin-certification-design.md Q4, ISO/IEC 17067 Table 1',
   ),
 ];
 

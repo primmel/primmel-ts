@@ -28,6 +28,19 @@
 // and a consumer's ABSTRACT IMPORT pins the product's edition inline in
 // `uses` — `uses { acme-lc500@2021 }` (the pin lands in manifest.usePins;
 // C83 abstract-import-pinned).
+//
+// Certification program packages (TODO.v2/01, twin-certification-design
+// Q4) reuse the same mapping-only shape and add the ISO/IEC 17067
+// self-classification:
+//
+//   package {
+//     id oiml-twin-cert
+//     kind certification_program
+//     scheme_type type_5
+//     maps_to { oiml-r60 }
+//     uses { acme-lc500@2021 }
+//     ...
+//   }
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
@@ -50,6 +63,7 @@ const PACKAGE_KINDS: readonly string[] = [
   'module',
   'rec',
   'product_reference',
+  'certification_program',
 ];
 const EDITION_STATUSES: readonly string[] = [
   'current',
@@ -144,6 +158,11 @@ export const parsePackage: Parser = function (data) {
       manifest.product = stripWrapping(t[i++]);
     } else if (cmd === 'maps_to' || cmd === 'mapsTo') {
       manifest.mapsTo = readList(t[i++]);
+    } else if (cmd === 'scheme_type' || cmd === 'schemeType') {
+      // Certification program self-classification against the ISO/IEC
+      // 17067 scheme-type register (TODO.v2/01) — a free token (the
+      // kernel stays register-free); C98 reads it.
+      manifest.schemeType = stripWrapping(t[i++]);
     } else if (cmd === 'provides') {
       manifest.provides = readList(t[i++]);
     } else if (cmd === 'requires') {
@@ -241,6 +260,9 @@ export function dumpPackage(m: PackageManifest): string {
   }
   if (m.mapsTo && m.mapsTo.length > 0) {
     out += '  maps_to { ' + m.mapsTo.join(' ') + ' }\n';
+  }
+  if (m.schemeType) {
+    out += '  scheme_type ' + m.schemeType + '\n';
   }
   if (m.title) {
     out +=
