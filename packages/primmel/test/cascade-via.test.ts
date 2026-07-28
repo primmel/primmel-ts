@@ -10,7 +10,7 @@
 // dump placement, round-trip fixpoint — clean and malformed), the C95
 // rule's eight legs with per-leg positive AND negative pins (each
 // single violation flips exactly one leg — the mutation proof), and the
-// corpus leg: the 19 shipped packages show ZERO C95 errors and exactly
+// corpus leg: the 23 shipped packages show ZERO C95 errors and exactly
 // the known leg-1 via-missing warnings the design enumerates (§3.2) —
 // the rollout pin the smart declaration leg burns to zero (TODO-12).
 // ─────────────────────────────────────────────────────────────────────
@@ -546,7 +546,7 @@ describe('C95 cascade-transition-resolve — the eight legs (§5)', () => {
 
 describe('corpus leg — the rollout pin, burned to zero (smart gap-close E12)', () => {
   it(
-    'shows zero C95 issues of any severity across the 19 packages (the corpus is via-complete)',
+    'shows zero C95 issues of any severity across the 23 packages (the corpus is via-complete)',
     { skip: CORPUS_SKIP },
     () => {
       const dirs = readdirSync(CORPUS)
@@ -555,8 +555,8 @@ describe('corpus leg — the rollout pin, burned to zero (smart gap-close E12)',
         .sort();
       assert.equal(
         dirs.length,
-        19,
-        `expected the 19-package corpus at ${CORPUS}`,
+        23,
+        `expected the 23-package corpus at ${CORPUS}`,
       );
       // The smart declaration leg (gap E12) landed the 13 via facets +
       // the test_report_recalled edge and deleted the redundant step —

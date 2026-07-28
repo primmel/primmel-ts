@@ -975,6 +975,25 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.v2/01, analysis/twin-certification-design.md Q4, ISO/IEC 17067 Table 1',
   ),
+  // C99 (smart TODO.v2/01 TCD-2; analysis/twin-certification-design.md
+  // Q2): the probe-channel provenance facet on a measured test variable —
+  // the three-source physical channel a reference reading arrives by.
+  // The kernel checks SHAPE and VOCABULARY (register-free): the channel is
+  // one of reference_instrument | observer_attestation | sim_ground_truth,
+  // the ref cites the channel's register entry, observed_at names a
+  // declared variable of the same test, and an observer_attestation
+  // channel carries the DECLARED traceability limitation ("twin ≡ display,
+  // not twin ≡ mass" — never a comment). The ref's RESOLUTION against the
+  // equipment/personnel/sim registers is the smart-side linker's
+  // crosswalk (R45).
+  R(
+    'C99',
+    'variable-provenance-channel',
+    'twins',
+    'error',
+    'normal',
+    'smart TODO.v2/01 TCD-2, analysis/twin-certification-design.md Q2',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

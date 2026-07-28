@@ -2970,6 +2970,75 @@ export function checkPackage(
     }
   }
 
+  // ── C99: the probe-channel provenance facet (smart TODO.v2/01 TCD-2;
+  // analysis/twin-certification-design.md Q2) ──
+  // A measured reference variable declares the physical-side channel its
+  // reading arrives by: reference_instrument (a traceable reference, cited
+  // by equipment-register id) | observer_attestation (a verification
+  // officer reads the physical display into the evidence form — admitted
+  // with the DECLARED traceability limitation, controller decision 3:
+  // "twin ≡ display, not twin ≡ mass" is data, never a comment) |
+  // sim_ground_truth (the acceptance environment only). The kernel checks
+  // shape and vocabulary, register-free; the ref's RESOLUTION against the
+  // equipment/personnel/sim registers is the smart-side linker's R45.
+  {
+    const PROBE_CHANNELS = new Set([
+      'reference_instrument',
+      'observer_attestation',
+      'sim_ground_truth',
+    ]);
+    for (const t of standard.conformanceTests ?? []) {
+      const variableNames = new Set((t.variables ?? []).map(v => v.name));
+      for (const v of t.variables ?? []) {
+        const p = v.provenance;
+        if (!p) {
+          continue;
+        }
+        if (!PROBE_CHANNELS.has(p.channel)) {
+          err(
+            'C99',
+            `conformance test ${t.id}: variable "${v.name}" declares provenance channel "${p.channel}" — the probe channel is one of reference_instrument | observer_attestation | sim_ground_truth (variable-provenance-channel)`,
+          );
+        }
+        if (p.ref === '') {
+          err(
+            'C99',
+            `conformance test ${t.id}: variable "${v.name}" declares channel "${p.channel}" but cites no ref — the channel's register entry (equipment-register id, personnel/participant id, or sim deployment id) is the provenance's substance (variable-provenance-channel)`,
+          );
+        }
+        if (p.observedAt === '') {
+          err(
+            'C99',
+            `conformance test ${t.id}: variable "${v.name}" declares no observed_at binding — a channel reading without its observation timestamp cannot be paired (variable-provenance-channel)`,
+          );
+        } else if (!variableNames.has(p.observedAt)) {
+          err(
+            'C99',
+            `conformance test ${t.id}: variable "${v.name}" binds observed_at to "${p.observedAt}", which names no declared variable of the test — the observation timestamp lands in a declared variable (variable-provenance-channel)`,
+          );
+        }
+        if (p.channel === 'observer_attestation' && p.limitation === '') {
+          err(
+            'C99',
+            `conformance test ${t.id}: variable "${v.name}" declares the observer_attestation channel without its traceability limitation — attestation-only evidence proves "twin ≡ display", not "twin ≡ mass"; the limitation is DECLARED data, never a comment (variable-provenance-channel)`,
+          );
+        }
+        if (p.channel !== 'observer_attestation' && p.limitation !== '') {
+          warn(
+            'C99',
+            `conformance test ${t.id}: variable "${v.name}" carries a traceability limitation on the ${p.channel} channel — the limitation declaration rides the observer_attestation channel (variable-provenance-channel)`,
+          );
+        }
+        if (v.source !== '' && v.source !== 'measured') {
+          warn(
+            'C99',
+            `conformance test ${t.id}: variable "${v.name}" is source ${v.source} but declares a physical probe channel — the channel provenance belongs to a measured reference reading (variable-provenance-channel)`,
+          );
+        }
+      }
+    }
+  }
+
   // ── C86–C88: the model-native DPP (TODO.roadmap/35; doctrine ch. 14
   // §14.6, ch. 15 §15.6/§15.9) ──
   // The passport is the product model's named, access-classed PROJECTION —

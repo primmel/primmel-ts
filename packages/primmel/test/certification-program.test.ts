@@ -16,7 +16,7 @@
 //     product imports exactly as for product_reference consumers;
 //   - the C24 import-not-mapping exemption for the program's map_profile
 //     to its pinned product import;
-//   - the corpus-clean leg: the 19 shipped packages show zero errors and
+//   - the corpus-clean leg: the 23 shipped packages show zero errors and
 //     zero C97/C98 issues (additive silence — no shipped package is a
 //     certification_program).
 // ─────────────────────────────────────────────────────────────────────
@@ -631,7 +631,7 @@ if (!CORPUS_AVAILABLE) {
 
 const PROGRAM_RULES = ['C97', 'C98'];
 
-describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
+describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
   it(
     'shows zero errors and zero program-rule issues across the corpus',
     { skip: CORPUS_SKIP },
@@ -642,8 +642,8 @@ describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        19,
-        `expected the 19-package corpus at ${CORPUS}`,
+        23,
+        `expected the 23-package corpus at ${CORPUS}`,
       );
       for (const dir of dirs) {
         const found = checkPackage(dir);

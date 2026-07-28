@@ -30,7 +30,7 @@
 // the near-term shape rejects loudly until the construct grows one).
 // Covers the parse/merge/fixpoint legs, the C89 positive and negative
 // legs, resolution against a `uses`-composed model, and the
-// corpus-clean leg: the 19 shipped packages ship no `text` blocks, so
+// corpus-clean leg: the 23 shipped packages ship no `text` blocks, so
 // the leg asserts additive silence (zero errors, zero C89 issues).
 // ─────────────────────────────────────────────────────────────────────
 
@@ -529,7 +529,7 @@ text f-dup.fields.readings.fields.value.label {
   });
 });
 
-describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
+describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
   it(
     'shows zero errors and zero C89 issues across the corpus',
     { skip: CORPUS_SKIP },
@@ -540,8 +540,8 @@ describe('corpus-clean leg (additive/OCP — the 19 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        19,
-        `expected the 19-package corpus at ${CORPUS}`,
+        23,
+        `expected the 23-package corpus at ${CORPUS}`,
       );
       for (const dir of dirs) {
         const issues = checkPackage(dir);
