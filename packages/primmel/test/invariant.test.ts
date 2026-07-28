@@ -456,8 +456,8 @@ describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        23,
-        `expected the 23-package corpus at ${CORPUS}`,
+        25,
+        `expected the 25-package corpus at ${CORPUS}`,
       );
       for (const dir of dirs) {
         const issues = checkPackage(dir);
