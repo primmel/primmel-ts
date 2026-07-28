@@ -37,8 +37,14 @@ export interface EditionValidity {
  * Recommendation — a REFERENCE model consumed by users in two modes
  * (abstract import / live integration), never a refinement of the
  * standard: the two are related by mapping only.
+ * `certification_program` (TODO.v2/01, twin-certification-design Q4) =
+ * a scheme operator's certification program (e.g. the digital-twin
+ * program) — a FOURTH publisher with the product_reference shape:
+ * related to recs (maps_to) and product packages (pinned abstract
+ * imports) by mapping only, composed into nothing.
  */
-export type PackageKind = 'core' | 'module' | 'rec' | 'product_reference';
+export type PackageKind =
+  'core' | 'module' | 'rec' | 'product_reference' | 'certification_program';
 
 export interface PackageManifest {
   id: string;
@@ -90,12 +96,22 @@ export interface PackageManifest {
   manufacturer?: string;
   product?: string;
   /**
-   * Product reference packages only: the standards-reference packages
-   * this product model maps to (`maps_to { oiml-r60 }`) — the
-   * declaration its map_profile/.prm maps must resolve into (C81
-   * product-maps-resolves).
+   * Product reference and certification program packages only: the
+   * standards-reference packages this model maps to (`maps_to { oiml-r60 }`)
+   * — the declaration its map_profile/.prm maps must resolve into (C81
+   * product-maps-resolves, C97 program-maps-resolves).
    */
   mapsTo?: string[];
+  /**
+   * Certification program packages only (TODO.v2/01,
+   * twin-certification-design Q4): the program's self-classification
+   * against the ISO/IEC 17067 scheme-type register (`scheme_type
+   * type_5`) — a free token here (the register lives consumer-side; the
+   * kernel stays register-free, the C89 spelling precedent). C98 warns
+   * when a no-surveillance shape (type_1a/1b) is declared alongside
+   * surveillance machinery.
+   */
+  schemeType?: string;
   /**
    * Capability ids this package contributes for downstream consumers
    * (module manifests). Every provides entry must be consumed by a

@@ -2894,6 +2894,82 @@ export function checkPackage(
     }
   }
 
+  // ── C97–C98: the certification program (TODO.v2/01;
+  // analysis/twin-certification-design.md Q4) ──
+  // A fourth publisher with the product_reference shape: the scheme
+  // operator's program is related to recs and product packages by
+  // MAPPING and pinned abstract imports only — composed into nothing.
+  // C97: the program's maps_to register resolves (the C81-class
+  // resolution discipline — the same resolveDepManifest locator/sibling
+  // scan): the program maps to the rec requirement vocabulary it
+  // certifies against, never to another program, and product twin
+  // declarations enter as pinned abstract imports (uses @edition, C83),
+  // never as maps_to entries. C98: a program declaring a no-surveillance
+  // ISO/IEC 17067 scheme shape (type_1a/1b — sample-only; Table 1) while
+  // declaring surveillance machinery (a monitor — the continuous-
+  // evaluation primitive — or a surveillance-classified process) is a
+  // WARNING: the type_1a/1b shape structurally can't say "continuously".
+  if (productManifest?.kind === 'certification_program') {
+    const mapsTo = productManifest.mapsTo ?? [];
+    if (mapsTo.length === 0) {
+      err(
+        'C97',
+        `package "${productManifest.id}": a certification program declares the Recommendation vocabulary it certifies against (maps_to) — a program that maps to nothing certifies nothing (program-maps-resolves)`,
+      );
+    }
+    for (const target of mapsTo) {
+      const dm = resolveDepManifest(target);
+      if (!dm) {
+        err(
+          'C97',
+          `package "${productManifest.id}": maps_to "${target}" does not resolve to a known package — the requirement vocabulary a program certifies against must resolve (program-maps-resolves)`,
+        );
+      } else if (dm.kind === 'certification_program') {
+        err(
+          'C97',
+          `package "${productManifest.id}": maps_to "${target}" is itself a certification program — a program maps to the standards vocabulary, never to another program (program-maps-resolves)`,
+        );
+      } else if (dm.kind === 'product_reference') {
+        err(
+          'C97',
+          `package "${productManifest.id}": maps_to "${target}" is a product reference package — the product twin declarations a program certifies are pinned abstract imports (uses { ${target}@<edition> }, C83), never maps_to entries (program-maps-resolves)`,
+        );
+      }
+    }
+
+    // C98 — the no-surveillance scheme shapes (ISO/IEC 17067 Table 1:
+    // type 1a/1b carry no surveillance) versus the program's declared
+    // surveillance machinery. A monitor IS a continuous claim ("without
+    // triggers, 'continuous' has no clock" — types/Monitor.ts); an
+    // activity_kind { surveillance } process is a surveillance claim.
+    const SCHEME_TYPES_WITHOUT_SURVEILLANCE = new Set(['type_1a', 'type_1b']);
+    if (
+      productManifest.schemeType &&
+      SCHEME_TYPES_WITHOUT_SURVEILLANCE.has(productManifest.schemeType)
+    ) {
+      const claims: string[] = [];
+      if ((standard.monitors ?? []).length > 0) {
+        claims.push(
+          `${standard.monitors.length} monitor(s): ${standard.monitors.map(m => m.id).join(', ')}`,
+        );
+      }
+      const surveillanceProcesses = (standard.processes ?? []).filter(p =>
+        (p.activityKinds ?? []).includes('surveillance'),
+      );
+      if (surveillanceProcesses.length > 0) {
+        claims.push(
+          `surveillance-classified process(es): ${surveillanceProcesses.map(p => p.id).join(', ')}`,
+        );
+      }
+      if (claims.length > 0) {
+        warn(
+          'C98',
+          `package "${productManifest.id}": scheme_type "${productManifest.schemeType}" certifies a type sample with no surveillance, but the program declares ${claims.join(' and ')} — the ${productManifest.schemeType} shape structurally can't say "continuously"; a surveillance-constitutive program self-classifies type_5 (ISO/IEC 17067 Table 1) (program-surveillance-required)`,
+        );
+      }
+    }
+  }
+
   // ── C86–C88: the model-native DPP (TODO.roadmap/35; doctrine ch. 14
   // §14.6, ch. 15 §15.6/§15.9) ──
   // The passport is the product model's named, access-classed PROJECTION —
