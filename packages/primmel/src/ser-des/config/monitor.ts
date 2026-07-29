@@ -32,7 +32,12 @@
 
 import { stripWrapping, tokenizePackage, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
-import { dumpBareSafe, stripColon, subBlockTokens } from './field-parser';
+import {
+  dumpBareSafe,
+  readEntryTokens,
+  stripColon,
+  subBlockTokens,
+} from './field-parser';
 import type { ConstructDefinition } from './index';
 import type {
   Monitor,
@@ -44,17 +49,11 @@ import type {
   MonitorTrigger,
 } from '../../types/Monitor';
 
-/** Read an id stream: `{ a b }` block form, or a single bare id. */
-function readIdStream(value: string): string[] {
-  if (value.startsWith('{')) {
-    return subBlockTokens(unwrapBlock(value))
-      .flatMap(s => s.split(','))
-      .map(s => stripWrapping(s.trim()))
-      .filter(s => s.length > 0);
-  }
-  const single = stripWrapping(value);
-  return single === '' ? [] : [single];
-}
+/** Read an id stream: `{ a b }` block form, or a single bare id. Aliased
+ *  to the shared content-entry reader (field-parser.ts) — the post-c6f0a7a
+ *  dedup left this differently-named fourth copy behind (TODO.v2/13
+ *  item 2). */
+const readIdStream = readEntryTokens;
 
 /**
  * Read an evaluate selector token, accumulating an `applicable_to(…)`
