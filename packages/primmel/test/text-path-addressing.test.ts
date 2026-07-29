@@ -48,17 +48,10 @@ import { join } from 'node:path';
 import { load, dump } from '../src/ser-des/index';
 import { loadPackage } from '../src/ser-des/package';
 import { checkPackage } from '../src/check';
+import { CORPUS, CORPUS_AVAILABLE, CORPUS_SKIP } from './helpers/corpus';
 
-// The real corpus lives in the sibling smart repo checkout, which CI and
-// fresh clones do not have — the corpus-clean spec then SKIPs gracefully.
-// Set PRIMMEL_PACKAGES to a primmel-packages directory to enable it.
-const CORPUS =
-  process.env.PRIMMEL_PACKAGES ??
-  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages';
-const CORPUS_AVAILABLE = existsSync(CORPUS);
-const CORPUS_SKIP: string | false = CORPUS_AVAILABLE
-  ? false
-  : `no primmel-packages corpus at ${CORPUS} — set PRIMMEL_PACKAGES to enable the corpus-clean leg`;
+// The corpus resolution (env-first, repo-relative default, loud skip) has
+// one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
 if (!CORPUS_AVAILABLE) {
   console.log(
     `text-path-addressing.test.ts: skipping the corpus-clean spec — ${CORPUS_SKIP}`,
@@ -250,11 +243,26 @@ text /req/electronic/disturbances.limit.notes {
 });
 
 describe('text path addressing — C89 positive legs (the corpus shapes)', () => {
-  it('resolves nested form-field prose (the doubly-nested drift shape)', () => {
+  it('resolves the corpus shapes (ONE batched build — TODO.v2/13 item 3d)', () => {
+    // The legs below used to build + check a fresh tmp package each (~236 s
+    // for the file); they batch into ONE package now — a failure still
+    // names its shape: every C89 message carries the text address. The
+    // shapes: the doubly-nested drift form (oiml-r144), the load-test-row
+    // subform, the true_label/false_label/examples vocabulary, the MPE
+    // requirement's param/subject/limit notes, and the DOTTED element id
+    // (r144-3/sec-3.4 — the last-dot split would mis-address it).
     const issues = c89(
       makeTmpPackage(
         MODEL +
           `
+form verdict-form {
+  name "Verdict form"
+  field pass : boolean {
+    true_label "Pass"
+    false_label "Fail"
+    examples "Pass at every point"
+  }
+}
 text r60-3/drift-test.fields.drift_series.description {
   spell fra-Latn "Une série par CGM"
 }
@@ -264,47 +272,11 @@ text r60-3/drift-test.fields.drift_series.fields.daily_measurements.description 
 text r60-3/drift-test.fields.drift_series.fields.daily_measurements.fields.day.label {
   spell fra-Latn "Jour"
 }
-`,
-      ),
-    );
-    assert.deepEqual(
-      issues,
-      [],
-      `expected the nested form addresses to resolve, got: ${issues.map(i => i.message).join('\n')}`,
-    );
-  });
-
-  it('resolves nested subform-field prose', () => {
-    const issues = c89(
-      makeTmpPackage(
-        MODEL +
-          `
 text load-test-row.fields.test_load.label {
   spell fra-Latn "Charge d'essai"
 }
 text load-test-row.fields.runs.fields.indication.label {
   spell fra-Latn "Indication"
-}
-`,
-      ),
-    );
-    assert.deepEqual(
-      issues,
-      [],
-      `expected the nested subform addresses to resolve, got: ${issues.map(i => i.message).join('\n')}`,
-    );
-  });
-
-  it('validates the true_label/false_label/examples prose vocabulary (the C89 set)', () => {
-    const issues = c89(
-      makeTmpPackage(`
-form verdict-form {
-  name "Verdict form"
-  field pass : boolean {
-    true_label "Pass"
-    false_label "Fail"
-    examples "Pass at every point"
-  }
 }
 text verdict-form.fields.pass.true_label {
   spell fra-Latn "Réussi"
@@ -315,20 +287,6 @@ text verdict-form.fields.pass.false_label {
 text verdict-form.fields.pass.examples {
   spell fra-Latn "Réussi à tous les points"
 }
-`),
-    );
-    assert.deepEqual(
-      issues,
-      [],
-      `expected the true_label/false_label/examples vocabulary to validate, got: ${issues.map(i => i.message).join('\n')}`,
-    );
-  });
-
-  it('resolves requirement param/subject/limit-notes prose', () => {
-    const issues = c89(
-      makeTmpPackage(
-        MODEL +
-          `
 text /req/metrological/mpe-tier.parameters.accuracy_class.description {
   spell fra-Latn "Détermine les points de basculement (en unités v) des trois étages d'emp."
 }
@@ -338,23 +296,6 @@ text /req/metrological/mpe-tier.subjects.1.label {
 text /req/electronic/disturbances.limit.notes {
   spell fra-Latn "La limite de défaut significatif est un intervalle de vérification (1 v)."
 }
-`,
-      ),
-    );
-    assert.deepEqual(
-      issues,
-      [],
-      `expected the requirement nested addresses to resolve, got: ${issues.map(i => i.message).join('\n')}`,
-    );
-  });
-
-  it('resolves a DOTTED element id by longest prefix (last-dot split mis-addresses)', () => {
-    // r144-3/sec-3.4 is the shipped id shape (oiml-r144 sec-3 forms): the
-    // last-dot split would look for an element "r144-3/sec-3.4.fields.channel".
-    const issues = c89(
-      makeTmpPackage(
-        MODEL +
-          `
 text r144-3/sec-3.4.description {
   spell fra-Latn "Un identifiant de formulaire pointé"
 }
@@ -367,7 +308,7 @@ text r144-3/sec-3.4.fields.channel.label {
     assert.deepEqual(
       issues,
       [],
-      `expected the dotted-id addresses to resolve, got: ${issues.map(i => i.message).join('\n')}`,
+      `expected the 13 corpus-shape addresses to resolve, got: ${issues.map(i => i.message).join('\n')}`,
     );
   });
 
@@ -425,46 +366,26 @@ text r60-3/drift-test.fields.drift_series.fields.daily_measurements.fields.day.l
 });
 
 describe('text path addressing — C89 negative legs', () => {
-  const withText = (addr: string) =>
-    c89(makeTmpPackage(MODEL + `\ntext ${addr} {\n  spell fra-Latn "x"\n}\n`));
-
-  it('flags a dangling path segment (no item keyed by that name)', () => {
-    const issues = withText(
-      'r60-3/drift-test.fields.no_such_series.description',
-    );
-    assert.equal(issues.length, 1);
-    assert.match(issues[0].message, /no item keyed "no_such_series"/);
-    assert.match(issues[0].message, /declared key/);
-  });
-
-  it('flags a terminal non-prose field (nested and step-keyed)', () => {
-    const nested = withText(
-      'r60-3/drift-test.fields.drift_series.fields.daily_measurements.fields.error.unit',
-    );
-    assert.equal(nested.length, 1);
-    assert.match(nested[0].message, /"unit" is not a prose field/);
-    // The step resolves by its declared ORDER — and `test` is machine
-    // content, never spelling-coded (doctrine §10.7).
-    const step = withText('mdlo-creep-dr.steps.1.test');
-    assert.equal(step.length, 1);
-    assert.match(step[0].message, /"test" is not a prose field/);
-  });
-
-  it('flags a prose terminal the addressed structure does not carry', () => {
-    // Test-sequence steps ship no prose today — the near-term shape
-    // rejects loudly until the construct grows the slot.
-    const step = withText('mdlo-creep-dr.steps.1.description');
-    assert.equal(step.length, 1);
-    assert.match(step[0].message, /carries no prose field "description"/);
-    // Same at nested level: the error field authors no description.
-    const nested = withText(
-      'r60-3/drift-test.fields.drift_series.fields.daily_measurements.fields.error.description',
-    );
-    assert.equal(nested.length, 1);
-    assert.match(nested[0].message, /carries no prose field "description"/);
-  });
-
-  it('flags an ambiguous key (two items of one list share the name)', () => {
+  it('flags the near-term shapes (ONE batched build — TODO.v2/13 item 3d)', () => {
+    // The legs below used to build + check a fresh tmp package each; they
+    // batch into ONE package now (a failure still names its shape: every
+    // C89 message carries the text address, so the assertions key on it).
+    // The shapes, address → expected message:
+    //   - a dangling path segment (no item keyed by that name) — a list
+    //     item addresses by its DECLARED key, never a positional index;
+    //   - a terminal non-prose field, nested and step-keyed (the step
+    //     resolves by its declared ORDER — and `test` is machine content,
+    //     never spelling-coded, doctrine §10.7);
+    //   - a prose terminal the addressed structure does not carry (test-
+    //     sequence steps ship no prose today — the near-term shape
+    //     rejects loudly until the construct grows the slot);
+    //   - an ambiguous key (two items of one list share the name);
+    //   - a descent into a scalar (a prose string is not a structure);
+    //   - a terminal whose parent is a list (the item key is missing);
+    //   - a keyless list item (table cells are data, never prose);
+    //   - an empty path segment;
+    //   - an address whose element is not in the package (the message
+    //     lists every tried prefix — item 3a).
     const dup = `
 form f-dup {
   name "Dup"
@@ -476,56 +397,64 @@ form f-dup {
   }
 }
 `;
-    const issues = c89(
-      makeTmpPackage(
-        MODEL +
-          dup +
-          `
-text f-dup.fields.readings.fields.value.label {
-  spell fra-Latn "Valeur"
-}
-`,
-      ),
+    const addresses: [address: string, pattern: RegExp][] = [
+      [
+        'r60-3/drift-test.fields.no_such_series.description',
+        /no item keyed "no_such_series".*declared key/,
+      ],
+      [
+        'r60-3/drift-test.fields.drift_series.fields.daily_measurements.fields.error.unit',
+        /"unit" is not a prose field/,
+      ],
+      ['mdlo-creep-dr.steps.1.test', /"test" is not a prose field/],
+      [
+        'mdlo-creep-dr.steps.1.description',
+        /carries no prose field "description"/,
+      ],
+      [
+        'r60-3/drift-test.fields.drift_series.fields.daily_measurements.fields.error.description',
+        /carries no prose field "description"/,
+      ],
+      [
+        'f-dup.fields.readings.fields.value.label',
+        /"value" keys 2 items.*ambiguous/,
+      ],
+      [
+        'r60-3/drift-test.fields.drift_series.description.note',
+        /has no nested structure "description"/,
+      ],
+      [
+        'r60-3/drift-test.fields.drift_series.fields.label',
+        /is a list.*by its key/,
+      ],
+      ['mpe_tiers.data.1.description', /no item keyed "1"/],
+      ['r60-3/drift-test..label', /empty path segment/],
+      [
+        '/req/nope.fields.x.label',
+        /no element "\/req\/nope\.fields\.x" in the package — every dot-boundary prefix was tried \("\/req\/nope\.fields\.x", "\/req\/nope\.fields", "\/req\/nope"\)/,
+      ],
+    ];
+    const body =
+      MODEL +
+      dup +
+      addresses
+        .map(([addr]) => `\ntext ${addr} {\n  spell fra-Latn "x"\n}\n`)
+        .join('');
+    const issues = c89(makeTmpPackage(body));
+    assert.equal(
+      issues.length,
+      addresses.length,
+      `expected exactly one C89 issue per bad address, got: ${issues.map(i => i.message).join('\n')}`,
     );
-    assert.equal(issues.length, 1);
-    assert.match(issues[0].message, /"value" keys 2 items/);
-    assert.match(issues[0].message, /ambiguous/);
-  });
-
-  it('flags a descent into a scalar (a prose string is not a structure)', () => {
-    const issues = withText(
-      'r60-3/drift-test.fields.drift_series.description.note',
-    );
-    assert.equal(issues.length, 1);
-    // The walk fails AT the scalar segment — description is a string.
-    assert.match(issues[0].message, /has no nested structure "description"/);
-  });
-
-  it('flags a terminal whose parent is a list (the item key is missing)', () => {
-    const issues = withText(
-      'r60-3/drift-test.fields.drift_series.fields.label',
-    );
-    assert.equal(issues.length, 1);
-    assert.match(issues[0].message, /is a list/);
-    assert.match(issues[0].message, /by its key/);
-  });
-
-  it('flags a keyless list item (table cells are data, never prose)', () => {
-    const issues = withText('mpe_tiers.data.1.description');
-    assert.equal(issues.length, 1);
-    assert.match(issues[0].message, /no item keyed "1"/);
-  });
-
-  it('flags an empty path segment', () => {
-    const issues = withText('r60-3/drift-test..label');
-    assert.equal(issues.length, 1);
-    assert.match(issues[0].message, /empty path segment/);
-  });
-
-  it('flags an address whose element is not in the package', () => {
-    const issues = withText('/req/nope.fields.x.label');
-    assert.equal(issues.length, 1);
-    assert.match(issues[0].message, /no element "\/req\/nope\.fields\.x"/);
+    for (const [addr, pattern] of addresses) {
+      const message = issues.find(i =>
+        i.message.startsWith(`text "${addr}":`),
+      )?.message;
+      assert.ok(
+        message !== undefined && pattern.test(message),
+        `expected one C89 issue on ${addr} matching ${pattern}, got: ${message ?? '(none)'}`,
+      );
+    }
   });
 });
 

@@ -590,3 +590,58 @@ describe('buildProcessTree — the tree source', () => {
     );
   });
 });
+
+describe('coverage — the C21 alias rows in unmappedImplementation (TODO.v2/13 item 6)', () => {
+  // The implementation declares the reference elements it maps to as
+  // local `Namespace#…` alias processes (the C21 discipline). Aliases are
+  // never mapping SOURCES, so they always list as unmapped — noise in an
+  // uncovered-elements list (the VL-3 review's footnote filter). The
+  // `unmappedAliases` option keeps the default honest ('include') and
+  // opts into the domain-only list ('exclude').
+  const IMPL_WITH_ALIASES = `
+process OpA { name "Operation A" }
+process OpC { name "Operation C" }
+process StdS#Process5 { name "alias of Process5" }
+process StdS#Process3 { name "alias of Process3" }
+map_profile StdS {
+  mapping {
+    OpA -> StdS#Process5
+  }
+}
+`;
+  const report = (unmappedAliases?: 'include' | 'exclude'): CoverageReport => {
+    const impl = load(IMPL_WITH_ALIASES);
+    const ref = load(REFERENCE_SRC);
+    const mappings = collectMappings(impl, { modelId: 'OrgO' });
+    return computeCoverage(impl, ref, mappings, 'StdS', {
+      implementationId: 'OrgO',
+      referenceId: 'StdS',
+      unmappedAliases,
+    });
+  };
+
+  it('the default INCLUDES the alias rows (the honest full picture)', () => {
+    assert.deepEqual(report().unmappedImplementation, [
+      'OpC',
+      'StdS#Process5',
+      'StdS#Process3',
+    ]);
+    assert.deepEqual(report('include').unmappedImplementation, [
+      'OpC',
+      'StdS#Process5',
+      'StdS#Process3',
+    ]);
+  });
+
+  it("'exclude' drops the #-carrying rows, never the domain rows", () => {
+    assert.deepEqual(report('exclude').unmappedImplementation, ['OpC']);
+  });
+
+  it('the option leaves the rest of the report untouched', () => {
+    const full = report();
+    const excluded = report('exclude');
+    assert.deepEqual(excluded.components, full.components);
+    assert.deepEqual(excluded.summary, full.summary);
+    assert.deepEqual(excluded.unresolvedMappings, full.unresolvedMappings);
+  });
+});

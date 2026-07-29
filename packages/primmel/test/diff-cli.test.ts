@@ -110,4 +110,33 @@ describe('primmel diff CLI', () => {
     assert.equal(noop.status, 0);
     assert.match(noop.stdout, /clause drift: none/);
   });
+
+  it('a text content-set change surfaces in the report (TODO.v2/12 — the v3-changelog path)', () => {
+    // The changelog script (scripts/v3-changelog.ts in the smart repo)
+    // shells this exact CLI and embeds the text report verbatim — a text
+    // change appears here with no script-side wiring once the tier
+    // registers.
+    const a = pkg('2017', '3.7.5');
+    const b = pkg('2017', '3.7.5');
+    writeFileSync(
+      join(a, 'specification', 'l10n.prl'),
+      `text vMin.description {
+  spell fra-Latn "Intervalle minimal de vérification"
+}
+`,
+    );
+    writeFileSync(
+      join(b, 'specification', 'l10n.prl'),
+      `text vMin.description {
+  spell fra-Latn "Intervalle minimal de vérification révisé"
+}
+`,
+    );
+    const { status, stdout } = run(['diff', a, b]);
+    assert.equal(status, 0);
+    assert.match(
+      stdout,
+      /~ \[cross-cutting\/texts\] vMin\.description — spelling:fra-Latn \(changed\)/,
+    );
+  });
 });

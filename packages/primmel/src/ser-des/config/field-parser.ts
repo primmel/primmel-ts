@@ -119,18 +119,22 @@ function dumpValueEntry(e: string | { value: string; label: string }): string {
 
 /**
  * Emit a bare value safely: quote it when it contains spaces/braces/quotes
- * OR ends in a colon OR STARTS with the comment character `#`.
+ * OR ends in a colon OR STARTS with a comment opener (`#` or `//`).
  * A bare trailing-colon token re-parses as a KEY head (`note : ref:` reads
  * back as two entries — see isKeyHead in the instance ser-des), so any
  * value ending in `:` must be quoted on dump. The tokenizer only treats
- * `#` as a comment BETWEEN tokens — a mid-token `#` is literal
- * (`StdS#Process5` round-trips bare; the v2 map_profile form depends on
- * it) — but a LEADING `#` starts a to-end-of-line comment on re-parse
- * and the value vanishes, so a value starting with `#` must never dump
- * bare (the E10 vocabulary-value exposure).
+ * `#`/`//` as a comment BETWEEN tokens — a mid-token `#` or `//` is
+ * literal (`StdS#Process5` round-trips bare; the v2 map_profile form
+ * depends on it) — but a LEADING `#` or `//` starts a to-end-of-line
+ * comment on re-parse (tokenize.ts's two comment openers) and the value
+ * vanishes, so a value starting with either must never dump bare (the
+ * E10 vocabulary-value exposure; the `//` half is TODO.v2/13 item 1).
  */
 export function dumpBareSafe(v: string): string {
-  return /[\s{}"]/.test(v) || v.endsWith(':') || v.startsWith('#')
+  return /[\s{}"]/.test(v) ||
+    v.endsWith(':') ||
+    v.startsWith('#') ||
+    v.startsWith('//')
     ? '"' + escapeString(v) + '"'
     : v;
 }

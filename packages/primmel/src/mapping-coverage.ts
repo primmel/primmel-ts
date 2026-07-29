@@ -234,7 +234,10 @@ export interface CoverageReport {
   components: ComponentCoverage[];
   /**
    * Implementation processes with no RESOLVING mapping into this target
-   * — a source whose mappings all dangle is not "mapped".
+   * — a source whose mappings all dangle is not "mapped". Alias rows
+   * (the C21 `Namespace#…` local copies — never mapping SOURCES, so
+   * always unmapped) are included by default; the
+   * `unmappedAliases: 'exclude'` option drops them (TODO.v2/13 item 6).
    */
   unmappedImplementation: string[];
   /** Mapping pairs whose target doesn't resolve against the reference tree. */
@@ -242,6 +245,24 @@ export interface CoverageReport {
   /** Inherited + closure proposals (flagged, never asserted). */
   proposals: DiscoveryProposal[];
   summary: CoverageSummary;
+}
+
+/** computeCoverage's options bag. */
+export interface ComputeCoverageOptions {
+  implementationId?: string;
+  referenceId?: string;
+  /**
+   * Whether the C21 alias rows (`<ns>#…` ids — the implementation's
+   * declared local copies of reference elements) appear in
+   * `unmappedImplementation`. Aliases are never mapping sources, so they
+   * ALWAYS list as unmapped — noise in an uncovered-elements list (the
+   * VL-3 review: the lens pages filtered them with a footnote). The
+   * default 'include' keeps the honest full picture (an alias IS an
+   * implementation declaration with no mapping); 'exclude' opts the
+   * computation into the domain-only list the pages display, retiring
+   * the display-side filter (TODO.v2/13 item 6).
+   */
+  unmappedAliases?: 'include' | 'exclude';
 }
 
 function aggregateUp(
@@ -281,7 +302,7 @@ export function computeCoverage(
   reference: Standard | ProcessTreeNode[],
   mappings: MappingRecord[],
   targetNamespace: string,
-  options: { implementationId?: string; referenceId?: string } = {},
+  options: ComputeCoverageOptions = {},
 ): CoverageReport {
   const forest = Array.isArray(reference)
     ? reference
@@ -368,9 +389,14 @@ export function computeCoverage(
   }
 
   // Implementation processes with no resolving mapping into this target.
+  // The C21 alias rows (`<ns>#…` local copies — never mapping sources)
+  // always list here; `unmappedAliases: 'exclude'` drops them (the
+  // opt-in — the default keeps the honest full picture, TODO.v2/13
+  // item 6).
   const unmappedImplementation = (implementation.processes ?? [])
     .map(p => p.id)
-    .filter(id => !resolvedSources.has(id));
+    .filter(id => !resolvedSources.has(id))
+    .filter(id => options.unmappedAliases !== 'exclude' || !id.includes('#'));
 
   // ── discovery (flagged, never asserted) ──
   const proposals: DiscoveryProposal[] = [];

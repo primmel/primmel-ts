@@ -33,17 +33,10 @@ import { join } from 'node:path';
 import { load, dump } from '../src/ser-des/index';
 import { loadPackage } from '../src/ser-des/package';
 import { checkPackage } from '../src/check';
+import { CORPUS, CORPUS_AVAILABLE, CORPUS_SKIP } from './helpers/corpus';
 
-// The real corpus lives in the sibling smart repo checkout, which CI and
-// fresh clones do not have — the corpus-clean spec then SKIPs gracefully.
-// Set PRIMMEL_PACKAGES to a primmel-packages directory to enable it.
-const CORPUS =
-  process.env.PRIMMEL_PACKAGES ??
-  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages';
-const CORPUS_AVAILABLE = existsSync(CORPUS);
-const CORPUS_SKIP: string | false = CORPUS_AVAILABLE
-  ? false
-  : `no primmel-packages corpus at ${CORPUS} — set PRIMMEL_PACKAGES to enable the corpus-clean leg`;
+// The corpus resolution (env-first, repo-relative default, loud skip) has
+// one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
 if (!CORPUS_AVAILABLE) {
   console.log(
     `test-sequence.test.ts: skipping the corpus-clean spec — ${CORPUS_SKIP}`,
@@ -347,6 +340,40 @@ test_sequence hash-vocab {
     assert.ok(
       leadingDump.includes('sample_applicability "#1"'),
       `expected the leading-# value quoted in the dump, got:\n${leadingDump}`,
+    );
+    assert.deepEqual(load(leadingDump).testSequences, leading.testSequences);
+    assert.equal(dump(load(leadingDump)), leadingDump);
+  });
+
+  it('quotes a vocabulary value STARTING with the comment opener // (TODO.v2/13 item 1)', () => {
+    // tokenize.ts has TWO comment openers — `#` and `//` (its lines
+    // 60-61): a value starting with `//` shares the leading-# truncation
+    // exposure exactly (the opener starts a to-end-of-line comment
+    // between tokens and the value vanishes on re-parse). A mid-token
+    // `//` is literal and stays bare.
+    const wrap = (applicability: string) => `
+test_sequence slash-vocab {
+  name "H"
+  description "d"
+  step 1 { test "/conf/x" }
+  sample_applicability "${applicability}"
+}
+`;
+    const mid = load(wrap('see//1'));
+    assert.equal(mid.testSequences[0].sampleApplicability, 'see//1');
+    const midDump = dump(mid);
+    assert.ok(
+      midDump.includes('sample_applicability see//1'),
+      `expected the mid-token // value to stay bare, got:\n${midDump}`,
+    );
+    assert.deepEqual(load(midDump).testSequences, mid.testSequences);
+
+    const leading = load(wrap('//1'));
+    assert.equal(leading.testSequences[0].sampleApplicability, '//1');
+    const leadingDump = dump(leading);
+    assert.ok(
+      leadingDump.includes('sample_applicability "//1"'),
+      `expected the leading-// value quoted in the dump, got:\n${leadingDump}`,
     );
     assert.deepEqual(load(leadingDump).testSequences, leading.testSequences);
     assert.equal(dump(load(leadingDump)), leadingDump);

@@ -38,6 +38,7 @@ import {
 } from '../src/ser-des/config/packageManifest';
 import { checkPackage } from '../src/check';
 import type { PackageManifest } from '../src/types/Package';
+import { CORPUS, CORPUS_AVAILABLE, CORPUS_SKIP } from './helpers/corpus';
 
 // ── fixture helpers (the product-reference.test.ts idiom) ────────────
 
@@ -613,16 +614,8 @@ describe('the certification-program chain lints clean', () => {
 // ── corpus-clean leg (additive silence — no shipped package is a
 // certification_program) ─────────────────────────────────────────────
 
-// The real corpus lives in the sibling smart repo checkout, which CI and
-// fresh clones do not have — the corpus-clean spec then SKIPs gracefully.
-// Set PRIMMEL_PACKAGES to a primmel-packages directory to enable it.
-const CORPUS =
-  process.env.PRIMMEL_PACKAGES ??
-  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages';
-const CORPUS_AVAILABLE = existsSync(CORPUS);
-const CORPUS_SKIP: string | false = CORPUS_AVAILABLE
-  ? false
-  : `no primmel-packages corpus at ${CORPUS} — set PRIMMEL_PACKAGES to enable the corpus-clean leg`;
+// The corpus resolution (env-first, repo-relative default, loud skip) has
+// one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
 if (!CORPUS_AVAILABLE) {
   console.log(
     `certification-program.test.ts: skipping the corpus-clean spec — ${CORPUS_SKIP}`,
