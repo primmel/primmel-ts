@@ -400,6 +400,8 @@ __metadata:
 "@primmel/primmel@workspace:packages/primmel":
   version: 0.0.0-use.local
   resolution: "@primmel/primmel@workspace:packages/primmel"
+  bin:
+    primmel: scripts/check.mts
   languageName: unknown
   linkType: soft
 

@@ -1,7 +1,7 @@
 {
   "name": "@primmel/primmel",
   "version": "1.4.0",
-  "description": "Primmel \u2014 parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
+  "description": "Primmel — parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
@@ -51,7 +51,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "bin": {
-    "primmel": "scripts/check.mts"
-  }
+  "bin": "scripts/check.mts"
 }
