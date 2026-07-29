@@ -525,7 +525,14 @@ text f-dup.fields.readings.fields.value.label {
   it('flags an address whose element is not in the package', () => {
     const issues = withText('/req/nope.fields.x.label');
     assert.equal(issues.length, 1);
-    assert.match(issues[0].message, /no element "\/req\/nope\.fields\.x"/);
+    // The resolution tries EVERY dot-boundary prefix (longest first —
+    // element ids may carry dots), so the message names the longest AND
+    // lists the tried set (TODO.v2/13 item 3a — the one-level last-dot
+    // phrasing misreported the walk).
+    assert.match(
+      issues[0].message,
+      /no element "\/req\/nope\.fields\.x" in the package — every dot-boundary prefix was tried \("\/req\/nope\.fields\.x", "\/req\/nope\.fields", "\/req\/nope"\)/,
+    );
   });
 });
 

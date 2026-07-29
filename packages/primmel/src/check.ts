@@ -5002,8 +5002,10 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
         // the <element-id>.<field> split.
         let elementId = '';
         let path: string[] = [];
+        const tried: string[] = [];
         for (let i = segments.length - 1; i >= 1; i--) {
           const candidate = segments.slice(0, i).join('.');
+          tried.push(candidate);
           if (elements.has(candidate)) {
             elementId = candidate;
             path = segments.slice(i);
@@ -5011,9 +5013,13 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
           }
         }
         if (elementId === '') {
+          // Every dot-boundary prefix was tried (longest first — element
+          // ids may carry dots); the one-level "last-dot split" mental
+          // model would name only the longest, so the message lists the
+          // tried set (TODO.v2/13 item 3a).
           err(
             'C89',
-            `text "${t.id}": no element "${t.id.slice(0, dot)}" in the package (spelling-code-wellformed)`,
+            `text "${t.id}": no element "${tried[0]}" in the package — every dot-boundary prefix was tried (${tried.map(c => `"${c}"`).join(', ')}); the addressed element is the LONGEST registered prefix (spelling-code-wellformed)`,
           );
         } else {
           // Walk the intermediate segments: an object segment names a
