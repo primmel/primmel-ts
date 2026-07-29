@@ -4862,7 +4862,20 @@ function textAddressKey(item: unknown, segment: string): boolean {
  *     intermediate segment names a nested structure, a list item is
  *     keyed by its declared key (name/order/slot — never a positional
  *     index), and the terminal segment is a prose field. A dangling,
- *     scalar, or ambiguous segment is an error;
+ *     scalar, or ambiguous segment is an error. The terminal segment's
+ *     snake_case → camelCase fallback is DELIBERATE and terminal-only
+ *     (TODO.v2/13 item 3b, pinned — the walk is NOT extended): the
+ *     terminal draws from the FIXED prose-field vocabulary authored in
+ *     snake_case (the PROSE_FIELDS set — `true_label`, `scope_note`, …)
+ *     while the parsed structure holds the property camelCase
+ *     (`trueLabel`, …), so the vocabulary lookup translates exactly
+ *     there. Intermediate segments are not vocabulary lookups — they
+ *     name nested structures by the parsed model's own property names
+ *     or key list items by author-declared content (names/orders/slots)
+ *     — so a case translation there would bless a second spelling of
+ *     machine structure (and an ambiguity where `foo_bar` and `fooBar`
+ *     collide); no shipped nested structure name needs it (the corpus
+ *     legs);
  *   - every spell entry's code parses; a duplicate code within one
  *     content set is an error (use an extension to distinguish);
  *   - an entry repeating the package's default_spelling is an error —
@@ -5076,6 +5089,11 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
                 `text "${t.id}": "${field}" is not a prose field (spelling-code-wellformed)`,
               );
             } else if (
+              // The snake_case → camelCase fallback is terminal-only by
+              // design (the docstring's pin): the terminal segment is a
+              // vocabulary lookup (snake_case prose vocabulary → the
+              // parsed camelCase property), an intermediate segment is a
+              // structure/key name taken verbatim.
               !Object.prototype.hasOwnProperty.call(node, field) &&
               !Object.prototype.hasOwnProperty.call(
                 node,
