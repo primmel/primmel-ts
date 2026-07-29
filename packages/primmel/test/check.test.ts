@@ -4,21 +4,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
 import { checkPackage } from '../src/check';
+import { R60, R60_AVAILABLE, R60_SKIP } from './helpers/corpus';
 
-// The real R 60 package lives in the sibling smart repo checkout, which
-// CI and fresh clones do not have — the R 60-dependent specs then SKIP
-// gracefully (the synthetic-fixture specs below run everywhere). Set
-// R60_PACKAGE to a built primmel-packages/oiml-r60 directory to enable
-// them; an env value pointing nowhere skips the same way.
-const R60 =
-  process.env.R60_PACKAGE ??
-  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages/oiml-r60';
-const R60_AVAILABLE = existsSync(R60);
-const R60_SKIP: string | false = R60_AVAILABLE
-  ? false
-  : `no oiml-r60 package at ${R60} — set R60_PACKAGE to a built primmel-packages/oiml-r60 directory`;
+// The corpus/R 60 resolution (env-first, repo-relative default, loud
+// skip) has one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
 if (!R60_AVAILABLE) {
   console.log(`check.test.ts: skipping the R 60 package specs — ${R60_SKIP}`);
 }

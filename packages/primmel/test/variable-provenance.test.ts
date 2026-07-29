@@ -39,6 +39,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { load, dump } from '../src/ser-des/index.js';
 import { checkPackage } from '../src/check';
+import { CORPUS, CORPUS_AVAILABLE, CORPUS_SKIP } from './helpers/corpus';
 
 // ── fixture helpers (the certification-program.test.ts idiom) ────────
 
@@ -60,8 +61,7 @@ function writePackage(
   return dir;
 }
 
-const MANIFEST =
-  'package { id probe-pkg version "2027" editions { 2027 } }';
+const MANIFEST = 'package { id probe-pkg version "2027" editions { 2027 } }';
 
 /** A minimal program-shaped package: one requirement + one probe test. */
 function probePackage(variables: string): Record<string, string> {
@@ -143,7 +143,8 @@ describe('the provenance facet — parse + dump round-trip', () => {
       channel: 'observer_attestation',
       ref: 'p_weber',
       observedAt: 'observed_at',
-      limitation: 'Attestation-only evidence proves twin ≡ display, not twin ≡ mass.',
+      limitation:
+        'Attestation-only evidence proves twin ≡ display, not twin ≡ mass.',
     });
   });
 
@@ -307,16 +308,8 @@ describe('C99 variable-provenance-channel', () => {
 
 // ── corpus-clean leg (additive silence — the facet is new) ───────────
 
-// The real corpus lives in the sibling smart repo checkout, which CI and
-// fresh clones do not have — the corpus-clean spec then SKIPs gracefully.
-// Set PRIMMEL_PACKAGES to a primmel-packages directory to enable it.
-const CORPUS =
-  process.env.PRIMMEL_PACKAGES ??
-  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages';
-const CORPUS_AVAILABLE = existsSync(CORPUS);
-const CORPUS_SKIP: string | false = CORPUS_AVAILABLE
-  ? false
-  : `no primmel-packages corpus at ${CORPUS} — set PRIMMEL_PACKAGES to enable the corpus-clean leg`;
+// The corpus resolution (env-first, repo-relative default, loud skip) has
+// one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
 if (!CORPUS_AVAILABLE) {
   console.log(
     `variable-provenance.test.ts: skipping the corpus-clean spec — ${CORPUS_SKIP}`,
@@ -324,22 +317,18 @@ if (!CORPUS_AVAILABLE) {
 }
 
 describe('corpus-clean leg (additive/OCP — the shipped packages)', () => {
-  it(
-    'shows zero C99 issues across the corpus',
-    { skip: CORPUS_SKIP },
-    () => {
-      const dirs = readdirSync(CORPUS)
-        .map(d => join(CORPUS, d))
-        .filter(d => existsSync(join(d, 'package.primmel')))
-        .sort();
-      assert.ok(dirs.length > 0, 'corpus directories found');
-      for (const dir of dirs) {
-        assert.deepEqual(
-          c99Issues(dir).map(i => i.message),
-          [],
-          `C99 issues in ${dir}`,
-        );
-      }
-    },
-  );
+  it('shows zero C99 issues across the corpus', { skip: CORPUS_SKIP }, () => {
+    const dirs = readdirSync(CORPUS)
+      .map(d => join(CORPUS, d))
+      .filter(d => existsSync(join(d, 'package.primmel')))
+      .sort();
+    assert.ok(dirs.length > 0, 'corpus directories found');
+    for (const dir of dirs) {
+      assert.deepEqual(
+        c99Issues(dir).map(i => i.message),
+        [],
+        `C99 issues in ${dir}`,
+      );
+    }
+  });
 });

@@ -29,17 +29,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { load, dump } from '../src/ser-des/index';
 import { checkPackage } from '../src/check';
+import { CORPUS, CORPUS_AVAILABLE, CORPUS_SKIP } from './helpers/corpus';
 
-// The real corpus lives in the sibling smart repo checkout, which CI and
-// fresh clones do not have — the corpus legs then SKIP gracefully. Set
-// PRIMMEL_PACKAGES to a primmel-packages directory to enable them.
-const CORPUS =
-  process.env.PRIMMEL_PACKAGES ??
-  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages';
-const CORPUS_AVAILABLE = existsSync(CORPUS);
-const CORPUS_SKIP: string | false = CORPUS_AVAILABLE
-  ? false
-  : `no primmel-packages corpus at ${CORPUS} — set PRIMMEL_PACKAGES to enable the corpus legs`;
+// The corpus resolution (env-first, repo-relative default, loud skip) has
+// one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
 if (!CORPUS_AVAILABLE) {
   console.log(`cascade-via.test.ts: skipping the corpus legs — ${CORPUS_SKIP}`);
 }

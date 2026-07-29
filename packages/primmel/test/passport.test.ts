@@ -28,20 +28,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { load, dump, loadPackageWithIssues } from '../src/ser-des/index';
 import { checkPackage } from '../src/check';
+import { CORPUS, CORPUS_AVAILABLE, CORPUS_SKIP } from './helpers/corpus';
 
 const FIXTURE_REPO = join(__dirname, 'fixtures', 'passport-supply-chain');
 const FIXTURE_DIR = join(FIXTURE_REPO, 'acme-lc500');
 
-// The real corpus lives in the sibling smart repo checkout, which CI and
-// fresh clones do not have — the corpus-clean spec then SKIPs gracefully.
-// Set PRIMMEL_PACKAGES to a primmel-packages directory to enable it.
-const CORPUS =
-  process.env.PRIMMEL_PACKAGES ??
-  '/Users/mulgogi/src/oimlsmart/smart/primmel-packages';
-const CORPUS_AVAILABLE = existsSync(CORPUS);
-const CORPUS_SKIP: string | false = CORPUS_AVAILABLE
-  ? false
-  : `no primmel-packages corpus at ${CORPUS} — set PRIMMEL_PACKAGES to enable the corpus-clean leg`;
+// The corpus resolution (env-first, repo-relative default, loud skip) has
+// one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
 if (!CORPUS_AVAILABLE) {
   console.log(
     `passport.test.ts: skipping the corpus-clean spec — ${CORPUS_SKIP}`,

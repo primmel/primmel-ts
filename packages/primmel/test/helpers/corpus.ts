@@ -15,7 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 
 /** The primmel-ts repo root (test/helpers → test → primmel → packages). */
 const REPO_ROOT = resolve(__dirname, '..', '..', '..', '..');
@@ -30,3 +30,12 @@ export const CORPUS_AVAILABLE = existsSync(CORPUS);
 export const CORPUS_SKIP: string | false = CORPUS_AVAILABLE
   ? false
   : `no primmel-packages corpus at ${CORPUS} — set PRIMMEL_PACKAGES to enable the corpus-clean leg`;
+
+/** The corpus's oiml-r60 package — the single-rec legs' fixture. */
+export const R60 = process.env.R60_PACKAGE ?? join(CORPUS, 'oiml-r60');
+
+export const R60_AVAILABLE = existsSync(R60);
+
+export const R60_SKIP: string | false = R60_AVAILABLE
+  ? false
+  : `no oiml-r60 package at ${R60} — set R60_PACKAGE to a built primmel-packages/oiml-r60 directory`;
