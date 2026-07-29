@@ -351,6 +351,40 @@ test_sequence hash-vocab {
     assert.deepEqual(load(leadingDump).testSequences, leading.testSequences);
     assert.equal(dump(load(leadingDump)), leadingDump);
   });
+
+  it('quotes a vocabulary value STARTING with the comment opener // (TODO.v2/13 item 1)', () => {
+    // tokenize.ts has TWO comment openers — `#` and `//` (its lines
+    // 60-61): a value starting with `//` shares the leading-# truncation
+    // exposure exactly (the opener starts a to-end-of-line comment
+    // between tokens and the value vanishes on re-parse). A mid-token
+    // `//` is literal and stays bare.
+    const wrap = (applicability: string) => `
+test_sequence slash-vocab {
+  name "H"
+  description "d"
+  step 1 { test "/conf/x" }
+  sample_applicability "${applicability}"
+}
+`;
+    const mid = load(wrap('see//1'));
+    assert.equal(mid.testSequences[0].sampleApplicability, 'see//1');
+    const midDump = dump(mid);
+    assert.ok(
+      midDump.includes('sample_applicability see//1'),
+      `expected the mid-token // value to stay bare, got:\n${midDump}`,
+    );
+    assert.deepEqual(load(midDump).testSequences, mid.testSequences);
+
+    const leading = load(wrap('//1'));
+    assert.equal(leading.testSequences[0].sampleApplicability, '//1');
+    const leadingDump = dump(leading);
+    assert.ok(
+      leadingDump.includes('sample_applicability "//1"'),
+      `expected the leading-// value quoted in the dump, got:\n${leadingDump}`,
+    );
+    assert.deepEqual(load(leadingDump).testSequences, leading.testSequences);
+    assert.equal(dump(load(leadingDump)), leadingDump);
+  });
 });
 
 describe('test_sequence lint rules (C92–C93)', () => {
