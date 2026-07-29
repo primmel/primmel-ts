@@ -54,7 +54,12 @@ subject LC500 {
       }
       operation watch_state {
         kind subscribe
-        serves state, environmental_context
+        # state only — reconciled to the real acme-lc500 package's derived
+        # projection surface (primmel-packages/acme-lc500/model/lc500.prl,
+        # smart repo, merged 481d7e1: the endpoint serves exactly the R 60
+        # governed set). The earlier state,environmental_context form was
+        # fixture drift, not a deliberate divergence (TODO.v2/16 review).
+        serves { state }
         payload { quantity_kind state unit dimensionless timestamp true }
       }
       access {
