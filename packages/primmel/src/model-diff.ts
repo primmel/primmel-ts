@@ -155,6 +155,12 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // declares.
   formulasUsed: 'cross-cutting',
   links: 'cross-cutting',
+  // Text content sets (TODO.roadmap/25 + smart gap-close E13; TODO.v2/12)
+  // are cross-cutting beside notes: an alternate spelling is annotation
+  // — a translation never changes what the model demands. The id is the
+  // full nested address (<element-id>.<path…>.<field>); the diff matches
+  // on it whole.
+  texts: 'cross-cutting',
 };
 
 // ── canonical content ────────────────────────────────────────────────
@@ -274,7 +280,10 @@ const PROVENANCE_FIELDS = ['source', 'sourceRef', 'sourceRefs'];
  * a change there is `changed — binding`, never moved. Kinds without a
  * spec use the generic scheme — statement (the narrative fields
  * present), anchor (the anchor fields present), provenance, structure
- * (everything else).
+ * (everything else). Text content sets are the one per-ENTRY scheme
+ * (TODO.v2/12): one aspect per spelling code (`spelling:<code>`), so a
+ * spelling added/removed or a value changed names its entry, never the
+ * whole set.
  */
 const ASPECT_SPECS: Record<
   string,
@@ -418,6 +427,26 @@ function elementOf(field: string, el: Record<string, unknown>): DiffElement {
       const picked = pick(fields ?? []);
       if (Object.keys(picked).length > 0) {
         aspects[aspect] = canonical(picked);
+      }
+    }
+  } else if (field === 'texts') {
+    // Content sets diff PER SPELLING ENTRY (TODO.v2/12): one aspect per
+    // spelling code — a spelling added/removed or a value changed names
+    // its entry (`spelling:<code>`), never the whole set. The value AND
+    // the conversion provenance (`via`) are the entry's content. A
+    // duplicate code within one set is a data error (C89 owns it): the
+    // last entry wins the aspect, like a duplicate element id wins its
+    // slot.
+    consumed.add('entries');
+    const entries =
+      (el.entries as { spelling?: string; value?: string; via?: string }[]) ??
+      [];
+    for (const e of entries) {
+      if (e && typeof e.spelling === 'string') {
+        aspects[`spelling:${e.spelling}`] = canonical({
+          value: e.value,
+          via: e.via,
+        });
       }
     }
   } else {
@@ -873,6 +902,26 @@ function diffClauseDrift(
 }
 
 /**
+ * The change-report label for one differing aspect. Text content sets
+ * carry the per-entry scheme (TODO.v2/12 — `spelling:<code>` aspects):
+ * the label names the entry-level change — a spelling added, a spelling
+ * removed, a value (or its `via` provenance) changed. Every other kind
+ * reports the bare aspect name.
+ */
+function labelAspect(elA: DiffElement, elB: DiffElement, name: string): string {
+  if (elA.kind !== 'texts' || !name.startsWith('spelling:')) {
+    return name;
+  }
+  if (!(name in elA.aspects)) {
+    return `${name} (added)`;
+  }
+  if (!(name in elB.aspects)) {
+    return `${name} (removed)`;
+  }
+  return `${name} (changed)`;
+}
+
+/**
  * The structural model diff between two loaded Standards (§13.2). `a` is
  * the OLD state, `b` the NEW one (edition comparison reads 2017 → 2021).
  */
@@ -943,7 +992,7 @@ export function diffStandards(
         id: elA.id,
         kind: elA.kind,
         tier: elA.tier,
-        aspects: differing.sort(),
+        aspects: differing.map(name => labelAspect(elA, elB, name)).sort(),
       });
       tally[elA.tier].changed++;
     }

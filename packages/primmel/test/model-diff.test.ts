@@ -10,10 +10,16 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readdirSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { load } from '../src/ser-des/index';
+import { load, loadPackageWithIssues } from '../src/ser-des/index';
 import {
   diffStandards,
   elementIndex,
@@ -22,6 +28,13 @@ import {
   type ClauseTextIndex,
 } from '../src/model-diff';
 import { diffPackageDirs } from '../src/package-diff';
+import { CORPUS, CORPUS_AVAILABLE, CORPUS_SKIP } from './helpers/corpus';
+
+if (!CORPUS_AVAILABLE) {
+  console.log(
+    `model-diff.test.ts: skipping the corpus-clean leg — ${CORPUS_SKIP}`,
+  );
+}
 
 const BASE = `
 requirement /req/metrological/mpe {
@@ -811,6 +824,50 @@ state_machine TestRequest {
     assert.equal(noop.unchanged, 4);
   });
 
+  it('text content sets are diff elements (cross-cutting, beside links) — TODO.v2/12', () => {
+    // The TIER_BY_FIELD registration pin: elementIndex iterates the table
+    // keys only, so an unregistered first-class collection is silently
+    // invisible to `primmel diff` — texts were exactly that (the E13
+    // review's recorded gap). The match key is the FULL nested address id
+    // (<element-id>.<path…>.<field>): a nested-path entry and a top-level
+    // entry are diff elements like any other.
+    const TEXTS = `
+text /req/metrological/mpe.statement {
+  spell fra-Latn "L'erreur ne doit pas dépasser l'EMT."
+}
+text r60-3/load-test.fields.runs.fields.indication.label {
+  spell fra-Latn "Indication"
+}
+`;
+    const idx = elementIndex(load(TEXTS));
+    assert.equal(idx.size, 2);
+    assert.ok(idx.has('texts:/req/metrological/mpe.statement'));
+    assert.ok(
+      idx.has('texts:r60-3/load-test.fields.runs.fields.indication.label'),
+    );
+    assert.equal(
+      idx.get('texts:/req/metrological/mpe.statement')?.tier,
+      'cross-cutting',
+    );
+
+    const added = diff(BASE, BASE + TEXTS);
+    assert.equal(added.added.length, 2);
+    assert.deepEqual(
+      added.added.map(e => `${e.kind}:${e.id}:${e.tier}`),
+      [
+        'texts:/req/metrological/mpe.statement:cross-cutting',
+        'texts:r60-3/load-test.fields.runs.fields.indication.label:cross-cutting',
+      ],
+    );
+    const removed = diff(BASE + TEXTS, BASE);
+    assert.equal(removed.removed.length, 2);
+    assert.ok(removed.removed.every(e => e.kind === 'texts'));
+    // An unchanged content set produces no diff elements.
+    const noop = diff(BASE + TEXTS, BASE + TEXTS);
+    assert.equal(noop.empty, true);
+    assert.equal(noop.unchanged, 5);
+  });
+
   it('a duplicate kind:id is collected and surfaces as a diff warning', () => {
     // Duplicate ids are a data error (the duplicate-id linter owns them) —
     // but a diff over an UNLINTED package must not stay silent: the last
@@ -835,4 +892,111 @@ state_machine TestRequest {
     );
     assert.match(formatDiffReport(d), /warnings:/);
   });
+});
+
+describe('model diff — text content sets, entry-level (TODO.v2/12)', () => {
+  // A content set diffs PER SPELLING ENTRY: one aspect per spelling code,
+  // so the change report names the entry-level change — a spelling added,
+  // a spelling removed, a value (or its via provenance) changed — never
+  // an opaque whole-set "structure".
+  const ONE = `
+text /req/metrological/mpe.statement {
+  spell fra-Latn "L'erreur ne doit pas dépasser l'EMT."
+}
+`;
+
+  it('a spelling added names the entry, not the set', () => {
+    const two = ONE.replace(
+      '}',
+      '  spell deu-Latn "Der Fehler darf den FGF nicht überschreiten."\n}',
+    );
+    const d = diff(BASE + ONE, BASE + two);
+    assert.equal(d.changed.length, 1);
+    assert.equal(d.changed[0].kind, 'texts');
+    assert.deepEqual(d.changed[0].aspects, ['spelling:deu-Latn (added)']);
+  });
+
+  it('a spelling removed names the entry, not the set', () => {
+    const two = ONE.replace(
+      '}',
+      '  spell deu-Latn "Der Fehler darf den FGF nicht überschreiten."\n}',
+    );
+    const d = diff(BASE + two, BASE + ONE);
+    assert.equal(d.changed.length, 1);
+    assert.deepEqual(d.changed[0].aspects, ['spelling:deu-Latn (removed)']);
+  });
+
+  it('a value changed names the entry, not the set', () => {
+    const d = diff(
+      BASE + ONE,
+      BASE + ONE.replace('ne doit pas', 'ne doit jamais'),
+    );
+    assert.equal(d.changed.length, 1);
+    assert.equal(d.changed[0].id, '/req/metrological/mpe.statement');
+    assert.deepEqual(d.changed[0].aspects, ['spelling:fra-Latn (changed)']);
+  });
+
+  it('a via (conversion provenance) change is an entry change', () => {
+    const derived = `
+text manufacturer-name {
+  spell zho-Hans "…"
+  spell zho-Latn via BGN-PCGN:zho-Hans:Latn:1979 "…"
+}
+`;
+    const d = diff(
+      BASE + derived,
+      BASE +
+        derived.replace(
+          'BGN-PCGN:zho-Hans:Latn:1979',
+          'ISO:zho-Hans:Latn:1998',
+        ),
+    );
+    assert.equal(d.changed.length, 1);
+    assert.deepEqual(d.changed[0].aspects, ['spelling:zho-Latn (changed)']);
+  });
+
+  it('the report renders the entry-level change', () => {
+    const d = diff(
+      BASE + ONE,
+      BASE + ONE.replace('ne doit pas', 'ne doit jamais'),
+    );
+    const report = formatDiffReport(d);
+    assert.match(
+      report,
+      /~ \[cross-cutting\/texts\] \/req\/metrological\/mpe\.statement — spelling:fra-Latn \(changed\)/,
+    );
+  });
+});
+
+describe('model diff — the corpus-clean leg (TODO.v2/12 additive silence)', () => {
+  it(
+    'the shipped corpus carries zero text blocks — the texts tier adds no diff rows',
+    { skip: CORPUS_SKIP },
+    () => {
+      const dirs = readdirSync(CORPUS)
+        .map(d => join(CORPUS, d))
+        .filter(d => existsSync(join(d, 'package.primmel')))
+        .sort();
+      assert.ok(dirs.length > 0, `expected the corpus at ${CORPUS}`);
+      for (const dir of dirs) {
+        const { standard, issues } = loadPackageWithIssues(dir);
+        assert.deepEqual(
+          issues.filter(i => i.severity === 'error'),
+          [],
+          `${dir}: expected a clean load, got: ${issues.map(i => i.message).join('\n')}`,
+        );
+        assert.equal(
+          (standard.texts ?? []).length,
+          0,
+          `${dir}: the corpus ships no text blocks yet — the texts tier must stay silent (additive/OCP)`,
+        );
+        const d = diffStandards(standard, standard);
+        assert.equal(
+          d.empty,
+          true,
+          `${dir}: a self-diff must be empty (zero false positives)`,
+        );
+      }
+    },
+  );
 });
