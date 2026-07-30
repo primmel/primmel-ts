@@ -11,7 +11,7 @@ diff (`primmel diff`).
 > `PRIMMEL_TS` symlink so every platform gate runs against the live
 > kernel. The full system map — every component, what it owns, and its
 > proof command — is one hop away:
-> [`docs/architecture/for-agents.md`](https://github.com/oimlsmart/smart/blob/rt-instrument-model/docs/architecture/for-agents.md).
+> [`docs/architecture/for-agents.md`](https://github.com/oimlsmart/smart/blob/v2/docs/architecture/for-agents.md).
 
 ## Prove it works
 
