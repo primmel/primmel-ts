@@ -1,0 +1,52 @@
+# ACME DLC → R 60-demo:2021 — compliance-as-references, the FIRST
+# edition (TODO.integration/16): the product's conformance claim to the
+# 2021 baseline, made computable. The old claim never mutates — the
+# 2027 map (model/r60-demo-2027-map.prl) is ADDED beside it.
+#
+# The map targets are the package's own alias declarations (C21).
+
+requirement oiml-r60-demo-2021#/req/metrological/measuring-range-min {
+  name "alias: the 2021 minimum-load requirement"
+  statement "Local alias of the 2021 edition's measuring-range-minimum requirement (C21 — the product declares local copies of the reference elements it maps to)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement oiml-r60-demo-2021#/req/metrological/measuring-range-max {
+  name "alias: the 2021 maximum-load requirement"
+  statement "Local alias of the 2021 edition's measuring-range-maximum requirement (C21)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement oiml-r60-demo-2021#/req/metrological/zero-return {
+  name "alias: the 2021 zero-return requirement (0.5 intervals)"
+  statement "Local alias of the 2021 edition's zero-return requirement — the 0.5-scale-interval tolerance (C21)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement oiml-r60-demo-2021#/req/technical/warm-up-time {
+  name "alias: the 2021 warm-up requirement (30 min)"
+  statement "Local alias of the 2021 edition's warm-up requirement — 30 minutes, no record (C21)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+map_profile oiml-r60-demo-2021 {
+  description "ACME DLC → R 60-demo:2021 — the product's conformance claim to the 2021 baseline (compliance-as-references: this profile is NEVER edited when the successor edition lands)."
+  mapping {
+    e_min -> oiml-r60-demo-2021#/req/metrological/measuring-range-min {
+      description "Our rated minimum capacity answers the 2021 minimum-load requirement."
+      justification "Same quantity, same clause definition — the rated value is the requirement's E_min."
+    }
+    e_max -> oiml-r60-demo-2021#/req/metrological/measuring-range-max {
+      description "Our rated maximum capacity answers the 2021 maximum-load requirement."
+      justification "Same quantity, same clause definition — the rated value is the requirement's E_max."
+    }
+    zero_within -> oiml-r60-demo-2021#/req/metrological/zero-return {
+      description "The zero-return promise answers the 2021 zero-return requirement (the 0.5-interval tolerance)."
+      justification "Same quantity — our declared interval budget sits inside the 2021 edition's 0.5-scale-interval tolerance."
+    }
+    warm_up_minutes -> oiml-r60-demo-2021#/req/technical/warm-up-time {
+      description "Our rated warm-up period (30 min) answers the 2021 warm-up requirement."
+      justification "Same quantity — the rated period equals the 2021 edition's mandated 30 minutes."
+    }
+  }
+}

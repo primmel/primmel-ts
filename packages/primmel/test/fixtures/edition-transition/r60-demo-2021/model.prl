@@ -1,0 +1,117 @@
+# The 2021 baseline of the fictional didactic edition (TODO.integration/16).
+# Five attributes, one behavior, four requirements — the full model,
+# deliberately small.
+
+quantity_register si {
+  kind mass { dimensions { M 1 } si_unit kg }
+  unit kg { symbol "kg" kind mass factor 1 }
+  kind time { dimensions { T 1 } si_unit s }
+  unit min { symbol "min" kind time factor 60 }
+  kind dimensionless { si_unit "1" }
+  unit dimensionless { label "dimensionless" kind dimensionless }
+}
+
+attribute_definition e_min {
+  name "Minimum capacity"
+  definition "The smallest load the instrument is rated for (the didactic anchor — unchanged across the editions)."
+  quantity_kind mass
+  unit kg
+  scope model
+}
+
+attribute_definition e_max {
+  name "Maximum capacity"
+  definition "The largest load the instrument is rated for (the didactic anchor — unchanged across the editions)."
+  quantity_kind mass
+  unit kg
+  scope model
+}
+
+attribute_definition d_min {
+  name "Minimum test load"
+  definition "The smallest load applied during test (the served reading)."
+  quantity_kind mass
+  unit kg
+  origin measured
+  scope sample
+}
+
+attribute_definition d_max {
+  name "Maximum test load"
+  definition "The largest load applied during test."
+  quantity_kind mass
+  unit kg
+  origin measured
+  scope sample
+}
+
+attribute_definition warm_up_time {
+  name "Warm-up time"
+  definition "The period after switch-on before the instrument may indicate — 30 minutes at the 2021 edition (revised at 2027)."
+  quantity_kind time
+  unit min
+  scope model
+}
+
+behavior load_weight {
+  kind measurement
+  stimulus force
+  response "The instrument indicates the applied load within its metrological limits (the didactic measurement behavior)."
+}
+
+subject DemoLoadCell {
+  is {
+    metadata { name "Didactic load cell (fictional)" }
+    design_parameters { e_min : mass e_max : mass warm_up_time : time }
+  }
+  has {
+    attributes { d_min : mass test_dependent d_max : mass test_dependent }
+  }
+  does {
+    behavior load_weight
+  }
+}
+
+requirement /req/metrological/measuring-range-min {
+  name "Minimum load of the measuring range"
+  statement "The value of the smallest load applied during test, expressed in mass units, shall not be less than E_min."
+  binds_to { sample.test_context.d_min model.parameters.e_min }
+  limit {
+    expression "ocl{sample.test_context.d_min >= model.parameters.e_min}"
+    uses { sample.test_context.d_min model.parameters.e_min }
+  }
+  acceptance_criteria {
+    type: "threshold"
+    description: "Minimum test load shall be at least E_min"
+  }
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement /req/metrological/measuring-range-max {
+  name "Maximum load of the measuring range"
+  statement "The value of the largest load applied during test, expressed in mass units, shall not exceed E_max."
+  binds_to { sample.test_context.d_max model.parameters.e_max }
+  limit {
+    expression "ocl{sample.test_context.d_max <= model.parameters.e_max}"
+    uses { sample.test_context.d_max model.parameters.e_max }
+  }
+  acceptance_criteria {
+    type: "threshold"
+    description: "Maximum test load shall not exceed E_max"
+  }
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement /req/metrological/zero-return {
+  name "Zero return after load removal"
+  statement "After removal of a load, the indication shall return to within 0.5 scale intervals of zero (the 2021 tolerance — TIGHTENED to 0.25 at the 2027 edition)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+  source { doc "urn:oiml:pub:r:60-demo:2021" clause "4.3" }
+}
+
+requirement /req/technical/warm-up-time {
+  name "Warm-up period"
+  statement "The instrument shall not indicate measurement results within 30 minutes of switch-on (the 2021 period — REVISED to 15 minutes with a completion record at the 2027 edition)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+  source { doc "urn:oiml:pub:r:60-demo:2021" clause "5.2" }
+}

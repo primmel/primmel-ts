@@ -1,0 +1,13 @@
+package {
+  id oiml-r60-demo-2021
+  kind rec
+  title "R 60-demo:2021 — the fictional didactic edition (baseline)"
+  version "2021"
+  editions { 2021 }
+  baseUrn "urn:oiml:pub:r:60-demo:2021"
+  uses { }
+  requires { }
+  status preview
+  default_spelling eng-Latn
+  description "FICTIONAL didactic edition of the R 60 shape — the edition-transition worked example's 2021 baseline (TODO.integration/16), not a real Recommendation. Small enough to review in one sitting: one subject, five attributes, one behavior, four requirements."
+}

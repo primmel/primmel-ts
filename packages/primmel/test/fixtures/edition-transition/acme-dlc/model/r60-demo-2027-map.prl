@@ -1,0 +1,62 @@
+# ACME DLC → R 60-demo:2027 — compliance-as-references, the SUCCESSOR
+# edition (TODO.integration/16): the product ADDs its reference to the
+# 2027 edition to declare compliance with it — the 2021 profile beside
+# it (model/r60-demo-2021-map.prl) never mutates (evidence accrues).
+#
+# The map targets are the package's own alias declarations (C21).
+
+requirement oiml-r60-demo-2027#/req/metrological/measuring-range-min {
+  name "alias: the 2027 minimum-load requirement"
+  statement "Local alias of the 2027 edition's measuring-range-minimum requirement (C21 — carried unchanged from the 2021 baseline)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement oiml-r60-demo-2027#/req/metrological/measuring-range-max {
+  name "alias: the 2027 maximum-load requirement"
+  statement "Local alias of the 2027 edition's measuring-range-maximum requirement (C21 — carried unchanged)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement oiml-r60-demo-2027#/req/metrological/zero-return {
+  name "alias: the 2027 zero-return requirement (0.25 intervals)"
+  statement "Local alias of the 2027 edition's zero-return requirement — the TIGHTENED 0.25-scale-interval tolerance (C21)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement oiml-r60-demo-2027#/req/technical/warm-up-time {
+  name "alias: the 2027 warm-up requirement (15 min + record)"
+  statement "Local alias of the 2027 edition's warm-up requirement — 15 minutes with a completion record (C21)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+requirement oiml-r60-demo-2027#/req/technical/warm-up-record {
+  name "alias: the 2027 warm-up-record requirement (ADDED)"
+  statement "Local alias of the 2027 edition's warm-up-record requirement — the completion record, ADDED at the 2027 edition (C21)."
+  verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+}
+
+map_profile oiml-r60-demo-2027 {
+  description "ACME DLC → R 60-demo:2027 — the product's conformance claim to the successor edition (compliance-as-references: ADDED beside the 2021 profile, which never mutates). Honest coverage: the added warm-up-record requirement is answered by the product's declared attribute."
+  mapping {
+    e_min -> oiml-r60-demo-2027#/req/metrological/measuring-range-min {
+      description "Our rated minimum capacity answers the 2027 minimum-load requirement."
+      justification "Same quantity, unchanged from the 2021 baseline — the rated value is the requirement's E_min."
+    }
+    e_max -> oiml-r60-demo-2027#/req/metrological/measuring-range-max {
+      description "Our rated maximum capacity answers the 2027 maximum-load requirement."
+      justification "Same quantity, unchanged from the 2021 baseline — the rated value is the requirement's E_max."
+    }
+    zero_within -> oiml-r60-demo-2027#/req/metrological/zero-return {
+      description "The zero-return promise answers the 2027 zero-return requirement (the TIGHTENED 0.25-interval tolerance)."
+      justification "Same quantity — our declared interval budget must now sit inside the 2027 edition's 0.25-scale-interval tolerance (the tightened clause the re-judgment window exists for)."
+    }
+    warm_up_minutes -> oiml-r60-demo-2027#/req/technical/warm-up-time {
+      description "Our rated warm-up period answers the 2027 warm-up requirement."
+      justification "The 2027 edition revises the period to 15 minutes with a completion record — the rated period is judged against the new clause, never re-anchored to the old."
+    }
+    zero_return_intervals -> oiml-r60-demo-2027#/req/technical/warm-up-record {
+      description "Our exhibited record attribute answers the ADDED warm-up-record requirement."
+      justification "The 2027 edition's added clause requires the completion record — the product declares the attribute that carries it (a NEW reference, made because the edition added the clause)."
+    }
+  }
+}

@@ -1,0 +1,14 @@
+package {
+  id oiml-r60-demo-2027
+  kind rec
+  title "R 60-demo:2027 — the fictional didactic edition (successor)"
+  version "2027"
+  editions { 2027 2021 }
+  baseUrn "urn:oiml:pub:r:60-demo:2027"
+  supersedes { "urn:oiml:pub:r:60-demo:2021" }
+  uses { }
+  requires { }
+  status preview
+  default_spelling eng-Latn
+  description "FICTIONAL didactic edition of the R 60 shape — the edition-transition worked example's 2027 successor (TODO.integration/16), not a real Recommendation. An ENTIRELY NEW model with the supersedes link back to the 2021 baseline; three honest changes (the zero-return tolerance tightened, the warm-up clause revised, the warm-up-record requirement added)."
+}

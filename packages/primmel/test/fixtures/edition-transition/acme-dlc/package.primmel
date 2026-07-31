@@ -1,0 +1,17 @@
+package {
+  id acme-dlc
+  kind product_reference
+  manufacturer "ACME Didactic Instruments (fictional)"
+  product "DLC demo load cell"
+  title "ACME DLC — the demo product mapping to both editions"
+  version "2027"
+  editions { 2027 }
+  baseUrn "urn:acme:dlc:2027"
+  uses { }
+  requires { }
+  maps_to { oiml-r60-demo-2021 oiml-r60-demo-2027 }
+  status preview
+  default_spelling eng-Latn
+  description "FICTIONAL demo product (TODO.integration/16): compliance-as-references — the product maps to BOTH editions of the didactic pair explicitly (two map_profiles, one per edition); the old claim never mutates, the auditor reads the edition lenses separately. A REFERENCE model — related to the editions by mapping only (no uses edge, the C24 doctrine)."
+}
+

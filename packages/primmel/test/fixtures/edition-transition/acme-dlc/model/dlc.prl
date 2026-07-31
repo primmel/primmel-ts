@@ -1,0 +1,54 @@
+# ACME DLC — the product model (TODO.integration/16): the full subject
+# anatomy (IS/HAS/DOES) whose aspects the two edition maps pair from.
+
+quantity_register si {
+  kind mass { dimensions { M 1 } si_unit kg }
+  unit kg { symbol "kg" kind mass factor 1 }
+  kind time { dimensions { T 1 } si_unit s }
+  unit min { symbol "min" kind time factor 60 }
+  kind dimensionless { si_unit "1" }
+  unit dimensionless { label "dimensionless" kind dimensionless }
+}
+
+attribute_definition e_min {
+  quantity_kind mass
+  unit kg
+  scope model
+}
+
+attribute_definition e_max {
+  quantity_kind mass
+  unit kg
+  scope model
+}
+
+attribute_definition zero_return_intervals {
+  name "Exhibited zero-return (scale intervals)"
+  quantity_kind dimensionless
+  unit dimensionless
+  origin measured
+  scope sample
+}
+
+attribute_definition warm_up_minutes {
+  name "Rated warm-up period (minutes)"
+  quantity_kind time
+  unit min
+  scope model
+}
+
+subject ACME_DLC {
+  is {
+    metadata { name "ACME demo load cell (fictional)" }
+    design_parameters { e_min : mass e_max : mass warm_up_minutes : time }
+    promises {
+      zero_within {
+        statement "The exhibited zero return stays within the product's declared interval budget."
+        verified_by { oiml-r60-demo-2021#/req/metrological/zero-return oiml-r60-demo-2027#/req/metrological/zero-return }
+      }
+    }
+  }
+  has {
+    attributes { zero_return_intervals : dimensionless test_dependent }
+  }
+}
