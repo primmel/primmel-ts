@@ -1,7 +1,8 @@
 # primmel-ts — the Primmel language kernel
 
 The toolchain for **Primmel**, the executable modelling language every
-OIML SMART model is written in (a strict superset of Primmel v2):
+SMART-program model is written in — OIML SMART first among them (a
+strict superset of Primmel v2):
 parser and serializer for `.prl` packages, the linter (`primmel check`
 — 99+ rules, C1–C99), the map-profile coverage calculus, and the model
 diff (`primmel diff`).
