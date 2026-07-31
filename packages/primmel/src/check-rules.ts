@@ -994,6 +994,40 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.v2/01 TCD-2, analysis/twin-certification-design.md Q2',
   ),
+  // ── the composition facet (TODO.integration/14; the YAML-side
+  // declaration of TODO.v3/03 proven first) ──
+  // C100: every composed_of component's product reference resolves (an
+  // inline `pkg/subject` names a subject of this package; a bare package
+  // id is registered for the supply-chain gate's C81-class resolution)
+  // and its endpoint is named. C101: every serve of the composite
+  // subject is covered by the decomposition exactly once. C102: the
+  // composite state rule's vocabulary is closed
+  // (any_fault_else_analyzer first — a new rule is a grammar extension,
+  // never a free string).
+  R(
+    'C100',
+    'composition-components-resolve',
+    'twins',
+    'error',
+    'normal',
+    'TODO.integration/14, the composed_of construct (TODO.v3/03 Phase 2)',
+  ),
+  R(
+    'C101',
+    'composition-decomposition-covers',
+    'twins',
+    'error',
+    'normal',
+    'TODO.integration/14, the composed_of construct (TODO.v3/03 Phase 2)',
+  ),
+  R(
+    'C102',
+    'composition-state-rule-closed',
+    'twins',
+    'error',
+    'normal',
+    'TODO.integration/14, the composed_of construct (TODO.v3/03 Phase 2)',
+  ),
 ];
 
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));

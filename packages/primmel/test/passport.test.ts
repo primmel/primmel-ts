@@ -687,8 +687,8 @@ describe('corpus-clean leg (additive/OCP — the 23 shipped packages)', () => {
         .sort();
       assert.equal(
         dirs.length,
-        26,
-        `expected the 26-package corpus at ${CORPUS}`,
+        28,
+        `expected the 28-package corpus at ${CORPUS} (acme-cgm-system + oiml-integrated-ref joined since the 26 pin)`,
       );
       for (const dir of dirs) {
         const issues = checkPackage(dir);

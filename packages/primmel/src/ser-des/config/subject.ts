@@ -119,6 +119,7 @@ import {
   parseEndpoint,
   parseServeEntry,
 } from './twin';
+import { dumpComposedOf, parseComposedOf } from './composition';
 import {
   coerceValueToken,
   dumpQuantityBlock,
@@ -1630,6 +1631,10 @@ function parseSubjectIs(block: string, result: Subject): void {
       if (endpointId) {
         result.is.endpoints.push(parseEndpoint(endpointId, body));
       }
+    } else if (cmd === 'composed_of') {
+      // composed_of { … } (TODO.integration/14) — the composition facet
+      // of a composite subject.
+      result.is.composedOf = parseComposedOf(unwrapBlock(t[i++] ?? ''));
     } else {
       i = recordMisplaced(result, 'is', cmd, t, i);
     }
@@ -1772,6 +1777,14 @@ function mergeSubject(parent: Subject, child: Subject): Subject {
       promises: [...parent.is.promises, ...child.is.promises],
       artifacts: [...parent.is.artifacts, ...child.is.artifacts],
       endpoints: [...parent.is.endpoints, ...child.is.endpoints],
+      // The composition facet: the child's declaration wins when present
+      // (a composite refines its composition; the parent's carries
+      // through unchanged otherwise).
+      ...(child.is.composedOf
+        ? { composedOf: child.is.composedOf }
+        : parent.is.composedOf
+          ? { composedOf: parent.is.composedOf }
+          : {}),
     },
     has: {
       attributes: { ...parent.has.attributes, ...child.has.attributes },
@@ -2037,7 +2050,8 @@ const dumpSubject = function (s: Subject): string {
     dumpSubjectStringMap('designed_conditions', s.is.designedConditions) +
     dumpSubjectPromises(s.is.promises) +
     dumpSubjectEntries('artifacts', s.is.artifacts) +
-    dumpSubjectEndpoints(s.is.endpoints);
+    dumpSubjectEndpoints(s.is.endpoints) +
+    (s.is.composedOf ? dumpComposedOf(s.is.composedOf, '    ') : '');
   if (isBody) {
     out += '  is {\n' + isBody + '  }\n';
   }

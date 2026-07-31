@@ -12,6 +12,7 @@
 import type { QuantityValue } from './Quantity';
 import type { ApplicabilityEntry } from './Form';
 import type { Endpoint, ServeBinding } from './Twin';
+import type { CompositionDecl } from './Composition';
 
 export interface SourceRef {
   doc: string;
@@ -400,6 +401,13 @@ export interface SubjectIs {
    * definition, like a marking or a software identification (§14.3).
    */
   endpoints: Endpoint[];
+  /**
+   * The composition facet (types/Composition.ts, TODO.integration/14):
+   * a COMPOSITE subject's `composed_of` — the component twins it is
+   * made of and the projection decomposition. Absent on non-composite
+   * subjects.
+   */
+  composedOf?: CompositionDecl;
 }
 
 /** has { … } — exhibition aspects. */

@@ -548,8 +548,8 @@ describe('corpus leg — the rollout pin, burned to zero (smart gap-close E12)',
         .sort();
       assert.equal(
         dirs.length,
-        26,
-        `expected the 26-package corpus at ${CORPUS}`,
+        28,
+        `expected the 28-package corpus at ${CORPUS} (acme-cgm-system + oiml-integrated-ref joined since the 26 pin)`,
       );
       // The smart declaration leg (gap E12) landed the 13 via facets +
       // the test_report_recalled edge and deleted the redundant step —

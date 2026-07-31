@@ -348,6 +348,7 @@ import {
   ENDPOINT_ACCESS_SCOPES,
   ENDPOINT_OPERATION_KINDS,
 } from './types/Twin';
+import { COMPOSITION_STATE_RULES } from './types/Composition';
 import {
   MONITOR_ESCALATION_ACTIONS,
   MONITOR_OUTCOMES,
@@ -1904,6 +1905,67 @@ export function checkPackage(
             'C63',
             `subject ${s.id}: serve "${b.aspect}" fresh_within "${b.freshWithin}" is not a parseable freshness window (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT5S) (freshness-required-on-live-bindings)`,
           );
+        }
+      }
+
+      // C100–C102 — the composition facet (TODO.integration/14): a
+      // composite subject's composed_of checks on all three legs.
+      const composed = s.is.composedOf;
+      if (composed) {
+        const componentIds = new Set(composed.components.map(c => c.id));
+        for (const c of composed.components) {
+          // C100 — composition-components-resolve: an inline
+          // `pkg/subject` product reference names a subject of THIS
+          // package (a bare package id resolves cross-package at the
+          // supply-chain gate — the C81 discipline, registered here).
+          if (c.product.includes('/')) {
+            const sub = c.product.slice(c.product.indexOf('/') + 1).split('@')[0]!;
+            // The reference is kebab-form, the subject id PascalCase —
+            // resolve alphanumerically (sample-line ≡ SampleLine); the
+            // @edition pin is the C83 discipline, stripped here.
+            const norm = (x: string) => x.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            if (!(standard.subjects ?? []).some(x => norm(x.id) === norm(sub))) {
+              err(
+                'C100',
+                `subject ${s.id}: composed_of component ${c.id} product "${c.product}" names no subject of this package (composition-components-resolve)`,
+              );
+            }
+          }
+          if (!c.endpoint) {
+            err(
+              'C100',
+              `subject ${s.id}: composed_of component ${c.id} declares no endpoint — the component's projection must serve on a named endpoint (composition-components-resolve)`,
+            );
+          }
+        }
+        // C101 — composition-decomposition-covers: every serve of the
+        // composite subject is covered by the decomposition exactly once.
+        const covered = new Map<string, number>();
+        for (const d of composed.decomposition) {
+          covered.set(d.register, (covered.get(d.register) ?? 0) + 1);
+          if (d.component !== 'composite' && !componentIds.has(d.component)) {
+            err(
+              'C100',
+              `subject ${s.id}: decomposition ${d.register} names undeclared component "${d.component}" (composition-components-resolve)`,
+            );
+          }
+          // C102 — composition-state-rule-closed: the vocabulary is
+          // closed (any_fault_else_analyzer first — a new rule is a
+          // grammar extension, never a free string).
+          if (d.component === 'composite' && !(COMPOSITION_STATE_RULES as readonly string[]).includes(d.rule ?? '')) {
+            err(
+              'C102',
+              `subject ${s.id}: decomposition ${d.register} declares unknown composite state rule "${d.rule ?? '(none)'}" — the vocabulary is closed (${COMPOSITION_STATE_RULES.join(', ')}) (composition-state-rule-closed)`,
+            );
+          }
+        }
+        for (const serve of s.has.serves ?? []) {
+          if ((covered.get(serve.aspect) ?? 0) !== 1) {
+            err(
+              'C101',
+              `subject ${s.id}: serve "${serve.aspect}" is covered ${covered.get(serve.aspect) ?? 0} times by the decomposition — every served register decomposes exactly once (composition-decomposition-covers)`,
+            );
+          }
         }
       }
     }

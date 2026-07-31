@@ -43,11 +43,11 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
   it('ids are unique and sequential (C1…C99)', () => {
     const ids = CHECK_RULES.map(r => r.id);
     assert.equal(new Set(ids).size, ids.length, 'duplicate rule ids');
-    const expected = Array.from({ length: 99 }, (_, i) => `C${i + 1}`);
+    const expected = Array.from({ length: 102 }, (_, i) => `C${i + 1}`);
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'the catalog is exactly C1…C99 (TODO.roadmap/38 adds C74–C76, TODO.roadmap/28 adds C77–C80, TODO.roadmap/36 adds C81–C83, TODO.roadmap/51 adds C84, TODO.roadmap/27 adds C85, TODO.roadmap/35 adds C86–C88, TODO.roadmap/25 adds C89, smart gap-close E9 adds C90–C91, smart gap-close E10 adds C92–C93, smart gap-close E11 adds C94, smart gap-close E12 adds C95, the E11 review finding adds C96, smart TODO.v2/01 adds C97–C98, smart TODO.v2/01 TCD-2 adds C99)',
+      'the catalog is exactly C1…C102 (TODO.roadmap/38 adds C74–C76, TODO.roadmap/28 adds C77–C80, TODO.roadmap/36 adds C81–C83, TODO.roadmap/51 adds C84, TODO.roadmap/27 adds C85, TODO.roadmap/35 adds C86–C88, TODO.roadmap/25 adds C89, smart gap-close E9 adds C90–C91, smart gap-close E10 adds C92–C93, smart gap-close E11 adds C94, smart gap-close E12 adds C95, the E11 review finding adds C96, smart TODO.v2/01 adds C97–C98, smart TODO.v2/01 TCD-2 adds C99, TODO.integration/14 adds C100–C102)',
     );
   });
 
@@ -73,7 +73,7 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     assert.equal(checkRule('C51')?.level, 'audit');
     assert.equal(checkRule('C25')?.level, 'audit');
     assert.equal(checkRule('C5')?.level, 'normal');
-    assert.equal(checkRule('C100'), undefined);
+    assert.equal(checkRule('C103'), undefined);
     const normal = activeRuleIds('normal');
     const audit = activeRuleIds('audit');
     for (const id of normal) {
