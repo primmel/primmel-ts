@@ -18,7 +18,7 @@ diff (`primmel diff`).
 
 ```bash
 yarn install
-yarn test           # 1062 tests, including corpus legs over the smart repo's 26 packages
+yarn test           # the kernel suite, including corpus legs over the smart repo's 28 packages
 yarn workspace @primmel/primmel run build   # rebuild the dist after any kernel merge
 ```
 
@@ -32,6 +32,8 @@ yarn workspace @primmel/primmel run build   # rebuild the dist after any kernel 
 
 ## Read next
 
-- The primmel volume of the published docs site
-  (`primmel/primmel-oiml-smart`).
-- The platform's conventions: `AGENTS.d/` in `oimlsmart/smart`.
+- The primmel volume of the docs federation
+  ([primmel/primmel-smart-docs](https://github.com/primmel/primmel-smart-docs)).
+- The platform's conventions: `AGENTS.d/` in the `oimlsmart/smart`
+  repo (private — cited as text; the public map is the federation's
+  platform volume).
