@@ -65,7 +65,7 @@ import { dumpNote, parseNote, resolveNote } from './note';
 import { dumpTable, parseTable } from './table';
 import { dumpFigure, parseFigure } from './figure';
 import { dumpLink, parseLink } from './link';
-import { dumpComment, parseComment } from './comment';
+import { dumpComment, parseComment, resolveComment } from './comment';
 import { dumpMapProfile, parseMapProfile } from './mapProfile';
 import { dumpViewProfile, parseViewProfile } from './viewProfile';
 
@@ -310,6 +310,7 @@ const CONSTRUCTS: ConstructDefinition[] = [
     field: 'comments',
     takesID: true,
     parse: parseComment,
+    resolve: resolveComment as never,
     dump: dumpComment as never,
   }),
   defineConstruct({
@@ -321,6 +322,8 @@ const CONSTRUCTS: ConstructDefinition[] = [
   }),
   defineConstruct({
     keyword: 'view_profile',
+    // `view` is the legacy (MMEL v2) spelling of the view-profile block.
+    aliases: ['view'],
     field: 'viewProfiles',
     takesID: true,
     parse: parseViewProfile,

@@ -2,7 +2,7 @@ import Reference from './Reference';
 import Resolvable from './Resolvable';
 import type SourceDiscrepancy from './SourceDiscrepancy';
 
-export type NoteType = 'NOTE' | 'CAUTION' | 'WARNING';
+export type NoteType = 'NOTE' | 'CAUTION' | 'WARNING' | 'EXAMPLE' | 'COMMENTARY';
 
 interface Note {
   id: string;

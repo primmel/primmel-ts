@@ -11,7 +11,8 @@ import type { ResolvableNote } from '../../types/Note';
 import type Reference from '../../types/Reference';
 import { resolveFromContext } from '../resolve';
 
-const VALID_NOTE_TYPES: NoteType[] = ['NOTE', 'CAUTION', 'WARNING'];
+// EXAMPLE is the legacy (MMEL v2) note type — the corpus carries it.
+const VALID_NOTE_TYPES: NoteType[] = ['NOTE', 'CAUTION', 'WARNING', 'EXAMPLE', 'COMMENTARY'];
 
 export const parseNote: Parser = function (id, data) {
   const result: ResolvableNote = {
