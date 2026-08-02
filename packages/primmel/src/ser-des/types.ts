@@ -1,4 +1,5 @@
 import type Calculation from '../types/Calculation';
+import type Comment from '../types/Comment';
 import type CompetenceKind from '../types/CompetenceKind';
 import type ConformanceTest from '../types/ConformanceTest';
 import type Constraint from '../types/Constraint';
@@ -136,6 +137,9 @@ export interface ParseContext {
   links: Record<string, Link>;
   mapProfiles: Record<string, MapProfile>;
   viewProfiles: Record<string, ViewProfile>;
+
+  // Review comments (TODO.editor/14)
+  comments: Record<string, Comment>;
 
   // Primmel extensions (MN 113-6 to 113-10)
   terms: Record<string, Term>;

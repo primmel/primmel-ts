@@ -57,6 +57,8 @@ export default function parse(
     links: {},
     mapProfiles: {},
     viewProfiles: {},
+    // Review comments (TODO.editor/14)
+    comments: {},
     // Primmel extensions (MN 113-6 to 113-10)
     terms: {},
     forms: {},

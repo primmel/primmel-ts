@@ -65,6 +65,7 @@ import { dumpNote, parseNote, resolveNote } from './note';
 import { dumpTable, parseTable } from './table';
 import { dumpFigure, parseFigure } from './figure';
 import { dumpLink, parseLink } from './link';
+import { dumpComment, parseComment } from './comment';
 import { dumpMapProfile, parseMapProfile } from './mapProfile';
 import { dumpViewProfile, parseViewProfile } from './viewProfile';
 
@@ -303,6 +304,13 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseLink,
     dump: dumpLink as never,
+  }),
+  defineConstruct({
+    keyword: 'comment',
+    field: 'comments',
+    takesID: true,
+    parse: parseComment,
+    dump: dumpComment as never,
   }),
   defineConstruct({
     keyword: 'map_profile',

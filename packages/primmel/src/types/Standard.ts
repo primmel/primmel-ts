@@ -1,5 +1,6 @@
 import type Approval from './Approval';
 import type Calculation from './Calculation';
+import type Comment from './Comment';
 import type CompetenceKind from './CompetenceKind';
 import type ConformanceTest from './ConformanceTest';
 import type Constraint from './Constraint';
@@ -75,6 +76,10 @@ export default interface Standard {
   links: Link[];
   mapProfiles: MapProfile[];
   viewProfiles: ViewProfile[];
+
+  // Review comments (TODO.editor/14) — threaded authoring notes on any
+  // element; authoring scratch, never certification evidence.
+  comments: Comment[];
 
   // Primmel extensions (MN 113-6 to 113-10)
   terms: Term[];

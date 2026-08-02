@@ -35,6 +35,7 @@ export type {
   Variable,
 } from './src/types/data';
 export type { default as Note, NoteType } from './src/types/Note';
+export type { default as Comment } from './src/types/Comment';
 export type { default as Table } from './src/types/Table';
 export type { default as Figure } from './src/types/Figure';
 export type { default as Link } from './src/types/Link';
