@@ -31,6 +31,7 @@ export type {
   DataAttribute,
   Registry,
   Enum,
+  EnumValue,
   Variable,
 } from './src/types/data';
 export type { default as Note, NoteType } from './src/types/Note';
