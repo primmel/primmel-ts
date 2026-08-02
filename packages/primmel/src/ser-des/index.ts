@@ -108,3 +108,36 @@ export function validate(standard: Standard): ValidationIssue[] {
 
 export type { ParseOptions };
 export type { ValidationIssue, ValidationSeverity, Position };
+
+// The browser bundle's entry is THIS file (vite.browser.config.ts) —
+// every runtime API the root index exposes must be re-exported here
+// too, or the browser build silently drops it (the editor's datatype
+// selector and the coverage overlay both hit this).
+export {
+  PRIMITIVE_TYPES,
+  parseTypeExpression,
+  isWellFormedMapType,
+  type TypeExpr,
+} from '../type-expr';
+export {
+  parseTargetRef,
+  mappingsFromProfile,
+  collectMappings,
+  buildProcessTree,
+  computeCoverage,
+  discoverTransitive,
+  repoMap,
+  applyView,
+  componentIds,
+  type MappingRecord,
+  type TargetRef,
+  type ProcessTreeNode,
+  type ComponentCoverage,
+  type DiscoveryProposal,
+  type CoverageSummary,
+  type CoverageReport,
+  type UnresolvedMapping,
+  type ModelMappings,
+  type RepoMapEdge,
+  type ViewProjection,
+} from '../mapping-coverage';
