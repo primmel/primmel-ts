@@ -547,6 +547,14 @@ const SPECIAL_PARSERS: ParserConfiguration = {
   metadata: {
     parse: parseMetadata,
   },
+  // The `version "…"` line (MMEL's model-version declaration): accepted
+  // (strict mode must not reject a valid document; previously the line
+  // was silently skipped in lenient mode). Not recorded — Metadata has
+  // no version field; carrying it is a deliberate type-level change
+  // (with dump support) for a later wave.
+  version: {
+    parse: () => ctx => ctx,
+  },
 };
 
 export const PARSER_CONFIG: ParserConfiguration = {
