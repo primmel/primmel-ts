@@ -108,3 +108,29 @@ describe('the legacy vocabulary', () => {
     assert.equal(twice, once);
   });
 });
+
+describe('metadata string escaping', () => {
+  it('quoted metadata unescapes on parse and stays byte-stable (the drift bug)', () => {
+    const text = `root Root
+
+metadata {
+  title "A \\"quoted\\" title"
+  schema "Primmel 0.1"
+  namespace "N"
+}
+
+role r1 { name "R1" }
+
+canvas Root {
+  elements {
+  }
+  process_flow {
+  }
+}`;
+    const ast = load(text, { strict: true });
+    assert.equal(ast.meta.title, 'A "quoted" title');
+    const once = dump(ast);
+    const twice = dump(load(once, { strict: true }));
+    assert.equal(twice, once);
+  });
+});

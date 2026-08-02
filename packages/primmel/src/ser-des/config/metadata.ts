@@ -1,6 +1,6 @@
 import type Metadata from '../../types/Metadata';
 import type { Dumper, Parser } from '../types';
-import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
+import { escapeString, stripWrapping, tokenizePackage } from '../tokenize';
 
 export const parseMetadata: Parser = function (token) {
   const metadata: Metadata = {
@@ -20,17 +20,17 @@ export const parseMetadata: Parser = function (token) {
       const keyword: string = t[i++];
       if (i < t.length) {
         if (keyword === 'title') {
-          metadata.title = unwrapBlock(t[i++]);
+          metadata.title = stripWrapping(t[i++]);
         } else if (keyword === 'schema') {
-          metadata.schema = unwrapBlock(t[i++]);
+          metadata.schema = stripWrapping(t[i++]);
         } else if (keyword === 'edition') {
-          metadata.edition = unwrapBlock(t[i++]);
+          metadata.edition = stripWrapping(t[i++]);
         } else if (keyword === 'author') {
-          metadata.author = unwrapBlock(t[i++]);
+          metadata.author = stripWrapping(t[i++]);
         } else if (keyword === 'namespace') {
-          metadata.namespace = unwrapBlock(t[i++]);
+          metadata.namespace = stripWrapping(t[i++]);
         } else if (keyword === 'shortname') {
-          metadata.shortname = unwrapBlock(t[i++]);
+          metadata.shortname = stripWrapping(t[i++]);
         } else {
           throw new Error(
             'Parsing error: metadata. Unknown keyword ' + keyword,
