@@ -184,7 +184,9 @@ function parseCoverageBlock(
 
 export const parseMapProfile: Parser = function (namespace, data) {
   const result: MapProfile = {
-    namespace,
+    // The namespace is a free-form string (a URN is typical) — accept
+    // both the bare and the quoted form (the dump emits bare-safe).
+    namespace: stripWrapping(namespace),
     description: '',
     mappings: {},
     coverage: {},
@@ -223,7 +225,7 @@ export const parseMapProfile: Parser = function (namespace, data) {
 };
 
 export const dumpMapProfile: Dumper<MapProfile> = function (mp) {
-  let out = 'map_profile ' + mp.namespace + ' {\n';
+  let out = 'map_profile ' + dumpBareSafe(mp.namespace) + ' {\n';
   if (mp.description) {
     out += '  description "' + escapeString(mp.description) + '"\n';
   }
