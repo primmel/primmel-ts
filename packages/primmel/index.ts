@@ -16,6 +16,11 @@ export {
   type Position,
 } from './src/ser-des/index';
 export type { default as Standard } from './src/types/Standard';
+export type {
+  Subprocess,
+  SubprocessComponent,
+  Edge,
+} from './src/types/flow';
 export type { PackageManifest, PackageSource } from './src/types/Package';
 export type { EditionStatus, EditionValidity } from './src/types/Package';
 export type { default as Metadata } from './src/types/Metadata';
