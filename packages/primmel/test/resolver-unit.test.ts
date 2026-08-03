@@ -18,6 +18,7 @@ function emptyContext(): ParseContext {
     roles: {},
     approvals: {},
     provisions: {},
+    comments: {},
     processes: {},
     pages: {},
     gateways: {},

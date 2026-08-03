@@ -34,3 +34,5 @@ jobs:
         run: yarn test
       - name: Build package
         run: yarn build
+      - name: Exports-map proof (the built package's subpaths)
+        run: yarn workspace @primmel/primmel test:exports

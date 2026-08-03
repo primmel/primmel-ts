@@ -81,6 +81,7 @@
     "build:cli": "../../node_modules/.bin/esbuild scripts/check.mts --bundle --platform=node --format=esm --outfile=dist-cli/primmel.mjs",
     "prepublishOnly": "yarn build && yarn build:browser && yarn build:cli",
     "test": "node --test --import tsx test/*.test.ts",
+    "test:exports": "node --test --import tsx scripts/exports-map.test.mts",
     "check": "tsx scripts/check.mts"
   },
   "files": [

@@ -90,7 +90,7 @@ describe('compliance-as-references (the demo product maps to BOTH editions)', ()
 });
 
 describe('the edition diff (the drift, printed and pinned)', () => {
-  it('primmel diff prints the worked pair\'s drift exactly', () => {
+  it('primmel diff prints the worked pair\'s drift exactly', { timeout: 120_000 }, () => {
     const out = execFileSync(
       'npx',
       ['tsx', CLI, 'diff', join(FIXTURE, 'r60-demo-2021'), join(FIXTURE, 'r60-demo-2027')],
@@ -107,5 +107,5 @@ describe('the edition diff (the drift, printed and pinned)', () => {
     assert.match(out, /~ \[secondary\/requirements\] \/req\/technical\/warm-up-time — statement/);
     assert.match(out, /~ \[primary\/attributeDefinitions\] warm_up_time — statement/);
     assert.match(out, /~ \[primary\/subjects\] DemoLoadCell — structure/);
-  }, 120_000);
+  });
 });

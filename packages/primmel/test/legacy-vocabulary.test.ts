@@ -92,6 +92,7 @@ describe('the legacy vocabulary', () => {
     const c1 = ast.comments.find(c => c.id === 'comment1');
     const c2 = ast.comments.find(c => c.id === 'comment2');
     const c3 = ast.comments.find(c => c.id === 'comment3');
+    assert.ok(c1 && c2 && c3, 'the three comments parse');
     assert.equal(c1.author, 'Ronald');
     assert.equal(c1.text, 'There is a problem');
     // The bare legacy `resolved` flag.

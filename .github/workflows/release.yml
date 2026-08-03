@@ -41,6 +41,8 @@ jobs:
         run: yarn test
       - name: Build package
         run: yarn build
+      - name: Exports-map proof (the built package's subpaths)
+        run: yarn workspace @primmel/primmel test:exports
       - name: Verify version matches the released tag
         run: |
           PKG_VERSION=$(node -p "require('./packages/primmel/package.json').version")
