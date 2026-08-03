@@ -227,35 +227,47 @@ describe('the REAL acme-cgm-system package (the migration)', () => {
   // claim, the suite log names the skip).
   const HAS_PKG = existsSync(PKG);
 
-  it('parses the composed_of facet with zero parse issues', { skip: !HAS_PKG }, () => {
-    const { standard, issues } = loadPackageWithIssues(PKG);
-    assert.deepEqual(
-      issues.filter(i => i.severity === 'error'),
-      [],
-    );
-    const composed = standard.subjects.find(s => s.id === 'CGMSystem')!.is
-      .composedOf!;
-    assert.ok(composed);
-    assert.equal(composed.components.length, 2);
-    assert.equal(composed.decomposition.length, 5);
-    assert.equal(composed.revision, 1);
-  });
+  it(
+    'parses the composed_of facet with zero parse issues',
+    { skip: !HAS_PKG },
+    () => {
+      const { standard, issues } = loadPackageWithIssues(PKG);
+      assert.deepEqual(
+        issues.filter(i => i.severity === 'error'),
+        [],
+      );
+      const composed = standard.subjects.find(s => s.id === 'CGMSystem')!.is
+        .composedOf!;
+      assert.ok(composed);
+      assert.equal(composed.components.length, 2);
+      assert.equal(composed.decomposition.length, 5);
+      assert.equal(composed.revision, 1);
+    },
+  );
 
-  it('lints clean under primmel check (C100–C102 silent on the real package)', { skip: !HAS_PKG }, () => {
-    const issues = checkPackage(PKG).filter(i => i.severity === 'error');
-    assert.deepEqual(
-      issues.filter(i => ['C100', 'C101', 'C102'].includes(i.check)),
-      [],
-      JSON.stringify(issues, null, 1),
-    );
-  });
+  it(
+    'lints clean under primmel check (C100–C102 silent on the real package)',
+    { skip: !HAS_PKG },
+    () => {
+      const issues = checkPackage(PKG).filter(i => i.severity === 'error');
+      assert.deepEqual(
+        issues.filter(i => ['C100', 'C101', 'C102'].includes(i.check)),
+        [],
+        JSON.stringify(issues, null, 1),
+      );
+    },
+  );
 
-  it('the dump fixpoint holds with the construct in the tree', { skip: !HAS_PKG }, () => {
-    const first = loadPackageWithIssues(PKG).standard;
-    const second = load(dump(first));
-    assert.deepEqual(
-      second.subjects.find(s => s.id === 'CGMSystem')!.is.composedOf,
-      first.subjects.find(s => s.id === 'CGMSystem')!.is.composedOf,
-    );
-  });
+  it(
+    'the dump fixpoint holds with the construct in the tree',
+    { skip: !HAS_PKG },
+    () => {
+      const first = loadPackageWithIssues(PKG).standard;
+      const second = load(dump(first));
+      assert.deepEqual(
+        second.subjects.find(s => s.id === 'CGMSystem')!.is.composedOf,
+        first.subjects.find(s => s.id === 'CGMSystem')!.is.composedOf,
+      );
+    },
+  );
 });
