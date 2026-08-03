@@ -14,7 +14,16 @@ import { join } from 'node:path';
 import { load, dump, loadPackageWithIssues } from '../src/ser-des/index';
 import { checkPackage } from '../src/check';
 
-const SMART_REPO = join(__dirname, '..', '..', '..', '..', '..', 'oimlsmart', 'smart');
+const SMART_REPO = join(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  '..',
+  '..',
+  'oimlsmart',
+  'smart',
+);
 
 /** Write one fixture package to a temp dir and lint it (the kernel
  *  tests' own discipline — checkPackage wants a directory). */
@@ -94,17 +103,45 @@ describe('the composed_of construct (parse + dump fixpoint)', () => {
     const composed = subject.is.composedOf!;
     assert.ok(composed, 'the composition facet parses');
     assert.deepEqual(
-      composed.components.map(c => [c.id, c.product, c.endpoint, c.serial, c.certificate]),
+      composed.components.map(c => [
+        c.id,
+        c.product,
+        c.endpoint,
+        c.serial,
+        c.certificate,
+      ]),
       [
         ['analyzer', 'acme-cgm-200@2026', 'cgm_api', 'CGM200-DEMO-0001', null],
-        ['sample_line', 'acme-cgm-system/sample-line@2026', 'sample_line_api', 'CGM200-SL-0001', 'TC-2026-0001'],
+        [
+          'sample_line',
+          'acme-cgm-system/sample-line@2026',
+          'sample_line_api',
+          'CGM200-SL-0001',
+          'TC-2026-0001',
+        ],
       ],
     );
     assert.deepEqual(composed.decomposition, [
-      { register: 'sample.indication_co', component: 'analyzer', componentRegister: 'indication_co' },
-      { register: 'sample.environmental_context', component: 'analyzer', componentRegister: 'environmental_context' },
-      { register: 'sample.test_context.flow', component: 'sample_line', componentRegister: 'flow' },
-      { register: 'sample.state', component: 'composite', rule: 'any_fault_else_analyzer' },
+      {
+        register: 'sample.indication_co',
+        component: 'analyzer',
+        componentRegister: 'indication_co',
+      },
+      {
+        register: 'sample.environmental_context',
+        component: 'analyzer',
+        componentRegister: 'environmental_context',
+      },
+      {
+        register: 'sample.test_context.flow',
+        component: 'sample_line',
+        componentRegister: 'flow',
+      },
+      {
+        register: 'sample.state',
+        component: 'composite',
+        rule: 'any_fault_else_analyzer',
+      },
     ]);
     assert.equal(composed.revision, 1);
   });
@@ -121,38 +158,65 @@ describe('the composed_of construct (parse + dump fixpoint)', () => {
 
 describe('the composition lint rules (C100–C102)', () => {
   it('C100: an inline product reference naming no subject of the package is an error', () => {
-    const bad = PACKAGE.replace('product acme-cgm-system/sample-line@2026', 'product acme-cgm-system/no-such-subject@2026');
+    const bad = PACKAGE.replace(
+      'product acme-cgm-system/sample-line@2026',
+      'product acme-cgm-system/no-such-subject@2026',
+    );
     const issues = checkString(bad);
     assert.ok(
-      issues.some(i => i.check === 'C100' && i.message.includes('no-such-subject')),
+      issues.some(
+        i => i.check === 'C100' && i.message.includes('no-such-subject'),
+      ),
       JSON.stringify(issues.filter(i => i.check === 'C100')),
     );
   });
 
   it('C100: a decomposition entry naming an undeclared component is an error', () => {
-    const bad = PACKAGE.replace('sample.test_context.flow -> sample_line.flow', 'sample.test_context.flow -> phantom.flow');
+    const bad = PACKAGE.replace(
+      'sample.test_context.flow -> sample_line.flow',
+      'sample.test_context.flow -> phantom.flow',
+    );
     const issues = checkString(bad);
-    assert.ok(issues.some(i => i.check === 'C100' && i.message.includes('phantom')));
+    assert.ok(
+      issues.some(i => i.check === 'C100' && i.message.includes('phantom')),
+    );
   });
 
   it('C101: a serve left uncovered by the decomposition is an error', () => {
-    const bad = PACKAGE.replace('        sample.environmental_context -> analyzer.environmental_context\n', '');
+    const bad = PACKAGE.replace(
+      '        sample.environmental_context -> analyzer.environmental_context\n',
+      '',
+    );
     const issues = checkString(bad);
     assert.ok(
-      issues.some(i => i.check === 'C101' && i.message.includes('sample.environmental_context')),
+      issues.some(
+        i =>
+          i.check === 'C101' &&
+          i.message.includes('sample.environmental_context'),
+      ),
       JSON.stringify(issues.filter(i => i.check === 'C101')),
     );
   });
 
   it('C102: an unknown composite state rule is an error (the vocabulary is closed)', () => {
-    const bad = PACKAGE.replace('rule any_fault_else_analyzer', 'rule majority_vote');
+    const bad = PACKAGE.replace(
+      'rule any_fault_else_analyzer',
+      'rule majority_vote',
+    );
     const issues = checkString(bad);
-    assert.ok(issues.some(i => i.check === 'C102' && i.message.includes('majority_vote')));
+    assert.ok(
+      issues.some(
+        i => i.check === 'C102' && i.message.includes('majority_vote'),
+      ),
+    );
   });
 
   it('the well-formed composition lints clean (C100–C102 silent)', () => {
     const issues = checkString(PACKAGE);
-    assert.deepEqual(issues.filter(i => ['C100', 'C101', 'C102'].includes(i.check)), []);
+    assert.deepEqual(
+      issues.filter(i => ['C100', 'C101', 'C102'].includes(i.check)),
+      [],
+    );
   });
 });
 
@@ -161,8 +225,12 @@ describe('the REAL acme-cgm-system package (the migration)', () => {
 
   it('parses the composed_of facet with zero parse issues', () => {
     const { standard, issues } = loadPackageWithIssues(PKG);
-    assert.deepEqual(issues.filter(i => i.severity === 'error'), []);
-    const composed = standard.subjects.find(s => s.id === 'CGMSystem')!.is.composedOf!;
+    assert.deepEqual(
+      issues.filter(i => i.severity === 'error'),
+      [],
+    );
+    const composed = standard.subjects.find(s => s.id === 'CGMSystem')!.is
+      .composedOf!;
     assert.ok(composed);
     assert.equal(composed.components.length, 2);
     assert.equal(composed.decomposition.length, 5);

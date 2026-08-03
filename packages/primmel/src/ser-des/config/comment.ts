@@ -78,28 +78,30 @@ export const parseComment: Parser = function (id, data) {
  *  another's `feedback { … }` gains that host as its replyTo (unless
  *  it already declares one). Runs against ctx.comments — every
  *  comment is parsed before any resolver runs. */
-export const resolveComment: Resolver<Comment, ResolvableComment> =
-  function (ctx, unresolved) {
-    let replyTo = unresolved.replyTo;
-    if (!replyTo) {
-      for (const [hostId, host] of Object.entries(ctx.comments)) {
-        const feedback = (host as ResolvableComment)._feedback ?? [];
-        if (feedback.includes(unresolved.id)) {
-          replyTo = hostId;
-          break;
-        }
+export const resolveComment: Resolver<Comment, ResolvableComment> = function (
+  ctx,
+  unresolved,
+) {
+  let replyTo = unresolved.replyTo;
+  if (!replyTo) {
+    for (const [hostId, host] of Object.entries(ctx.comments)) {
+      const feedback = (host as ResolvableComment)._feedback ?? [];
+      if (feedback.includes(unresolved.id)) {
+        replyTo = hostId;
+        break;
       }
     }
-    return {
-      id: unresolved.id,
-      on: unresolved.on,
-      author: unresolved.author,
-      timestamp: unresolved.timestamp,
-      text: unresolved.text,
-      replyTo: replyTo ?? null,
-      resolved: unresolved.resolved,
-    };
+  }
+  return {
+    id: unresolved.id,
+    on: unresolved.on,
+    author: unresolved.author,
+    timestamp: unresolved.timestamp,
+    text: unresolved.text,
+    replyTo: replyTo ?? null,
+    resolved: unresolved.resolved,
   };
+};
 
 export const dumpComment: Dumper<Comment> = function (c) {
   let out = 'comment ' + c.id + ' {\n';

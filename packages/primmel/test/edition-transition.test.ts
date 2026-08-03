@@ -27,7 +27,11 @@ describe('the edition pair (each an ENTIRELY NEW model, linked back)', () => {
   it('both editions load and lint clean', () => {
     for (const pkg of ['r60-demo-2021', 'r60-demo-2027']) {
       const { issues } = loadPackageWithIssues(join(FIXTURE, pkg));
-      assert.deepEqual(issues.filter(i => i.severity === 'error'), [], pkg);
+      assert.deepEqual(
+        issues.filter(i => i.severity === 'error'),
+        [],
+        pkg,
+      );
       assert.deepEqual(
         checkPackage(join(FIXTURE, pkg)).filter(i => i.severity === 'error'),
         [],
@@ -54,10 +58,18 @@ describe('the edition pair (each an ENTIRELY NEW model, linked back)', () => {
 
 describe('compliance-as-references (the demo product maps to BOTH editions)', () => {
   it('two map_profiles load independently — the edition lenses never merge', () => {
-    const { standard, issues } = loadPackageWithIssues(join(FIXTURE, 'acme-dlc'));
-    assert.deepEqual(issues.filter(i => i.severity === 'error'), []);
+    const { standard, issues } = loadPackageWithIssues(
+      join(FIXTURE, 'acme-dlc'),
+    );
+    assert.deepEqual(
+      issues.filter(i => i.severity === 'error'),
+      [],
+    );
     const profiles = standard.mapProfiles ?? [];
-    assert.deepEqual(profiles.map(p => p.namespace).sort(), ['oiml-r60-demo-2021', 'oiml-r60-demo-2027']);
+    assert.deepEqual(profiles.map(p => p.namespace).sort(), [
+      'oiml-r60-demo-2021',
+      'oiml-r60-demo-2027',
+    ]);
     // Each profile's pairs are ITS OWN (the 2021 profile pairs to the
     // 2021 aliases; the 2027 profile pairs to the 2027 aliases incl.
     // the ADDED warm-up-record) — no shared, no merged pair set.
@@ -65,7 +77,10 @@ describe('compliance-as-references (the demo product maps to BOTH editions)', ()
     const p21 = byNs.get('oiml-r60-demo-2021')!;
     const p27 = byNs.get('oiml-r60-demo-2027')!;
     const targetsOf = (p: typeof p21) =>
-      Object.values(p.mappings).flat().map((m: { target: string }) => m.target).sort();
+      Object.values(p.mappings)
+        .flat()
+        .map((m: { target: string }) => m.target)
+        .sort();
     assert.deepEqual(targetsOf(p21), [
       'oiml-r60-demo-2021#/req/metrological/measuring-range-max',
       'oiml-r60-demo-2021#/req/metrological/measuring-range-min',
@@ -83,29 +98,56 @@ describe('compliance-as-references (the demo product maps to BOTH editions)', ()
 
   it('the product lints clean as a product_reference (mapping only, no import)', () => {
     assert.deepEqual(
-      checkPackage(join(FIXTURE, 'acme-dlc')).filter(i => i.severity === 'error'),
+      checkPackage(join(FIXTURE, 'acme-dlc')).filter(
+        i => i.severity === 'error',
+      ),
       [],
     );
   });
 });
 
 describe('the edition diff (the drift, printed and pinned)', () => {
-  it('primmel diff prints the worked pair\'s drift exactly', { timeout: 120_000 }, () => {
-    const out = execFileSync(
-      'npx',
-      ['tsx', CLI, 'diff', join(FIXTURE, 'r60-demo-2021'), join(FIXTURE, 'r60-demo-2027')],
-      { encoding: 'utf-8' },
-    );
-    // The headline: +2 added, 0 removed, ~4 changed, 0 moved.
-    assert.match(out, /elements: \+2 -0 ~4 >0 \(8 unchanged\)/);
-    // The ADDED clause and its attribute.
-    assert.match(out, /\+ \[primary\/attributeDefinitions\] warm_up_recorded/);
-    assert.match(out, /\+ \[secondary\/requirements\] \/req\/technical\/warm-up-record/);
-    // The CHANGED clauses (the tightened tolerance + the revised
-    // warm-up clause + the attribute definition + the subject shape).
-    assert.match(out, /~ \[secondary\/requirements\] \/req\/metrological\/zero-return — statement/);
-    assert.match(out, /~ \[secondary\/requirements\] \/req\/technical\/warm-up-time — statement/);
-    assert.match(out, /~ \[primary\/attributeDefinitions\] warm_up_time — statement/);
-    assert.match(out, /~ \[primary\/subjects\] DemoLoadCell — structure/);
-  });
+  it(
+    "primmel diff prints the worked pair's drift exactly",
+    { timeout: 120_000 },
+    () => {
+      const out = execFileSync(
+        'npx',
+        [
+          'tsx',
+          CLI,
+          'diff',
+          join(FIXTURE, 'r60-demo-2021'),
+          join(FIXTURE, 'r60-demo-2027'),
+        ],
+        { encoding: 'utf-8' },
+      );
+      // The headline: +2 added, 0 removed, ~4 changed, 0 moved.
+      assert.match(out, /elements: \+2 -0 ~4 >0 \(8 unchanged\)/);
+      // The ADDED clause and its attribute.
+      assert.match(
+        out,
+        /\+ \[primary\/attributeDefinitions\] warm_up_recorded/,
+      );
+      assert.match(
+        out,
+        /\+ \[secondary\/requirements\] \/req\/technical\/warm-up-record/,
+      );
+      // The CHANGED clauses (the tightened tolerance + the revised
+      // warm-up clause + the attribute definition + the subject shape).
+      assert.match(
+        out,
+        /~ \[secondary\/requirements\] \/req\/metrological\/zero-return — statement/,
+      );
+      assert.match(
+        out,
+        /~ \[secondary\/requirements\] \/req\/technical\/warm-up-time — statement/,
+      );
+      assert.match(
+        out,
+        /~ \[primary\/attributeDefinitions\] warm_up_time — statement/,
+      );
+      assert.match(out, /~ \[primary\/subjects\] DemoLoadCell — structure/);
+    },
+  );
 });

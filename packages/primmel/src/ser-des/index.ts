@@ -108,11 +108,7 @@ export function validate(standard: Standard): ValidationIssue[] {
 
 export type { ParseOptions };
 export type { ValidationIssue, ValidationSeverity, Position };
-export type {
-  Subprocess,
-  SubprocessComponent,
-  Edge,
-} from '../types/flow';
+export type { Subprocess, SubprocessComponent, Edge } from '../types/flow';
 
 // The browser bundle's entry is THIS file (vite.browser.config.ts) —
 // every runtime API the root index exposes must be re-exported here

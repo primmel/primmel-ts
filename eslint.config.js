@@ -29,6 +29,7 @@ module.exports = defineConfig([
       '.yarn/',
       'packages/*/dist/',
       'packages/*/dist-browser/',
+      'packages/*/dist-cli/',
       'vite.browser.config.ts',
     ],
   },

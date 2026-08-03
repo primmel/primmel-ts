@@ -1919,12 +1919,17 @@ export function checkPackage(
           // package (a bare package id resolves cross-package at the
           // supply-chain gate — the C81 discipline, registered here).
           if (c.product.includes('/')) {
-            const sub = c.product.slice(c.product.indexOf('/') + 1).split('@')[0]!;
+            const sub = c.product
+              .slice(c.product.indexOf('/') + 1)
+              .split('@')[0]!;
             // The reference is kebab-form, the subject id PascalCase —
             // resolve alphanumerically (sample-line ≡ SampleLine); the
             // @edition pin is the C83 discipline, stripped here.
-            const norm = (x: string) => x.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-            if (!(standard.subjects ?? []).some(x => norm(x.id) === norm(sub))) {
+            const norm = (x: string) =>
+              x.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            if (
+              !(standard.subjects ?? []).some(x => norm(x.id) === norm(sub))
+            ) {
               err(
                 'C100',
                 `subject ${s.id}: composed_of component ${c.id} product "${c.product}" names no subject of this package (composition-components-resolve)`,
@@ -1952,7 +1957,12 @@ export function checkPackage(
           // C102 — composition-state-rule-closed: the vocabulary is
           // closed (any_fault_else_analyzer first — a new rule is a
           // grammar extension, never a free string).
-          if (d.component === 'composite' && !(COMPOSITION_STATE_RULES as readonly string[]).includes(d.rule ?? '')) {
+          if (
+            d.component === 'composite' &&
+            !(COMPOSITION_STATE_RULES as readonly string[]).includes(
+              d.rule ?? '',
+            )
+          ) {
             err(
               'C102',
               `subject ${s.id}: decomposition ${d.register} declares unknown composite state rule "${d.rule ?? '(none)'}" — the vocabulary is closed (${COMPOSITION_STATE_RULES.join(', ')}) (composition-state-rule-closed)`,

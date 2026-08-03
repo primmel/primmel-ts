@@ -64,7 +64,7 @@ function parseComponent(id: string, block: string): CompositionComponent {
       unwrapBlock(t[i++] ?? '');
     }
   }
-  return component
+  return component;
 }
 
 function parseDecomposition(block: string): DecompositionEntry[] {
@@ -72,15 +72,25 @@ function parseDecomposition(block: string): DecompositionEntry[] {
   // <register> -> <component>.<register> | rule <rule-id> — one per line.
   for (const rawLine of block.split('\n')) {
     const line = rawLine.trim();
-    if (!line) continue;
+    if (!line) {
+      continue;
+    }
     const ruleMatch = /^(\S+)\s*->\s*rule\s+(\S+)\s*$/.exec(line);
     if (ruleMatch) {
-      entries.push({ register: ruleMatch[1]!, component: 'composite', rule: ruleMatch[2] });
+      entries.push({
+        register: ruleMatch[1]!,
+        component: 'composite',
+        rule: ruleMatch[2],
+      });
       continue;
     }
     const m = /^(\S+)\s*->\s*(\S+)\.(\S+)\s*$/.exec(line);
     if (m) {
-      entries.push({ register: m[1]!, component: m[2]!, componentRegister: m[3] });
+      entries.push({
+        register: m[1]!,
+        component: m[2]!,
+        componentRegister: m[3],
+      });
     }
     // Unparseable lines drop silently — the linter reports a malformed
     // decomposition (the parser stays total).
@@ -98,12 +108,16 @@ export function parseComposedOf(block: string): CompositionDecl {
     if (cmd === 'component') {
       const id = t[i++] ?? '';
       const body = i < t.length ? unwrapBlock(t[i++]) : '';
-      if (id) decl.components.push(parseComponent(id, body));
+      if (id) {
+        decl.components.push(parseComponent(id, body));
+      }
     } else if (cmd === 'decomposition') {
       decl.decomposition = parseDecomposition(unwrapBlock(t[i++] ?? ''));
     } else if (cmd === 'revision') {
       const v = Number(t[i++] ?? '');
-      if (Number.isFinite(v)) decl.revision = v;
+      if (Number.isFinite(v)) {
+        decl.revision = v;
+      }
     } else {
       unwrapBlock(t[i++] ?? '');
     }
@@ -117,7 +131,11 @@ function dumpComponent(c: CompositionComponent, indent: string): string {
   out += indent + '  product ' + dumpBareSafe(c.product) + '\n';
   out += indent + '  endpoint ' + dumpBareSafe(c.endpoint) + '\n';
   out += indent + '  serial ' + escapeString(c.serial) + '\n';
-  out += indent + '  certificate ' + (c.certificate === null ? 'null' : escapeString(c.certificate)) + '\n';
+  out +=
+    indent +
+    '  certificate ' +
+    (c.certificate === null ? 'null' : escapeString(c.certificate)) +
+    '\n';
   return out + indent + '}\n';
 }
 
@@ -131,10 +149,16 @@ export function dumpComposedOf(decl: CompositionDecl, indent: string): string {
     out += indent + '  decomposition {\n';
     for (const e of decl.decomposition) {
       out +=
-        indent + '    ' + dumpBareSafe(e.register) + ' -> ' +
+        indent +
+        '    ' +
+        dumpBareSafe(e.register) +
+        ' -> ' +
         (e.component === 'composite'
           ? 'rule ' + dumpBareSafe(e.rule ?? '')
-          : dumpBareSafe(e.component) + '.' + dumpBareSafe(e.componentRegister ?? '')) + '\n';
+          : dumpBareSafe(e.component) +
+            '.' +
+            dumpBareSafe(e.componentRegister ?? '')) +
+        '\n';
     }
     out += indent + '  }\n';
   }

@@ -16,11 +16,7 @@ export {
   type Position,
 } from './src/ser-des/index';
 export type { default as Standard } from './src/types/Standard';
-export type {
-  Subprocess,
-  SubprocessComponent,
-  Edge,
-} from './src/types/flow';
+export type { Subprocess, SubprocessComponent, Edge } from './src/types/flow';
 export type { PackageManifest, PackageSource } from './src/types/Package';
 export type { EditionStatus, EditionValidity } from './src/types/Package';
 export type { SubjectPromise } from './src/types/Subject';
@@ -32,7 +28,11 @@ export type { default as Process } from './src/types/process';
 export type { default as Reference } from './src/types/Reference';
 export type { default as Approval } from './src/types/Approval';
 export type { default as Gateway } from './src/types/Gateway';
-export type { default as EventNode, SignalCatchEvent, TimerEvent } from './src/types/events';
+export type {
+  default as EventNode,
+  SignalCatchEvent,
+  TimerEvent,
+} from './src/types/events';
 export type {
   DataClass,
   DataAttribute,
