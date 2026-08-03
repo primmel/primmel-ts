@@ -30,7 +30,7 @@ export type { default as Process } from './src/types/process';
 export type { default as Reference } from './src/types/Reference';
 export type { default as Approval } from './src/types/Approval';
 export type { default as Gateway } from './src/types/Gateway';
-export type { default as EventNode } from './src/types/events';
+export type { default as EventNode, SignalCatchEvent, TimerEvent } from './src/types/events';
 export type {
   DataClass,
   DataAttribute,
