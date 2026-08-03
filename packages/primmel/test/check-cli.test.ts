@@ -14,7 +14,13 @@ import { join } from 'node:path';
 const CLI = join(__dirname, '..', 'scripts', 'check.mts');
 
 function run(args: string[]): { status: number | null; stderr: string } {
-  const res = spawnSync('npx', ['tsx', CLI, ...args], { encoding: 'utf8' });
+  // npm_config_loglevel=silent: the spawned npx must not leak its own
+  // warnings (runner npmrc quirks like `always-auth`) into stderr — the
+  // assertions count the CLI's diagnostic lines, never npm's noise.
+  const res = spawnSync('npx', ['tsx', CLI, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, npm_config_loglevel: 'silent' },
+  });
   return { status: res.status, stderr: res.stderr };
 }
 

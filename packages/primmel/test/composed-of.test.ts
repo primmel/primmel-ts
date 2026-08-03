@@ -8,7 +8,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { load, dump, loadPackageWithIssues } from '../src/ser-des/index';
@@ -222,8 +222,12 @@ describe('the composition lint rules (C100–C102)', () => {
 
 describe('the REAL acme-cgm-system package (the migration)', () => {
   const PKG = join(SMART_REPO, 'primmel-packages', 'acme-cgm-system');
+  // The sibling smart checkout is a dev-machine layout, not a CI
+  // guarantee — absent ⇒ the legs skip honestly (never a silent pass
+  // claim, the suite log names the skip).
+  const HAS_PKG = existsSync(PKG);
 
-  it('parses the composed_of facet with zero parse issues', () => {
+  it('parses the composed_of facet with zero parse issues', { skip: !HAS_PKG }, () => {
     const { standard, issues } = loadPackageWithIssues(PKG);
     assert.deepEqual(
       issues.filter(i => i.severity === 'error'),
@@ -237,7 +241,7 @@ describe('the REAL acme-cgm-system package (the migration)', () => {
     assert.equal(composed.revision, 1);
   });
 
-  it('lints clean under primmel check (C100–C102 silent on the real package)', () => {
+  it('lints clean under primmel check (C100–C102 silent on the real package)', { skip: !HAS_PKG }, () => {
     const issues = checkPackage(PKG).filter(i => i.severity === 'error');
     assert.deepEqual(
       issues.filter(i => ['C100', 'C101', 'C102'].includes(i.check)),
@@ -246,7 +250,7 @@ describe('the REAL acme-cgm-system package (the migration)', () => {
     );
   });
 
-  it('the dump fixpoint holds with the construct in the tree', () => {
+  it('the dump fixpoint holds with the construct in the tree', { skip: !HAS_PKG }, () => {
     const first = loadPackageWithIssues(PKG).standard;
     const second = load(dump(first));
     assert.deepEqual(

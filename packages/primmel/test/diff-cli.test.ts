@@ -19,7 +19,13 @@ function run(args: string[]): {
   stdout: string;
   stderr: string;
 } {
-  const res = spawnSync('npx', ['tsx', CLI, ...args], { encoding: 'utf8' });
+  // npm_config_loglevel=silent: the spawned npx must not leak its own
+  // warnings (runner npmrc quirks like `always-auth`) into stderr — the
+  // assertions count the CLI's diagnostic lines, never npm's noise.
+  const res = spawnSync('npx', ['tsx', CLI, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, npm_config_loglevel: 'silent' },
+  });
   return { status: res.status, stdout: res.stdout, stderr: res.stderr };
 }
 
@@ -53,7 +59,7 @@ function pkg(version: string, clause: string): string {
 describe('primmel diff CLI', () => {
   it('missing operands: usage, exit 2, no stack trace', () => {
     const { status, stderr } = run(['diff', '/tmp']);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /Usage: primmel diff/);
     assert.equal(stderr.trim().split('\n').length <= 2, true);
   });
@@ -64,14 +70,14 @@ describe('primmel diff CLI', () => {
       '/nonexistent/a',
       '/nonexistent/b',
     ]);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /cannot read package at \/nonexistent\/a:/);
     assert.equal(stderr.trim().split('\n').length, 1);
   });
 
   it('unknown flag: usage, exit 2', () => {
     const { status, stderr } = run(['diff', '--bogus', 'a', 'b']);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /unknown flag: --bogus/);
   });
 

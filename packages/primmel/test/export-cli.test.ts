@@ -26,7 +26,13 @@ function run(args: string[]): {
   stdout: string;
   stderr: string;
 } {
-  const res = spawnSync('npx', ['tsx', CLI, ...args], { encoding: 'utf8' });
+  // npm_config_loglevel=silent: the spawned npx must not leak its own
+  // warnings (runner npmrc quirks like `always-auth`) into stderr — the
+  // assertions count the CLI's diagnostic lines, never npm's noise.
+  const res = spawnSync('npx', ['tsx', CLI, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, npm_config_loglevel: 'silent' },
+  });
   return { status: res.status, stdout: res.stdout, stderr: res.stderr };
 }
 
@@ -45,14 +51,14 @@ describe('primmel export CLI', () => {
 
   it('an unreadable package dir: clean diagnostic, exit 2', () => {
     const { status, stderr } = run(['export', 'reqif', '/nonexistent/pkg']);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /cannot read package at \/nonexistent\/pkg:/);
     assert.equal(stderr.trim().split('\n').length, 1);
   });
 
   it('unknown flag: usage, exit 2', () => {
     const { status, stderr } = run(['export', 'reqif', '--bogus', '/tmp']);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /unknown flag: --bogus/);
   });
 
@@ -68,7 +74,7 @@ describe('primmel export CLI', () => {
       'package {\n  kind rec\n  title "No id"\n}\n',
     );
     const { status, stderr } = run(['export', 'reqif', dir]);
-    assert.equal(status, 1);
+    assert.equal(status, 1, `stderr: ${stderr}`);
     assert.match(
       stderr,
       /cannot export package at .*: loadPackage: .* is not a valid package manifest/,
@@ -85,7 +91,7 @@ describe('primmel export CLI', () => {
       '--out',
       '/nonexistent-dir/x.reqif',
     ]);
-    assert.equal(status, 1);
+    assert.equal(status, 1, `stderr: ${stderr}`);
     assert.match(stderr, /cannot write \/nonexistent-dir\/x\.reqif:/);
     assert.equal(stderr.trim().split('\n').length, 1);
   });
@@ -144,7 +150,7 @@ describe('primmel export rdf CLI (TODO.roadmap/27, surface 2)', () => {
       '--format',
       'xml',
     ]);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /unknown format: xml/);
     assert.match(stderr, /Usage: primmel export reqif\|rdf/);
   });
@@ -157,13 +163,13 @@ describe('primmel export rdf CLI (TODO.roadmap/27, surface 2)', () => {
       '--format',
       'jsonld',
     ]);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /--format applies to `primmel export rdf` only/);
   });
 
   it('an unreadable package dir: clean diagnostic, exit 2', () => {
     const { status, stderr } = run(['export', 'rdf', '/nonexistent/pkg']);
-    assert.equal(status, 2);
+    assert.equal(status, 2, `stderr: ${stderr}`);
     assert.match(stderr, /cannot read package at \/nonexistent\/pkg:/);
     assert.equal(stderr.trim().split('\n').length, 1);
   });
@@ -181,7 +187,7 @@ describe('primmel export rdf CLI (TODO.roadmap/27, surface 2)', () => {
       'package {\n  kind rec\n  title "No id"\n}\n',
     );
     const { status, stderr } = run(['export', 'rdf', dir]);
-    assert.equal(status, 1);
+    assert.equal(status, 1, `stderr: ${stderr}`);
     assert.match(
       stderr,
       /cannot export package at .*: loadPackage: .* is not a valid package manifest/,
