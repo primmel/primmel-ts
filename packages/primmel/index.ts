@@ -23,6 +23,8 @@ export type {
 } from './src/types/flow';
 export type { PackageManifest, PackageSource } from './src/types/Package';
 export type { EditionStatus, EditionValidity } from './src/types/Package';
+export type { SubjectPromise } from './src/types/Subject';
+export type { Monitor } from './src/types/Monitor';
 export type { default as Metadata } from './src/types/Metadata';
 export type { default as Role } from './src/types/Role';
 export type { default as Provision } from './src/types/Provision';

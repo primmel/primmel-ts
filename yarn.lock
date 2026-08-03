@@ -401,7 +401,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@primmel/primmel@workspace:packages/primmel"
   bin:
-    primmel: scripts/check.mts
+    primmel: ./dist-cli/primmel.mjs
   languageName: unknown
   linkType: soft
 

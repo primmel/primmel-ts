@@ -22,18 +22,71 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    }
+    },
+    "./check": {
+      "import": "./dist/src/check.js",
+      "require": "./dist/src/check.js",
+      "types": "./dist/src/check.d.ts"
+    },
+    "./check-rules": {
+      "import": "./dist/src/check-rules.js",
+      "require": "./dist/src/check-rules.js",
+      "types": "./dist/src/check-rules.d.ts"
+    },
+    "./instance-resolution": {
+      "import": "./dist/src/instance-resolution.js",
+      "require": "./dist/src/instance-resolution.js",
+      "types": "./dist/src/instance-resolution.d.ts"
+    },
+    "./mapping-coverage": {
+      "import": "./dist/src/mapping-coverage.js",
+      "require": "./dist/src/mapping-coverage.js",
+      "types": "./dist/src/mapping-coverage.d.ts"
+    },
+    "./model-diff": {
+      "import": "./dist/src/model-diff.js",
+      "require": "./dist/src/model-diff.js",
+      "types": "./dist/src/model-diff.d.ts"
+    },
+    "./operational-state": {
+      "import": "./dist/src/operational-state.js",
+      "require": "./dist/src/operational-state.js",
+      "types": "./dist/src/operational-state.d.ts"
+    },
+    "./text-coverage": {
+      "import": "./dist/src/text-coverage.js",
+      "require": "./dist/src/text-coverage.js",
+      "types": "./dist/src/text-coverage.d.ts"
+    },
+    "./ser-des": {
+      "import": "./dist/src/ser-des/index.js",
+      "require": "./dist/src/ser-des/index.js",
+      "types": "./dist/src/ser-des/index.d.ts"
+    },
+    "./ser-des/package": {
+      "import": "./dist/src/ser-des/package.js",
+      "require": "./dist/src/ser-des/package.js",
+      "types": "./dist/src/ser-des/package.d.ts"
+    },
+    "./ser-des/config/twin": {
+      "import": "./dist/src/ser-des/config/twin.js",
+      "require": "./dist/src/ser-des/config/twin.js",
+      "types": "./dist/src/ser-des/config/twin.d.ts"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "../../node_modules/.bin/tsc",
     "build:browser": "../../node_modules/.bin/vite build --config ../../vite.browser.config.ts",
-    "prepublishOnly": "yarn build && yarn build:browser",
+    "build:cli": "../../node_modules/.bin/esbuild scripts/check.mts --bundle --platform=node --format=esm --outfile=dist-cli/primmel.mjs",
+    "prepublishOnly": "yarn build && yarn build:browser && yarn build:cli",
     "test": "node --test --import tsx test/*.test.ts",
     "check": "tsx scripts/check.mts"
   },
   "files": [
     "dist/",
     "dist-browser/",
+    "dist-cli/",
     "README.adoc",
     "LICENSE"
   ],
@@ -51,5 +104,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "bin": "scripts/check.mts"
+  "bin": "./dist-cli/primmel.mjs"
 }
