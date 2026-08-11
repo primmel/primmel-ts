@@ -95,6 +95,9 @@ export interface FormField {
   defaultValue: string;
   hasDefault: boolean;
   referenceIds: string[];
+  /** The unified typed references/relations (spec: docs/primmel/18) —
+   *  `ref <predicate> "<target>"` lines on the field. */
+  refs: import('./Ref').Ref[];
   /** Role-grouped source reference URNs. */
   fieldReferences: RoleReference[];
   /** Free-text source clause citation (e.g. "R 144-1, 4.5.2"). */
@@ -187,6 +190,9 @@ interface Form {
   reportRows?: { field: string; itemKey: string };
   /** Role-grouped source reference URNs. */
   formReferences: RoleReference[];
+  /** The unified typed references/relations (spec: docs/primmel/18) —
+   *  `ref <predicate> "<target>"` lines on the form. */
+  refs?: import('./Ref').Ref[];
   /** Calculation context for evaluated fields. */
   calculationContext: FormCalculationContext | null;
   /** Named form instances. */

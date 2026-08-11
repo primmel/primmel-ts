@@ -134,6 +134,9 @@ export default interface ConformanceTest {
    * fragments (TODO.roadmap/24 — repeated `source {}` blocks; sourceRef is
    * the first entry, kept for back-compatibility). */
   sourceRefs?: { doc: string; clause: string; fragment?: string }[];
+  /** The unified typed references/relations (spec: docs/primmel/18) —
+   *  `ref <predicate> "<target>"` lines on the test. */
+  refs?: import('./Ref').Ref[];
   targets: string[];
   /** Inspection/verification targets in the subject's HAS inventory
    * (TODO.roadmap/47) — the same canonical path vocabulary as

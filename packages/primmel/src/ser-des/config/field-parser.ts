@@ -43,6 +43,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
+import { parseRef, dumpRefs } from './ref';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -269,6 +270,7 @@ export function parseFormField(
     pattern: '',
     required: false,
     requiredWhen: '',
+    refs: [],
     measurementMethod: '',
     calculationId: null,
     calculationBindings: [],
@@ -422,6 +424,11 @@ export function parseFormField(
       field.referenceIds = tokenizePackage(t[i++]).map(stripWrapping);
     } else if (cmd === 'references') {
       field.fieldReferences = parseRoleReferences(unwrapBlock(t[i++]));
+    } else if (cmd === 'ref') {
+      // The unified typed reference (spec: docs/primmel/18).
+      const r = parseRef(t, i, stripWrapping, unwrapBlock);
+      field.refs.push(r.ref);
+      i = r.next;
     } else if (cmd === 'specification_reference') {
       field.specificationReference = stripWrapping(t[i++]);
     } else if (cmd === 'applicability') {
@@ -793,6 +800,15 @@ export function dumpFormField(field: FormField, indent: string): string {
     inner.push(
       'references { ' + dumpRoleReferences(field.fieldReferences) + ' }',
     );
+  }
+  if (field.refs && field.refs.length > 0) {
+    // The unified typed references (spec: docs/primmel/18), one per line.
+    for (const r of field.refs) {
+      inner.push(
+        'ref ' + r.predicate + ' "' + escapeString(r.target) + '"' +
+          (r.note ? ' { note "' + escapeString(r.note) + '" }' : ''),
+      );
+    }
   }
   if (field.specificationReference) {
     inner.push(
