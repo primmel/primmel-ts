@@ -88,17 +88,30 @@ export const parsePredicate: Parser = function (id, data) {
 
 export const dumpPredicate: Dumper<RefPredicate> = function (p) {
   let out = 'predicate ' + p.id + ' {\n';
-  if (p.kind) out += '  kind ' + p.kind + '\n';
-  if (p.description)
+  if (p.kind) {
+    out += '  kind ' + p.kind + '\n';
+  }
+  if (p.description) {
     out += '  description "' + escapeString(p.description) + '"\n';
-  if (p.subjectKinds.length > 0)
+  }
+  if (p.subjectKinds.length > 0) {
     out += '  subject_kinds { ' + p.subjectKinds.join(' ') + ' }\n';
-  if (p.targetKinds.length > 0)
+  }
+  if (p.targetKinds.length > 0) {
     out += '  target_kinds { ' + p.targetKinds.join(' ') + ' }\n';
-  if (p.resolution) out += '  resolution ' + p.resolution + '\n';
-  if (p.inverse) out += '  inverse ' + p.inverse + '\n';
-  if (p.transitive) out += '  transitive true\n';
-  if (p.symmetric) out += '  symmetric true\n';
+  }
+  if (p.resolution) {
+    out += '  resolution ' + p.resolution + '\n';
+  }
+  if (p.inverse) {
+    out += '  inverse ' + p.inverse + '\n';
+  }
+  if (p.transitive) {
+    out += '  transitive true\n';
+  }
+  if (p.symmetric) {
+    out += '  symmetric true\n';
+  }
   out += '}\n';
   return out;
 };
