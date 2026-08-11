@@ -1,7 +1,7 @@
 {
   "name": "@primmel/primmel",
-  "version": "1.5.1",
-  "description": "Primmel \u2014 parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
+  "version": "1.5.2",
+  "description": "Primmel — parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
