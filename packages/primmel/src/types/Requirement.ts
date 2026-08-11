@@ -99,6 +99,9 @@ export interface Requirement {
    * fragments (TODO.roadmap/24 — repeated `source {}` blocks; source is
    * the first entry, kept for back-compatibility). */
   sourceRefs?: SourceRef[];
+  /** The unified typed references/relations (spec: docs/primmel/18) —
+   *  `ref <predicate> "<target>"` lines on the requirement. */
+  refs?: import('./Ref').Ref[];
   referenceIds: string[];
 }
 

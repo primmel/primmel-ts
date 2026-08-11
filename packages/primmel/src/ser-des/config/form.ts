@@ -17,6 +17,7 @@ import {
   dumpApplicabilityEntries,
   dumpRoleReferences,
 } from './field-parser';
+import { parseRef } from './ref';
 import type Form from '../../types/Form';
 import type {
   FormConstraint,
@@ -88,6 +89,11 @@ export const parseForm: Parser = function (id, data) {
           result.reportRows = rr;
         } else if (command === 'references') {
           result.formReferences = parseRoleReferences(unwrapBlock(t[i++]));
+        } else if (command === 'ref') {
+          // The unified typed reference (spec: docs/primmel/18).
+          const r = parseRef(t, i, stripWrapping, unwrapBlock);
+          result.refs = [...(result.refs ?? []), r.ref];
+          i = r.next;
         } else if (command === 'calculation_context') {
           result.calculationContext = parseCalculationContext(
             unwrapBlock(t[i++]),
@@ -344,6 +350,7 @@ function makeSubformRefField(subformId: string, block: string): FormField {
     defaultValue: '',
     hasDefault: false,
     referenceIds: [],
+    refs: [],
     fieldReferences: [],
     specificationReference: '',
     applicability: [],
@@ -389,6 +396,14 @@ export const dumpForm: Dumper<Form> = function (f) {
   }
   if (f.formReferences.length > 0) {
     out += '  references { ' + dumpRoleReferences(f.formReferences) + ' }\n';
+  }
+  // The unified typed references (spec: docs/primmel/18), after the
+  // legacy role-grouped block.
+  if (f.refs && f.refs.length > 0) {
+    for (const r of f.refs) {
+      out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"' +
+        (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') + '\n';
+    }
   }
   if (f.calculationContext) {
     const cc = f.calculationContext;

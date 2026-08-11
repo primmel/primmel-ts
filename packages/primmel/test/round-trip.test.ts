@@ -165,3 +165,55 @@ describe('required_when (the conditional-requiredness facet, v3)', () => {
     assert.match(out, /strain-gauge/);
   });
 });
+
+describe('ref (the unified reference/relation construct, spec docs/primmel/18)', () => {
+  it('round-trips refs on a form and its fields', () => {
+    const src = `form demo {
+  name "Demo"
+  references { report-format { "urn:oiml:pub:r:60-3:2021#clause-4.7" } }
+  ref test-procedure "urn:oiml:pub:r:60-2:2021#clause-2.3"
+  field cable_length : number {
+    label "Cable length"
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.4.2"
+  }
+}
+`;
+    const out = roundTrip(src);
+    assert.match(out, /ref test-procedure "urn:oiml:pub:r:60-2:2021#clause-2.3"/);
+    assert.match(out, /ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.4.2"/);
+    assert.equal(roundTrip(out), out);
+  });
+
+  it('round-trips refs with notes on a requirement', () => {
+    const src = `requirement /req/demo {
+  name "Demo"
+  statement "S"
+  ref equivalent "urn:oiml:pub:r:76:2006#clause-T.2.2.2" { note "the shared definition" }
+}
+`;
+    const out = roundTrip(src);
+    assert.match(out, /ref equivalent "urn:oiml:pub:r:76:2006#clause-T.2.2.2"/);
+    assert.match(out, /note "the shared definition"/);
+    assert.equal(roundTrip(out), out);
+  });
+
+  it('round-trips a package-level ref (edition lineage)', async () => {
+    // The package manifest parses through its own loader (not the document
+    // round-trip) — parsePackage/dumpPackage byte-stable.
+    const { parsePackage, dumpPackage } = await import('../src/ser-des/config/packageManifest');
+    const src = `package {
+  id demo
+  kind product_reference
+  title "Demo"
+  version "1"
+  editions { 1 }
+  status current
+  ref supersedes "urn:oiml:pub:r:60:2017"
+}
+`;
+    const ctx: { packageManifest: unknown } = { packageManifest: null };
+    parsePackage(src)(ctx as never);
+    const out = dumpPackage(ctx.packageManifest as never);
+    assert.match(out, /ref supersedes "urn:oiml:pub:r:60:2017"/);
+  });
+});

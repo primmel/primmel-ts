@@ -12,6 +12,7 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
+import { parseRef } from './ref';
 import {
   stripColon,
   parseApplicability,
@@ -491,6 +492,12 @@ export const parseConformanceTest: Parser = function (id, data) {
         }
       } else if (keyword === 'targets') {
         result.targets = tokenizePackage(value());
+      } else if (keyword === 'ref') {
+        // The unified typed reference (spec: docs/primmel/18).
+        const block = value();
+        const rt = tokenizePackage(block);
+        const rr = parseRef(rt, 0, stripWrapping, unwrapBlock);
+        (result.refs ??= []).push(rr.ref);
       } else if (keyword === 'binds_to') {
         result.bindsTo = tokenizePackage(value());
       } else if (keyword === 'applicability') {
@@ -642,6 +649,11 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       ' }\n';
   } else if (ct.reference) {
     out += '  reference ' + ct.reference + '\n';
+  }
+  // The unified typed references (spec: docs/primmel/18).
+  for (const r of ct.refs ?? []) {
+    out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"' +
+      (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') + '\n';
   }
   if (ct.targets.length > 0) {
     out += '  targets {\n';

@@ -102,6 +102,10 @@ export interface PackageManifest {
    * product-maps-resolves, C97 program-maps-resolves).
    */
   mapsTo?: string[];
+  /** The unified typed references/relations of the package (spec:
+   *  docs/primmel/18) — `ref <predicate> "<target>"` lines at package
+   *  level (edition lineage, cross-model implements/equivalent). */
+  refs?: import('./Ref').Ref[];
   /**
    * Certification program packages only (TODO.v2/01,
    * twin-certification-design Q4): the program's self-classification

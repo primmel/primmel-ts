@@ -37,6 +37,7 @@ import {
   readSource,
   stripColon,
 } from './field-parser';
+import { parseRef } from './ref';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -321,6 +322,11 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
         result.source = src;
       }
       (result.sourceRefs ??= []).push(src);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (spec: docs/primmel/18).
+      const r = parseRef(t, i, stripWrapping, unwrapBlock);
+      (result.refs ??= []).push(r.ref);
+      i = r.next;
     } else {
       unwrapBlock(t[i++]);
     }
@@ -475,6 +481,12 @@ const dumpRequirement = function (r: Requirement): string {
       '"' +
       (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
       ' }\n';
+  }
+  // The unified typed references (spec: docs/primmel/18), after the
+  // provenance blocks.
+  for (const ref of r.refs ?? []) {
+    out += '  ref ' + ref.predicate + ' "' + escapeString(ref.target) + '"' +
+      (ref.note ? ' { note "' + escapeString(ref.note) + '" }' : '') + '\n';
   }
   out += '}\n';
   return out;

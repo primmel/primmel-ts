@@ -45,6 +45,7 @@
 
 import tokenize from '../tokenize';
 import { unwrapBlock, stripWrapping } from '../tokenize';
+import { parseRef } from './ref';
 import type {
   PackageKind,
   PackageManifest,
@@ -158,6 +159,11 @@ export const parsePackage: Parser = function (data) {
       manifest.product = stripWrapping(t[i++]);
     } else if (cmd === 'maps_to' || cmd === 'mapsTo') {
       manifest.mapsTo = readList(t[i++]);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (spec: docs/primmel/18).
+      const r = parseRef(t, i, stripWrapping, unwrapBlock);
+      (manifest.refs ??= []).push(r.ref);
+      i = r.next;
     } else if (cmd === 'scheme_type' || cmd === 'schemeType') {
       // Certification program self-classification against the ISO/IEC
       // 17067 scheme-type register (TODO.v2/01) — a free token (the
@@ -260,6 +266,11 @@ export function dumpPackage(m: PackageManifest): string {
   }
   if (m.mapsTo && m.mapsTo.length > 0) {
     out += '  maps_to { ' + m.mapsTo.join(' ') + ' }\n';
+  }
+  // The unified typed references (spec: docs/primmel/18).
+  for (const r of m.refs ?? []) {
+    out += '  ref ' + r.predicate + ' "' + (r.target.replace(/\\/g, '\\\\').replace(/"/g, '\\"')) + '"' +
+      (r.note ? ' { note "' + r.note.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '" }' : '') + '\n';
   }
   if (m.schemeType) {
     out += '  scheme_type ' + m.schemeType + '\n';
