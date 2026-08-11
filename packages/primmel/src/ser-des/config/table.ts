@@ -303,13 +303,13 @@ export const parseTable: Parser = function (id, data) {
           // Data block contains CSV-like rows
           const dataBlock = unwrapBlock(t[i++]);
           result.data = parseTableData(dataBlock);
-    } else if (command === 'ref') {
-      // The unified typed reference (docs/primmel/18).
-      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
-      if (!foldRefIntoLegacy(result, rr.ref)) {
-        (result.refs ??= []).push(rr.ref);
-      }
-      i = rr.next;
+        } else if (command === 'ref') {
+          // The unified typed reference (docs/primmel/18).
+          const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+          if (!foldRefIntoLegacy(result, rr.ref)) {
+            (result.refs ??= []).push(rr.ref);
+          }
+          i = rr.next;
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }

@@ -15,7 +15,6 @@ import {
   readSource,
   dumpFormField,
   dumpApplicabilityEntries,
-  dumpRoleReferences,
 } from './field-parser';
 import { parseRef, foldRefIntoLegacy } from './ref';
 import type Form from '../../types/Form';
@@ -399,7 +398,12 @@ export const dumpForm: Dumper<Form> = function (f) {
   if (f.formReferences.length > 0) {
     // The canonical form (docs/primmel/18): one ref line per entry.
     for (const r of f.formReferences) {
-      const pred = r.role === 'source' ? 'derives-from' : r.role === 'reference' ? 'cites' : r.role;
+      const pred =
+        r.role === 'source'
+          ? 'derives-from'
+          : r.role === 'reference'
+            ? 'cites'
+            : r.role;
       out += '  ref ' + pred + ' "' + escapeString(r.urn) + '"\n';
     }
   }

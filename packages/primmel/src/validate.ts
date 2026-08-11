@@ -98,7 +98,10 @@ function checkEmptyIds(standard: Standard): ValidationIssue[] {
 function checkFormReferences(standard: Standard): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const calcIds = new Set(standard.calculations.map(c => c.id));
-  const procIds = new Set(standard.processes.map(p => p.id));
+  // A form's `conformanceProcessId` may target either a `process` or a
+  // `conformance_test` — OIML packages model test procedures as the latter.
+  const procIds = new Set<string>(standard.processes.map(p => p.id));
+  for (const ct of standard.conformanceTests ?? []) procIds.add(ct.id);
   const subformIds = new Set(standard.subforms.map(s => s.id));
 
   for (const form of standard.forms) {
@@ -113,7 +116,10 @@ function checkFormReferences(standard: Standard): ValidationIssue[] {
     }
 
     for (const field of iterFields(form)) {
-      if (field.calculationId && !calcIds.has(field.calculationId)) {
+      // Inline OCL expressions (`ocl{…}`) are self-contained — they're not
+      // id references and shouldn't be checked against `calcIds`.
+      const calcRef = field.calculationId;
+      if (calcRef && !calcRef.startsWith('ocl{') && !calcIds.has(calcRef)) {
         issues.push({
           severity: 'error',
           code: 'form-calculation-missing',

@@ -172,12 +172,14 @@ describe('process source facet (clause-URN provenance)', () => {
   it('round-trips byte-clean (dump fixed point), every source block preserved', () => {
     const once = load(SOURCED);
     const d1 = dump(once);
+    // The canonical spelling (docs/primmel/18 §18.4): one derives-from
+    // ref line per provenance block.
     assert.ok(
-      d1.includes('source { doc "urn:oiml:pub:r:60-2:2021" clause "2.7.3" }'),
+      d1.includes('ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.7.3"'),
     );
     assert.ok(
       d1.includes(
-        'source { doc "urn:oiml:pub:r:60-1:2021" clause "5.3.2" fragment "s1" }',
+        'ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2/s1"',
       ),
     );
     const twice = load(d1);

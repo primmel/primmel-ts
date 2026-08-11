@@ -204,7 +204,14 @@ const dumpTestSequence = function (seq: TestSequence): string {
       '  sample_applicability ' + dumpBareSafe(seq.sampleApplicability) + '\n';
   }
   for (const r of seq.refs ?? []) {
-    out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"' + (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') + '\n';
+    out +=
+      '  ref ' +
+      r.predicate +
+      ' "' +
+      escapeString(r.target) +
+      '"' +
+      (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') +
+      '\n';
   }
   for (const src of seq.sourceRefs) {
     out += dumpSourceRefAsRef(src, '  ', escapeString);

@@ -73,21 +73,8 @@ import type {
   ArtifactMedia,
   ProducedWhen,
 } from '../../types/Artifact';
-import type { SourceRef } from '../../types/Subject';
 
 // ── shared little readers (same shapes as subject.ts) ────────────────
-
-function dumpSource(
-  keyword: string,
-  src: SourceRef | null,
-  indent: string,
-): string {
-  if (!src || (!src.doc && !src.clause)) {
-    return '';
-  }
-  const frag = src.fragment ? ` fragment "${escapeString(src.fragment)}"` : '';
-  return `${indent}${keyword} { doc "${escapeString(src.doc)}" clause "${escapeString(src.clause)}"${frag} }\n`;
-}
 
 function readIdList(block: string): string[] {
   return tokenize(stripWrapping(block))
