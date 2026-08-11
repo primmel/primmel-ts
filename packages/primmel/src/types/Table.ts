@@ -17,6 +17,8 @@ export interface TableProfileDef {
   unit: string;
   /** Binding kind (e.g. range, integer, tier). */
   type: string;
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
   sourceDiscrepancy: SourceDiscrepancy | null;
   /**
    * Dimension value → binding payload: bare scalar (number when numeric),
@@ -52,6 +54,8 @@ interface Table {
    * fragments (TODO.roadmap/24 — repeated `source {}` blocks; sourceRef is
    * the first entry, kept for back-compatibility). */
   sourceRefs?: SourceRef[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
   sourceDiscrepancy?: SourceDiscrepancy | null;
 }
 

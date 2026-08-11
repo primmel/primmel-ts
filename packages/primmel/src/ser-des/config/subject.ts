@@ -112,6 +112,13 @@ import {
   readSource,
   readValueToken,
 } from './field-parser';
+import {
+  parseRef,
+  foldRefIntoLegacy,
+  refTargetToSourceRef,
+  dumpRefs,
+  dumpSourceRefAsRef,
+} from './ref';
 import { parseApplicability, dumpApplicabilityEntries } from './field-parser';
 import {
   dumpEndpoint,
@@ -307,6 +314,13 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       result.modelGroup = parseModelGroup(unwrapBlock(t[i++]));
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result as never, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
     } else {
       unwrapBlock(t[i++]);
     }
@@ -1130,6 +1144,27 @@ const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
       if (!result.source) {
         result.source = src;
       }
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18): derives-from folds
+      // onto the source/sources provenance channel, cites onto
+      // referenceIds, the rest stay as refs.
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      i = rr.next;
+      if (rr.ref.predicate === 'derives-from') {
+        const b = refTargetToSourceRef(rr.ref.target);
+        if (b) {
+          result.sources!.push(b);
+          if (!result.source) {
+            result.source = b;
+          }
+        } else {
+          (result.refs ??= []).push(rr.ref);
+        }
+      } else if (rr.ref.predicate === 'cites') {
+        result.referenceIds.push(rr.ref.target);
+      } else {
+        (result.refs ??= []).push(rr.ref);
+      }
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
     } else {
@@ -1222,9 +1257,12 @@ const dumpConditionSet = function (cs: ConditionSet): string {
         ? [cs.source]
         : [];
   for (const s of sources) {
-    out += dumpSource('source', s, '  ');
+    // The canonical provenance spelling (docs/primmel/18 §18.4): a
+    // URN-anchored block dumps as a derives-from ref line.
+    out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpIdList('reference', cs.referenceIds, '  ');
+  out += dumpRefs(cs.refs, '  ', escapeString);
   out += '}\n';
   return out;
 };

@@ -43,6 +43,7 @@ export interface MaterialConstraint {
   /** invalidate: a violated constraint voids the run. */
   onViolation: string;
   source: SourceRef | null;
+  sourceRefs?: import('./Subject').SourceRef[];
 }
 
 export default interface ReferenceMaterial {

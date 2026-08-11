@@ -61,6 +61,8 @@ interface Calculation {
    * fragments (TODO.roadmap/24 — repeated `source {}` blocks; sourceRef is
    * the first entry, kept for back-compatibility). */
   sourceRefs?: { doc: string; clause: string; fragment?: string }[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
   ref: Reference[];
 }
 

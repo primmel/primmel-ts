@@ -45,7 +45,7 @@
 
 import tokenize from '../tokenize';
 import { unwrapBlock, stripWrapping } from '../tokenize';
-import { parseRef } from './ref';
+import { parseRef, foldRefIntoLegacy } from './ref';
 import type {
   PackageKind,
   PackageManifest,
@@ -162,7 +162,9 @@ export const parsePackage: Parser = function (data) {
     } else if (cmd === 'ref') {
       // The unified typed reference (spec: docs/primmel/18).
       const r = parseRef(t, i, stripWrapping, unwrapBlock);
-      (manifest.refs ??= []).push(r.ref);
+      if (!foldRefIntoLegacy(manifest as never, r.ref)) {
+        (manifest.refs ??= []).push(r.ref);
+      }
       i = r.next;
     } else if (cmd === 'scheme_type' || cmd === 'schemeType') {
       // Certification program self-classification against the ISO/IEC

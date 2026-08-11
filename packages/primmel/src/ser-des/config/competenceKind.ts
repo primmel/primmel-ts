@@ -41,6 +41,7 @@ import {
   unescapeString,
 } from '../tokenize';
 import { readSource } from './field-parser';
+import { parseRef, foldRefIntoLegacy } from './ref';
 import type { Dumper, Parser } from '../types';
 
 /** A bound token: unquoted numbers parse as numbers, quoted tokens stay
@@ -242,6 +243,13 @@ export const parseCompetenceKind: Parser = function (id, data) {
         );
       }
       result.methodStandards.push({ id: stdId, title: readValue(t[i++]) });
+    } else if (keyword === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
     } else {
       i++; // forward-compat: skip unknown keyword value
     }

@@ -94,4 +94,6 @@ export interface FormulasUsed {
   formulas: string[];
   /** Clause-URN provenance (the requirement family's repeated source blocks). */
   sourceRefs: SourceRef[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
 }

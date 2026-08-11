@@ -29,6 +29,7 @@ export default interface TestPointSet {
   id: string;
   description: string;
   source: SourceRef | null;
+  sourceRefs?: import('./Subject').SourceRef[];
   /** Profile name (linear, nonlinear, ...) → cardinality rule. */
   cardinality: Record<string, TestPointCardinality>;
   repetitionsPerPoint: number | null;

@@ -20,6 +20,9 @@ export default interface CompetenceKind {
   definition: string;
   /** Normative anchor (ISO/IEC 17025 §6.x, Recommendation equipment clause). */
   source: SourceRef | null;
+  sourceRefs?: SourceRef[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
   /** Method-standard ids recognized for this kind (the resolution registry
    *  for `method_standard` references on required_competence /
    *  accreditation_scope entries — e.g. iec-61000-4-4). */

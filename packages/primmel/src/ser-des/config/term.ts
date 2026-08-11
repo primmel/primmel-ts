@@ -1,6 +1,12 @@
 import type { Dumper, Parser } from '../types';
-import { escapeString, stripWrapping, tokenizePackage } from '../tokenize';
+import {
+  escapeString,
+  stripWrapping,
+  tokenizePackage,
+  unwrapBlock,
+} from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
+import { parseRefFromReaders } from './ref';
 import type Term from '../../types/Term';
 
 export const parseTerm: Parser = function (id, data) {
@@ -15,7 +21,22 @@ export const parseTerm: Parser = function (id, data) {
 
   forEachEntry(
     data,
-    (command, value) => {
+    (command, value, peek) => {
+      if (command === 'ref') {
+        // The unified typed reference (docs/primmel/18). The Term's
+        // fold: derives-from maps onto the term's source URN (a plain
+        // string here); cites onto referenceIds.
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (r.predicate === 'derives-from' && !result.source) {
+          result.source = r.target;
+        } else if (r.predicate === 'cites') {
+          result.referenceIds.push(r.target);
+        } else {
+          (result.refs ??= []).push(r);
+        }
+        return true;
+      }
+
       if (command === 'label') {
         result.label = unwrapped(value);
       } else if (command === 'definition') {

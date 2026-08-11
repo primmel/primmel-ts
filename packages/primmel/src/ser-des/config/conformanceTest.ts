@@ -12,7 +12,11 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { parseRef } from './ref';
+import {
+  parseRefFromReaders,
+  foldRefIntoLegacy,
+  dumpSourceRefAsRef,
+} from './ref';
 import {
   stripColon,
   parseApplicability,
@@ -430,11 +434,15 @@ export const parseConformanceTest: Parser = function (id, data) {
     resultForms: [],
     derivedValues: [],
     sourceDiscrepancy: null,
+    // The singular provenance slot is initialized so the ref fold
+    // (docs/primmel/18 §18.4) mirrors the first derives-from block into
+    // it — the fold only mirrors slots the object already carries.
+    sourceRef: null,
   };
 
   forEachEntry(
     data,
-    (keyword, value) => {
+    (keyword, value, peek) => {
       if (keyword === 'name') {
         result.name = unwrapped(value);
       } else if (keyword === 'purpose') {
@@ -494,10 +502,10 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.targets = tokenizePackage(value());
       } else if (keyword === 'ref') {
         // The unified typed reference (spec: docs/primmel/18).
-        const block = value();
-        const rt = tokenizePackage(block);
-        const rr = parseRef(rt, 0, stripWrapping, unwrapBlock);
-        (result.refs ??= []).push(rr.ref);
+        const rr = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (!foldRefIntoLegacy(result, rr)) {
+          (result.refs ??= []).push(rr);
+        }
       } else if (keyword === 'binds_to') {
         result.bindsTo = tokenizePackage(value());
       } else if (keyword === 'applicability') {
@@ -627,26 +635,10 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   if (ct.sourceRefs && ct.sourceRefs.length > 0) {
     for (const src of ct.sourceRefs) {
-      out +=
-        '  reference { doc "' +
-        escapeString(src.doc) +
-        '" clause "' +
-        escapeString(src.clause) +
-        '"' +
-        (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-        ' }\n';
+      out += dumpSourceRefAsRef(src, '  ', escapeString);
     }
   } else if (ct.sourceRef && ct.sourceRef.doc) {
-    out +=
-      '  reference { doc "' +
-      escapeString(ct.sourceRef.doc) +
-      '" clause "' +
-      escapeString(ct.sourceRef.clause) +
-      '"' +
-      (ct.sourceRef.fragment
-        ? ' fragment "' + escapeString(ct.sourceRef.fragment) + '"'
-        : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(ct.sourceRef, '  ', escapeString);
   } else if (ct.reference) {
     out += '  reference ' + ct.reference + '\n';
   }

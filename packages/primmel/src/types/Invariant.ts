@@ -78,6 +78,7 @@ export interface Invariant {
   appliesTo: string[];
   /** Provenance: doc path + anchor ('' = absent). */
   source: string;
+  sourceRefs?: import('./Subject').SourceRef[];
   /** The enforcement claims XOR the aspirational marker (C90/C91). */
   enforcement: InvariantEnforcement;
 }

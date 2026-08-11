@@ -17,7 +17,7 @@ import {
   dumpApplicabilityEntries,
   dumpRoleReferences,
 } from './field-parser';
-import { parseRef } from './ref';
+import { parseRef, foldRefIntoLegacy } from './ref';
 import type Form from '../../types/Form';
 import type {
   FormConstraint,
@@ -92,7 +92,9 @@ export const parseForm: Parser = function (id, data) {
         } else if (command === 'ref') {
           // The unified typed reference (spec: docs/primmel/18).
           const r = parseRef(t, i, stripWrapping, unwrapBlock);
-          result.refs = [...(result.refs ?? []), r.ref];
+          if (!foldRefIntoLegacy(result, r.ref)) {
+            result.refs = [...(result.refs ?? []), r.ref];
+          }
           i = r.next;
         } else if (command === 'calculation_context') {
           result.calculationContext = parseCalculationContext(
@@ -395,7 +397,11 @@ export const dumpForm: Dumper<Form> = function (f) {
       ' }\n';
   }
   if (f.formReferences.length > 0) {
-    out += '  references { ' + dumpRoleReferences(f.formReferences) + ' }\n';
+    // The canonical form (docs/primmel/18): one ref line per entry.
+    for (const r of f.formReferences) {
+      const pred = r.role === 'source' ? 'derives-from' : r.role === 'reference' ? 'cites' : r.role;
+      out += '  ref ' + pred + ' "' + escapeString(r.urn) + '"\n';
+    }
   }
   // The unified typed references (spec: docs/primmel/18), after the
   // legacy role-grouped block.

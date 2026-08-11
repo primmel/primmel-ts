@@ -32,16 +32,22 @@ export interface ParseEntryErrorContext {
  * Walk the (keyword, value) pairs of a `{ ... }` block, calling the
  * visitor for each. Returns silently for empty input.
  *
- * The visitor receives the keyword and a `value()` reader. Returning
- * `true` claims the keyword (the visitor called `value()` itself);
- * returning `false` lets the helper auto-skip the value token, which
- * is how forward compatibility with newer revisions is preserved.
+ * The visitor receives the keyword, a `value()` reader, and a `peek()`
+ * reader (the next token without consuming it — for optional trailing
+ * shapes such as the ref note block). Returning `true` claims the
+ * keyword (the visitor called `value()` itself); returning `false` lets
+ * the helper auto-skip the value token, which is how forward
+ * compatibility with newer revisions is preserved.
  *
  * Throws on a truncated block (keyword with no value).
  */
 export function forEachEntry(
   data: string,
-  visitor: (keyword: string, value: () => string) => boolean,
+  visitor: (
+    keyword: string,
+    value: () => string,
+    peek: () => string | undefined,
+  ) => boolean,
   errCtx: ParseEntryErrorContext,
 ): void {
   if (data === '') {
@@ -56,9 +62,24 @@ export function forEachEntry(
         `Parsing error: ${errCtx.construct}. ID ${errCtx.id}: Expecting value for ${keyword}`,
       );
     }
-    const claimed = visitor(keyword, () => t[i++]);
+    const claimed = visitor(
+      keyword,
+      () => t[i++],
+      () => t[i],
+    );
     if (!claimed) {
-      i++; // forward-compat: skip unknown keyword value
+      // The unified ref construct (docs/primmel/18) is tolerated on every
+      // construct — even where the construct's own facets don't model it
+      // yet: skip the predicate + the target + the optional note block.
+      if (keyword === 'ref') {
+        i++; // the predicate
+        i++; // the target
+        if (i < t.length && t[i]!.startsWith('{')) {
+          i++; // the note block
+        }
+      } else {
+        i++; // forward-compat: skip unknown keyword value
+      }
     }
   }
 }

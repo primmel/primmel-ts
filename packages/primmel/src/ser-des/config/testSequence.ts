@@ -70,6 +70,7 @@ import {
 } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import type { ConstructDefinition } from './index';
 import type { TestSequence, TestSequenceStep } from '../../types/TestSequence';
 
@@ -128,6 +129,13 @@ const parseTestSequence: ConstructDefinition['parse'] = function (id, data) {
       sequence.description = stripWrapping(t[i++]);
     } else if (command === 'sample_applicability') {
       sequence.sampleApplicability = stripWrapping(t[i++]);
+    } else if (command === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(sequence, rr.ref)) {
+        sequence.refs = [...(sequence.refs ?? []), rr.ref];
+      }
+      i = rr.next;
     } else if (command === 'source') {
       // Repeated source blocks collect into sourceRefs (the requirement
       // family's idiom).
@@ -195,15 +203,11 @@ const dumpTestSequence = function (seq: TestSequence): string {
     out +=
       '  sample_applicability ' + dumpBareSafe(seq.sampleApplicability) + '\n';
   }
+  for (const r of seq.refs ?? []) {
+    out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"' + (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') + '\n';
+  }
   for (const src of seq.sourceRefs) {
-    out +=
-      '  source { doc "' +
-      escapeString(src.doc) +
-      '" clause "' +
-      escapeString(src.clause) +
-      '"' +
-      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
   out += '}\n';
   return out;

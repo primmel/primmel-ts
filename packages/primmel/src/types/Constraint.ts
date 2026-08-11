@@ -31,4 +31,7 @@ export default interface Constraint {
   onViolation: string;
   /** Normative anchor (Recommendation clause). */
   source: SourceRef | null;
+  sourceRefs?: SourceRef[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
 }

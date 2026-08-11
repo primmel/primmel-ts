@@ -80,14 +80,13 @@ describe('calculation + condition_set source blocks', () => {
 
   it('dump round-trips the source blocks (fixpoint)', () => {
     const d1 = dump(load(SRC));
+    // The canonical spelling (docs/primmel/18 §18.4): URN-anchored
+    // provenance dumps as derives-from ref lines.
     assert.match(
       d1,
-      /source \{ doc "urn:oiml:pub:r:60-3:2021" clause "2\.1\.2\.4" \}/,
+      /ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2\.1\.2\.4"/,
     );
-    assert.match(
-      d1,
-      /source \{ doc "urn:oiml:pub:r:60-2:2021" clause "1\.2" \}/,
-    );
+    assert.match(d1, /ref derives-from "urn:oiml:pub:r:60-2:2021#clause-1\.2"/);
     assert.equal(dump(load(d1)), d1);
   });
 });
@@ -127,13 +126,15 @@ describe('sentence-level provenance on calculation + conformance_test (TODO.road
 
   it('dump round-trips the fragment on both constructs (fixpoint)', () => {
     const d1 = dump(load(SRC));
+    // The canonical spelling (docs/primmel/18 §18.4): the sentence
+    // sub-address rides the anchor as `#clause-<c>/<fragment>`.
     assert.match(
       d1,
-      /source \{ doc "urn:oiml:pub:r:60-1:2021" clause "2\.2" fragment "s1" \}/,
+      /ref derives-from "urn:oiml:pub:r:60-1:2021#clause-2\.2\/s1"/,
     );
     assert.match(
       d1,
-      /reference \{ doc "urn:oiml:pub:r:60-1:2021" clause "5\.3\.2" fragment "s2" \}/,
+      /ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5\.3\.2\/s2"/,
     );
     const m2 = load(d1);
     assert.deepEqual(m2.calculations[0], load(SRC).calculations[0]);
@@ -215,9 +216,10 @@ describe('table data cell escaping', () => {
 });
 
 describe('table repeated source blocks', () => {
-  // A table bound to several fragments emits one source {} block per
-  // binding (TODO.roadmap/24); the ser-des collects all of them like the
-  // calculation/conformanceTest/requirement constructs.
+  // A table bound to several fragments collects one provenance block per
+  // binding (TODO.roadmap/24) and dumps each as a canonical derives-from
+  // ref line (docs/primmel/18 §18.4) — the ser-des collects all of them
+  // like the calculation/conformanceTest/requirement constructs.
   const SRC = `table mpe_tiers {
     title "MPE tiers"
     columns "tier, factor"
@@ -244,9 +246,11 @@ describe('table repeated source blocks', () => {
 
   it('dump round-trips all source blocks (fixpoint)', () => {
     const d1 = dump(load(SRC));
+    // The canonical spelling (docs/primmel/18 §18.4): one derives-from
+    // ref line per provenance block.
     assert.match(
       d1,
-      /source \{ doc "urn:oiml:pub:r:60-1:2021" clause "5\.4" \}\n {2}source \{ doc "urn:oiml:pub:r:60-1:2021" clause "table-2" \}/,
+      /ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5\.4"\n {2}ref derives-from "urn:oiml:pub:r:60-1:2021#clause-table-2"/,
     );
     const m2 = load(d1);
     assert.deepEqual(m2.tables[0], load(SRC).tables[0]);
