@@ -211,9 +211,9 @@ describe('ref (the unified reference/relation construct, spec docs/primmel/18)',
   ref supersedes "urn:oiml:pub:r:60:2017"
 }
 `;
-    const ctx: { packageManifest: unknown } = { packageManifest: null };
+    const ctx: { packageManifest: import('../src/types/Package').PackageManifest | null } = { packageManifest: null };
     parsePackage(src)(ctx as never);
-    const out = dumpPackage(ctx.packageManifest as never);
+    const out = dumpPackage(ctx.packageManifest!);
     assert.match(out, /ref supersedes "urn:oiml:pub:r:60:2017"/);
   });
 });
