@@ -286,6 +286,9 @@ export default interface Process {
    * `source` stays the first entry for back-compatibility.
    */
   sourceRefs?: SourceRef[];
+  /** The unified typed references (docs/primmel/18) — semantic
+   *  predicates stay here; citation kinds fold onto source/referenceIds. */
+  refs?: import('./Ref').Ref[];
 }
 
 export type ResolvableProcess = Resolvable<

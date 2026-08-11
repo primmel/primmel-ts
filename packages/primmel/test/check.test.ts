@@ -399,3 +399,75 @@ function makeProcessTmpPackage(body: string): string {
   writeFileSync(join(dir, 'model', 'process.prl'), body);
   return dir;
 }
+
+describe('C103 declared-predicate (docs/primmel/18 §18.6)', () => {
+  it('an undeclared ref predicate is an error once a registry exists', () => {
+    const dir = makePredicatesTmpPackage(
+      `predicate equivalent {
+  kind semantic
+  subject_kinds { requirement }
+  target_kinds { model-element }
+}`,
+      `requirement /req/demo {
+  name "Demo"
+  statement "S"
+  ref equvialent "/req/other"
+}`,
+    );
+    const c103 = checkPackage(dir).filter(i => i.check === 'C103');
+    assert.equal(c103.length, 1);
+    assert.ok(c103[0].message.includes('equvialent'), 'names the typo');
+    assert.equal(c103[0].severity, 'error');
+  });
+
+  it('a declared predicate stays silent', () => {
+    const dir = makePredicatesTmpPackage(
+      `predicate equivalent {
+  kind semantic
+  subject_kinds { requirement }
+  target_kinds { model-element }
+}`,
+      `requirement /req/demo {
+  name "Demo"
+  statement "S"
+  ref equivalent "/req/other"
+}`,
+    );
+    const c103 = checkPackage(dir).filter(i => i.check === 'C103');
+    assert.deepEqual(c103, []);
+  });
+
+  it('no declared registry — the rule is dormant (the codec is program-agnostic)', () => {
+    const dir = makePredicatesTmpPackage(
+      '',
+      `requirement /req/demo {
+  name "Demo"
+  statement "S"
+  ref anything-goes "/req/other"
+}`,
+    );
+    const c103 = checkPackage(dir).filter(i => i.check === 'C103');
+    assert.deepEqual(c103, []);
+  });
+});
+
+/** Registry + requirement fixture package for the C103 leg. */
+function makePredicatesTmpPackage(
+  predicatesBody: string,
+  requirementBody: string,
+): string {
+  const { mkdtempSync, mkdirSync, writeFileSync } = require('fs');
+  const { tmpdir } = require('os');
+  const { join } = require('path');
+  const dir = mkdtempSync(join(tmpdir(), 'primmel-c103-'));
+  writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+  mkdirSync(join(dir, 'specification'));
+  if (predicatesBody) {
+    writeFileSync(join(dir, 'specification', 'predicates.prl'), predicatesBody);
+  }
+  writeFileSync(
+    join(dir, 'specification', 'requirements.prl'),
+    requirementBody,
+  );
+  return dir;
+}

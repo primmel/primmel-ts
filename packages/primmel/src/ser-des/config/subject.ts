@@ -106,6 +106,7 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
+import { skipUnknownValue } from '../parse-block';
 import {
   stripColon,
   dumpBareSafe,
@@ -210,6 +211,10 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
     measurand: null,
     components: [],
     structure: [],
+    // Initialized so the ref fold (docs/primmel/18 §18.4) mirrors the
+    // first derives-from block here — the fold only mirrors slots the
+    // object already carries.
+    source: null,
   };
 
   const t = tokenizePackage(data);
@@ -289,6 +294,17 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
           result.familyNote = stripWrapping(ft[j++]);
         } else if (fc === 'source') {
           result.familySource = readSource(unwrapBlock(ft[j++]));
+        } else if (fc === 'ref') {
+          // The unified typed reference (docs/primmel/18) — the family
+          // block's provenance folds onto familySource.
+          const rr = parseRef(ft, j, stripWrapping, unwrapBlock);
+          j = rr.next;
+          if (rr.ref.predicate === 'derives-from') {
+            const b = refTargetToSourceRef(rr.ref.target);
+            if (b && !result.familySource) {
+              result.familySource = b;
+            }
+          }
         } else {
           unwrapBlock(ft[j++]);
         }
@@ -322,7 +338,7 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       }
       i = rr.next;
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 
@@ -372,7 +388,7 @@ function parseMeasurand(block: string): InstrumentMeasurand {
     } else if (cmd === 'source') {
       m.source = readSource(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return m;
@@ -400,7 +416,7 @@ function parseComponent(id: string, block: string): InstrumentComponent {
     } else if (cmd === 'source') {
       c.source = readSource(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return c;
@@ -449,7 +465,7 @@ function parseStructure(id: string, block: string): StructureEntry {
     } else if (cmd === 'source') {
       s.source = readSource(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return s;
@@ -494,7 +510,7 @@ function parseDimension(id: string, block: string): ClassificationDimension {
     } else if (cmd === 'values') {
       dim.values = parseDimensionValues(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return dim;
@@ -604,10 +620,21 @@ function parseModelGroup(block: string): ModelGroupDef {
       mg.note = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
       mg.sources!.push(readSource(unwrapBlock(t[i++])));
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18) — a model_group
+      // provenance line folds onto the sources list.
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      i = rr.next;
+      if (rr.ref.predicate === 'derives-from') {
+        const b = refTargetToSourceRef(rr.ref.target);
+        if (b) {
+          mg.sources!.push(b);
+        }
+      }
     } else if (cmd === 'sample_selection') {
       mg.sampleSelection!.push(readSource(unwrapBlock(t[i++])));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return mg;
@@ -803,7 +830,10 @@ const dumpInstrument = function (inst: Instrument): string {
     if (inst.familyNote) {
       out += '    note "' + escapeString(inst.familyNote) + '"\n';
     }
-    out += dumpSource('source', inst.familySource ?? null, '    ');
+    if (inst.familySource && (inst.familySource.doc || inst.familySource.clause)) {
+      // The canonical provenance spelling (docs/primmel/18 §18.4).
+      out += dumpSourceRefAsRef(inst.familySource, '    ', escapeString);
+    }
     out += '  }\n';
   }
   if (inst.familyCriteria.length > 0) {
@@ -845,14 +875,25 @@ const dumpInstrument = function (inst: Instrument): string {
       '    ',
     );
     for (const s of inst.modelGroup.sources ?? []) {
-      out += dumpSource('source', s, '    ');
+      // The canonical provenance spelling (docs/primmel/18 §18.4).
+      out += dumpSourceRefAsRef(s, '    ', escapeString);
     }
     for (const s of inst.modelGroup.sampleSelection ?? []) {
       out += dumpSource('sample_selection', s, '    ');
     }
     out += '  }\n';
   }
-  out += dumpSource('source', inst.source ?? null, '  ');
+  const instSources =
+    inst.sourceRefs && inst.sourceRefs.length > 0
+      ? inst.sourceRefs
+      : inst.source
+        ? [inst.source]
+        : [];
+  for (const s of instSources) {
+    // The canonical provenance spelling (docs/primmel/18 §18.4).
+    out += dumpSourceRefAsRef(s, '  ', escapeString);
+  }
+  out += dumpRefs(inst.refs, '  ', escapeString);
   out += dumpIdList('reference', inst.referenceIds, '  ');
   out += '}\n';
   return out;
@@ -897,7 +938,13 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
     } else if (cmd === 'definition') {
       result.definition = stripWrapping(t[i++]);
     } else if (cmd === 'source' || cmd === 'reference') {
-      result.source = readSource(unwrapBlock(t[i++]));
+      // Repeated provenance blocks accumulate; `source` stays the first
+      // entry (the requirement family's idiom, TODO.roadmap/24).
+      const src = readSource(unwrapBlock(t[i++]));
+      (result.sourceRefs ??= []).push(src);
+      if (!result.source) {
+        result.source = src;
+      }
     } else if (cmd === 'quantity_kind') {
       result.quantityKind = stripWrapping(t[i++]);
     } else if (cmd === 'unit') {
@@ -922,8 +969,15 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
       result.irdi = stripWrapping(t[i++]);
     } else if (cmd === 'derived') {
       result.derived = stripWrapping(t[i++]);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 
@@ -944,7 +998,17 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
   if (a.definition) {
     out += '  definition "' + escapeString(a.definition) + '"\n';
   }
-  out += dumpSource('source', a.source, '  ');
+  const attrSources =
+    a.sourceRefs && a.sourceRefs.length > 0
+      ? a.sourceRefs
+      : a.source
+        ? [a.source]
+        : [];
+  for (const s of attrSources) {
+    // The canonical provenance spelling (docs/primmel/18 §18.4).
+    out += dumpSourceRefAsRef(s, '  ', escapeString);
+  }
+  out += dumpRefs(a.refs, '  ', escapeString);
   if (a.quantityKind) {
     out += '  quantity_kind ' + a.quantityKind + '\n';
   }
@@ -1020,8 +1084,15 @@ const parseCapability: ConstructDefinition['parse'] = function (id, data) {
       result.verifiedByTests = readReference(t[i++]);
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 
@@ -1048,6 +1119,7 @@ const dumpCapability = function (c: Capability): string {
   out += dumpIdList('satisfies_requirements', c.satisfiesRequirements, '  ');
   out += dumpIdList('verified_by_tests', c.verifiedByTests, '  ');
   out += dumpIdList('reference', c.referenceIds, '  ');
+  out += dumpRefs(c.refs, '  ', escapeString);
   out += '}\n';
   return out;
 };
@@ -1079,11 +1151,23 @@ const parseBehavior: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'response') {
       result.response = stripWrapping(t[i++]);
     } else if (cmd === 'source' || cmd === 'reference') {
-      result.source = readSource(unwrapBlock(t[i++]));
+      // Repeated provenance blocks accumulate; `source` stays the first.
+      const src = readSource(unwrapBlock(t[i++]));
+      (result.sourceRefs ??= []).push(src);
+      if (!result.source) {
+        result.source = src;
+      }
     } else if (cmd === 'verified_by' || cmd === 'verified_by_tests') {
       result.verifiedBy = readReference(t[i++]);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 
@@ -1104,7 +1188,17 @@ const dumpBehavior = function (b: Behavior): string {
   if (b.response) {
     out += '  response "' + escapeString(b.response) + '"\n';
   }
-  out += dumpSource('source', b.source, '  ');
+  const behaviorSources =
+    b.sourceRefs && b.sourceRefs.length > 0
+      ? b.sourceRefs
+      : b.source
+        ? [b.source]
+        : [];
+  for (const s of behaviorSources) {
+    // The canonical provenance spelling (docs/primmel/18 §18.4).
+    out += dumpSourceRefAsRef(s, '  ', escapeString);
+  }
+  out += dumpRefs(b.refs, '  ', escapeString);
   out += dumpIdList('verified_by', b.verifiedBy, '  ');
   out += '}\n';
   return out;
@@ -1168,7 +1262,7 @@ const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 
@@ -1440,7 +1534,7 @@ function readCharacteristicBlock(block: string): SubjectCharacteristic {
     } else if (cmd === 'source' || cmd === 'reference') {
       c.source = readSource(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return c;
@@ -1773,7 +1867,7 @@ const parseSubject: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 

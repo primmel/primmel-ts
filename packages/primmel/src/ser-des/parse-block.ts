@@ -85,6 +85,35 @@ export function forEachEntry(
 }
 
 /**
+ * The manual-walk forward-compat skip, ref-aware (docs/primmel/18): the
+ * unknown-keyword fallback consumes ONE value token, EXCEPT the unified
+ * ref construct, whose shape is `ref <predicate> "<target>"` plus an
+ * optional `{ note }` block — a one-token skip there would desync the
+ * walk and silently eat every following facet. `i` sits just AFTER the
+ * keyword; returns the index past the skipped value.
+ */
+export function skipUnknownValue(
+  t: string[],
+  i: number,
+  keyword: string,
+): number {
+  if (keyword === 'ref') {
+    i++; // the predicate
+    if (i < t.length) {
+      i++; // the target
+    }
+    if (i < t.length && t[i]!.startsWith('{')) {
+      i++; // the note block
+    }
+    return i;
+  }
+  if (i < t.length) {
+    i++;
+  }
+  return i;
+}
+
+/**
  * Walk the `<name-spec> { <block> }` pairs of an attributes-style body,
  * calling the visitor for each pair. Used by `class` bodies where each
  * entry has the shape `id[: type][[cardinality]] { details }`.

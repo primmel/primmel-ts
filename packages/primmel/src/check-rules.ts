@@ -4,7 +4,7 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C98) issues report under;
+//   id       — the per-rule id (C1…C103) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
@@ -1027,6 +1027,19 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'TODO.integration/14, the composed_of construct (TODO.v3/03 Phase 2)',
+  ),
+  // ── the relation registry (docs/primmel/18 §18.6) ──────────────────
+  // C103: every ref predicate resolves against the composed registry —
+  // a typo is an error, not a silent new predicate. The rule only fires
+  // when the package set declares a registry: the predicate vocabulary
+  // is data (the metamodel layer's predicates.prl), never grammar.
+  R(
+    'C103',
+    'declared-predicate',
+    'base',
+    'error',
+    'normal',
+    'docs/primmel/18 §18.6 (the unified reference/relation construct)',
   ),
 ];
 

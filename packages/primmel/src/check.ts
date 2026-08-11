@@ -534,6 +534,9 @@ export function checkPackage(
   // ── C89: ISO 24229 spelling codes (TODO.roadmap/25, doctrine ch. 10) ──
   issues.push(...checkSpellingCodes(standard));
 
+  // ── C103: declared-predicate (docs/primmel/18 §18.6) ───────────────
+  issues.push(...checkDeclaredPredicates(standard));
+
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
   );
@@ -5218,6 +5221,99 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
         }
       }
     }
+  }
+  return issues;
+}
+
+/**
+ * C103 — declared-predicate (docs/primmel/18 §18.6): every ref predicate
+ * resolves against the composed registry. A typo is an error, not a
+ * silent new predicate. The rule only fires when the package set DECLARES
+ * a registry (the codec is program-agnostic — the predicate vocabulary is
+ * data, declared in the metamodel layer's predicates.prl and composed
+ * through the layer includes).
+ *
+ * Only the refs channel is walked: the citation-kind predicates fold
+ * into the legacy channels at parse (§18.4), so a predicate still
+ * visible in refs is exactly the set the registry must vouch for.
+ */
+export function checkDeclaredPredicates(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const registry = new Set((standard.predicates ?? []).map(p => p.id));
+  if (registry.size === 0) {
+    return issues;
+  }
+  const visit = (
+    owner: string,
+    refs?: ReadonlyArray<{ predicate: string }> | null,
+  ) => {
+    for (const r of refs ?? []) {
+      if (!registry.has(r.predicate)) {
+        issues.push({
+          check: 'C103',
+          severity: 'error',
+          message: `${owner}: ref predicate "${r.predicate}" is not declared in the composed predicate registry (declared-predicate)`,
+        });
+      }
+    }
+  };
+  const visitFields = (owner: string, fields: FormField[]) => {
+    for (const f of fields) {
+      const here = `${owner} field ${f.name}`;
+      visit(here, f.refs);
+      // Nested object shape and hoisted array-item fields recurse.
+      if (f.fields && f.fields.length > 0) {
+        visitFields(here, f.fields);
+      }
+    }
+  };
+
+  const m = standard.packageManifest;
+  if (m) {
+    visit(`package "${m.id}"`, m.refs);
+  }
+  for (const r of standard.requirements ?? []) {
+    visit(`requirement ${r.id}`, r.refs);
+  }
+  for (const t of standard.conformanceTests ?? []) {
+    visit(`conformance_test ${t.id}`, t.refs);
+  }
+  for (const f of standard.forms ?? []) {
+    visit(`form ${f.id}`, f.refs);
+    visitFields(`form ${f.id}`, f.fields ?? []);
+  }
+  for (const s of standard.subforms ?? []) {
+    visitFields(`subform ${s.id}`, s.fields ?? []);
+  }
+  for (const c of standard.calculations ?? []) {
+    visit(`calculation ${c.id}`, c.refs);
+  }
+  for (const s of standard.symbols ?? []) {
+    visit(`symbol ${s.id}`, s.refs);
+  }
+  for (const t of standard.terms ?? []) {
+    visit(`term ${t.id}`, t.refs);
+  }
+  for (const t of standard.tables ?? []) {
+    visit(`table ${t.id}`, t.refs);
+  }
+  for (const c of standard.constraints ?? []) {
+    visit(`constraint ${c.id}`, c.refs);
+  }
+  for (const k of standard.competenceKinds ?? []) {
+    visit(`competence_kind ${k.id}`, k.refs);
+  }
+  for (const f of standard.formulasUsed ?? []) {
+    visit(`formulas_used ${f.id}`, f.refs);
+  }
+  for (const s of standard.testSequences ?? []) {
+    visit(`test_sequence ${s.id}`, s.refs);
+  }
+  for (const c of standard.conditionSets ?? []) {
+    visit(`condition_set ${c.id}`, c.refs);
+  }
+  for (const i of standard.instruments ?? []) {
+    visit(`instrument ${i.id}`, i.refs);
   }
   return issues;
 }
