@@ -243,7 +243,12 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'note') {
       result.note = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
-      result.source = readSource(unwrapBlock(t[i++]));
+      // Repeated provenance blocks accumulate; `source` stays the first.
+      const src = readSource(unwrapBlock(t[i++]));
+      (result.sourceRefs ??= []).push(src);
+      if (!result.source) {
+        result.source = src;
+      }
     } else if (cmd === 'variant') {
       const variantId = stripWrapping(t[i++]);
       const vblock = i < t.length ? unwrapBlock(t[i++]) : '';
@@ -830,7 +835,10 @@ const dumpInstrument = function (inst: Instrument): string {
     if (inst.familyNote) {
       out += '    note "' + escapeString(inst.familyNote) + '"\n';
     }
-    if (inst.familySource && (inst.familySource.doc || inst.familySource.clause)) {
+    if (
+      inst.familySource &&
+      (inst.familySource.doc || inst.familySource.clause)
+    ) {
       // The canonical provenance spelling (docs/primmel/18 §18.4).
       out += dumpSourceRefAsRef(inst.familySource, '    ', escapeString);
     }

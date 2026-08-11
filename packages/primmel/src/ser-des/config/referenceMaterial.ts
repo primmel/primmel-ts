@@ -32,11 +32,18 @@ import type {
   MaterialConstraint,
   MaterialIdentityField,
 } from '../../types/ReferenceMaterial';
-import type { SourceRef } from '../../types/Subject';
 import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
-import { forEachEntry, unwrapped } from '../parse-block';
+import { forEachEntry, unwrapped, skipUnknownValue } from '../parse-block';
 import { readSource, stripColon } from './field-parser';
+import {
+  parseRef,
+  refTargetToSourceRef,
+  parseRefFromReaders,
+  foldRefIntoLegacy,
+  dumpRefs,
+  dumpSourceRefAsRef,
+} from './ref';
 import type { Dumper, Parser } from '../types';
 
 function parseIdentityFields(block: string): MaterialIdentityField[] {
@@ -75,7 +82,7 @@ function parseIdentityFields(block: string): MaterialIdentityField[] {
         } else if (fc === 'required') {
           field.required = stripWrapping(ft[j++]) === 'true';
         } else {
-          unwrapBlock(ft[j++]);
+          j = skipUnknownValue(ft, j, fc);
         }
       }
     }
@@ -156,8 +163,19 @@ function parseConstraints(block: string): MaterialConstraint[] {
           c.onViolation = stripWrapping(ct[j++]);
         } else if (cc === 'source') {
           c.source = readSource(unwrapBlock(ct[j++]));
+        } else if (cc === 'ref') {
+          // The unified typed reference (docs/primmel/18) — the
+          // constraint's provenance folds onto its source slot.
+          const rr = parseRef(ct, j, stripWrapping, unwrapBlock);
+          j = rr.next;
+          if (rr.ref.predicate === 'derives-from' && !c.source) {
+            const b = refTargetToSourceRef(rr.ref.target);
+            if (b) {
+              c.source = b;
+            }
+          }
         } else {
-          unwrapBlock(ct[j++]);
+          j = skipUnknownValue(ct, j, cc);
         }
       }
     }
@@ -216,22 +234,6 @@ export const parseReferenceMaterial: Parser = function (id, data) {
     return ctx;
   };
 };
-
-function dumpSource(src: SourceRef | null, indent: string): string {
-  if (!src || (!src.doc && !src.clause)) {
-    return '';
-  }
-  return (
-    indent +
-    'source { doc "' +
-    escapeString(src.doc) +
-    '" clause "' +
-    escapeString(src.clause) +
-    '"' +
-    (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-    ' }\n'
-  );
-}
 
 export const dumpReferenceMaterial: Dumper<ReferenceMaterial> = function (m) {
   let out = 'reference_material ' + m.id + ' {\n';
@@ -303,7 +305,10 @@ export const dumpReferenceMaterial: Dumper<ReferenceMaterial> = function (m) {
       if (c.onViolation) {
         out += '      on_violation ' + c.onViolation + '\n';
       }
-      out += dumpSource(c.source, '      ');
+      if (c.source && (c.source.doc || c.source.clause)) {
+        // The canonical provenance spelling (docs/primmel/18 §18.4).
+        out += dumpSourceRefAsRef(c.source, '      ', escapeString);
+      }
       out += '    }\n';
     }
     out += '  }\n';

@@ -53,6 +53,12 @@ export default interface ReferenceMaterial {
   name: string;
   definition: string;
   source: SourceRef | null;
+  /** All provenance bindings (docs/primmel/18 §18.4 — the derives-from
+   *  fold target; `source` stays the first entry). */
+  sourceRefs?: import('./Subject').SourceRef[];
+  /** The unified typed references (docs/primmel/18) — semantic
+   *  predicates stay here; citation kinds fold onto source/sourceRefs. */
+  refs?: import('./Ref').Ref[];
   identityFields: MaterialIdentityField[];
   constraints: MaterialConstraint[];
 }
