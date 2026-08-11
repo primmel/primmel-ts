@@ -69,6 +69,7 @@ export default function parse(
     referenceMaterials: {},
     testPointSets: {},
     competenceKinds: {},
+    predicates: {},
     constraints: {},
     discrepancyRecords: {},
     stateMachines: {},

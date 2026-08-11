@@ -217,3 +217,25 @@ describe('ref (the unified reference/relation construct, spec docs/primmel/18)',
     assert.match(out, /ref supersedes "urn:oiml:pub:r:60:2017"/);
   });
 });
+
+describe('predicate (the relation registry, spec docs/primmel/18)', () => {
+  it('round-trips a predicate declaration', () => {
+    const src = `predicate derives-from {
+  kind citation
+  description "The element is the model's interpretation of the target clause."
+  subject_kinds { requirement conformance_test form field }
+  target_kinds { document-anchor }
+  resolution must-resolve
+}
+`;
+    const out = roundTrip(src);
+    assert.match(out, /predicate derives-from \{/);
+    assert.match(out, /kind citation/);
+    assert.match(out, /resolution must-resolve/);
+    assert.equal(roundTrip(out), out);
+  });
+
+  it('rejects an unknown kind', () => {
+    assert.throws(() => roundTrip('predicate x {\n  kind sideways\n}\n'), /citation\|semantic/);
+  });
+});
