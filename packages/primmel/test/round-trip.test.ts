@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { load, dump } from '../src/ser-des/index';
+import { parsePackage, dumpPackage } from '../src/ser-des/config/packageManifest';
 
 function roundTrip(src: string): string {
   return dump(load(src));
@@ -197,10 +198,9 @@ describe('ref (the unified reference/relation construct, spec docs/primmel/18)',
     assert.equal(roundTrip(out), out);
   });
 
-  it('round-trips a package-level ref (edition lineage)', async () => {
+  it('round-trips a package-level ref (edition lineage)', () => {
     // The package manifest parses through its own loader (not the document
     // round-trip) — parsePackage/dumpPackage byte-stable.
-    const { parsePackage, dumpPackage } = await import('../src/ser-des/config/packageManifest');
     const src = `package {
   id demo
   kind product_reference
