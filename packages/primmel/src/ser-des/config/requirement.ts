@@ -37,7 +37,7 @@ import {
   readSource,
   stripColon,
 } from './field-parser';
-import { parseRef } from './ref';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -325,7 +325,9 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'ref') {
       // The unified typed reference (spec: docs/primmel/18).
       const r = parseRef(t, i, stripWrapping, unwrapBlock);
-      (result.refs ??= []).push(r.ref);
+      if (!foldRefIntoLegacy(result, r.ref)) {
+        (result.refs ??= []).push(r.ref);
+      }
       i = r.next;
     } else {
       unwrapBlock(t[i++]);
@@ -473,14 +475,7 @@ const dumpRequirement = function (r: Requirement): string {
   }
   for (const src of r.sourceRefs ??
     (r.source && (r.source.doc || r.source.clause) ? [r.source] : [])) {
-    out +=
-      '  source { doc "' +
-      escapeString(src.doc) +
-      '" clause "' +
-      escapeString(src.clause) +
-      '"' +
-      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
   // The unified typed references (spec: docs/primmel/18), after the
   // provenance blocks.

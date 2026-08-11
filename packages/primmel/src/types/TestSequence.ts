@@ -105,4 +105,6 @@ export interface TestSequence {
   /** Clause-URN provenance (repeated `source { doc clause }` blocks —
    *  the requirement family's sourceRefs idiom). */
   sourceRefs: SourceRef[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
 }

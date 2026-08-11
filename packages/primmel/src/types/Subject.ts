@@ -143,6 +143,9 @@ export interface StructureEntry {
 export interface Instrument {
   id: string;
   extends: string;
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
+  sourceRefs?: import('./Subject').SourceRef[];
   /** Measurand kind the instrument measures (e.g. force). */
   measurandKind?: string;
   /**
@@ -259,6 +262,10 @@ export interface ConditionSet {
   /** All provenance entries (a set may cite several clauses). */
   sources?: SourceRef[];
   referenceIds: string[];
+  /** The unified typed references/relations (spec: docs/primmel/18) —
+   *  semantic predicates stay here; citation kinds fold onto
+   *  sources/referenceIds. */
+  refs?: import('./Ref').Ref[];
 }
 
 // ─────────────────────────────────────────────────────────────────────

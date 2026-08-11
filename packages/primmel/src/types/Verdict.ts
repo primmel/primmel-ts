@@ -40,4 +40,5 @@ export default interface Verdict {
   /** Acceptance decision rule (guarding, criterion, statistics). */
   acceptance?: AcceptanceDecision | null;
   source: SourceRef | null;
+  sourceRefs?: import('./Subject').SourceRef[];
 }

@@ -50,6 +50,11 @@
 import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readEntryTokens, readSource } from './field-parser';
+import {
+  parseRefFromReaders,
+  foldRefIntoLegacy,
+  dumpSourceRefAsRef,
+} from './ref';
 import type { ConstructDefinition } from './index';
 import type { FormulasUsed } from '../../types/FormulasUsed';
 
@@ -64,7 +69,7 @@ const parseFormulasUsed: ConstructDefinition['parse'] = function (id, data) {
 
   forEachEntry(
     data,
-    (command, value) => {
+    (command, value, peek) => {
       if (command === 'name') {
         trace.name = stripWrapping(value());
       } else if (command === 'description') {
@@ -74,6 +79,12 @@ const parseFormulasUsed: ConstructDefinition['parse'] = function (id, data) {
         // Repeated formulas facets accumulate so the linter sees the
         // full declaration instead of the parser silently picking one.
         trace.formulas.push(...readEntryTokens(value()));
+      } else if (command === 'ref') {
+        // The unified typed reference (docs/primmel/18).
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (!foldRefIntoLegacy(trace, r)) {
+          (trace.refs ??= []).push(r);
+        }
       } else if (command === 'source') {
         // Repeated source blocks collect into sourceRefs (the
         // requirement family's idiom).
@@ -105,18 +116,21 @@ const dumpFormulasUsed = function (fu: FormulasUsed): string {
   if (fu.formulas.length > 0) {
     out += '  formulas { ' + fu.formulas.map(dumpBareSafe).join(' ') + ' }\n';
   }
+  for (const r of fu.refs ?? []) {
+    out +=
+      '  ref ' +
+      r.predicate +
+      ' "' +
+      escapeString(r.target) +
+      '"' +
+      (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') +
+      '\n';
+  }
   for (const src of fu.sourceRefs) {
     // doc/clause are quoted ALWAYS: free strings may carry the
     // tokenizer's comment character # (the E9 source-quoting hazard),
     // so a bare emission would not re-parse.
-    out +=
-      '  source { doc "' +
-      escapeString(src.doc) +
-      '" clause "' +
-      escapeString(src.clause) +
-      '"' +
-      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
   out += '}\n';
   return out;

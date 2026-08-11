@@ -692,7 +692,16 @@ describe('form fidelity extensions', () => {
     const m1 = load(FORM_SRC);
     const dumped = dump(m1);
     assert.ok(dumped.includes('section "Test results"'));
-    assert.ok(dumped.includes('references { requirement {'));
+    // The canonical reference spelling (docs/primmel/18 §18.4): one ref
+    // line per role-grouped entry.
+    assert.ok(
+      dumped.includes('ref requirement "urn:oiml:pub:r:60-1:2021#clause-5.3"'),
+    );
+    assert.ok(
+      dumped.includes(
+        'ref test-procedure "urn:oiml:pub:r:60-2:2021#clause-2.7"',
+      ),
+    );
     assert.ok(dumped.includes('calculation_context {'));
     assert.ok(dumped.includes('derivation {'));
     assert.ok(dumped.includes('verdict drift_error op lte'));

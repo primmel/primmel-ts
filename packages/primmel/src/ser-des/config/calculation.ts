@@ -6,6 +6,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import tokenize from '../tokenize';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import type Calculation from '../../types/Calculation';
 import type {
   CalculationInput,
@@ -31,6 +32,10 @@ export const parseCalculation: Parser = function (id, data) {
     _relations: {
       ref: [],
     },
+    // Initialized so the ref fold (docs/primmel/18 §18.4) mirrors the
+    // first derives-from block here — the fold only mirrors slots the
+    // object already carries.
+    sourceRef: null,
   };
 
   if (data !== '') {
@@ -55,6 +60,12 @@ export const parseCalculation: Parser = function (id, data) {
           result.expression = unwrapBlock(t[i++]);
         } else if (command === 'reference') {
           result._relations.ref = tokenizePackage(t[i++]);
+        } else if (command === 'ref') {
+          const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+          if (!foldRefIntoLegacy(result as never, rr.ref)) {
+            (result.refs ??= []).push(rr.ref);
+          }
+          i = rr.next;
         } else if (command === 'source') {
           // Structured provenance: source { doc "urn:..." clause "2.1.2.4" }
           // Repeated source blocks collect into sourceRefs (TODO.roadmap/24).
@@ -358,14 +369,17 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     (c.sourceRef && (c.sourceRef.doc || c.sourceRef.clause)
       ? [c.sourceRef]
       : [])) {
+    out += dumpSourceRefAsRef(src, '  ', escapeString);
+  }
+  for (const r of c.refs ?? []) {
     out +=
-      '  source { doc "' +
-      escapeString(src.doc) +
-      '" clause "' +
-      escapeString(src.clause) +
+      '  ref ' +
+      r.predicate +
+      ' "' +
+      escapeString(r.target) +
       '"' +
-      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-      ' }\n';
+      (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') +
+      '\n';
   }
   if (c.ref.length > 0) {
     out += '  reference {\n';

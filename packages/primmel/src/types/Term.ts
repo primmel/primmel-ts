@@ -23,6 +23,8 @@ interface Term {
   symbolId: string;
   referenceIds: string[];
   ref: Reference[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
   /** Clause/section of the source document where the term is defined. */
   section?: string;
   /** Explanatory note accompanying the definition. */

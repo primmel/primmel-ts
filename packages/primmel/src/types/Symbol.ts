@@ -39,11 +39,15 @@ interface Symbol {
   profile: string;
   /** Structured source provenance (the `reference` relation stays separate). */
   sourceRef: SourceRef | null;
+  /** All structured provenance bindings (the repeated-block channel). */
+  sourceRefs?: SourceRef[];
   /** Inline formula declaration. */
   formula: SymbolFormula | null;
   /** Free-text editorial notes (repeatable). */
   notes: string[];
   ref: Reference[];
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
 }
 
 export default Symbol;

@@ -184,7 +184,9 @@ formulas_used /conf/x {
   it('quotes the free strings on dump (the comment-character # hazard)', () => {
     // A description carrying the tokenizer's comment character must
     // re-parse exactly — free strings never go bare (the E9
-    // source-quoting pin); doc/clause stay quoted too.
+    // source-quoting pin). The provenance dumps as the canonical
+    // derives-from ref line (docs/primmel/18 §18.4): the whole anchor
+    // rides one quoted string, so the `#` inside it stays inert.
     const withHash = `
 formulas_used /conf/hash {
   name "H"
@@ -201,8 +203,8 @@ formulas_used /conf/hash {
       `expected the description quoted in the dump, got:\n${dumped}`,
     );
     assert.ok(
-      dumped.includes('source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }'),
-      `expected the source doc/clause quoted in the dump, got:\n${dumped}`,
+      dumped.includes('ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"'),
+      `expected the provenance as a canonical ref line in the dump, got:\n${dumped}`,
     );
     const m2 = load(dumped);
     assert.equal(

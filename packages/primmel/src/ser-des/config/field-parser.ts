@@ -43,7 +43,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
-import { parseRef } from './ref';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -427,7 +427,9 @@ export function parseFormField(
     } else if (cmd === 'ref') {
       // The unified typed reference (spec: docs/primmel/18).
       const r = parseRef(t, i, stripWrapping, unwrapBlock);
-      field.refs.push(r.ref);
+      if (!foldRefIntoLegacy(field, r.ref)) {
+        field.refs.push(r.ref);
+      }
       i = r.next;
     } else if (cmd === 'specification_reference') {
       field.specificationReference = stripWrapping(t[i++]);
@@ -796,10 +798,25 @@ export function dumpFormField(field: FormField, indent: string): string {
   if (field.targets.length > 0) {
     inner.push('targets { ' + field.targets.join(' ') + ' }');
   }
+  if (field.sourceRefs && field.sourceRefs.length > 0) {
+    // The provenance channel dumps canonical (docs/primmel/18 §18.4):
+    // one derives-from ref line per block.
+    for (const s of field.sourceRefs) {
+      inner.push(dumpSourceRefAsRef(s, '', escapeString).trimEnd());
+    }
+  }
   if (field.fieldReferences.length > 0) {
-    inner.push(
-      'references { ' + dumpRoleReferences(field.fieldReferences) + ' }',
-    );
+    // The canonical form (docs/primmel/18): one ref line per entry; the
+    // legacy role name maps to the registry predicate.
+    for (const r of field.fieldReferences) {
+      inner.push(
+        'ref ' +
+          roleToPredicateForDump(r.role) +
+          ' "' +
+          escapeString(r.urn) +
+          '"',
+      );
+    }
   }
   if (field.refs && field.refs.length > 0) {
     // The unified typed references (spec: docs/primmel/18), one per line.
@@ -948,4 +965,15 @@ export function dumpRoleReferences(refs: RoleReference[]): string {
         ' }',
     )
     .join(' ');
+}
+
+/** The legacy YAML role → the registry predicate, for the canonical dump. */
+function roleToPredicateForDump(role: string): string {
+  if (role === 'source') {
+    return 'derives-from';
+  }
+  if (role === 'reference') {
+    return 'cites';
+  }
+  return role;
 }

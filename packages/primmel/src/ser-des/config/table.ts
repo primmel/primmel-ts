@@ -12,6 +12,7 @@ import {
   dumpBareSafe,
   readSource,
 } from './field-parser';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -302,6 +303,13 @@ export const parseTable: Parser = function (id, data) {
           // Data block contains CSV-like rows
           const dataBlock = unwrapBlock(t[i++]);
           result.data = parseTableData(dataBlock);
+    } else if (command === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -402,14 +410,7 @@ export const dumpTable: Dumper<Table> = function (t) {
     (t.sourceRef && (t.sourceRef.doc || t.sourceRef.clause)
       ? [t.sourceRef]
       : [])) {
-    out +=
-      '  source { doc "' +
-      escapeString(src.doc) +
-      '" clause "' +
-      escapeString(src.clause) +
-      '"' +
-      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
   if (t.sourceDiscrepancy) {
     out += dumpSourceDiscrepancy(t.sourceDiscrepancy, '  ') + '\n';

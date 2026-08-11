@@ -7,6 +7,7 @@ import {
   stripWrapping,
 } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
+import { foldRefIntoLegacy, parseRefFromReaders } from './ref';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { readSource } from './field-parser';
 import type Symbol from '../../types/Symbol';
@@ -52,7 +53,16 @@ export const parseSymbol: Parser = function (id, data) {
 
   forEachEntry(
     data,
-    (command, value) => {
+    (command, value, peek) => {
+      if (command === 'ref') {
+        // The unified typed reference (docs/primmel/18).
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (!foldRefIntoLegacy(result, r)) {
+          (result.refs ??= []).push(r);
+        }
+        return true;
+      }
+
       if (command === 'name') {
         result.name = unwrapped(value);
       } else if (command === 'definition') {

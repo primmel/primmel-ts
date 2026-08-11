@@ -98,6 +98,9 @@ export interface FormField {
   /** The unified typed references/relations (spec: docs/primmel/18) —
    *  `ref <predicate> "<target>"` lines on the field. */
   refs: import('./Ref').Ref[];
+  /** Structured provenance (the derives-from fold target, spec
+   *  docs/primmel/18 §18.4) — a field may cite several clauses. */
+  sourceRefs?: SourceRef[];
   /** Role-grouped source reference URNs. */
   fieldReferences: RoleReference[];
   /** Free-text source clause citation (e.g. "R 144-1, 4.5.2"). */
