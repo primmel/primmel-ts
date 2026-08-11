@@ -114,8 +114,14 @@ export function refTargetToSourceRef(target: string): {
 /** The single-model fold (docs/primmel/18 §18.4): a parsed ref maps onto
  *  the element's LEGACY channel, so every consumer (the check layer, the
  *  YAML projections) reads one model regardless of spelling:
- *    derives-from        → sourceRefs (the provenance channel)
- *    cites               → referenceIds (or the role-references channel)
+ *    derives-from        → the provenance channel when the element HAS
+ *                          one (sourceRefs + the singular mirror); forms
+ *                          and fields carry their provenance as the
+ *                          role-'source' entry of the role-references
+ *                          channel instead (their legacy shape)
+ *    cites               → the role-'reference' entry of the
+ *                          role-references channel when the element has
+ *                          one, else referenceIds
  *    other citation role → the role-references channel (fieldReferences /
  *                          formReferences, whichever the element carries)
  *    semantic predicate  → stays in refs (the new channel)
@@ -133,6 +139,17 @@ export function foldRefIntoLegacy(
   ref: Ref,
 ): boolean {
   if (ref.predicate === 'derives-from') {
+    // Forms and fields carry provenance as the role-'source' entry of
+    // their role-references channel (their legacy shape — the YAML
+    // projections read exactly that channel); everything else has a real
+    // provenance channel (sourceRefs + the singular mirror).
+    const roleChannel = el.fieldReferences ?? el.formReferences;
+    const hasProvenanceSlot =
+      'source' in el || 'sourceRef' in el || el.sourceRefs !== undefined;
+    if (roleChannel && !hasProvenanceSlot) {
+      roleChannel.push({ urn: ref.target, role: 'source' });
+      return true;
+    }
     const b = refTargetToSourceRef(ref.target);
     if (!b) {
       return false;
@@ -155,12 +172,14 @@ export function foldRefIntoLegacy(
     return true;
   }
   if (ref.predicate === 'cites') {
-    if (el.referenceIds) {
-      el.referenceIds.push(ref.target);
-    } else if (el.fieldReferences) {
+    // The role-references channel is the citation home where the element
+    // has one (forms, fields); referenceIds elsewhere.
+    if (el.fieldReferences) {
       el.fieldReferences.push({ urn: ref.target, role: 'reference' });
     } else if (el.formReferences) {
       el.formReferences.push({ urn: ref.target, role: 'reference' });
+    } else if (el.referenceIds) {
+      el.referenceIds.push(ref.target);
     }
     return true;
   }
