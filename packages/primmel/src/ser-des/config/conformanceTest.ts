@@ -652,8 +652,14 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   // The unified typed references (spec: docs/primmel/18).
   for (const r of ct.refs ?? []) {
-    out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"' +
-      (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') + '\n';
+    out +=
+      '  ref ' +
+      r.predicate +
+      ' "' +
+      escapeString(r.target) +
+      '"' +
+      (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') +
+      '\n';
   }
   if (ct.targets.length > 0) {
     out += '  targets {\n';

@@ -1,7 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { load, dump } from '../src/ser-des/index';
-import { parsePackage, dumpPackage } from '../src/ser-des/config/packageManifest';
+import {
+  parsePackage,
+  dumpPackage,
+} from '../src/ser-des/config/packageManifest';
 
 function roundTrip(src: string): string {
   return dump(load(src));
@@ -180,8 +183,14 @@ describe('ref (the unified reference/relation construct, spec docs/primmel/18)',
 }
 `;
     const out = roundTrip(src);
-    assert.match(out, /ref test-procedure "urn:oiml:pub:r:60-2:2021#clause-2.3"/);
-    assert.match(out, /ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.4.2"/);
+    assert.match(
+      out,
+      /ref test-procedure "urn:oiml:pub:r:60-2:2021#clause-2.3"/,
+    );
+    assert.match(
+      out,
+      /ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.4.2"/,
+    );
     assert.equal(roundTrip(out), out);
   });
 
@@ -211,7 +220,9 @@ describe('ref (the unified reference/relation construct, spec docs/primmel/18)',
   ref supersedes "urn:oiml:pub:r:60:2017"
 }
 `;
-    const ctx: { packageManifest: import('../src/types/Package').PackageManifest | null } = { packageManifest: null };
+    const ctx: {
+      packageManifest: import('../src/types/Package').PackageManifest | null;
+    } = { packageManifest: null };
     parsePackage(src)(ctx as never);
     const out = dumpPackage(ctx.packageManifest!);
     assert.match(out, /ref supersedes "urn:oiml:pub:r:60:2017"/);
@@ -236,6 +247,9 @@ describe('predicate (the relation registry, spec docs/primmel/18)', () => {
   });
 
   it('rejects an unknown kind', () => {
-    assert.throws(() => roundTrip('predicate x {\n  kind sideways\n}\n'), /citation\|semantic/);
+    assert.throws(
+      () => roundTrip('predicate x {\n  kind sideways\n}\n'),
+      /citation\|semantic/,
+    );
   });
 });

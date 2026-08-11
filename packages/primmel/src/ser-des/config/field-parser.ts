@@ -43,7 +43,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
-import { parseRef, dumpRefs } from './ref';
+import { parseRef } from './ref';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -805,7 +805,11 @@ export function dumpFormField(field: FormField, indent: string): string {
     // The unified typed references (spec: docs/primmel/18), one per line.
     for (const r of field.refs) {
       inner.push(
-        'ref ' + r.predicate + ' "' + escapeString(r.target) + '"' +
+        'ref ' +
+          r.predicate +
+          ' "' +
+          escapeString(r.target) +
+          '"' +
           (r.note ? ' { note "' + escapeString(r.note) + '" }' : ''),
       );
     }
