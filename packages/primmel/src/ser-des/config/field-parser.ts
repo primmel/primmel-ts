@@ -268,6 +268,7 @@ export function parseFormField(
     enumRef: '',
     pattern: '',
     required: false,
+    requiredWhen: '',
     measurementMethod: '',
     calculationId: null,
     calculationBindings: [],
@@ -336,6 +337,13 @@ export function parseFormField(
       field.bind = stripWrapping(t[i++]);
     } else if (cmd === 'required') {
       field.required = stripWrapping(t[i++]) === 'true';
+    } else if (cmd === 'required_when') {
+      // The conditional-requiredness expression — quoted or inline ocl{…}
+      // (the whitespace tokenizer SPLITS the braces — accumulate until
+      // brace-balanced, same as `calculation`).
+      const read = readValueToken(t, i);
+      field.requiredWhen = stripWrapping(read.text);
+      i = read.next;
     } else if (cmd === 'measurement_method') {
       field.measurementMethod = stripWrapping(t[i++]);
     } else if (cmd === 'calculation') {
@@ -688,6 +696,9 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
   if (field.required) {
     inner.push('required true');
+  }
+  if (field.requiredWhen) {
+    inner.push('required_when ' + dumpBareSafe(field.requiredWhen));
   }
   if (field.measurementMethod) {
     inner.push('measurement_method ' + field.measurementMethod);

@@ -74,6 +74,11 @@ export interface FormField {
   /** Example values shown as entry guidance. */
   examples?: string;
   required: boolean;
+  /** Conditional requiredness (v3): an OCL boolean over the binding
+   *  context — the field is required exactly when the expression holds
+   *  (R 60-3, 4.9.1's "cable length — mandatory for strain gauge load
+   *  cells with 4-wire connection" is the type case). Empty when absent. */
+  requiredWhen: string;
   measurementMethod: string;
   calculationId: string | null;
   calculationBindings: CalculationBinding[];

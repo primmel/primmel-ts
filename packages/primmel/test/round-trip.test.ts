@@ -133,3 +133,35 @@ describe('round-trip', () => {
     assert.equal(once, twice);
   });
 });
+
+describe('required_when (the conditional-requiredness facet, v3)', () => {
+  it('round-trips an inline ocl{…} condition on a form field', () => {
+    const src = `form demo {
+  name "Demo"
+  field cable_length : number {
+    label "Cable length"
+    required_when ocl{cable_connection = '4-wire'}
+  }
+}
+`;
+    const out = roundTrip(src);
+    // The dump normalizes to the quoted form (spaces inside ocl{…});
+    // the VALUE round-trips — the quoted form parses back identically.
+    assert.match(out, /required_when "ocl\{cable_connection = '4-wire'\}"/);
+    assert.equal(roundTrip(out), out);
+  });
+
+  it('round-trips a quoted condition', () => {
+    const src = `form demo {
+  name "Demo"
+  field input_impedance : number {
+    label "Input impedance"
+    required_when "model.classification.technology = 'strain-gauge'"
+  }
+}
+`;
+    const out = roundTrip(src);
+    assert.match(out, /required_when/);
+    assert.match(out, /strain-gauge/);
+  });
+});
