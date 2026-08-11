@@ -485,8 +485,14 @@ const dumpRequirement = function (r: Requirement): string {
   // The unified typed references (spec: docs/primmel/18), after the
   // provenance blocks.
   for (const ref of r.refs ?? []) {
-    out += '  ref ' + ref.predicate + ' "' + escapeString(ref.target) + '"' +
-      (ref.note ? ' { note "' + escapeString(ref.note) + '" }' : '') + '\n';
+    out +=
+      '  ref ' +
+      ref.predicate +
+      ' "' +
+      escapeString(ref.target) +
+      '"' +
+      (ref.note ? ' { note "' + escapeString(ref.note) + '" }' : '') +
+      '\n';
   }
   out += '}\n';
   return out;

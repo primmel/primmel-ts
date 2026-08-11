@@ -269,8 +269,18 @@ export function dumpPackage(m: PackageManifest): string {
   }
   // The unified typed references (spec: docs/primmel/18).
   for (const r of m.refs ?? []) {
-    out += '  ref ' + r.predicate + ' "' + (r.target.replace(/\\/g, '\\\\').replace(/"/g, '\\"')) + '"' +
-      (r.note ? ' { note "' + r.note.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '" }' : '') + '\n';
+    out +=
+      '  ref ' +
+      r.predicate +
+      ' "' +
+      r.target.replace(/\\/g, '\\\\').replace(/"/g, '\\"') +
+      '"' +
+      (r.note
+        ? ' { note "' +
+          r.note.replace(/\\/g, '\\\\').replace(/"/g, '\\"') +
+          '" }'
+        : '') +
+      '\n';
   }
   if (m.schemeType) {
     out += '  scheme_type ' + m.schemeType + '\n';

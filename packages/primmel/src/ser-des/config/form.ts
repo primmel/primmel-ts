@@ -401,8 +401,14 @@ export const dumpForm: Dumper<Form> = function (f) {
   // legacy role-grouped block.
   if (f.refs && f.refs.length > 0) {
     for (const r of f.refs) {
-      out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"' +
-        (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') + '\n';
+      out +=
+        '  ref ' +
+        r.predicate +
+        ' "' +
+        escapeString(r.target) +
+        '"' +
+        (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') +
+        '\n';
     }
   }
   if (f.calculationContext) {
