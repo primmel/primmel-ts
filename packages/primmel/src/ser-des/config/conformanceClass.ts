@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
+import { skipUnknownValue } from '../parse-block';
 import {
   escapeString,
   unwrapBlock,
@@ -68,7 +69,7 @@ const parseConformanceClass: ConstructDefinition['parse'] = function (
     } else if (cmd === 'reference') {
       result.referenceIds = tokenize(stripWrapping(t[i++])).map(stripWrapping);
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 

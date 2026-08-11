@@ -24,6 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
+import { skipUnknownValue } from '../parse-block';
 import {
   escapeString,
   unwrapBlock,
@@ -83,7 +84,7 @@ function readAccepts(block: string): RequirementLimitAccepts {
     } else if (cmd === 'source_discrepancy') {
       accepts.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return accepts;
@@ -124,7 +125,7 @@ function readLimit(block: string): RequirementLimit {
     } else if (cmd === 'source_discrepancy') {
       limit.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return limit;
@@ -330,7 +331,7 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
       }
       i = r.next;
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 
@@ -530,7 +531,7 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
     } else if (cmd === 'reference') {
       result.referenceIds = readIdList(t[i++]);
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 

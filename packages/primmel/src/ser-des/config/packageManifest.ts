@@ -44,6 +44,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
+import { skipUnknownValue } from '../parse-block';
 import { unwrapBlock, stripWrapping } from '../tokenize';
 import { parseRef, foldRefIntoLegacy } from './ref';
 import type {
@@ -236,7 +237,7 @@ export const parsePackage: Parser = function (data) {
       }
       manifest.source = src;
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 

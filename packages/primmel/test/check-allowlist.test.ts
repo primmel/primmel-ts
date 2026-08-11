@@ -154,7 +154,7 @@ describe('allowlist malformed entries (C56)', () => {
     const issues = checked(
       ORPHAN_REQ,
       `allowlist_entry {
-  rule C103
+  rule C999
   match "x"
   reason "r"
   audit_ref "a"
@@ -163,7 +163,7 @@ describe('allowlist malformed entries (C56)', () => {
     );
     assert.ok(
       issues.some(
-        i => i.check === 'C56' && i.message.includes('unknown rule "C103"'),
+        i => i.check === 'C56' && i.message.includes('unknown rule "C999"'),
       ),
     );
   });

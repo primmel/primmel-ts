@@ -33,6 +33,12 @@ import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { readSource, stripColon } from './field-parser';
 import { parseAcceptance, dumpAcceptance } from './acceptance';
+import {
+  parseRefFromReaders,
+  foldRefIntoLegacy,
+  dumpRefs,
+  dumpSourceRefAsRef,
+} from './ref';
 import type { Dumper, Parser } from '../types';
 
 const VALID_SERIES_REDUCTIONS: SeriesReduction[] = [
@@ -64,7 +70,7 @@ export const parseVerdict: Parser = function (id, data) {
 
   forEachEntry(
     data,
-    (keyword, value) => {
+    (keyword, value, peek) => {
       if (keyword === 'quantity') {
         const qt = tokenize(unwrapBlock(value()));
         let j = 0;
@@ -102,7 +108,18 @@ export const parseVerdict: Parser = function (id, data) {
       } else if (keyword === 'acceptance') {
         result.acceptance = parseAcceptance(unwrapBlock(value()));
       } else if (keyword === 'source' || keyword === 'reference') {
-        result.source = readSource(unwrapBlock(value()));
+        // Repeated provenance blocks accumulate; `source` stays first.
+        const src = readSource(unwrapBlock(value()));
+        (result.sourceRefs ??= []).push(src);
+        if (!result.source) {
+          result.source = src;
+        }
+      } else if (keyword === 'ref') {
+        // The unified typed reference (docs/primmel/18).
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (!foldRefIntoLegacy(result, r)) {
+          (result.refs ??= []).push(r);
+        }
       } else {
         return false;
       }
@@ -144,18 +161,17 @@ export const dumpVerdict: Dumper<Verdict> = function (v) {
   if (v.acceptance) {
     out += dumpAcceptance(v.acceptance, '  ') + '\n';
   }
-  if (v.source && (v.source.doc || v.source.clause)) {
-    out +=
-      '  source { doc "' +
-      escapeString(v.source.doc) +
-      '" clause "' +
-      escapeString(v.source.clause) +
-      '"' +
-      (v.source.fragment
-        ? ' fragment "' + escapeString(v.source.fragment) + '"'
-        : '') +
-      ' }\n';
+  const verdictSources =
+    v.sourceRefs && v.sourceRefs.length > 0
+      ? v.sourceRefs
+      : v.source && (v.source.doc || v.source.clause)
+        ? [v.source]
+        : [];
+  for (const s of verdictSources) {
+    // The canonical provenance spelling (docs/primmel/18 §18.4).
+    out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
+  out += dumpRefs(v.refs, '  ', escapeString);
   out += '}\n';
   return out;
 };

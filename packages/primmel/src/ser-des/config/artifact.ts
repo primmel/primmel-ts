@@ -55,6 +55,13 @@ import tokenize from '../tokenize';
 import { escapeString, stripWrapping, tokenizePackage } from '../tokenize';
 import { unwrapBlock } from '../tokenize';
 import { dumpBareSafe, readSource, stripColon } from './field-parser';
+import {
+  parseRef,
+  foldRefIntoLegacy,
+  dumpRefs,
+  dumpSourceRefAsRef,
+} from './ref';
+import { skipUnknownValue } from '../parse-block';
 import { dumpQuantityValue } from './quantity';
 import { readValueMap } from './instance';
 import type { ConstructDefinition } from './index';
@@ -193,7 +200,7 @@ function parseContentContract(block: string): ArtifactContentContract {
     } else if (cmd === 'media') {
       contract.media = readContractMedia(unwrapBlock(t[i++]));
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return contract;
@@ -239,11 +246,23 @@ const parseArtifactDefinition: ConstructDefinition['parse'] = function (
     } else if (cmd === 'retention') {
       result.retention = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
-      result.source = readSource(unwrapBlock(t[i++]));
+      // Repeated provenance blocks accumulate; `source` stays first.
+      const src = readSource(unwrapBlock(t[i++]));
+      (result.sourceRefs ??= []).push(src);
+      if (!result.source) {
+        result.source = src;
+      }
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 
@@ -314,7 +333,17 @@ const dumpArtifactDefinition = function (d: ArtifactDefinition): string {
   if (d.retention) {
     out += '  retention "' + escapeString(d.retention) + '"\n';
   }
-  out += dumpSource('source', d.source, '  ');
+  const artifactSources =
+    d.sourceRefs && d.sourceRefs.length > 0
+      ? d.sourceRefs
+      : d.source
+        ? [d.source]
+        : [];
+  for (const s of artifactSources) {
+    // The canonical provenance spelling (docs/primmel/18 §18.4).
+    out += dumpSourceRefAsRef(s, '  ', escapeString);
+  }
+  out += dumpRefs(d.refs, '  ', escapeString);
   out += dumpIdList('reference', d.referenceIds, '  ');
   out += '}\n';
   return out;
@@ -358,7 +387,7 @@ const parseArtifactInstance: ConstructDefinition['parse'] = function (
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
 

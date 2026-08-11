@@ -130,7 +130,13 @@ import tokenize, {
   unwrapBlock,
   tokenizePackage,
 } from '../tokenize';
-import { forEachEntry, unwrapped } from '../parse-block';
+import { forEachEntry, unwrapped, skipUnknownValue } from '../parse-block';
+import {
+  parseRefFromReaders,
+  foldRefIntoLegacy,
+  dumpRefs,
+  dumpSourceRefAsRef,
+} from './ref';
 import {
   dumpBareSafe,
   readSource,
@@ -434,7 +440,7 @@ function parseSegregation(block: string): SegregationEntry[] {
         }
       }
     } else {
-      unwrapBlock(t[i++]);
+      i = skipUnknownValue(t, i, cmd);
     }
   }
   return out;
@@ -737,7 +743,7 @@ export const parseProcess: Parser = function (id, data) {
 
   forEachEntry(
     data,
-    (keyword, value) => {
+    (keyword, value, peek) => {
       if (keyword === 'modality') {
         result.modality = value();
       } else if (keyword === 'name') {
@@ -822,6 +828,12 @@ export const parseProcess: Parser = function (id, data) {
           result.source = src;
         }
         (result.sourceRefs ??= []).push(src);
+      } else if (keyword === 'ref') {
+        // The unified typed reference (docs/primmel/18).
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (!foldRefIntoLegacy(result, r)) {
+          (result.refs ??= []).push(r);
+        }
       } else {
         return false;
       }
@@ -1144,21 +1156,16 @@ export const dumpProcess: (
   if (process.does) {
     out += dumpDoes(process.does);
   }
-  // Clause-URN provenance (the requirement facet shape) — repeated blocks
-  // from sourceRefs, single-block fallback.
+  // Clause-URN provenance — the canonical spelling (docs/primmel/18
+  // §18.4): one derives-from ref line per block from sourceRefs, with the
+  // single-block fallback.
   for (const src of process.sourceRefs ??
     (process.source && (process.source.doc || process.source.clause)
       ? [process.source]
       : [])) {
-    out +=
-      '  source { doc "' +
-      escapeString(src.doc) +
-      '" clause "' +
-      escapeString(src.clause) +
-      '"' +
-      (src.fragment ? ' fragment "' + escapeString(src.fragment) + '"' : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
+  out += dumpRefs(process.refs, '  ', escapeString);
   // A `parent` link is emitted explicitly whenever nesting does not
   // already express it: leaf processes keep the historical flat form,
   // and a non-leaf process dumped at TOP LEVEL (a flat `parent X`

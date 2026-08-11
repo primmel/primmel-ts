@@ -41,4 +41,7 @@ export default interface Verdict {
   acceptance?: AcceptanceDecision | null;
   source: SourceRef | null;
   sourceRefs?: import('./Subject').SourceRef[];
+  /** The unified typed references (docs/primmel/18) — semantic
+   *  predicates stay here; citation kinds fold onto source/sourceRefs. */
+  refs?: import('./Ref').Ref[];
 }

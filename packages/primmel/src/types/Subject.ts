@@ -212,6 +212,12 @@ export interface AttributeDefinition {
   irdi: string;
   derived: string;
   referenceIds: string[];
+  /** All provenance bindings (docs/primmel/18 §18.4 — the derives-from
+   *  fold target; `source` stays the first entry). */
+  sourceRefs?: SourceRef[];
+  /** The unified typed references (docs/primmel/18) — semantic
+   *  predicates stay here; citation kinds fold onto source/referenceIds. */
+  refs?: import('./Ref').Ref[];
 }
 
 /** capability <id> — mixin: what the instrument CAN do (OCP mechanism). */
@@ -226,6 +232,9 @@ export interface Capability {
   satisfiesRequirements: string[];
   verifiedByTests: string[];
   referenceIds: string[];
+  /** The unified typed references (docs/primmel/18) — citation kinds
+   *  fold onto referenceIds; the rest stay here. */
+  refs?: import('./Ref').Ref[];
 }
 
 /** behavior <id> — a response characteristic requirements bind to. */
@@ -237,6 +246,12 @@ export interface Behavior {
   source: SourceRef | null;
   verifiedBy: string[];
   referenceIds: string[];
+  /** All provenance bindings (docs/primmel/18 §18.4 — the derives-from
+   *  fold target; `source` stays the first entry). */
+  sourceRefs?: SourceRef[];
+  /** The unified typed references (docs/primmel/18) — semantic
+   *  predicates stay here; citation kinds fold onto source/referenceIds. */
+  refs?: import('./Ref').Ref[];
 }
 
 /** condition_set <id> — one operating-condition tier (reference/rated/limiting). */

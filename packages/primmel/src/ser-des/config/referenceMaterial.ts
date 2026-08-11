@@ -179,7 +179,7 @@ export const parseReferenceMaterial: Parser = function (id, data) {
 
   forEachEntry(
     data,
-    (keyword, value) => {
+    (keyword, value, peek) => {
       if (keyword === 'kind') {
         result.kind = stripWrapping(value());
       } else if (keyword === 'name') {
@@ -187,7 +187,18 @@ export const parseReferenceMaterial: Parser = function (id, data) {
       } else if (keyword === 'definition') {
         result.definition = unwrapped(value);
       } else if (keyword === 'source') {
-        result.source = readSource(unwrapBlock(value()));
+        // Repeated provenance blocks accumulate; `source` stays first.
+        const src = readSource(unwrapBlock(value()));
+        (result.sourceRefs ??= []).push(src);
+        if (!result.source) {
+          result.source = src;
+        }
+      } else if (keyword === 'ref') {
+        // The unified typed reference (docs/primmel/18).
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (!foldRefIntoLegacy(result, r)) {
+          (result.refs ??= []).push(r);
+        }
       } else if (keyword === 'identity_fields') {
         result.identityFields = parseIdentityFields(unwrapBlock(value()));
       } else if (keyword === 'constraints') {
@@ -233,7 +244,17 @@ export const dumpReferenceMaterial: Dumper<ReferenceMaterial> = function (m) {
   if (m.definition) {
     out += '  definition "' + escapeString(m.definition) + '"\n';
   }
-  out += dumpSource(m.source, '  ');
+  const rmSources =
+    m.sourceRefs && m.sourceRefs.length > 0
+      ? m.sourceRefs
+      : m.source
+        ? [m.source]
+        : [];
+  for (const s of rmSources) {
+    // The canonical provenance spelling (docs/primmel/18 §18.4).
+    out += dumpSourceRefAsRef(s, '  ', escapeString);
+  }
+  out += dumpRefs(m.refs, '  ', escapeString);
   if (m.identityFields.length > 0) {
     out += '  identity_fields {\n';
     for (const f of m.identityFields) {

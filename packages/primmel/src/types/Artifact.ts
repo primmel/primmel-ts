@@ -97,7 +97,13 @@ export interface ArtifactDefinition {
   /** Retention requirement (free text, e.g. "approx. three months (secure)"). */
   retention: string;
   source: SourceRef | null;
+  /** All provenance bindings (docs/primmel/18 §18.4 — the derives-from
+   *  fold target; `source` stays the first entry). */
+  sourceRefs?: SourceRef[];
   referenceIds: string[];
+  /** The unified typed references (docs/primmel/18) — semantic
+   *  predicates stay here; citation kinds fold onto source/referenceIds. */
+  refs?: import('./Ref').Ref[];
 }
 
 /**

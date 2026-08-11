@@ -23,6 +23,12 @@ import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { readSource, stripColon } from './field-parser';
+import {
+  parseRefFromReaders,
+  foldRefIntoLegacy,
+  dumpRefs,
+  dumpSourceRefAsRef,
+} from './ref';
 import type { Dumper, Parser } from '../types';
 
 function parseCardinality(
@@ -116,11 +122,22 @@ export const parseTestPointSet: Parser = function (id, data) {
 
   forEachEntry(
     data,
-    (keyword, value) => {
+    (keyword, value, peek) => {
       if (keyword === 'description') {
         result.description = unwrapped(value);
       } else if (keyword === 'source') {
-        result.source = readSource(unwrapBlock(value()));
+        // Repeated provenance blocks accumulate; `source` stays first.
+        const src = readSource(unwrapBlock(value()));
+        (result.sourceRefs ??= []).push(src);
+        if (!result.source) {
+          result.source = src;
+        }
+      } else if (keyword === 'ref') {
+        // The unified typed reference (docs/primmel/18).
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (!foldRefIntoLegacy(result, r)) {
+          (result.refs ??= []).push(r);
+        }
       } else if (keyword === 'cardinality') {
         result.cardinality = parseCardinality(unwrapBlock(value()));
       } else if (keyword === 'repetitions_per_point') {
@@ -146,18 +163,17 @@ export const dumpTestPointSet: Dumper<TestPointSet> = function (s) {
   if (s.description) {
     out += '  description "' + escapeString(s.description) + '"\n';
   }
-  if (s.source && (s.source.doc || s.source.clause)) {
-    out +=
-      '  source { doc "' +
-      escapeString(s.source.doc) +
-      '" clause "' +
-      escapeString(s.source.clause) +
-      '"' +
-      (s.source.fragment
-        ? ' fragment "' + escapeString(s.source.fragment) + '"'
-        : '') +
-      ' }\n';
+  const tpsSources =
+    s.sourceRefs && s.sourceRefs.length > 0
+      ? s.sourceRefs
+      : s.source && (s.source.doc || s.source.clause)
+        ? [s.source]
+        : [];
+  for (const src of tpsSources) {
+    // The canonical provenance spelling (docs/primmel/18 §18.4).
+    out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
+  out += dumpRefs(s.refs, '  ', escapeString);
   const ckeys = Object.keys(s.cardinality);
   if (ckeys.length > 0) {
     out += '  cardinality {\n';
