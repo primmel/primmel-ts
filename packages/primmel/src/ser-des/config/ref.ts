@@ -36,7 +36,9 @@ export function parseRef(
   if (i < t.length && t[i]!.startsWith('{')) {
     const block = unwrapBlock(t[i++]);
     const m = /note\s+"([^"]*)"/.exec(block) ?? /note\s+(\S+)/.exec(block);
-    if (m) ref.note = m[1];
+    if (m) {
+      ref.note = m[1];
+    }
   }
   return { ref, next: i };
 }
@@ -47,7 +49,9 @@ export function dumpRefs(
   indent: string,
   escapeString: (s: string) => string,
 ): string {
-  if (!refs || refs.length === 0) return '';
+  if (!refs || refs.length === 0) {
+    return '';
+  }
   let out = '';
   for (const r of refs) {
     out += `${indent}ref ${r.predicate} "${escapeString(r.target)}"`;
