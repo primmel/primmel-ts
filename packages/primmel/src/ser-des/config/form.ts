@@ -331,6 +331,7 @@ function makeSubformRefField(subformId: string, block: string): FormField {
     enumRef: '',
     pattern: '',
     required: false,
+    requiredWhen: '',
     measurementMethod: '',
     calculationId: null,
     calculationBindings: [],
