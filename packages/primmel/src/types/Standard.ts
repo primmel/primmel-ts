@@ -97,6 +97,9 @@ export default interface Standard {
    *  vocabulary of conformance-test required_competence and laboratory
    *  accreditation_scope entries. */
   competenceKinds: CompetenceKind[];
+  /** The relation registry (docs/primmel/18): the declared `ref`
+   *  predicates every typed reference resolves against. */
+  predicates: import('./RefPredicate').RefPredicate[];
   /** Domain constraints (TODO.roadmap/51 — BUG.R60-SSOT gap 7): the
    *  subject's own intrinsic validity rules (stereotype «inv») — the
    *  Recommendation-level counterpart of the metamodel invariants. */

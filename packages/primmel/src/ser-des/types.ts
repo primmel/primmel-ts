@@ -151,6 +151,8 @@ export interface ParseContext {
   referenceMaterials: Record<string, ReferenceMaterial>;
   testPointSets: Record<string, TestPointSet>;
   competenceKinds: Record<string, CompetenceKind>;
+  /** The relation registry (docs/primmel/18): declared ref predicates. */
+  predicates: Record<string, import('../types/RefPredicate').RefPredicate>;
   constraints: Record<string, Constraint>;
   discrepancyRecords: Record<string, DiscrepancyRecord>;
   stateMachines: Record<string, StateMachine>;

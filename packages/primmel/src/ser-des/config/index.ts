@@ -87,6 +87,7 @@ import {
   parseReferenceMaterial,
 } from './referenceMaterial';
 import { dumpCompetenceKind, parseCompetenceKind } from './competenceKind';
+import { dumpPredicate, parsePredicate } from './predicate';
 import { dumpConstraint, parseConstraint } from './constraint';
 import {
   dumpDiscrepancyRecord,
@@ -394,6 +395,14 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseCompetenceKind,
     dump: dumpCompetenceKind as never,
+  }),
+  // The relation registry (docs/primmel/18): declared ref predicates.
+  defineConstruct({
+    keyword: 'predicate',
+    field: 'predicates',
+    takesID: true,
+    parse: parsePredicate,
+    dump: dumpPredicate as never,
   }),
   // Primmel v3 domain constraints (TODO.roadmap/51 — BUG.R60-SSOT gap 7)
   defineConstruct({
