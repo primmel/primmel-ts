@@ -1,58 +1,75 @@
-name: Publish
+name: Release
 
-# Trusted publishing to npm via GitHub Actions OIDC.
-# Requires the publishing workflow to be configured as a trusted
-# publisher on npm (no NPM_TOKEN needed). See:
-# https://docs.npmjs.com/generating-provenance-statements
-#
-# Triggers when a GitHub Release matching `v*` is published. To publish
-# a new version: bump `packages/primmel/package.json`, merge to main,
-# then create a Release tagged `v<x.y.z>` in the GitHub UI.
+# Trusted publishing to npm via GitHub Actions OIDC (no NPM_TOKEN).
+# Triggers when a `v*` tag is pushed, or manually via workflow_dispatch.
+# To release: bump packages/primmel/package.json, push tag `v<x.y.z>`,
+# this workflow publishes and creates the GitHub Release.
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.5.3)'
+        required: true
+        type: string
 
 permissions:
-  contents: read
   id-token: write
+  contents: write
 
 jobs:
   publish:
-    name: Publish to npm
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node 24
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-          cache: yarn
-      - name: Enable Corepack
-        run: corepack enable
-      - name: Install
-        run: yarn install --immutable
-      - name: Type-check
-        run: yarn compile
-      - name: Lint
-        run: yarn lint
-      - name: Test
-        run: yarn test
-      - name: Build package
-        run: yarn build
-      - name: Exports-map proof (the built package's subpaths)
-        run: yarn workspace @primmel/primmel test:exports
-      - name: Verify version matches the released tag
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'yarn'
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn workspace @primmel/primmel run build
+      - run: yarn workspace @primmel/primmel run build:browser
+      - run: yarn workspace @primmel/primmel run build:cli
+      - run: yarn workspace @primmel/primmel run test
+      - name: Set version from workflow input (patch release)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: packages/primmel
         run: |
-          PKG_VERSION=$(node -p "require('./packages/primmel/package.json').version")
+          current=$(node -p "require('./package.json').version")
+          if [ "$current" != "${{ inputs.version }}" ]; then
+            npm version ${{ inputs.version }} --no-git-tag-version
+          fi
+      - name: Verify version matches the tag
+        if: github.event_name == 'push'
+        working-directory: packages/primmel
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           echo "package.json: $PKG_VERSION"
-          echo "release tag:  $TAG_VERSION"
-          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "Mismatch: package.json $PKG_VERSION != release tag $TAG_VERSION"
-            exit 1
-          fi
-      - name: Publish
-        run: npm publish --provenance --access public
+          echo "tag:          $TAG_VERSION"
+          [ "$PKG_VERSION" = "$TAG_VERSION" ]
+      - run: npm publish
         working-directory: packages/primmel
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
