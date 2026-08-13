@@ -139,6 +139,23 @@ export function forEachAttribute(
   const t: string[] = tokenizePackage(data);
   let i = 0;
   while (i < t.length) {
+    // Special-case: the unified `ref` construct (`ref <predicate>
+    // "<target>"` plus an optional `{ note "…" }` block) has no
+    // per-attribute `{block}` after the target. When the first token
+    // is `ref`, accumulate predicate + target (and optional note block)
+    // and dispatch as a single entry. The visitor distinguishes by
+    // checking `nameSpec.startsWith('ref ')`.
+    if (t[i] === 'ref') {
+      const nameParts: string[] = [t[i++]];
+      if (i < t.length) nameParts.push(t[i++]); // predicate
+      if (i < t.length) nameParts.push(t[i++]); // target
+      let blockContent = '';
+      if (i < t.length && t[i]!.charAt(0) === '{') {
+        blockContent = unwrapBlock(t[i++]!);
+      }
+      visitor(nameParts.join(' '), blockContent);
+      continue;
+    }
     // Accumulate name-spec tokens until we hit the brace block.
     const nameParts: string[] = [];
     while (i < t.length && t[i].charAt(0) !== '{') {

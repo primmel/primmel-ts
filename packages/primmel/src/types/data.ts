@@ -1,7 +1,9 @@
 import type Reference from './Reference';
 import Resolvable from './Resolvable';
+import type { Ref } from '../ser-des/config/ref';
 
 export type { default as Reference } from './Reference';
+export type { Ref } from '../ser-des/config/ref';
 
 export interface Registry {
   id: string;
@@ -24,6 +26,9 @@ export interface DataClass {
   extends?: string;
   /** Class-level description. */
   description?: string;
+  /** Class-level references (Extension 2 — primmel-ts#52). Provenance:
+   *  where this class is defined in source documents. */
+  ref?: Ref[];
 }
 
 export type ResolvableDataClass = {
@@ -34,6 +39,7 @@ export type ResolvableDataClass = {
   helper?: boolean;
   extends?: string;
   description?: string;
+  ref?: Ref[];
 };
 
 export interface DataAttribute {
