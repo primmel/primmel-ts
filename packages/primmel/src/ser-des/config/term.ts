@@ -71,6 +71,8 @@ export const parseTerm: Parser = function (id, data) {
         result.note = unwrapped(value);
       } else if (command === 'source') {
         result.source = unwrapped(value);
+      } else if (command === 'overlay') {
+        result.overlay = value() === 'true';
       } else if (command === 'scope_note') {
         result.scopeNote = unwrapped(value);
       } else if (command === 'language') {
