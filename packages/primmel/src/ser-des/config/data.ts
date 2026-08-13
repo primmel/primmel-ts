@@ -13,6 +13,7 @@ import {
 import { resolveFromContext } from '../resolve';
 import { escapeString, tokenizePackage, stripWrapping } from '../tokenize';
 import { forEachEntry, forEachAttribute, unwrapped } from '../parse-block';
+import type { Ref } from './ref';
 import { Dumper, Parser, Resolver } from '../types';
 
 export const parseEnum: Parser = (id: string, data: string) => {
@@ -97,6 +98,27 @@ export const parseDataClass: Parser = function (id, data) {
   forEachAttribute(
     data,
     (basic, details) => {
+      // Class-level ref (Extension 2 — primmel-ts#52). The unified ref
+      // construct `ref <predicate> "<target>" [{ note "…" }]` is accepted
+      // at class scope. The first whitespace-separated token is `ref`.
+      if (basic.startsWith('ref ')) {
+        // basic is `ref <predicate> "<target>"` — split carefully to
+        // preserve the quoted target intact. tokenizePackage would
+        // unwrap the outer chars (treating input as a block body), so
+        // we hand-split instead.
+        const m = basic.match(/^ref\s+(\S+)\s+"([^"]*)"$/);
+        if (m) {
+          const ref: Ref = { predicate: m[1]!, target: m[2]! };
+          if (details) {
+            const noteMatch = /note\s+"([^"]*)"/.exec(details) ?? /note\s+(\S+)/.exec(details);
+            if (noteMatch) ref.note = noteMatch[1];
+          }
+          result.ref ??= [];
+          result.ref.push(ref);
+          return;
+        }
+        // Fall through: malformed ref — treat as unknown attribute.
+      }
       // Reserved class-level entries (v2 G2 storage semantics):
       //   store { <name> } · indexes { a b c } · helper { true } · extends { <Class> }
       const head = basic.trim();
@@ -223,6 +245,7 @@ export const resolveDataClass: Resolver<DataClass, ResolvableDataClass> =
       ...(unresolved.description !== undefined
         ? { description: unresolved.description }
         : {}),
+      ...(unresolved.ref !== undefined ? { ref: unresolved.ref } : {}),
     };
   };
 
@@ -260,6 +283,13 @@ export const dumpDataClass: Dumper<DataClass> = function (dataclass) {
   }
   if (dataclass.extends) {
     out += '  extends { ' + dataclass.extends + ' }\n';
+  }
+  if (dataclass.ref && dataclass.ref.length > 0) {
+    for (const r of dataclass.ref) {
+      out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"';
+      if (r.note) out += ' { note "' + escapeString(r.note) + '" }';
+      out += '\n';
+    }
   }
   for (const a of dataclass.attributes) {
     out += toDataAttributeModel(a);
