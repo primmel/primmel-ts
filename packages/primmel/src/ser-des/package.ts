@@ -433,10 +433,24 @@ function composePackage(
       )) {
         const prior = pm.get(key);
         if (prior !== undefined) {
-          throw new CompositionError(
-            'uses-no-redefine',
-            `package "${id}" redefines ${String(field)} id "${key}" already declared by package "${prior}" — an overlay may reference upstream ids, never redefine them (uses-no-redefine)`,
-          );
+          // The overlay marker (Extension: explicit redefine for terms).
+          // Authors set `overlay true` inside a term body when their
+          // definition intentionally supersedes an upstream package's
+          // (e.g. ISO/IEC 17065:2012 `impartiality` overriding
+          // ISO/IEC 17000:2020's). Composition honours the marker;
+          // last-write-wins for overlay=true entries.
+          const isOverlay =
+            field === 'terms' &&
+            typeof value === 'object' &&
+            value !== null &&
+            (value as { overlay?: boolean }).overlay === true;
+          if (!isOverlay) {
+            throw new CompositionError(
+              'uses-no-redefine',
+              `package "${id}" redefines ${String(field)} id "${key}" already declared by package "${prior}" — an overlay may reference upstream ids, never redefine them (uses-no-redefine)`,
+            );
+          }
+          // Fall through: overlay term replaces the prior entry.
         }
         target[key] = value;
         pm.set(key, id);

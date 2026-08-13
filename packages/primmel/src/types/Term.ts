@@ -31,6 +31,14 @@ interface Term {
   note?: string;
   /** Source URN (plain string form, e.g. "urn:oiml:pub:v:1:2022#clause-5.15"). */
   source?: string;
+  /**
+   * Overlay marker: this term intentionally overrides an upstream
+   * package's term with the same id (composition: uses-no-redefine
+   * is lifted when overlay=true). Authors set this when downstream
+   * editions supersede upstream definitions (e.g. ISO/IEC 17065:2012
+   * term `impartiality` overriding ISO/IEC 17000:2020's).
+   */
+  overlay?: boolean;
   /** Scope note qualifying the definition. */
   scopeNote?: string;
   /** Term language code (e.g. en). */
