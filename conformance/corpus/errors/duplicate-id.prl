@@ -1,0 +1,9 @@
+# Conformance corpus: two constructs carrying the same identifier.
+# Clause: ERR-03 (negative): the parse reports a duplicate-id issue.
+role verifier {
+  name "Verifier"
+}
+
+role verifier {
+  name "The second verifier"
+}

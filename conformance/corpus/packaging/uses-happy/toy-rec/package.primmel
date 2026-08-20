@@ -1,0 +1,6 @@
+package {
+  id toy-rec
+  kind rec
+  uses { toy-core }
+  requires { toy-core base-entities }
+}

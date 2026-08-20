@@ -1,0 +1,7 @@
+# The pin names a version outside the product's edition register:
+# C83 must fire.
+package {
+  id toy-consumer
+  kind rec
+  uses { toy-product@1999 }
+}

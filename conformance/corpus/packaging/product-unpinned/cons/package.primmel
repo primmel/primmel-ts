@@ -1,0 +1,7 @@
+# The uses edge to a product reference package carries no version pin:
+# C83 must fire.
+package {
+  id toy-consumer
+  kind rec
+  uses { toy-product }
+}

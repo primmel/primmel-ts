@@ -1,0 +1,7 @@
+role verifier {
+  name "Verifier"
+}
+
+role analyst {
+  name "Analyst"
+}

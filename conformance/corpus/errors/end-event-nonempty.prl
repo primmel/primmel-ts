@@ -1,0 +1,5 @@
+# Conformance corpus: an end event with a non-empty body.
+# Clause: ERR-01 (negative): the body must be empty.
+end_event Done {
+  x 1
+}

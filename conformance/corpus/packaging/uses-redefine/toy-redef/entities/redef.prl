@@ -1,0 +1,3 @@
+class BaseThing#data {
+  store { redefined }
+}

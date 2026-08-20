@@ -18,6 +18,7 @@
     "lint-fix": "eslint . --fix",
     "compile": "tsc",
     "test": "yarn workspace @primmel/primmel run test",
+    "test:conformance": "tsx conformance/runner/run.mts --adapter 'tsx conformance/runner/reference-adapter.mts'",
     "build": "yarn workspace @primmel/primmel run build",
     "prepare": "yarn run compile",
     "pretest": "yarn run compile",

@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: SYN-06 (negative).
+calculation ErrorCalc {
+  name "Error"
+  expression
+}

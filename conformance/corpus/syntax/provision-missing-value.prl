@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: SYN-03 (negative).
+provision ProvMPE {
+  modality SHALL
+  condition
+}

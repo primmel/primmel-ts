@@ -32,6 +32,8 @@ jobs:
         run: yarn lint
       - name: Test
         run: yarn test
+      - name: Conformance suite (the reference toolchain against the corpus)
+        run: yarn test:conformance
       - name: Build package
         run: yarn build
       - name: Exports-map proof (the built package's subpaths)

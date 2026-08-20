@@ -1,0 +1,9 @@
+class ApplicationRecord#data {
+  store { applications }
+  id: string { modality SHALL }
+}
+
+class CertificateRecord#data {
+  store { certificates }
+  id: string { modality SHALL }
+}

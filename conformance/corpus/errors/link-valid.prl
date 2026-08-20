@@ -1,0 +1,14 @@
+# Conformance corpus: the link entity with a declared kind value.
+# Clause: ERR-02 (positive).
+role verifier {
+  name "Verifier"
+}
+
+role analyst {
+  name "Analyst"
+}
+
+link L1 {
+  kind REPO
+  from verifier to analyst
+}

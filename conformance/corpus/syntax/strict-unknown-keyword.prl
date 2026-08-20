@@ -1,0 +1,8 @@
+# Conformance corpus: an unknown top-level keyword.
+# Clause: SYN-01 (negative): a strict parse rejects it;
+# a lenient parse skips it and still reads the role.
+future_keyword ignored { nothing }
+
+role verifier {
+  name "Verifier"
+}

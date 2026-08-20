@@ -1,0 +1,8 @@
+process review {
+  does {
+    start_event begin
+    action examine { executor machine }
+    end_event done
+    flow { begin -> examine -> done }
+  }
+}

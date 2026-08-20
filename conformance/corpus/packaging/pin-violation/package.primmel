@@ -1,0 +1,9 @@
+package {
+  id corpus-pkg-pin-violation
+  kind rec
+  title "Definition version pin violation"
+  version "2021"
+  editions { 2021 }
+  baseUrn "urn:example:corpus:pin-violation:2021"
+  status current
+}

@@ -1,0 +1,5 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: SYN-04 (negative).
+conformance_test ErrorTest {
+  name
+}

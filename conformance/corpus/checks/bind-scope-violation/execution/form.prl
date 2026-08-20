@@ -1,0 +1,5 @@
+# The bind path names an attribute that is not declared: C1 must fire.
+form ErrorForm {
+  name "Error record"
+  field indication { bind model.parameters.ghost_attr }
+}

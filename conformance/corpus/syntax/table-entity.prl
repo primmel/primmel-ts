@@ -1,0 +1,10 @@
+# Conformance corpus: the table entity.
+# Clauses: SYN-07 (positive), SER-01 (positive).
+table MpeTable {
+  name "MPE by load"
+  columns { load mpe }
+  rows {
+    r1 { load 500 mpe 0.5 }
+    r2 { load 2000 mpe 1.0 }
+  }
+}

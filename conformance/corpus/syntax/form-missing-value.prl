@@ -1,0 +1,5 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clauses: SYN-05 (negative), ERR-01 (negative), SER-01 (negative input).
+form ErrorForm {
+  name
+}

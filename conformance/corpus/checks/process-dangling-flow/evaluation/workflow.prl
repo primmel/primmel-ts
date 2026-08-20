@@ -1,0 +1,8 @@
+# The flow edge ends at a step the process does not declare: C11 must fire.
+process review {
+  does {
+    start_event begin
+    end_event done
+    flow { begin -> ghost }
+  }
+}

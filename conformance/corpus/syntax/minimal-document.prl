@@ -1,0 +1,8 @@
+# Conformance corpus: the smallest complete document.
+# Clause: SYN-01 (positive).
+root Root
+
+metadata {
+  title "Minimal"
+  schema "Primmel 0.1"
+}

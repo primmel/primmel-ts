@@ -1,0 +1,4 @@
+form ErrorForm {
+  name "Error record"
+  field indication { bind model.parameters.e_max }
+}

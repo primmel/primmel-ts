@@ -1,0 +1,10 @@
+subject LoadCell {
+  is { metadata { name "Load cell" } }
+}
+
+# The pin names a version outside the edition register: C80 must fire.
+instance sample-1 {
+  of LoadCell
+  level sample
+  definition_versions { LoadCell : "1999" }
+}

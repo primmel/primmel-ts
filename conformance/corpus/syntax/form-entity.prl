@@ -1,0 +1,12 @@
+# Conformance corpus: the form entity.
+# Clauses: SYN-05 (positive), SER-01 (positive).
+form ErrorForm {
+  name "Error record"
+  field indication {
+    label "Indication"
+    hint "The displayed value under load"
+  }
+  field accepted {
+    label "Accepted"
+  }
+}

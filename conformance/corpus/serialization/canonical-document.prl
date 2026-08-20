@@ -1,0 +1,18 @@
+metadata {
+  title "Shuffled"
+  schema "Primmel 0.1"
+  edition ""
+  author ""
+  namespace ""
+}
+
+role verifier {
+  name "Verifier"
+}
+role analyst {
+  name "Analyst"
+}
+table MpeTable {
+  title ""
+  columns ""
+}
