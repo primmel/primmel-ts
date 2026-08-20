@@ -1,0 +1,8 @@
+# Two roles carrying the same identifier: C96 must fire.
+role verifier {
+  name "Verifier"
+}
+
+role verifier {
+  name "The second verifier"
+}

@@ -1,0 +1,9 @@
+package {
+  id toy-product
+  kind product_reference
+  title "Toy product reference"
+  version "2021"
+  editions { 2021 }
+  baseUrn "urn:example:corpus:product:2021"
+  status current
+}

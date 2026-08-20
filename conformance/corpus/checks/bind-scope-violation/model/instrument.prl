@@ -1,0 +1,5 @@
+attribute_definition e_max {
+  symbol "E_max"
+  origin design-fixed
+  scope model
+}

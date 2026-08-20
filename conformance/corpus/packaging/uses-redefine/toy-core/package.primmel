@@ -1,0 +1,5 @@
+package {
+  id toy-core
+  kind core
+  provides { base-entities }
+}

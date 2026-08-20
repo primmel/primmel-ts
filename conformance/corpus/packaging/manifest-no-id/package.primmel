@@ -1,0 +1,4 @@
+# The manifest carries no id: loading it as a package must fail.
+package {
+  kind rec
+}

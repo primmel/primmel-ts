@@ -1,0 +1,5 @@
+package {
+  id toy-consumer
+  kind rec
+  uses { toy-product@2021 }
+}

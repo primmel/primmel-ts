@@ -1,0 +1,9 @@
+package {
+  id corpus-pkg-editions
+  kind rec
+  title "Editions register example"
+  version "2021"
+  editions { 2021 2017 }
+  baseUrn "urn:example:corpus:editions:2021"
+  status current
+}

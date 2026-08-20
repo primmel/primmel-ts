@@ -1,0 +1,186 @@
+{
+  "$comment": "The clause map of the Primmel conformance suite. Every clause states one conformance rule of the language; every case in corpus/cases.json names the clause it proves. The runner enforces the structural invariant: each clause carries at least one positive and one negative case. The 'spec' block names the document these clauses will re-key to when the Primmel Language Specification (TODO.standards/01) publishes its conformance clauses; until then the suite's own identifiers are the stable handles. Area anchors anticipate the specification's clause numbering without claiming it.",
+  "spec": {
+    "document": "The Primmel Language Specification",
+    "status": "in preparation (TODO.standards/01)",
+    "mapping": "When the specification publishes, each clause's specAnchor is replaced by the specification's conformance-clause number. The suite identifiers (SYN-01, ...) never change; only the anchor is re-keyed, in a minor suite release."
+  },
+  "clauses": [
+    {
+      "id": "SYN-01",
+      "area": "syntax",
+      "title": "Document structure",
+      "statement": "A Primmel document is a sequence of whitespace-delimited tokens forming (keyword, identifier, payload) triples; the header carries root, version, and the metadata block. A strict parse rejects an unknown top-level keyword; a lenient parse skips it.",
+      "specAnchor": "document structure and headers",
+      "rules": []
+    },
+    {
+      "id": "SYN-02",
+      "area": "syntax",
+      "title": "Identifiers",
+      "statement": "A construct keyword that takes an identifier consumes exactly one id token, bare or double-quoted; a quoted identifier may embed spaces and is referenced in the same quoted form. The id token is mandatory.",
+      "specAnchor": "identifiers",
+      "rules": []
+    },
+    {
+      "id": "SYN-03",
+      "area": "syntax",
+      "title": "The requirement entity",
+      "statement": "The requirement entity is declared as provision (narrative condition plus modality) or requirement (name, statement, modality, bindings); both spellings belong to the requirement kind. A value-taking keyword inside the body must carry its value.",
+      "specAnchor": "the requirement entity",
+      "rules": []
+    },
+    {
+      "id": "SYN-04",
+      "area": "syntax",
+      "title": "The conformance test entity",
+      "statement": "The conformance_test entity declares a name, an optional type, targets referencing declared requirements, a numbered procedure, and validation measurements. A value-taking keyword inside the body must carry its value.",
+      "specAnchor": "the conformance test entity",
+      "rules": []
+    },
+    {
+      "id": "SYN-05",
+      "area": "syntax",
+      "title": "The form entity",
+      "statement": "The form entity declares a name and a set of fields, each field optionally carrying label, hint, and a bind path. A value-taking keyword inside the body must carry its value.",
+      "specAnchor": "the form entity",
+      "rules": []
+    },
+    {
+      "id": "SYN-06",
+      "area": "syntax",
+      "title": "The calculation entity",
+      "statement": "The calculation entity declares a name and an expression over bracketed quantity references. A value-taking keyword inside the body must carry its value.",
+      "specAnchor": "the calculation entity",
+      "rules": []
+    },
+    {
+      "id": "SYN-07",
+      "area": "syntax",
+      "title": "The table entity",
+      "statement": "The table entity declares a name, a column list, and rows keyed by row id with one value per column. A value-taking keyword inside the body must carry its value.",
+      "specAnchor": "the table entity",
+      "rules": []
+    },
+    {
+      "id": "SER-01",
+      "area": "serialization",
+      "title": "Re-serialization fixed point",
+      "statement": "Serializing a parsed document and parsing the serialization again yields a model whose serialization is byte-identical: dump(parse(dump(parse(d)))) equals dump(parse(d)) for every valid document d. A document that fails to parse has no serialization.",
+      "specAnchor": "the codec round-trip rule",
+      "rules": []
+    },
+    {
+      "id": "SER-02",
+      "area": "serialization",
+      "title": "Canonical emission",
+      "statement": "The serializer emits one canonical form: the metadata block first, constructs in the language's declaration order, strings with embedded quotes and backslashes escaped. A document in canonical form serializes to itself byte-for-byte; a document in any other order does not serialize to its own input text.",
+      "specAnchor": "the canonical form",
+      "rules": []
+    },
+    {
+      "id": "CHK-01",
+      "area": "checks",
+      "title": "Attribute bind scope",
+      "statement": "A form field's bind path names a declared attribute definition whose scope matches the path's scope prefix.",
+      "specAnchor": "the bind-scope constraint",
+      "rules": ["C1"]
+    },
+    {
+      "id": "CHK-02",
+      "area": "checks",
+      "title": "Reference targets resolve",
+      "statement": "Every cross-reference in the model (a conformance test's targets, a form's process link, a capability's satisfactions) resolves to a declared element.",
+      "specAnchor": "reference resolution",
+      "rules": ["C2"]
+    },
+    {
+      "id": "CHK-03",
+      "area": "checks",
+      "title": "Store uniqueness",
+      "statement": "No two storable classes claim the same store.",
+      "specAnchor": "store uniqueness",
+      "rules": ["C4"]
+    },
+    {
+      "id": "CHK-04",
+      "area": "checks",
+      "title": "Process flow integrity",
+      "statement": "An executable process carries exactly one start event, and every flow edge begins and ends at a declared step.",
+      "specAnchor": "process structure",
+      "rules": ["C10", "C11"]
+    },
+    {
+      "id": "CHK-05",
+      "area": "checks",
+      "title": "Duplicate identification",
+      "statement": "An identifier is declared at most once per id-keyed collection; a redeclaration is reported.",
+      "specAnchor": "identifier uniqueness",
+      "rules": ["C96"]
+    },
+    {
+      "id": "PKG-01",
+      "area": "packaging",
+      "title": "The package manifest",
+      "statement": "A package is a directory whose package.primmel manifest declares at least the package id; the enumerated manifest facets (kind, status) carry only their declared values.",
+      "specAnchor": "the package manifest",
+      "rules": []
+    },
+    {
+      "id": "PKG-02",
+      "area": "packaging",
+      "title": "The edition register",
+      "statement": "A package whose status is current or preview packages the edition register's newest entry.",
+      "specAnchor": "editions and status",
+      "rules": ["C77"]
+    },
+    {
+      "id": "PKG-03",
+      "area": "packaging",
+      "title": "Definition version pins",
+      "statement": "An instance's definition_versions pins resolve against the package's edition register.",
+      "specAnchor": "version pinning",
+      "rules": ["C80"]
+    },
+    {
+      "id": "PKG-04",
+      "area": "packaging",
+      "title": "Layered composition",
+      "statement": "A package's uses edges resolve against a package locator, never redefine an upstream identifier, and never form a cycle.",
+      "specAnchor": "composition (uses, layering)",
+      "rules": ["C27", "C28", "C29"]
+    },
+    {
+      "id": "PKG-05",
+      "area": "packaging",
+      "title": "Abstract import pins",
+      "statement": "A uses edge to a product reference package carries a version pin (id@edition), and the pin resolves against the product package's edition register.",
+      "specAnchor": "abstract imports",
+      "rules": ["C83"]
+    },
+    {
+      "id": "ERR-01",
+      "area": "errors",
+      "title": "Structural parse errors",
+      "statement": "A structurally malformed document is rejected with an error that names the construct, the identifier where one exists, and the expected token.",
+      "specAnchor": "parse error reporting",
+      "rules": []
+    },
+    {
+      "id": "ERR-02",
+      "area": "errors",
+      "title": "Enumerated facet values",
+      "statement": "A facet whose values are enumerated rejects an undeclared value with an error naming the valid set.",
+      "specAnchor": "enumerated facets",
+      "rules": []
+    },
+    {
+      "id": "ERR-03",
+      "area": "errors",
+      "title": "Duplicate identifier detection",
+      "statement": "A document that redeclares an identifier parses with a duplicate-id issue on the issues channel.",
+      "specAnchor": "the parse issues channel",
+      "rules": []
+    }
+  ]
+}

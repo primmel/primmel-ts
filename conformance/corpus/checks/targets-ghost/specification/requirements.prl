@@ -1,0 +1,10 @@
+requirement /req/mpe {
+  name "Maximum permissible error"
+  statement "The absolute value of the error shall not exceed the MPE"
+}
+
+# The target is not a declared requirement: C2 must fire.
+conformance_test /conf/error {
+  name "Error determination"
+  targets { /req/ghost }
+}

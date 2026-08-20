@@ -1,0 +1,11 @@
+# Status current, but the packaged version is not the register's newest
+# entry: C77 must fire.
+package {
+  id corpus-pkg-edition-status
+  kind rec
+  title "Edition status violation"
+  version "2017"
+  editions { 2021 2017 }
+  baseUrn "urn:example:corpus:editions:2017"
+  status current
+}

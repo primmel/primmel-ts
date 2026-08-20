@@ -1,0 +1,4 @@
+class BaseThing#data {
+  store { baseThings }
+  id: string [1..1] { modality SHALL }
+}

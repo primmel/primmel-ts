@@ -1,0 +1,19 @@
+# Conformance corpus: the same model in a non-canonical block order.
+# Clause: SER-02 (negative): the serialization must NOT echo this input;
+# a conforming serializer emits the canonical form.
+table MpeTable {
+  name "MPE by load"
+}
+
+role verifier {
+  name "Verifier"
+}
+
+role analyst {
+  name "Analyst"
+}
+
+metadata {
+  title "Shuffled"
+  schema "Primmel 0.1"
+}

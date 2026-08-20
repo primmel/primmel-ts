@@ -1,0 +1,53 @@
+# Conformance corpus: a composite valid document.
+# Clauses: SYN-01 (positive), SER-01 (positive), ERR-01 (positive).
+root Root
+
+version "1.0.0"
+
+metadata {
+  title "Conformance composite"
+  schema "Primmel 0.1"
+}
+
+role verifier {
+  name "Verifier"
+}
+
+provision ProvMPE {
+  condition "The error shall not exceed the maximum permissible error"
+  modality SHALL
+}
+
+conformance_test ErrorTest {
+  name "Error determination"
+  type Testing
+  targets {
+    ProvMPE
+  }
+  procedure {
+    1 "Apply the test load"
+    2 "Record the indication"
+  }
+  validate_measurement {
+    "[error] <= [mpe]"
+  }
+}
+
+form ErrorForm {
+  name "Error record"
+  field indication { label "Indication" }
+}
+
+calculation ErrorCalc {
+  name "Error"
+  expression "[indication] - [reference]"
+}
+
+table MpeTable {
+  name "MPE by load"
+  columns { load mpe }
+  rows {
+    r1 { load 500 mpe 0.5 }
+    r2 { load 2000 mpe 1.0 }
+  }
+}

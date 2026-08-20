@@ -1,0 +1,10 @@
+# Conformance corpus: a quoted identifier carrying a space, cross-referenced.
+# Clause: SYN-02 (positive).
+role "chief verifier" {
+  name "Chief verifier"
+}
+
+process review {
+  name "Review"
+  actor "chief verifier"
+}

@@ -1,0 +1,9 @@
+subject LoadCell {
+  is { metadata { name "Load cell" } }
+}
+
+instance sample-1 {
+  of LoadCell
+  level sample
+  definition_versions { LoadCell : "2021" }
+}

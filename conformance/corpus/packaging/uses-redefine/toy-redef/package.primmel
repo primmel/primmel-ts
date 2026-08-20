@@ -1,0 +1,6 @@
+# The downstream package redeclares an upstream identifier: C28 must fire.
+package {
+  id toy-redef
+  kind rec
+  uses { toy-core }
+}

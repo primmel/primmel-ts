@@ -17,6 +17,7 @@ yarn compile          # tsc — type-check & emit to build/
 yarn lint             # gts lint (Google TS style; curly required, single quotes)
 yarn lint-fix         # gts fix
 npm test              # node:test + tsx — 982 specs in packages/primmel/test/
+yarn test:conformance # the conformance suite: corpus + runner + reference adapter (conformance/)
 npx tsx scripts/validate-r60.mts   # parser smoke test against the R 60 model
 ```
 

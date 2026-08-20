@@ -29,6 +29,9 @@ yarn workspace @primmel/primmel run build   # rebuild the dist after any kernel 
   header carries its doctrine).
 - `packages/primmel/test/` — the suites (unit + corpus legs; the corpus
   pins the smart repo's package count).
+- `conformance/` — the Primmel conformance test suite: the versioned
+  corpus, the clause map, and the adapter-driven runner with which any
+  implementation proves conformance (its README carries the contract).
 
 ## Read next
 

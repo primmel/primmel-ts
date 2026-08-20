@@ -1,0 +1,6 @@
+# The uses edge names a package the locator cannot resolve: C27 must fire.
+package {
+  id toy-ghost
+  kind rec
+  uses { ghost-core }
+}

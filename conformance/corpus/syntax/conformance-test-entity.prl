@@ -1,0 +1,22 @@
+# Conformance corpus: the conformance test entity.
+# Clauses: SYN-04 (positive), SER-01 (positive).
+provision ProvMPE {
+  condition "The error shall not exceed the maximum permissible error"
+  modality SHALL
+}
+
+conformance_test ErrorTest {
+  name "Error determination"
+  type Testing
+  reference { R60doc#2.10.1 }
+  targets {
+    ProvMPE
+  }
+  procedure {
+    1 "Apply the test load"
+    2 "Record the indication"
+  }
+  validate_measurement {
+    "[error] <= [mpe]"
+  }
+}

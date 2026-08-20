@@ -1,0 +1,14 @@
+# Conformance corpus: both comment forms are ignored by the parser.
+# Clause: SYN-01 (positive).
+// A line comment in the second form also carries no content.
+root Root
+
+metadata {
+  title "Comments" # a trailing comment after content
+  schema "Primmel 0.1"
+}
+
+# A comment between blocks.
+role verifier {
+  name "Verifier" // another trailing comment
+}

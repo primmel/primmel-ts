@@ -1,0 +1,6 @@
+# The status facet carries a value outside its enumeration:
+# loading the manifest must fail and name the valid values.
+package {
+  id corpus-pkg-bad-status
+  status banana
+}

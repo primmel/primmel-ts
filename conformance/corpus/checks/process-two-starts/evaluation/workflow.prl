@@ -1,0 +1,10 @@
+# Two start events in one executable process: C10 must fire.
+process review {
+  does {
+    start_event begin
+    start_event restart
+    end_event done
+    flow { begin -> done }
+    flow { restart -> done }
+  }
+}

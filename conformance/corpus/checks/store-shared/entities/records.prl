@@ -1,0 +1,10 @@
+# Both classes claim the same store: C4 must fire.
+class ApplicationRecord#data {
+  store { records }
+  id: string { modality SHALL }
+}
+
+class CertificateRecord#data {
+  store { records }
+  id: string { modality SHALL }
+}

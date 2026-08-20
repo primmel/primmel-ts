@@ -1,0 +1,9 @@
+package {
+  id corpus-pkg-pins
+  kind rec
+  title "Definition version pins"
+  version "2021"
+  editions { 2021 }
+  baseUrn "urn:example:corpus:pins:2021"
+  status current
+}

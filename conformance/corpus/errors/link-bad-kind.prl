@@ -1,0 +1,15 @@
+# Conformance corpus: an enumerated facet carrying an undeclared value.
+# Clause: ERR-02 (negative): the parser rejects the value and names the
+# valid set.
+role verifier {
+  name "Verifier"
+}
+
+role analyst {
+  name "Analyst"
+}
+
+link L1 {
+  kind banana
+  from verifier to analyst
+}

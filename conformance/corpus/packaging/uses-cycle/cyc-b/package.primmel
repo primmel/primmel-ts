@@ -1,0 +1,4 @@
+package {
+  id cyc-b
+  uses { cyc-a }
+}
