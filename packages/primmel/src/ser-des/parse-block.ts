@@ -147,8 +147,12 @@ export function forEachAttribute(
     // checking `nameSpec.startsWith('ref ')`.
     if (t[i] === 'ref') {
       const nameParts: string[] = [t[i++]];
-      if (i < t.length) nameParts.push(t[i++]); // predicate
-      if (i < t.length) nameParts.push(t[i++]); // target
+      if (i < t.length) {
+        nameParts.push(t[i++]);
+      } // predicate
+      if (i < t.length) {
+        nameParts.push(t[i++]);
+      } // target
       let blockContent = '';
       if (i < t.length && t[i]!.charAt(0) === '{') {
         blockContent = unwrapBlock(t[i++]!);

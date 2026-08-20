@@ -110,8 +110,11 @@ export const parseDataClass: Parser = function (id, data) {
         if (m) {
           const ref: Ref = { predicate: m[1]!, target: m[2]! };
           if (details) {
-            const noteMatch = /note\s+"([^"]*)"/.exec(details) ?? /note\s+(\S+)/.exec(details);
-            if (noteMatch) ref.note = noteMatch[1];
+            const noteMatch =
+              /note\s+"([^"]*)"/.exec(details) ?? /note\s+(\S+)/.exec(details);
+            if (noteMatch) {
+              ref.note = noteMatch[1];
+            }
           }
           result.ref ??= [];
           result.ref.push(ref);
@@ -287,7 +290,9 @@ export const dumpDataClass: Dumper<DataClass> = function (dataclass) {
   if (dataclass.ref && dataclass.ref.length > 0) {
     for (const r of dataclass.ref) {
       out += '  ref ' + r.predicate + ' "' + escapeString(r.target) + '"';
-      if (r.note) out += ' { note "' + escapeString(r.note) + '" }';
+      if (r.note) {
+        out += ' { note "' + escapeString(r.note) + '" }';
+      }
       out += '\n';
     }
   }
