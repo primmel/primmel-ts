@@ -14,6 +14,12 @@
 // TOGETHER (single token stream), so cross-file references resolve and
 // duplicate IDs across files are detected by the parser's dupChecker.
 // Deterministic order: manifest first, then files sorted by path.
+//
+// Provenance (opt-in): loadPackageWithProvenance() additionally reports,
+// for every top-level construct, the source file it was parsed from (and
+// the construct's file-local span), so tools can save package-aware
+// instead of degenerating to a single-file dump. The merge itself is
+// untouched: same joined stream, same parse, same resolution.
 // ─────────────────────────────────────────────────────────────────────
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
@@ -24,9 +30,10 @@ import resolveFromConfig from './resolve';
 import { PARSER_CONFIG, RESOLVER_CONFIG } from './config';
 import { preprocessIncludes } from './includes';
 import { parsePackage } from './config/packageManifest';
+import type { Position } from './tokenize';
 import type { LoadOptions, LoadResult } from './index';
 import type { PackageManifest } from '../types/Package';
-import type { ParseContext } from './types';
+import type { ParsedConstruct, ParseContext } from './types';
 import type { ValidationIssue } from '../validate';
 
 const CONVENTION_DIRS = [
@@ -106,6 +113,191 @@ export function loadPackage(
   return loadPackageInternal(dir, options).standard;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Per-file provenance (opt-in): which file each top-level construct was
+// parsed from. The merge still parses ONE joined token stream per
+// package; the loader records each content file's range in that stream
+// and maps the parser's construct spans (ParseOptions.withProvenance)
+// back to file-local positions. File attribution is by the construct's
+// leading keyword token. `include "..."` directives are inlined before
+// tokenization, so a construct pulled in by an include attributes to the
+// INCLUDING file (the unit the package merge reads).
+// ─────────────────────────────────────────────────────────────────────
+
+/** A source position inside a package content file. */
+export interface ProvenancePosition {
+  /** 1-based line. */
+  line: number;
+  /** 1-based column (UTF-16 code units). */
+  col: number;
+  /** 0-based character offset (UTF-16 code units). */
+  offset: number;
+}
+
+/** Where one top-level construct came from. */
+export interface ConstructSource {
+  /** Absolute path of the file the construct was parsed from. */
+  file: string;
+  /** Id of the package that file belongs to. Absent only when the loaded
+      directory carries no manifest. Under `uses` composition this names
+      the DECLARING package, never the importer. */
+  package?: string;
+  /** File-local span of the declaration, keyword through payload. */
+  span: { start: ProvenancePosition; end: ProvenancePosition };
+}
+
+/**
+ * The per-file provenance of one package load: every top-level construct
+ * the merge parsed, keyed by its Standard collection (the ParseContext
+ * field names: `requirements`, `terms`, `instruments`, ...) and its id.
+ * The id-less singletons key under their keyword with id ''
+ * (`constructs.metadata['']`). A duplicate id records the declaration
+ * that won the merge (the last one, matching parser overwrite semantics;
+ * the duplicate itself is a parse issue, never silent here).
+ */
+export interface PackageProvenance {
+  /** Absolute path of the root package's manifest, when one was loaded. */
+  manifest?: string;
+  constructs: Record<string, Record<string, ConstructSource>>;
+}
+
+export interface PackageLoadResult extends LoadResult {
+  provenance: PackageProvenance;
+}
+
+/** A construct reference: the Standard collection + the construct id. */
+export interface ConstructRef {
+  field: string;
+  id: string;
+}
+
+export interface SourceFileGroups<T extends ConstructRef> {
+  /** Absolute file path to the refs parsed from that file, input order. */
+  byFile: Map<string, T[]>;
+  /** Refs with no provenance entry (constructs authored after the load);
+      the caller assigns their file by the package's conventions. */
+  unassigned: T[];
+}
+
+/**
+ * The inverse of the load for a package-aware save: partition construct
+ * references by their source file, one group per file to write back.
+ * What a group becomes on disk (full-file re-serialization or a span
+ * splice at the recorded range) is the caller's choice; the kernel only
+ * attests where each construct came from.
+ */
+export function groupBySourceFile<T extends ConstructRef>(
+  provenance: PackageProvenance,
+  refs: readonly T[],
+): SourceFileGroups<T> {
+  const byFile = new Map<string, T[]>();
+  const unassigned: T[] = [];
+  for (const ref of refs) {
+    const source = provenance.constructs[ref.field]?.[ref.id];
+    if (!source) {
+      unassigned.push(ref);
+      continue;
+    }
+    const group = byFile.get(source.file);
+    if (group) {
+      group.push(ref);
+    } else {
+      byFile.set(source.file, [ref]);
+    }
+  }
+  return { byFile, unassigned };
+}
+
+/**
+ * Like loadPackageWithIssues(), but also reports the per-file provenance
+ * of every top-level construct (PackageProvenance). The merged Standard,
+ * the issues, and the composition info are byte-identical to a plain
+ * loadPackage() of the same directory: provenance is an observation of
+ * the merge, never a change to it.
+ */
+export function loadPackageWithProvenance(
+  dir: string,
+  options: LoadPackageOptions = {},
+): PackageLoadResult {
+  const result = loadPackageInternal(dir, options, true);
+  if (!result.provenance) {
+    // Unreachable: the internal load always builds provenance when asked.
+    throw new Error('loadPackageWithProvenance: provenance not collected');
+  }
+  return { ...result, provenance: result.provenance };
+}
+
+/** One content file's preprocessed text plus its range in the joined
+ *  stream the parser sees (start offset and 1-based start line). The
+ *  join separator is '\n\n', so a chunk always starts at column 1. */
+interface FileChunk {
+  path: string;
+  text: string;
+  start: number;
+  lineStart: number;
+}
+
+function countNewlines(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charAt(i) === '\n') {
+      n++;
+    }
+  }
+  return n;
+}
+
+/** The content files of a package directory as join-ready chunks. */
+function chunkify(files: PackageFile[]): FileChunk[] {
+  const chunks: FileChunk[] = [];
+  let offset = 0;
+  let line = 1;
+  for (const f of files) {
+    if (f.role !== 'content') {
+      continue;
+    }
+    const text = preprocessIncludes(f.path);
+    chunks.push({ path: f.path, text, start: offset, lineStart: line });
+    offset += text.length + 2;
+    line += countNewlines(text) + 2;
+  }
+  return chunks;
+}
+
+function joinChunks(chunks: FileChunk[]): string {
+  return chunks.map(c => c.text).join('\n\n');
+}
+
+/** Map the parser's joined-stream construct spans to per-file sources.
+ *  Constructs arrive in source order and chunks are in join order, so a
+ *  two-pointer walk attributes each construct in O(1) amortized. */
+function mapConstructs(
+  parsed: ParsedConstruct[],
+  chunks: FileChunk[],
+  packageId: string | undefined,
+): Record<string, Record<string, ConstructSource>> {
+  const out: Record<string, Record<string, ConstructSource>> = {};
+  let ci = 0;
+  for (const c of parsed) {
+    while (ci + 1 < chunks.length && c.start.offset >= chunks[ci + 1].start) {
+      ci++;
+    }
+    const chunk = chunks[ci];
+    const local = (p: Position): ProvenancePosition => ({
+      line: p.line - chunk.lineStart + 1,
+      col: p.col,
+      offset: p.offset - chunk.start,
+    });
+    const source: ConstructSource = {
+      file: chunk.path,
+      ...(packageId !== undefined ? { package: packageId } : {}),
+      span: { start: local(c.start), end: local(c.end) },
+    };
+    (out[c.field] ??= {})[c.id] = source;
+  }
+  return out;
+}
+
 /** Read + parse the manifest of the package at `dir`. Throws when absent
  *  or id-less. */
 export function readPackageManifest(path: string): PackageManifest {
@@ -128,24 +320,23 @@ export function readPackageManifest(path: string): PackageManifest {
   return manifest;
 }
 
+type InternalLoadResult = LoadResult & { provenance?: PackageProvenance };
+
 function loadPackageInternal(
   dir: string,
   options: LoadPackageOptions = {},
-): LoadResult {
+  withProvenance = false,
+): InternalLoadResult {
   const files = packageFiles(dir);
   if (files.length === 0) {
     throw new Error(`loadPackage: no package files found in ${resolve(dir)}`);
   }
 
   let manifest: PackageManifest | null = null;
-  const chunks: string[] = [];
-  for (const f of files) {
-    if (f.role === 'manifest') {
-      manifest = readPackageManifest(dir);
-    } else {
-      chunks.push(preprocessIncludes(f.path));
-    }
+  if (files.some(f => f.role === 'manifest')) {
+    manifest = readPackageManifest(dir);
   }
+  const chunks = chunkify(files);
 
   // `uses` composition (TODO.roadmap/05): with a package locator and a
   // manifest declaring imports, load the whole dependency closure and
@@ -155,12 +346,15 @@ function loadPackageInternal(
     options.resolvePackage &&
     effectiveUses(manifest).length > 0
   ) {
-    return composePackage(dir, options, manifest);
+    return composePackage(dir, options, manifest, withProvenance);
   }
 
   // Parse all content files as ONE token stream: cross-file refs resolve,
   // duplicate IDs across files are caught by the dupChecker.
-  const ctx = parse(chunks.join('\n\n'), PARSER_CONFIG, options);
+  const parseOptions = withProvenance
+    ? { ...options, withProvenance: true }
+    : options;
+  const ctx = parse(joinChunks(chunks), PARSER_CONFIG, parseOptions);
   if (manifest) {
     ctx.packageManifest = manifest;
     const deprecated = extendsDeprecationIssue(manifest);
@@ -169,7 +363,15 @@ function loadPackageInternal(
     }
   }
   const standard = resolveFromConfig(ctx, RESOLVER_CONFIG);
-  return { standard, issues: ctx.issues };
+  const result: InternalLoadResult = { standard, issues: ctx.issues };
+  if (withProvenance) {
+    const manifestFile = files.find(f => f.role === 'manifest')?.path;
+    result.provenance = {
+      ...(manifestFile !== undefined ? { manifest: manifestFile } : {}),
+      constructs: mapConstructs(ctx.constructs ?? [], chunks, manifest?.id),
+    };
+  }
+  return result;
 }
 
 /** Like loadPackage(), but also returns parse-time issues (e.g. duplicate
@@ -327,22 +529,23 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   'texts',
 ];
 
-/** Parse one package's content files (manifest excluded) as a single stream. */
-function parsePackageContent(dir: string, options: LoadOptions): ParseContext {
-  const chunks: string[] = [];
-  for (const f of packageFiles(dir)) {
-    if (f.role === 'content') {
-      chunks.push(preprocessIncludes(f.path));
-    }
-  }
-  return parse(chunks.join('\n\n'), PARSER_CONFIG, options);
+/** Parse one package's content files (manifest excluded) as a single
+ *  stream, keeping each file's joined-stream range for provenance. */
+function parsePackageContent(
+  dir: string,
+  options: LoadOptions,
+): { ctx: ParseContext; chunks: FileChunk[] } {
+  const chunks = chunkify(packageFiles(dir));
+  const ctx = parse(joinChunks(chunks), PARSER_CONFIG, options);
+  return { ctx, chunks };
 }
 
 function composePackage(
   rootDir: string,
   options: LoadPackageOptions,
   rootManifest: PackageManifest,
-): LoadResult {
+  withProvenance = false,
+): InternalLoadResult {
   const locate = options.resolvePackage!;
   const rootId = rootManifest.id;
   const dirs = new Map<string, string>([[rootId, resolve(rootDir)]]);
@@ -409,9 +612,15 @@ function composePackage(
   // Parse each package's content as one stream (intra-package duplicates
   // are caught by the dupChecker), then merge in topological order with
   // provenance-tracked no-redefine semantics.
+  const parseOptions = withProvenance
+    ? { ...options, withProvenance: true }
+    : options;
   const ctxs = new Map<string, ParseContext>();
+  const pkgChunks = new Map<string, FileChunk[]>();
   for (const id of order) {
-    ctxs.set(id, parsePackageContent(dirs.get(id)!, options));
+    const parsed = parsePackageContent(dirs.get(id)!, parseOptions);
+    ctxs.set(id, parsed.ctx);
+    pkgChunks.set(id, parsed.chunks);
   }
   const provenance = new Map<string, Map<string, string>>();
   for (const field of MERGE_FIELDS) {
@@ -519,9 +728,34 @@ function composePackage(
 
   acc.packageManifest = rootManifest;
   const standard = resolveFromConfig(acc, RESOLVER_CONFIG);
-  return {
+  const result: InternalLoadResult = {
     standard,
     issues: [...acc.issues, ...compositionIssues],
     composition: { root: rootId, order },
   };
+  if (withProvenance) {
+    // Fold in merge order with last-write-wins, mirroring the merge
+    // exactly: illegal redefines threw above (uses-no-redefine), so the
+    // only overwrites possible here are the legal overlay=true terms,
+    // whose provenance must name the OVERLAYING package's file.
+    const constructs: Record<string, Record<string, ConstructSource>> = {};
+    for (const id of order) {
+      const perPackage = mapConstructs(
+        ctxs.get(id)!.constructs ?? [],
+        pkgChunks.get(id)!,
+        id,
+      );
+      for (const [field, byId] of Object.entries(perPackage)) {
+        const target = (constructs[field] ??= {});
+        for (const [constructId, source] of Object.entries(byId)) {
+          target[constructId] = source;
+        }
+      }
+    }
+    result.provenance = {
+      manifest: join(resolve(rootDir), 'package.primmel'),
+      constructs,
+    };
+  }
+  return result;
 }
