@@ -82,14 +82,22 @@ export function dump(standard: Standard): string {
 export {
   loadPackage,
   loadPackageWithIssues,
+  loadPackageWithProvenance,
+  groupBySourceFile,
   packageFiles,
   effectiveUses,
   readPackageManifest,
   CompositionError,
   type CompositionInfo,
   type CompositionRule,
+  type ConstructRef,
+  type ConstructSource,
   type LoadPackageOptions,
+  type PackageLoadResult,
+  type PackageProvenance,
+  type ProvenancePosition,
   type ResolvePackage,
+  type SourceFileGroups,
 } from './package';
 export { dumpPackage } from './config/packageManifest';
 export {

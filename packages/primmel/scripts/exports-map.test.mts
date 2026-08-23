@@ -16,7 +16,7 @@ const SUBPATHS: [string, string[]][] = [
   ['@primmel/primmel/operational-state', []],
   ['@primmel/primmel/text-coverage', ['packageTextCoverageReport']],
   ['@primmel/primmel/ser-des', ['load', 'dump', 'dumpPackage']],
-  ['@primmel/primmel/ser-des/package', ['loadPackage', 'loadPackageWithIssues', 'packageFiles']],
+  ['@primmel/primmel/ser-des/package', ['loadPackage', 'loadPackageWithIssues', 'loadPackageWithProvenance', 'groupBySourceFile', 'packageFiles']],
   ['@primmel/primmel/ser-des/config/twin', []],
 ];
 

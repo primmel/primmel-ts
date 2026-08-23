@@ -52,6 +52,27 @@ import type TestPointSet from '../types/TestPointSet';
 import type Verdict from '../types/Verdict';
 import type ViewProfile from '../types/ViewProfile';
 import type { ParseIssue } from '../validate';
+import type { Position } from './tokenize';
+
+/* One top-level construct declaration as seen by parse(), recorded only
+   under ParseOptions.withProvenance: the collection it writes, its id
+   ('' for the id-less singletons: metadata, root, package, version), the
+   keyword that introduced it, and the joined-stream span covering the
+   keyword token through the payload token. The package loader maps these
+   to per-file provenance (ser-des/package.ts). */
+export interface ParsedConstruct {
+  /** The ParseContext collection the declaration writes (`cfg.field`),
+      or the keyword itself for the id-less singletons. */
+  field: string;
+  /** The declared id, or '' when the keyword takes no id. */
+  id: string;
+  /** The keyword token that introduced the declaration. */
+  keyword: string;
+  /** Position of the keyword token in the parsed source. */
+  start: Position;
+  /** Position immediately after the payload token. */
+  end: Position;
+}
 
 // Configuration
 
@@ -219,4 +240,10 @@ export interface ParseContext {
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().
   issues: ParseIssue[];
+
+  /* Opt-in top-level construct spans (ParseOptions.withProvenance), in
+     source order. Undefined unless the flag was set; the package loader's
+     per-file provenance builds on it (ser-des/package.ts). Not a model
+     collection: resolve() never reads it. */
+  constructs?: ParsedConstruct[];
 }

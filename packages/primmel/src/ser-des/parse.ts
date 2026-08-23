@@ -1,5 +1,6 @@
 import { tokenizeWithPositions, type Token } from './tokenize';
 import { ParseContext, ParserConfiguration } from './types';
+import type { ParsedConstruct } from './types';
 import { createDuplicateIdChecker } from '../duplicate-id';
 
 export interface ParseOptions {
@@ -9,6 +10,14 @@ export interface ParseOptions {
    * forward compatibility with newer MMEL/Primmel revisions.
    */
   strict?: boolean;
+  /**
+   * When true, parse() records every recognized top-level construct
+   * declaration (keyword through payload span, in source order) on
+   * `ctx.constructs`. Default off: no collection, no overhead. The
+   * package loader uses this to attribute each construct to its source
+   * file (loadPackageWithProvenance in ser-des/package.ts).
+   */
+  withProvenance?: boolean;
 }
 
 /**
@@ -31,6 +40,10 @@ export default function parse(
 ): ParseContext {
   const tokens: Token[] = tokenizeWithPositions(mmelString);
   const dupChecker = createDuplicateIdChecker();
+  // Opt-in construct provenance (withProvenance): collected aside and
+  // attached at the end so parser functions that swap the ctx object
+  // (immutable-update style) cannot drop it.
+  const constructs: ParsedConstruct[] = [];
 
   // ctx is mutated by parser functions; declared with let because
   // some parsers return a new ctx object via immutable update.
@@ -154,6 +167,16 @@ export default function parse(
         }
       }
 
+      if (options.withProvenance) {
+        constructs.push({
+          field: cfg.field ?? keyword,
+          id: idTok.value,
+          keyword,
+          start: tok.start,
+          end: payloadTok.end,
+        });
+      }
+
       updateCtx = cfg.parse(idTok.value, payloadTok.value);
     } else {
       if (i >= tokens.length) {
@@ -162,6 +185,15 @@ export default function parse(
         );
       }
       const payloadTok = tokens[i++];
+      if (options.withProvenance) {
+        constructs.push({
+          field: cfg.field ?? keyword,
+          id: '',
+          keyword,
+          start: tok.start,
+          end: payloadTok.end,
+        });
+      }
       updateCtx = cfg.parse(payloadTok.value);
     }
 
@@ -172,6 +204,10 @@ export default function parse(
       next.issues = ctx.issues;
     }
     ctx = next;
+  }
+
+  if (options.withProvenance) {
+    ctx.constructs = constructs;
   }
 
   return ctx;
