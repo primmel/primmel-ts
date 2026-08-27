@@ -40,6 +40,8 @@ import type TextContent from '../types/Text';
 import type ActivityArchetype from '../types/ActivityArchetype';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
+import type Dataspace from '../types/Dataspace';
+import type Policy from '../types/Policy';
 import type { Requirement, RequirementClass } from '../types/Requirement';
 import type { ConformanceClass } from '../types/ConformanceClass';
 import type { PackageManifest } from '../types/Package';
@@ -236,6 +238,12 @@ export interface ParseContext {
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25): per-spelling
   // alternate values of prose fields, addressed `<element-id>.<field>`.
   texts: Record<string, TextContent>;
+
+  // Primmel v3.1 dataspace + trust (TODO.primmel/10; MN 114 clause 19):
+  // the dataspace definitions and the usage-policy sets (Primmel's own
+  // policy grammar — ODRL is a codec output, never an import).
+  dataspaces: Record<string, Dataspace>;
+  policies: Record<string, Policy>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().

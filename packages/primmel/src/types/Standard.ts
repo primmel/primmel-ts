@@ -38,6 +38,8 @@ import type { FormulasUsed } from './FormulasUsed';
 import type ActivityArchetype from './ActivityArchetype';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
+import type Dataspace from './Dataspace';
+import type Policy from './Policy';
 import type ReferenceMaterial from './ReferenceMaterial';
 import type { Requirement, RequirementClass } from './Requirement';
 import type { ConformanceClass } from './ConformanceClass';
@@ -192,6 +194,13 @@ export default interface Standard {
   // `<element-id>.<field>`; the default spelling's value stays inline on
   // the element (the package manifest's `default_spelling`).
   texts: TextContent[];
+
+  // Primmel v3.1 dataspace + trust (TODO.primmel/10; MN 114 clause 19):
+  // the dataspace definitions (participant classes, artifact classes,
+  // policy register, trust anchors, governance citations) and the
+  // usage-policy sets in Primmel's own policy grammar.
+  dataspaces: Dataspace[];
+  policies: Policy[];
 
   root: Subprocess | null;
 }
