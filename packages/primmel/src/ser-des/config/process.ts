@@ -138,6 +138,10 @@ import {
   dumpSourceRefAsRef,
 } from './ref';
 import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
+import {
   dumpBareSafe,
   readSource,
   readValueToken,
@@ -834,6 +838,11 @@ export const parseProcess: Parser = function (id, data) {
         if (!foldRefIntoLegacy(result, r)) {
           (result.refs ??= []).push(r);
         }
+      } else if (keyword === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4).
+        (result.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
       } else {
         return false;
       }
@@ -1166,6 +1175,12 @@ export const dumpProcess: (
     out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
   out += dumpRefs(process.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    process.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   // A `parent` link is emitted explicitly whenever nesting does not
   // already express it: leaf processes keep the historical flat form,
   // and a non-leaf process dumped at TOP LEVEL (a flat `parent X`

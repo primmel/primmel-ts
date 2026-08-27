@@ -71,6 +71,7 @@ import {
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import type { ConstructDefinition } from './index';
 import type { TestSequence, TestSequenceStep } from '../../types/TestSequence';
 
@@ -136,6 +137,11 @@ const parseTestSequence: ConstructDefinition['parse'] = function (id, data) {
         sequence.refs = [...(sequence.refs ?? []), rr.ref];
       }
       i = rr.next;
+    } else if (command === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      sequence.correspondences = [...(sequence.correspondences ?? []), cc.corr];
+      i = cc.next;
     } else if (command === 'source') {
       // Repeated source blocks collect into sourceRefs (the requirement
       // family's idiom).
@@ -216,6 +222,12 @@ const dumpTestSequence = function (seq: TestSequence): string {
   for (const src of seq.sourceRefs) {
     out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
+  out += dumpCorrespondences(
+    seq.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

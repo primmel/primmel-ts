@@ -145,6 +145,8 @@ export interface Instrument {
   extends: string;
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   sourceRefs?: import('./Subject').SourceRef[];
   /** Measurand kind the instrument measures (e.g. force). */
   measurandKind?: string;
@@ -218,6 +220,9 @@ export interface AttributeDefinition {
   /** The unified typed references (docs/primmel/18) — semantic
    *  predicates stay here; citation kinds fold onto source/referenceIds. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4) — the
+   *  generalization of this element's `irdi` facet to every scheme. */
+  correspondences?: import('./Correspondence').Correspondence[];
 }
 
 /** capability <id> — mixin: what the instrument CAN do (OCP mechanism). */
@@ -235,6 +240,8 @@ export interface Capability {
   /** The unified typed references (docs/primmel/18) — citation kinds
    *  fold onto referenceIds; the rest stay here. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
 }
 
 /** behavior <id> — a response characteristic requirements bind to. */
@@ -252,6 +259,8 @@ export interface Behavior {
   /** The unified typed references (docs/primmel/18) — semantic
    *  predicates stay here; citation kinds fold onto source/referenceIds. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
 }
 
 /** condition_set <id> — one operating-condition tier (reference/rated/limiting). */
@@ -281,6 +290,8 @@ export interface ConditionSet {
    *  semantic predicates stay here; citation kinds fold onto
    *  sources/referenceIds. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
 }
 
 // ─────────────────────────────────────────────────────────────────────

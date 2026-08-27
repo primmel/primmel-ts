@@ -35,7 +35,7 @@ import type {
 import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { forEachEntry, unwrapped, skipUnknownValue } from '../parse-block';
-import { readSource, stripColon } from './field-parser';
+import { readSource, stripColon, dumpBareSafe } from './field-parser';
 import {
   parseRef,
   refTargetToSourceRef,
@@ -44,6 +44,10 @@ import {
   dumpRefs,
   dumpSourceRefAsRef,
 } from './ref';
+import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
 import type { Dumper, Parser } from '../types';
 
 function parseIdentityFields(block: string): MaterialIdentityField[] {
@@ -217,6 +221,11 @@ export const parseReferenceMaterial: Parser = function (id, data) {
         if (!foldRefIntoLegacy(result, r)) {
           (result.refs ??= []).push(r);
         }
+      } else if (keyword === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4).
+        (result.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
       } else if (keyword === 'identity_fields') {
         result.identityFields = parseIdentityFields(unwrapBlock(value()));
       } else if (keyword === 'constraints') {
@@ -257,6 +266,12 @@ export const dumpReferenceMaterial: Dumper<ReferenceMaterial> = function (m) {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(m.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    m.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   if (m.identityFields.length > 0) {
     out += '  identity_fields {\n';
     for (const f of m.identityFields) {

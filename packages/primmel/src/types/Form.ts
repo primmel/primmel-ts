@@ -98,6 +98,9 @@ export interface FormField {
   /** The unified typed references/relations (spec: docs/primmel/18) —
    *  `ref <predicate> "<target>"` lines on the field. */
   refs: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4) — the
+   *  field-level mappings the DPP-attribute / VC-claim codecs consume. */
+  correspondences?: import('./Correspondence').Correspondence[];
   /** Structured provenance (the derives-from fold target, spec
    *  docs/primmel/18 §18.4) — a field may cite several clauses. */
   sourceRefs?: SourceRef[];
@@ -196,6 +199,8 @@ interface Form {
   /** The unified typed references/relations (spec: docs/primmel/18) —
    *  `ref <predicate> "<target>"` lines on the form. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   /** Calculation context for evaluated fields. */
   calculationContext: FormCalculationContext | null;
   /** Named form instances. */

@@ -276,7 +276,12 @@ const dumpDataspace = function (d: Dataspace): string {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(d.refs, '  ', escapeString);
-  out += dumpCorrespondences(d.correspondences, '  ', escapeString, dumpBareSafe);
+  out += dumpCorrespondences(
+    d.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

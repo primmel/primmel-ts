@@ -137,6 +137,8 @@ export default interface ConformanceTest {
   /** The unified typed references/relations (spec: docs/primmel/18) —
    *  `ref <predicate> "<target>"` lines on the test. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   targets: string[];
   /** Inspection/verification targets in the subject's HAS inventory
    * (TODO.roadmap/47) — the same canonical path vocabulary as

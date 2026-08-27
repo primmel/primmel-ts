@@ -194,7 +194,12 @@ const dumpPolicy = function (p: Policy): string {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(p.refs, '  ', escapeString);
-  out += dumpCorrespondences(p.correspondences, '  ', escapeString, dumpBareSafe);
+  out += dumpCorrespondences(
+    p.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

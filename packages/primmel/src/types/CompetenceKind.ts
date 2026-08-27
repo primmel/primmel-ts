@@ -23,6 +23,8 @@ export default interface CompetenceKind {
   sourceRefs?: SourceRef[];
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   /** Method-standard ids recognized for this kind (the resolution registry
    *  for `method_standard` references on required_competence /
    *  accreditation_scope entries — e.g. iec-61000-4-4). */

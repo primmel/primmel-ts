@@ -102,6 +102,8 @@ export interface Requirement {
   /** The unified typed references/relations (spec: docs/primmel/18) —
    *  `ref <predicate> "<target>"` lines on the requirement. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   referenceIds: string[];
 }
 

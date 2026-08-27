@@ -120,6 +120,7 @@ import {
   dumpRefs,
   dumpSourceRefAsRef,
 } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import { parseApplicability, dumpApplicabilityEntries } from './field-parser';
 import {
   dumpEndpoint,
@@ -342,6 +343,11 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
         (result.refs ??= []).push(rr.ref);
       }
       i = rr.next;
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -902,6 +908,12 @@ const dumpInstrument = function (inst: Instrument): string {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(inst.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    inst.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += dumpIdList('reference', inst.referenceIds, '  ');
   out += '}\n';
   return out;
@@ -984,6 +996,12 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
         (result.refs ??= []).push(rr.ref);
       }
       i = rr.next;
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4) —
+      // the generalization of `irdi` to every scheme register.
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -1017,6 +1035,12 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(a.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    a.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   if (a.quantityKind) {
     out += '  quantity_kind ' + a.quantityKind + '\n';
   }
@@ -1099,6 +1123,11 @@ const parseCapability: ConstructDefinition['parse'] = function (id, data) {
         (result.refs ??= []).push(rr.ref);
       }
       i = rr.next;
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -1128,6 +1157,12 @@ const dumpCapability = function (c: Capability): string {
   out += dumpIdList('verified_by_tests', c.verifiedByTests, '  ');
   out += dumpIdList('reference', c.referenceIds, '  ');
   out += dumpRefs(c.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    c.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };
@@ -1174,6 +1209,11 @@ const parseBehavior: ConstructDefinition['parse'] = function (id, data) {
         (result.refs ??= []).push(rr.ref);
       }
       i = rr.next;
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -1207,6 +1247,12 @@ const dumpBehavior = function (b: Behavior): string {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(b.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    b.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += dumpIdList('verified_by', b.verifiedBy, '  ');
   out += '}\n';
   return out;
@@ -1267,6 +1313,11 @@ const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
       } else {
         (result.refs ??= []).push(rr.ref);
       }
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
     } else {
@@ -1365,6 +1416,12 @@ const dumpConditionSet = function (cs: ConditionSet): string {
   }
   out += dumpIdList('reference', cs.referenceIds, '  ');
   out += dumpRefs(cs.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    cs.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

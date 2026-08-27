@@ -4,12 +4,12 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C103) issues report under;
+//   id       — the per-rule id (C1…C108) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
 //              characteristics | twins | coverage | edition |
-//              supply-chain;
+//              supply-chain | dataspace;
 //   severity — the rule's DEFAULT severity at the normal level
 //              ('warning' rules escalate to errors under --strict;
 //              individual legs of a rule may escalate — see check.ts);
@@ -33,7 +33,8 @@ export type CheckFamily =
   | 'twins'
   | 'coverage'
   | 'edition'
-  | 'supply-chain';
+  | 'supply-chain'
+  | 'dataspace';
 
 export type CheckLevel = 'normal' | 'audit';
 
@@ -1040,6 +1041,63 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'docs/primmel/18 §18.6 (the unified reference/relation construct)',
+  ),
+  // ── the dataspace family (TODO.primmel/10; MN 114 v3.1 clause 19) ──
+  // The v3.1 extension set: the dataspace definition, the policy
+  // construct (Primmel's own policy grammar; ODRL is a codec output),
+  // the trust_ref form (opaque addressing — the checker verifies shape,
+  // NEVER resolution: the trust plane's membership is runtime fact), and
+  // the generalized corresponds annotations. C104: the dataspace's
+  // references resolve (policy register, default policy, per-class
+  // overrides, content elements, the compatibility register). C105:
+  // every trust anchor carries its trust_ref with an organization
+  // identifier. C106: a dataspace with no governance citation warns (an
+  // orphan definition). C107: the policy shape — at least one rule,
+  // every rule with its action, rule artifacts inside the governs
+  // register, governed classes resolving, at most one default-posture
+  // policy per class. C108: one corresponds entry per scheme per
+  // element (an error — the bridges read unambiguous mappings), and the
+  // irdi legacy spelling agreeing with `corresponds iec-cdd` (a warning
+  // leg).
+  R(
+    'C104',
+    'dataspace-references-resolve',
+    'dataspace',
+    'error',
+    'normal',
+    'TODO.primmel/10, MN 114 clause 19.1',
+  ),
+  R(
+    'C105',
+    'dataspace-trust-anchor-shape',
+    'dataspace',
+    'error',
+    'normal',
+    'TODO.primmel/10, MN 114 clauses 19.1/19.3',
+  ),
+  R(
+    'C106',
+    'dataspace-governance-provenance',
+    'dataspace',
+    'warning',
+    'normal',
+    'TODO.primmel/10, MN 114 clause 19.1',
+  ),
+  R(
+    'C107',
+    'policy-shape',
+    'dataspace',
+    'error',
+    'normal',
+    'TODO.primmel/10, MN 114 clause 19.2',
+  ),
+  R(
+    'C108',
+    'correspondence-shape',
+    'dataspace',
+    'error',
+    'normal',
+    'TODO.primmel/10, MN 114 clause 19.4',
   ),
 ];
 

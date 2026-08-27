@@ -55,6 +55,10 @@ import {
   foldRefIntoLegacy,
   dumpSourceRefAsRef,
 } from './ref';
+import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
 import type { ConstructDefinition } from './index';
 import type { FormulasUsed } from '../../types/FormulasUsed';
 
@@ -85,6 +89,11 @@ const parseFormulasUsed: ConstructDefinition['parse'] = function (id, data) {
         if (!foldRefIntoLegacy(trace, r)) {
           (trace.refs ??= []).push(r);
         }
+      } else if (command === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4).
+        (trace.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
       } else if (command === 'source') {
         // Repeated source blocks collect into sourceRefs (the
         // requirement family's idiom).
@@ -132,6 +141,12 @@ const dumpFormulasUsed = function (fu: FormulasUsed): string {
     // so a bare emission would not re-parse.
     out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
+  out += dumpCorrespondences(
+    fu.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

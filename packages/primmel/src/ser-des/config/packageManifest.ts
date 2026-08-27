@@ -45,8 +45,10 @@
 
 import tokenize from '../tokenize';
 import { skipUnknownValue } from '../parse-block';
-import { unwrapBlock, stripWrapping } from '../tokenize';
+import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { parseRef, foldRefIntoLegacy } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
+import { dumpBareSafe } from './field-parser';
 import type {
   PackageKind,
   PackageManifest,
@@ -167,6 +169,11 @@ export const parsePackage: Parser = function (data) {
         (manifest.refs ??= []).push(r.ref);
       }
       i = r.next;
+    } else if (cmd === 'corresponds') {
+      // The package-level correspondence annotations (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (manifest.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else if (cmd === 'scheme_type' || cmd === 'schemeType') {
       // Certification program self-classification against the ISO/IEC
       // 17067 scheme-type register (TODO.v2/01) — a free token (the
@@ -285,6 +292,13 @@ export function dumpPackage(m: PackageManifest): string {
         : '') +
       '\n';
   }
+  // The package-level correspondence annotations (MN 114 clause 19.4).
+  out += dumpCorrespondences(
+    m.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   if (m.schemeType) {
     out += '  scheme_type ' + m.schemeType + '\n';
   }
