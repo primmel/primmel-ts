@@ -39,6 +39,7 @@ import {
   stripColon,
 } from './field-parser';
 import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -330,6 +331,11 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
         (result.refs ??= []).push(r.ref);
       }
       i = r.next;
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -490,6 +496,12 @@ const dumpRequirement = function (r: Requirement): string {
       (ref.note ? ' { note "' + escapeString(ref.note) + '" }' : '') +
       '\n';
   }
+  out += dumpCorrespondences(
+    r.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

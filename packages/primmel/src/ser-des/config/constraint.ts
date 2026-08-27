@@ -24,8 +24,10 @@ import {
   tokenizePackage,
   unescapeString,
 } from '../tokenize';
-import { readSource } from './field-parser';
+import { readSource, dumpBareSafe } from './field-parser';
 import { parseRef, foldRefIntoLegacy } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
+import { skipUnknownValue } from '../parse-block';
 import type { Dumper, Parser } from '../types';
 
 /** Unwrap one value token: quoted strings unescape, blocks unwrap. */
@@ -79,8 +81,13 @@ export const parseConstraint: Parser = function (id, data) {
         (result.refs ??= []).push(rr.ref);
       }
       i = rr.next;
+    } else if (keyword === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
-      i++; // forward-compat: skip unknown keyword value
+      i = skipUnknownValue(t, i, keyword); // forward-compat skip
     }
   }
 
@@ -117,6 +124,12 @@ export const dumpConstraint: Dumper<Constraint> = function (c) {
         : '') +
       ' }\n';
   }
+  out += dumpCorrespondences(
+    c.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

@@ -13,6 +13,8 @@ import {
   readSource,
 } from './field-parser';
 import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
+import { skipUnknownValue } from '../parse-block';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -310,8 +312,13 @@ export const parseTable: Parser = function (id, data) {
             (result.refs ??= []).push(rr.ref);
           }
           i = rr.next;
+        } else if (command === 'corresponds') {
+          // The per-node correspondence annotation (MN 114 clause 19.4).
+          const cc = parseCorresponds(t, i, stripWrapping);
+          (result.correspondences ??= []).push(cc.corr);
+          i = cc.next;
         } else {
-          i++; // forward-compatible: skip unknown keyword value
+          i = skipUnknownValue(t, i, command); // forward-compatible skip
         }
       } else {
         throw new Error(
@@ -415,6 +422,12 @@ export const dumpTable: Dumper<Table> = function (t) {
   if (t.sourceDiscrepancy) {
     out += dumpSourceDiscrepancy(t.sourceDiscrepancy, '  ') + '\n';
   }
+  out += dumpCorrespondences(
+    t.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   if (t.overrides && Object.keys(t.overrides).length > 0) {
     out += '  overrides { ';
     for (const [key, o] of Object.entries(t.overrides)) {

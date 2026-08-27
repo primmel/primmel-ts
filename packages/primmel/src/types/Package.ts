@@ -106,6 +106,10 @@ export interface PackageManifest {
    *  docs/primmel/18) — `ref <predicate> "<target>"` lines at package
    *  level (edition lineage, cross-model implements/equivalent). */
   refs?: import('./Ref').Ref[];
+  /** The package-level correspondence annotations (MN 114 v3.1, clause
+   *  19.4): the model-to-external-register alignments every bridge
+   *  consumes. */
+  correspondences?: import('./Correspondence').Correspondence[];
   /**
    * Certification program packages only (TODO.v2/01,
    * twin-certification-design Q4): the program's self-classification

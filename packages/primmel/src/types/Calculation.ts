@@ -63,6 +63,8 @@ interface Calculation {
   sourceRefs?: { doc: string; clause: string; fragment?: string }[];
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   ref: Reference[];
 }
 

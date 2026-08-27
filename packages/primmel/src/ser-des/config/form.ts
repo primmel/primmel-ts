@@ -15,8 +15,10 @@ import {
   readSource,
   dumpFormField,
   dumpApplicabilityEntries,
+  dumpBareSafe,
 } from './field-parser';
 import { parseRef, foldRefIntoLegacy } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import type Form from '../../types/Form';
 import type {
   FormConstraint,
@@ -95,6 +97,11 @@ export const parseForm: Parser = function (id, data) {
             result.refs = [...(result.refs ?? []), r.ref];
           }
           i = r.next;
+        } else if (command === 'corresponds') {
+          // The per-node correspondence annotation (MN 114 clause 19.4).
+          const cc = parseCorresponds(t, i, stripWrapping);
+          result.correspondences = [...(result.correspondences ?? []), cc.corr];
+          i = cc.next;
         } else if (command === 'calculation_context') {
           result.calculationContext = parseCalculationContext(
             unwrapBlock(t[i++]),
@@ -421,6 +428,12 @@ export const dumpForm: Dumper<Form> = function (f) {
         '\n';
     }
   }
+  out += dumpCorrespondences(
+    f.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   if (f.calculationContext) {
     const cc = f.calculationContext;
     let line = '  calculation_context { ';

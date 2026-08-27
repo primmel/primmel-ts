@@ -39,6 +39,11 @@ import {
   dumpRefs,
   dumpSourceRefAsRef,
 } from './ref';
+import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
+import { dumpBareSafe } from './field-parser';
 import type { Dumper, Parser } from '../types';
 
 const VALID_SERIES_REDUCTIONS: SeriesReduction[] = [
@@ -120,6 +125,11 @@ export const parseVerdict: Parser = function (id, data) {
         if (!foldRefIntoLegacy(result, r)) {
           (result.refs ??= []).push(r);
         }
+      } else if (keyword === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4).
+        (result.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
       } else {
         return false;
       }
@@ -172,6 +182,12 @@ export const dumpVerdict: Dumper<Verdict> = function (v) {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(v.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    v.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

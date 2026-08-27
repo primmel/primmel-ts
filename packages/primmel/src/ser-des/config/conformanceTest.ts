@@ -18,9 +18,14 @@ import {
   dumpSourceRefAsRef,
 } from './ref';
 import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
+import {
   stripColon,
   parseApplicability,
   dumpApplicabilityEntries,
+  dumpBareSafe,
 } from './field-parser';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import {
@@ -506,6 +511,11 @@ export const parseConformanceTest: Parser = function (id, data) {
         if (!foldRefIntoLegacy(result, rr)) {
           (result.refs ??= []).push(rr);
         }
+      } else if (keyword === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4).
+        (result.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
       } else if (keyword === 'binds_to') {
         result.bindsTo = tokenizePackage(value());
       } else if (keyword === 'applicability') {
@@ -908,6 +918,12 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.sourceDiscrepancy) {
     out += dumpSourceDiscrepancy(ct.sourceDiscrepancy, '  ') + '\n';
   }
+  out += dumpCorrespondences(
+    ct.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

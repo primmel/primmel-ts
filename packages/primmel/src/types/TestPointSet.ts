@@ -33,6 +33,8 @@ export default interface TestPointSet {
   /** The unified typed references (docs/primmel/18) — semantic
    *  predicates stay here; citation kinds fold onto source/sourceRefs. */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   /** Profile name (linear, nonlinear, ...) → cardinality rule. */
   cardinality: Record<string, TestPointCardinality>;
   repetitionsPerPoint: number | null;

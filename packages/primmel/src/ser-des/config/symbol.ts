@@ -8,6 +8,11 @@ import {
 } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { foldRefIntoLegacy, parseRefFromReaders } from './ref';
+import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
+import { dumpBareSafe } from './field-parser';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { readSource } from './field-parser';
 import type Symbol from '../../types/Symbol';
@@ -60,6 +65,13 @@ export const parseSymbol: Parser = function (id, data) {
         if (!foldRefIntoLegacy(result, r)) {
           (result.refs ??= []).push(r);
         }
+        return true;
+      }
+      if (command === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4).
+        (result.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
         return true;
       }
 
@@ -230,6 +242,12 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
     }
     out += '  }\n';
   }
+  out += dumpCorrespondences(
+    s.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

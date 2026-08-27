@@ -20,7 +20,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { forEachEntry } from '../parse-block';
-import { stripWrapping, unwrapBlock } from '../tokenize';
+import { unwrapBlock } from '../tokenize';
 import type { Correspondence } from '../../types/Correspondence';
 
 /** Parse the value of a `corresponds` keyword: `<scheme> "<concept>"`

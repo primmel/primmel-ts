@@ -7,6 +7,11 @@ import {
 } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { parseRefFromReaders } from './ref';
+import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
+import { dumpBareSafe } from './field-parser';
 import type Term from '../../types/Term';
 
 export const parseTerm: Parser = function (id, data) {
@@ -34,6 +39,15 @@ export const parseTerm: Parser = function (id, data) {
         } else {
           (result.refs ??= []).push(r);
         }
+        return true;
+      }
+
+      if (command === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4) —
+        // the term-to-external-vocabulary mapping (alongside vocab_ref).
+        (result.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
         return true;
       }
 
@@ -176,6 +190,12 @@ export const dumpTerm: Dumper<Term> = function (term) {
     }
     out += '  }\n';
   }
+  out += dumpCorrespondences(
+    term.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };

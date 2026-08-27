@@ -44,6 +44,7 @@ import {
 } from '../tokenize';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -431,6 +432,11 @@ export function parseFormField(
         field.refs.push(r.ref);
       }
       i = r.next;
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (field.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else if (cmd === 'specification_reference') {
       field.specificationReference = stripWrapping(t[i++]);
     } else if (cmd === 'applicability') {
@@ -830,6 +836,17 @@ export function dumpFormField(field: FormField, indent: string): string {
           (r.note ? ' { note "' + escapeString(r.note) + '" }' : ''),
       );
     }
+  }
+  if (field.correspondences && field.correspondences.length > 0) {
+    // The correspondence annotations (MN 114 v3.1 clause 19.4).
+    inner.push(
+      dumpCorrespondences(
+        field.correspondences,
+        '',
+        escapeString,
+        dumpBareSafe,
+      ).trimEnd(),
+    );
   }
   if (field.specificationReference) {
     inner.push(

@@ -61,6 +61,7 @@ import {
   dumpRefs,
   dumpSourceRefAsRef,
 } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import { skipUnknownValue } from '../parse-block';
 import { dumpQuantityValue } from './quantity';
 import { readValueMap } from './instance';
@@ -248,6 +249,11 @@ const parseArtifactDefinition: ConstructDefinition['parse'] = function (
         (result.refs ??= []).push(rr.ref);
       }
       i = rr.next;
+    } else if (cmd === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -331,6 +337,12 @@ const dumpArtifactDefinition = function (d: ArtifactDefinition): string {
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
   out += dumpRefs(d.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    d.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += dumpIdList('reference', d.referenceIds, '  ');
   out += '}\n';
   return out;

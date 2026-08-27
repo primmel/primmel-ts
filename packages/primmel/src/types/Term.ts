@@ -25,6 +25,8 @@ interface Term {
   ref: Reference[];
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   /** Clause/section of the source document where the term is defined. */
   section?: string;
   /** Explanatory note accompanying the definition. */

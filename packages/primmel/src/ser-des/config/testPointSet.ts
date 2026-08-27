@@ -22,13 +22,17 @@ import type { TestPoint } from '../../types/TestPointSet';
 import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
-import { readSource, stripColon } from './field-parser';
+import { readSource, stripColon, dumpBareSafe } from './field-parser';
 import {
   parseRefFromReaders,
   foldRefIntoLegacy,
   dumpRefs,
   dumpSourceRefAsRef,
 } from './ref';
+import {
+  dumpCorrespondences,
+  parseCorrespondsFromReaders,
+} from './correspondence';
 import type { Dumper, Parser } from '../types';
 
 function parseCardinality(
@@ -138,6 +142,11 @@ export const parseTestPointSet: Parser = function (id, data) {
         if (!foldRefIntoLegacy(result, r)) {
           (result.refs ??= []).push(r);
         }
+      } else if (keyword === 'corresponds') {
+        // The per-node correspondence annotation (MN 114 clause 19.4).
+        (result.correspondences ??= []).push(
+          parseCorrespondsFromReaders(value, peek, stripWrapping),
+        );
       } else if (keyword === 'cardinality') {
         result.cardinality = parseCardinality(unwrapBlock(value()));
       } else if (keyword === 'repetitions_per_point') {
@@ -174,6 +183,12 @@ export const dumpTestPointSet: Dumper<TestPointSet> = function (s) {
     out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
   out += dumpRefs(s.refs, '  ', escapeString);
+  out += dumpCorrespondences(
+    s.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   const ckeys = Object.keys(s.cardinality);
   if (ckeys.length > 0) {
     out += '  cardinality {\n';

@@ -7,6 +7,8 @@ import {
 } from '../tokenize';
 import tokenize from '../tokenize';
 import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
+import { dumpBareSafe } from './field-parser';
 import type Calculation from '../../types/Calculation';
 import type {
   CalculationInput,
@@ -66,6 +68,11 @@ export const parseCalculation: Parser = function (id, data) {
             (result.refs ??= []).push(rr.ref);
           }
           i = rr.next;
+        } else if (command === 'corresponds') {
+          // The per-node correspondence annotation (MN 114 clause 19.4).
+          const cc = parseCorresponds(t, i, stripWrapping);
+          (result.correspondences ??= []).push(cc.corr);
+          i = cc.next;
         } else if (command === 'source') {
           // Structured provenance: source { doc "urn:..." clause "2.1.2.4" }
           // Repeated source blocks collect into sourceRefs (TODO.roadmap/24).
@@ -381,6 +388,12 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
       (r.note ? ' { note "' + escapeString(r.note) + '" }' : '') +
       '\n';
   }
+  out += dumpCorrespondences(
+    c.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   if (c.ref.length > 0) {
     out += '  reference {\n';
     for (const r of c.ref) {

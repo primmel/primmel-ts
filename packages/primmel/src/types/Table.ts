@@ -19,6 +19,8 @@ export interface TableProfileDef {
   type: string;
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   sourceDiscrepancy: SourceDiscrepancy | null;
   /**
    * Dimension value → binding payload: bare scalar (number when numeric),
@@ -56,6 +58,8 @@ interface Table {
   sourceRefs?: SourceRef[];
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
+  /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
   sourceDiscrepancy?: SourceDiscrepancy | null;
 }
 

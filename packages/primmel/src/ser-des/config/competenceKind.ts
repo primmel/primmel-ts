@@ -40,8 +40,10 @@ import {
   tokenizePackage,
   unescapeString,
 } from '../tokenize';
-import { readSource } from './field-parser';
+import { readSource, dumpBareSafe } from './field-parser';
 import { parseRef, foldRefIntoLegacy } from './ref';
+import { dumpCorrespondences, parseCorresponds } from './correspondence';
+import { skipUnknownValue } from '../parse-block';
 import type { Dumper, Parser } from '../types';
 
 /** A bound token: unquoted numbers parse as numbers, quoted tokens stay
@@ -250,8 +252,13 @@ export const parseCompetenceKind: Parser = function (id, data) {
         (result.refs ??= []).push(rr.ref);
       }
       i = rr.next;
+    } else if (keyword === 'corresponds') {
+      // The per-node correspondence annotation (MN 114 clause 19.4).
+      const cc = parseCorresponds(t, i, stripWrapping);
+      (result.correspondences ??= []).push(cc.corr);
+      i = cc.next;
     } else {
-      i++; // forward-compat: skip unknown keyword value
+      i = skipUnknownValue(t, i, keyword); // forward-compat skip
     }
   }
 
@@ -284,6 +291,12 @@ export const dumpCompetenceKind: Dumper<CompetenceKind> = function (k) {
   for (const ms of k.methodStandards) {
     out += '  method_standard ' + ms.id + ' "' + escapeString(ms.title) + '"\n';
   }
+  out += dumpCorrespondences(
+    k.correspondences,
+    '  ',
+    escapeString,
+    dumpBareSafe,
+  );
   out += '}\n';
   return out;
 };
