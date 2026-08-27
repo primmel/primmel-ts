@@ -1,0 +1,38 @@
+# DAT-01 positive: the dataspace construct, every facet shape.
+dataspace bfs-exchange {
+  name "Bean freshness exchange"
+  description "The scheme-operated dataspace for freshness-evaluation evidence."
+
+  participant_class certification-body {
+    label "Certification body"
+    description "A body operating a freshness certification program."
+  }
+  participant_class test-laboratory {
+    label "Test laboratory"
+  }
+
+  artifact_class evaluation-report {
+    label "Evaluation report"
+    description "The laboratory's evaluation report on a lot."
+    element /art/evaluation-report
+    policy restricted-exchange
+  }
+  artifact_class registry-extract
+
+  policies { public-access restricted-exchange }
+  default_policy restricted-exchange
+
+  trust_anchor scheme-registry {
+    trust_ref bfs-scheme-op key bfs-2026-root
+    role registry
+    description "The scheme operator's participant registry and root key."
+  }
+
+  compatible_with { allied-scheme-exchange }
+
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}
+
+dataspace allied-scheme-exchange {
+  ref derives-from "urn:example:allied:2025#clause-3"
+}

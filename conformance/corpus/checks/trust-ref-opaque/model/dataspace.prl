@@ -1,0 +1,12 @@
+# The resolution contract (MN 114 clause 19.3), pinned: the trust_ref
+# names an organization NO package declares, and the package checks
+# clean — a conforming checker never resolves the trust plane. The
+# reference is opaque addressing; resolution is the consumer's, at
+# runtime.
+dataspace bfs-exchange {
+  trust_anchor scheme-registry {
+    trust_ref orgs-not-in-any-package key root-2026
+    role registry
+  }
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}

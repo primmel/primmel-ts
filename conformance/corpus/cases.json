@@ -82,6 +82,28 @@
     { "id": "err-02-neg", "clause": "ERR-02", "polarity": "negative", "kind": "parse", "path": "errors/link-bad-kind.prl", "expect": { "parse": "error", "errorMatch": "Unknown kind banana (valid: REPO, URL)" }, "summary": "An undeclared enum value is rejected with the valid set named." },
 
     { "id": "err-03-pos", "clause": "ERR-03", "polarity": "positive", "kind": "parse", "path": "errors/distinct-ids.prl", "expect": { "parse": "ok", "issues": [] }, "summary": "Distinct identifiers raise no issues." },
-    { "id": "err-03-neg", "clause": "ERR-03", "polarity": "negative", "kind": "parse", "path": "errors/duplicate-id.prl", "expect": { "parse": "ok", "issues": ["duplicate-id"] }, "summary": "A redeclared identifier reports duplicate-id on the issues channel." }
+    { "id": "err-03-neg", "clause": "ERR-03", "polarity": "negative", "kind": "parse", "path": "errors/duplicate-id.prl", "expect": { "parse": "ok", "issues": ["duplicate-id"] }, "summary": "A redeclared identifier reports duplicate-id on the issues channel." },
+
+    { "id": "dat-01-pos", "clause": "DAT-01", "polarity": "positive", "kind": "parse", "path": "syntax/dataspace-entity.prl", "expect": { "parse": "ok" }, "summary": "A dataspace with every facet shape parses." },
+    { "id": "dat-01-neg-missing-value", "clause": "DAT-01", "polarity": "negative", "kind": "parse", "path": "syntax/dataspace-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Expecting value for name" }, "summary": "A value-taking dataspace facet without its value is a parse error." },
+    { "id": "dat-01-pos-check", "clause": "DAT-01", "polarity": "positive", "kind": "check", "path": "checks/dataspace-sound", "expect": { "clean": true }, "summary": "A dataspace with resolving references checks clean." },
+    { "id": "dat-01-neg-dangling-policy", "clause": "DAT-01", "polarity": "negative", "kind": "check", "path": "checks/dataspace-dangling-policy", "expect": { "rules": ["C104"] }, "summary": "A policy register entry no package declares is flagged C104." },
+
+    { "id": "dat-02-pos", "clause": "DAT-02", "polarity": "positive", "kind": "parse", "path": "syntax/policy-entity.prl", "expect": { "parse": "ok" }, "summary": "A policy with rules of each kind parses." },
+    { "id": "dat-02-neg-rule-kind", "clause": "DAT-02", "polarity": "negative", "kind": "parse", "path": "syntax/policy-unknown-rule-kind.prl", "expect": { "parse": "error", "errorMatch": "unknown rule kind" }, "summary": "An undeclared rule kind is rejected, fail-closed." },
+    { "id": "dat-02-neg-posture", "clause": "DAT-02", "polarity": "negative", "kind": "parse", "path": "syntax/policy-bad-default-posture.prl", "expect": { "parse": "error", "errorMatch": "default_posture is true | false" }, "summary": "A non-boolean default_posture is rejected." },
+    { "id": "dat-02-pos-check", "clause": "DAT-02", "polarity": "positive", "kind": "check", "path": "checks/policy-sound", "expect": { "clean": true }, "summary": "A well-formed policy checks clean." },
+    { "id": "dat-02-neg-shape", "clause": "DAT-02", "polarity": "negative", "kind": "check", "path": "checks/policy-shape", "expect": { "rules": ["C107"] }, "summary": "A rule without its action is flagged C107." },
+
+    { "id": "dat-03-pos", "clause": "DAT-03", "polarity": "positive", "kind": "parse", "path": "syntax/trust-ref-forms.prl", "expect": { "parse": "ok" }, "summary": "Both trust_ref forms (org-only, org+key) parse." },
+    { "id": "dat-03-neg-missing-value", "clause": "DAT-03", "polarity": "negative", "kind": "parse", "path": "syntax/trust-ref-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Expecting value for trust_ref" }, "summary": "A trust_ref without its organization identifier is a parse error." },
+    { "id": "dat-03-pos-opaque", "clause": "DAT-03", "polarity": "positive", "kind": "check", "path": "checks/trust-ref-opaque", "expect": { "clean": true }, "summary": "The resolution contract, pinned: a trust_ref naming an organization no package declares is not a finding — the checker never resolves the trust plane." },
+    { "id": "dat-03-neg-shape", "clause": "DAT-03", "polarity": "negative", "kind": "check", "path": "checks/dataspace-trust-anchor-shape", "expect": { "rules": ["C105"] }, "summary": "A trust anchor without its trust_ref is flagged C105." },
+
+    { "id": "dat-04-pos", "clause": "DAT-04", "polarity": "positive", "kind": "parse", "path": "syntax/corresponds-annotations.prl", "expect": { "parse": "ok" }, "summary": "Correspondence annotations with projection blocks parse across node kinds." },
+    { "id": "dat-04-neg-missing-value", "clause": "DAT-04", "polarity": "negative", "kind": "parse", "path": "syntax/corresponds-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Expecting value for corresponds" }, "summary": "A corresponds facet without its scheme and concept is a parse error." },
+    { "id": "dat-04-pos-canonical", "clause": "DAT-04", "polarity": "positive", "kind": "roundtrip", "path": "serialization/corresponds-canonical.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "A canonical document with correspondence annotations serializes to itself byte-for-byte." },
+    { "id": "dat-04-neg-duplicate-scheme", "clause": "DAT-04", "polarity": "negative", "kind": "check", "path": "checks/correspondence-shape", "expect": { "rules": ["C108"] }, "summary": "Two entries on one scheme are flagged C108." },
+    { "id": "dat-04-neg-empty-concept", "clause": "DAT-04", "polarity": "negative", "kind": "check", "path": "checks/correspondence-empty-concept", "expect": { "rules": ["C108"] }, "summary": "An entry with an empty concept is flagged C108." }
   ]
 }

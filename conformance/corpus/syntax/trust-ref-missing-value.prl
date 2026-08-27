@@ -1,0 +1,7 @@
+# DAT-03 negative: a trust_ref without its organization identifier is a
+# parse error (a value-taking keyword must carry its value).
+dataspace bfs-exchange {
+  trust_anchor scheme-registry {
+    trust_ref
+  }
+}

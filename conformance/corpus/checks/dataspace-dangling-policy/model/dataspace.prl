@@ -1,0 +1,5 @@
+# The policy register names a policy no package declares: C104.
+dataspace bfs-exchange {
+  policies { ghost-policy }
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}

@@ -1,0 +1,12 @@
+# DAT-03 positive: the trust_ref form — an organization by its registry
+# id, with or without one published key by key id.
+dataspace bfs-exchange {
+  trust_anchor scheme-registry {
+    trust_ref bfs-scheme-op key bfs-2026-root
+    role registry
+  }
+  trust_anchor reading-room {
+    trust_ref bfs-scheme-op
+  }
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}

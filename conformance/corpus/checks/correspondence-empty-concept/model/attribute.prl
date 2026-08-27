@@ -1,0 +1,5 @@
+# A corresponds entry with an empty concept names nothing: C108.
+attribute_definition e_max {
+  name "Maximum capacity"
+  corresponds dpp ""
+}

@@ -25,15 +25,29 @@ import type { Correspondence } from '../../types/Correspondence';
 
 /** Parse the value of a `corresponds` keyword: `<scheme> "<concept>"`
  *  plus an optional `{ projection ... }` block. `t`/`i` sit just after
- *  the keyword. */
+ *  the keyword. The facet is value-taking: the scheme and the concept
+ *  are mandatory (a truncated facet is a parse error — the same
+ *  "a value-taking keyword must carry its value" contract the per-
+ *  construct walkers enforce). */
 export function parseCorresponds(
   t: string[],
   i: number,
   stripWrapping: (s: string) => string,
 ): { corr: Correspondence; next: number } {
+  if (t[i] === undefined) {
+    throw new Error(
+      'Parsing error: corresponds: Expecting value for corresponds (the scheme and the concept)',
+    );
+  }
+  const scheme = stripWrapping(t[i++]);
+  if (t[i] === undefined) {
+    throw new Error(
+      'Parsing error: corresponds: Expecting value for corresponds (the concept)',
+    );
+  }
   const corr: Correspondence = {
-    scheme: stripWrapping(t[i++] ?? ''),
-    concept: stripWrapping(t[i++] ?? ''),
+    scheme,
+    concept: stripWrapping(t[i++]),
     projections: [],
   };
   if (i < t.length && t[i]!.startsWith('{')) {

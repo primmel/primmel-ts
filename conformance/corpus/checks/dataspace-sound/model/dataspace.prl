@@ -1,0 +1,44 @@
+dataspace bfs-exchange {
+  name "Bean freshness exchange"
+  artifact_class evaluation-report {
+    label "Evaluation report"
+    element /art/evaluation-report
+    policy restricted-exchange
+  }
+  policies { public-access restricted-exchange }
+  default_policy restricted-exchange
+  trust_anchor scheme-registry {
+    trust_ref bfs-scheme-op key bfs-2026-root
+    role registry
+  }
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}
+
+artifact_definition /art/evaluation-report {
+  name "Evaluation report"
+  content_contract {
+    fields {
+      lot_id : string
+      verdict : string
+    }
+  }
+  produced_when per_measurement
+}
+
+policy public-access {
+  default_posture false
+  governs { evaluation-report }
+  rule read-any { kind permission action read }
+}
+
+policy restricted-exchange {
+  default_posture true
+  governs { evaluation-report }
+  rule read-under-agreement {
+    kind permission
+    action read
+    artifact evaluation-report
+    constraint "ocl{agreement.state = #active}"
+  }
+  rule retain-nothing { kind prohibition action retain }
+}

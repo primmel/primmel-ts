@@ -1,0 +1,4 @@
+# DAT-01 negative: a value-taking facet without its value is a parse error.
+dataspace bfs-exchange {
+  name
+}

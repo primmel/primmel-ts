@@ -1,0 +1,8 @@
+# Two corresponds entries naming the same scheme on one element: C108.
+# One element has at most one correspondence per scheme, so every bridge
+# reads an unambiguous mapping.
+attribute_definition e_max {
+  name "Maximum capacity"
+  corresponds iec-cdd "0172-a/123"
+  corresponds iec-cdd "0172-a/999"
+}

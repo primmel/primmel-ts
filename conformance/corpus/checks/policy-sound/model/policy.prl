@@ -1,0 +1,32 @@
+dataspace bfs-exchange {
+  artifact_class evaluation-report { element /art/evaluation-report }
+  policies { restricted-exchange }
+  default_policy restricted-exchange
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}
+
+artifact_definition /art/evaluation-report {
+  name "Evaluation report"
+  content_contract {
+    fields {
+      lot_id : string
+      verdict : string
+    }
+  }
+  produced_when per_measurement
+}
+
+policy restricted-exchange {
+  name "Restricted exchange"
+  default_posture true
+  governs { evaluation-report }
+  rule read-under-agreement {
+    kind permission
+    action read
+    artifact evaluation-report
+    constraint "ocl{agreement.state = #active}"
+  }
+  rule retain-nothing { kind prohibition action retain }
+  rule log-every-access { kind obligation action log }
+  ref derives-from "urn:example:bfs:2026#clause-6.2"
+}

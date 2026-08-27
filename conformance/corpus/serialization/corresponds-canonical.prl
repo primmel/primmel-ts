@@ -1,0 +1,21 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+}
+
+term load-cell {
+  label "load cell"
+  corresponds iec-cdd "0112/2///61987#ABA901"
+}
+attribute_definition e_max {
+  name "Maximum capacity"
+  corresponds iec-cdd "0172-a/123"
+  corresponds dpp "attr:eMax" {
+    projection dpp-attribute { path identity.eMax }
+    projection vc-claim { claim maxCapacity }
+  }
+  irdi "0172-a/123"
+}
