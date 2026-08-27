@@ -68,14 +68,25 @@ export function forEachEntry(
       () => t[i],
     );
     if (!claimed) {
-      // The unified ref construct (docs/primmel/18) is tolerated on every
-      // construct — even where the construct's own facets don't model it
-      // yet: skip the predicate + the target + the optional note block.
-      if (keyword === 'ref') {
-        i++; // the predicate
-        i++; // the target
+      // The multi-token facets are tolerated on every construct — even
+      // where the construct's own facets don't model them yet — with a
+      // shape-aware skip (MN 114 §9.5):
+      //   ref         — predicate + target + the optional note block
+      //   corresponds — scheme + concept + the optional projection block
+      //   trust_ref   — the org id + the optional `key <kid>` pair
+      // A one-token skip on any of these would desynchronize the facet
+      // walk.
+      if (keyword === 'ref' || keyword === 'corresponds') {
+        i++; // the predicate / scheme
+        i++; // the target / concept
         if (i < t.length && t[i]!.startsWith('{')) {
-          i++; // the note block
+          i++; // the note / projection block
+        }
+      } else if (keyword === 'trust_ref') {
+        i++; // the organization identifier
+        if (t[i] === 'key') {
+          i++; // the `key` keyword
+          i++; // the key id
         }
       } else {
         i++; // forward-compat: skip unknown keyword value
@@ -85,25 +96,40 @@ export function forEachEntry(
 }
 
 /**
- * The manual-walk forward-compat skip, ref-aware (docs/primmel/18): the
- * unknown-keyword fallback consumes ONE value token, EXCEPT the unified
- * ref construct, whose shape is `ref <predicate> "<target>"` plus an
- * optional `{ note }` block — a one-token skip there would desync the
- * walk and silently eat every following facet. `i` sits just AFTER the
- * keyword; returns the index past the skipped value.
+ * The manual-walk forward-compat skip, multi-token-facet-aware (MN 114
+ * §9.5): the unknown-keyword fallback consumes ONE value token, EXCEPT:
+ *   - `ref <predicate> "<target>" [{ note }]` (docs/primmel/18),
+ *   - `corresponds <scheme> "<concept>" [{ projection ... }]` (v3.1,
+ *     clause 19.4),
+ *   - `trust_ref <org-id> [key <kid>]` (v3.1, clause 19.3),
+ * whose multi-token shapes would desync a one-token skip and silently eat
+ * every following facet. `i` sits just AFTER the keyword; returns the
+ * index past the skipped value.
  */
 export function skipUnknownValue(
   t: string[],
   i: number,
   keyword: string,
 ): number {
-  if (keyword === 'ref') {
-    i++; // the predicate
+  if (keyword === 'ref' || keyword === 'corresponds') {
+    i++; // the predicate / scheme
     if (i < t.length) {
-      i++; // the target
+      i++; // the target / concept
     }
     if (i < t.length && t[i]!.startsWith('{')) {
-      i++; // the note block
+      i++; // the note / projection block
+    }
+    return i;
+  }
+  if (keyword === 'trust_ref') {
+    if (i < t.length) {
+      i++; // the organization identifier
+    }
+    if (t[i] === 'key') {
+      i++; // the `key` keyword
+      if (i < t.length) {
+        i++; // the key id
+      }
     }
     return i;
   }

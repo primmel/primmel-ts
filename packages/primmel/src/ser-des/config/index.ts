@@ -119,6 +119,8 @@ import { formulasUsedConstruct } from './formulasUsed';
 import { parseText, dumpText } from './text';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
+import { dataspaceConstruct } from './dataspace';
+import { policyConstruct } from './policy';
 import {
   dumpActivityArchetype,
   parseActivityArchetype,
@@ -505,6 +507,14 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseText,
     dump: dumpText as never,
   }),
+  // Primmel v3.1 dataspace + trust (TODO.primmel/10; MN 114 clause 19):
+  // the dataspace definition as a model object, and the usage-policy set
+  // in Primmel's own policy grammar (ODRL is a codec output, never an
+  // import). The trust_ref form and the corresponds facet are shared
+  // sub-structures (config/trustRef.ts, config/correspondence.ts), not
+  // top-level constructs.
+  dataspaceConstruct as ConstructDefinition,
+  policyConstruct as ConstructDefinition,
 ];
 
 function buildParserConfig(

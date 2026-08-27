@@ -122,6 +122,9 @@ export default function parse(
     formulasUsed: {},
     // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25)
     texts: {},
+    // Primmel v3.1 dataspace + trust (TODO.primmel/10)
+    dataspaces: {},
+    policies: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };

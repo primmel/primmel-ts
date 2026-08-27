@@ -70,6 +70,8 @@ function emptyContext(): ParseContext {
     testSequences: {},
     formulasUsed: {},
     texts: {},
+    dataspaces: {},
+    policies: {},
     issues: [],
   };
 }
