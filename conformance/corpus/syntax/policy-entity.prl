@@ -1,0 +1,18 @@
+# DAT-02 positive: the policy construct, every facet shape.
+policy restricted-exchange {
+  name "Restricted exchange"
+  description "Restricted artifact classes exchange under an active agreement only."
+  default_posture true
+  governs { evaluation-report }
+
+  rule read-under-agreement {
+    kind permission
+    action read
+    artifact evaluation-report
+    constraint "ocl{agreement.state = #active}"
+  }
+  rule retain-nothing { kind prohibition action retain }
+  rule log-every-access { kind obligation action log }
+
+  ref derives-from "urn:example:bfs:2026#clause-6.2"
+}

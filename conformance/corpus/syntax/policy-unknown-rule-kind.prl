@@ -1,0 +1,9 @@
+# DAT-02 negative: the rule kind vocabulary is closed and parse-enforced
+# (permission | obligation | prohibition) — a misspelt kind never parses
+# into a rule that says nothing.
+policy restricted-exchange {
+  rule read-under-agreement {
+    kind permision
+    action read
+  }
+}

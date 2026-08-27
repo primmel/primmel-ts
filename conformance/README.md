@@ -1,26 +1,31 @@
 # The Primmel conformance test suite
 
-**Version 1.0.1 · 2026-08-20.** The public, versioned corpus and runner
+**Version 1.1.0 · 2026-08-28.** The public, versioned corpus and runner
 with which any implementation of the Primmel modelling language proves
 its conformance, clause by clause. The suite pairs with the Primmel
-Language Specification (TODO.standards/01, in preparation): when the
-specification publishes its conformance clauses, this suite's clause
-identifiers re-key to them (see `clauses.json`, the `spec` block).
+Language Specification (MN 114, draft for comment, the 2026-08-28
+revision specifying Primmel v3.1): when the specification publishes its
+conformance clauses, this suite's clause identifiers re-key to them (see
+`clauses.json`, the `spec` block); the v3.1 clauses (DAT-01 to DAT-04)
+already anchor to MN 114 clause 19. Version 1.1.0 is additive over
+1.0.1: every v3 case is unchanged and still passes.
 
 ## What it is
 
-- **The clause map** (`clauses.json`): 22 conformance clauses across
-  five areas: the document syntax (the header, identifiers, and the
+- **The clause map** (`clauses.json`): 26 conformance clauses across
+  six areas: the document syntax (the header, identifiers, and the
   five entity kinds: requirement, conformance test, form, calculation,
   table), the serialization rules (the re-serialization fixed point and
   the canonical emission form), the constraint and check machinery (six
   rules of the catalog, one per machinery kind: C1, C2, C4, C10, C11,
   C96), the packaging layer (the manifest, the edition register C77,
   definition pins C80, layered composition C27/C28/C29, abstract import
-  pins C83), and the named error cases. Every clause carries at least
-  one positive and one negative case; the runner enforces this
-  invariant on every run.
-- **The corpus** (`corpus/`): 61 Primmel documents and packages, valid
+  pins C83), the named error cases, and the v3.1 dataspace extension set
+  (the dataspace construct, the policy construct, trust references, and
+  the correspondence annotations: C104, C105, C106, C107, C108). Every
+  clause carries at least one positive and one negative case; the runner
+  enforces this invariant on every run.
+- **The corpus** (`corpus/`): 79 Primmel documents and packages, valid
   and invalid per the clauses, each entry in `corpus/cases.json`
   naming the clause it proves, its polarity, and its expectation.
 - **The runner** (`runner/run.mts`): executes an implementation against

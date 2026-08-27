@@ -1,0 +1,7 @@
+# A trust anchor without its trust_ref anchors nothing: C105.
+dataspace bfs-exchange {
+  trust_anchor scheme-registry {
+    role registry
+  }
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}

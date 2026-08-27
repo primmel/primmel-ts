@@ -1,19 +1,20 @@
 {
   "name": "primmel-conformance-suite",
   "title": "The Primmel conformance test suite",
-  "version": "1.0.1",
-  "date": "2026-08-20",
+  "version": "1.1.0",
+  "date": "2026-08-28",
   "language": {
     "name": "Primmel",
-    "referenceBaseline": "@primmel/primmel 1.6.1",
-    "specification": "The Primmel Language Specification (TODO.standards/01, in preparation); the suite's clause identifiers re-key to the specification's conformance clauses when it publishes."
+    "referenceBaseline": "@primmel/primmel 1.8.0",
+    "specification": "MN 114, the Primmel Language Specification (v3.1 draft, 2026-08-28); the v3.1 clauses (DAT-01 to DAT-04) anchor to its clause 19, and the v3 clauses' identifiers re-key to the specification's conformance clauses when it publishes."
   },
   "areas": {
     "syntax": "The document grammar: structure, identifiers, and the five entity kinds (requirement, conformance test, form, calculation, table).",
     "serialization": "The codec rules: the re-serialization fixed point and the canonical emission form.",
     "checks": "The constraint machinery: the rule-identified checks a conforming checker applies to a package.",
     "packaging": "The package layer: the manifest, editions, version pins, layered composition, and abstract imports.",
-    "errors": "The named error cases: structural parse errors, enumerated facet rejection, and the duplicate-identifier issue."
+    "errors": "The named error cases: structural parse errors, enumerated facet rejection, and the duplicate-identifier issue.",
+    "dataspace": "The v3.1 extension set (MN 114 clause 19): the dataspace construct, the policy construct, the trust reference, and the correspondence annotations."
   },
   "layout": {
     "clauses.json": "the clause map: one conformance rule per clause, with its area and check-rule identifiers",

@@ -1,0 +1,5 @@
+# DAT-02 negative: default_posture is a closed vocabulary (true | false),
+# parse-enforced.
+policy restricted-exchange {
+  default_posture yes
+}

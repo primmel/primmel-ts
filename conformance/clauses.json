@@ -2,8 +2,8 @@
   "$comment": "The clause map of the Primmel conformance suite. Every clause states one conformance rule of the language; every case in corpus/cases.json names the clause it proves. The runner enforces the structural invariant: each clause carries at least one positive and one negative case. The 'spec' block names the document these clauses will re-key to when the Primmel Language Specification (TODO.standards/01) publishes its conformance clauses; until then the suite's own identifiers are the stable handles. Area anchors anticipate the specification's clause numbering without claiming it.",
   "spec": {
     "document": "The Primmel Language Specification",
-    "status": "in preparation (TODO.standards/01)",
-    "mapping": "When the specification publishes, each clause's specAnchor is replaced by the specification's conformance-clause number. The suite identifiers (SYN-01, ...) never change; only the anchor is re-keyed, in a minor suite release."
+    "status": "MN 114, draft for comment (2026-08-28 revision, specifying Primmel v3.1)",
+    "mapping": "When the specification publishes, each clause's specAnchor is replaced by the specification's conformance-clause number. The suite identifiers (SYN-01, ..., DAT-04) never change; only the anchor is re-keyed, in a minor suite release. The v3.1 clauses (DAT-01 to DAT-04) already anchor to MN 114 clause 19."
   },
   "clauses": [
     {
@@ -181,6 +181,38 @@
       "statement": "A document that redeclares an identifier parses with a duplicate-id issue on the issues channel.",
       "specAnchor": "the parse issues channel",
       "rules": []
+    },
+    {
+      "id": "DAT-01",
+      "area": "dataspace",
+      "title": "The dataspace construct",
+      "statement": "A dataspace declares its participant classes, its artifact classes (each optionally naming its content element and per-class policy override), the policy register, the default policy, the trust anchors, the compatibility register, and the governance citations. The policy register, the default policy, the per-class overrides, the content elements, and the compatibility register resolve (C104); the governance citations are present (C106, a warning).",
+      "specAnchor": "MN 114 clause 19.1 (the dataspace construct)",
+      "rules": ["C104", "C106"]
+    },
+    {
+      "id": "DAT-02",
+      "area": "dataspace",
+      "title": "The policy construct",
+      "statement": "A policy declares rules of kind permission, obligation, or prohibition (a closed, parse-enforced vocabulary) over the dataspace's artifact classes and their actions, with constraints in the embedded expression dialect; default_posture is a closed parse-enforced boolean. A policy declares at least one rule, every rule carries its action, a rule's artifact stays inside the governs register, the governed classes resolve, and at most one default-posture policy governs a class (C107).",
+      "specAnchor": "MN 114 clause 19.2 (the policy construct)",
+      "rules": ["C107"]
+    },
+    {
+      "id": "DAT-03",
+      "area": "dataspace",
+      "title": "Trust references",
+      "statement": "A trust_ref names an organization by its registry identifier, optionally with one published key by key id. The reference is opaque to the model: it carries addressing only, the consumer resolves it at runtime, and a conforming checker never resolves it — an organization no package declares is not a finding. The checker verifies the anchor's shape only (C105).",
+      "specAnchor": "MN 114 clause 19.3 (trust references)",
+      "rules": ["C105"]
+    },
+    {
+      "id": "DAT-04",
+      "area": "dataspace",
+      "title": "Correspondence annotations",
+      "statement": "A corresponds facet declares an element's correspondence to an external concept (scheme token plus opaque concept identifier) with optional projection-steering blocks for the expression codecs; the facet is accepted on every construct (the multi-token skip discipline) and recorded on the projection-bearing kinds. One element carries at most one correspondence per scheme, an entry names its scheme and concept, and the irdi legacy spelling agrees with corresponds iec-cdd when both are present (C108).",
+      "specAnchor": "MN 114 clause 19.4 (correspondence annotations)",
+      "rules": ["C108"]
     }
   ]
 }

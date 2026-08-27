@@ -1,0 +1,17 @@
+# DAT-04 positive: the corresponds facet across node kinds, with the
+# projection-steering block. The irdi facet remains as the legacy
+# single-scheme spelling of `corresponds iec-cdd`.
+attribute_definition e_max {
+  name "Maximum capacity"
+  irdi "0172-a/123"
+  corresponds iec-cdd "0172-a/123"
+  corresponds dpp "attr:eMax" {
+    projection dpp-attribute { path "identity.eMax" }
+    projection vc-claim { claim "maxCapacity" }
+  }
+}
+
+term load-cell {
+  label "load cell"
+  corresponds iec-cdd "0112/2///61987#ABA901"
+}

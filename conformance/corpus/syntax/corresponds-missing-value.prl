@@ -1,0 +1,5 @@
+# DAT-04 negative: a corresponds facet without its concept is a parse
+# error (the facet carries its scheme AND its concept).
+attribute_definition e_max {
+  corresponds iec-cdd
+}
