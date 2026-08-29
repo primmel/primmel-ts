@@ -119,6 +119,14 @@
       "rules": ["C96"]
     },
     {
+      "id": "CHK-06",
+      "area": "checks",
+      "title": "State machine initial",
+      "statement": "A state machine declares its initial state — the starting state for new entities is required, so a machine without one is flagged; the serializer never emits the keyword without its value.",
+      "specAnchor": "state machine syntax (initial is required)",
+      "rules": ["C109"]
+    },
+    {
       "id": "PKG-01",
       "area": "packaging",
       "title": "The package manifest",

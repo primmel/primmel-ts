@@ -4,7 +4,7 @@
 // The machine-readable registry of every check `primmel check` runs —
 // the single source the CLI prints (`primmel check --rules`) and the
 // docs reference. Each rule has:
-//   id       — the per-rule id (C1…C108) issues report under;
+//   id       — the per-rule id (C1…C109) issues report under;
 //   name     — the rule's short name (as used in issue messages);
 //   family   — base | anatomy | process | instantiation | mapping |
 //              composition | quantities | state | promises | artifacts |
@@ -1098,6 +1098,23 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'TODO.primmel/10, MN 114 clause 19.4',
+  ),
+  // ── C109: state-machine-initial-present (the editor wave-03 finding,
+  // primmel/editor#19) ──
+  // The spec's state machine syntax marks `initial` required (the
+  // starting state for new entities). The parser stays total (a machine
+  // without the line loads with initialState '') and the serializer
+  // stays honest (it omits the line — never the dangling keyword that
+  // reparsed as `initial states`), so the refusal lives HERE, at the
+  // language's own validation layer — the C95 contract-ownership
+  // doctrine.
+  R(
+    'C109',
+    'state-machine-initial-present',
+    'state',
+    'error',
+    'normal',
+    'spec sources/state-machines §2 (initial: Required), primmel/editor#19 (wave-03 findings)',
   ),
 ];
 

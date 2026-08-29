@@ -1,33 +1,36 @@
 # The Primmel conformance test suite
 
-**Version 1.3.0 · 2026-08-29.** The public, versioned corpus and runner
+**Version 2.0.0 · 2026-08-29.** The public, versioned corpus and runner
 with which any implementation of the Primmel modelling language proves
 its conformance, clause by clause. The suite pairs with the Primmel
 Language Specification (MN 114, draft for comment, the 2026-08-28
 revision specifying Primmel v3.1): when the specification publishes its
 conformance clauses, this suite's clause identifiers re-key to them (see
 `clauses.json`, the `spec` block); the v3.1 clauses (DAT-01 to DAT-04)
-already anchor to MN 114 clause 19. Version 1.3.0 is additive over
-1.2.0 (new cases inside existing clauses — SER-01/SER-02 pin the term
-`overlay` marker's codec); every earlier case is unchanged and still
-passes.
+already anchor to MN 114 clause 19. Version 2.0.0 over 1.1.0: a new
+clause — CHK-06, the state machine's required initial state (C109),
+pinned with its codec half (the serializer never emits the keyword
+value-less) — and new cases inside existing clauses (SER-01/SER-02 pin
+the bare numeric calculation-input default codec and the term `overlay`
+marker's survival); every earlier case is unchanged and still passes.
 
 ## What it is
 
-- **The clause map** (`clauses.json`): 26 conformance clauses across
+- **The clause map** (`clauses.json`): 27 conformance clauses across
   six areas: the document syntax (the header, identifiers, and the
   five entity kinds: requirement, conformance test, form, calculation,
   table), the serialization rules (the re-serialization fixed point and
-  the canonical emission form), the constraint and check machinery (six
-  rules of the catalog, one per machinery kind: C1, C2, C4, C10, C11,
-  C96), the packaging layer (the manifest, the edition register C77,
-  definition pins C80, layered composition C27/C28/C29, abstract import
-  pins C83), the named error cases, and the v3.1 dataspace extension set
-  (the dataspace construct, the policy construct, trust references, and
-  the correspondence annotations: C104, C105, C106, C107, C108). Every
+  the canonical emission form), the constraint and check machinery
+  (seven rules of the catalog, one per machinery kind: C1, C2, C4, C10,
+  C11, C96, C109), the packaging layer (the manifest, the edition
+  register C77, definition pins C80, layered composition C27/C28/C29,
+  abstract import pins C83), the named error cases, and the v3.1
+  dataspace extension set (the dataspace construct, the policy
+  construct, trust references, and the correspondence annotations:
+  C104, C105, C106, C107, C108). Every
   clause carries at least one positive and one negative case; the runner
   enforces this invariant on every run.
-- **The corpus** (`corpus/`): 83 Primmel documents and packages, valid
+- **The corpus** (`corpus/`): 86 Primmel documents and packages, valid
   and invalid per the clauses, each entry in `corpus/cases.json`
   naming the clause it proves, its polarity, and its expectation.
 - **The runner** (`runner/run.mts`): executes an implementation against
@@ -62,7 +65,7 @@ suite. `--case <id>` (repeatable) runs a subset during development.
 ## Conformance claims
 
 An implementation conforms to this suite at a clause when every case
-tagged with that clause passes. A suite-level claim requires all 22
+tagged with that clause passes. A suite-level claim requires all 27
 clauses. Partial claims are per area (syntax, serialization, checks,
 packaging, errors) and must name the suite version: "conformant with
 the Primmel conformance suite v1.0.1, serialization area" is a

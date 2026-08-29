@@ -1,0 +1,14 @@
+class TestReport {
+  attributes {
+    status : string { }
+  }
+}
+state_machine TestReport {
+  initial DRAFT
+  states {
+    DRAFT
+    SUBMITTED
+  }
+  transition DRAFT -> SUBMITTED action submit {
+  }
+}
