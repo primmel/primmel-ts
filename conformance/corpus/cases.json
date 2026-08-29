@@ -58,6 +58,10 @@
     { "id": "chk-05-pos", "clause": "CHK-05", "polarity": "positive", "kind": "check", "path": "checks/distinct-ids", "expect": { "clean": true }, "summary": "Distinct identifiers pass." },
     { "id": "chk-05-neg", "clause": "CHK-05", "polarity": "negative", "kind": "check", "path": "checks/duplicate-ids", "expect": { "rules": ["C96"] }, "summary": "A redeclared identifier is flagged C96." },
 
+    { "id": "chk-06-pos", "clause": "CHK-06", "polarity": "positive", "kind": "check", "path": "checks/state-machine-initial-ok", "expect": { "clean": true }, "summary": "A state machine declaring its initial state passes." },
+    { "id": "chk-06-pos-codec", "clause": "CHK-06", "polarity": "positive", "kind": "roundtrip", "path": "serialization/state-machine-no-initial.prl", "expect": { "roundtrip": "ok" }, "summary": "An initial-less machine still serializes to parseable text — the serializer omits the keyword rather than emitting it value-less (the reparse never mangles)." },
+    { "id": "chk-06-neg", "clause": "CHK-06", "polarity": "negative", "kind": "check", "path": "checks/state-machine-no-initial", "expect": { "rules": ["C109"] }, "summary": "A state machine without an initial state is flagged C109 — the language refuses at its own validation layer." },
+
     { "id": "pkg-01-pos", "clause": "PKG-01", "polarity": "positive", "kind": "check", "path": "packaging/manifest-minimal", "expect": { "clean": true }, "summary": "A manifest declaring only the id loads and checks clean." },
     { "id": "pkg-01-neg-no-id", "clause": "PKG-01", "polarity": "negative", "kind": "check", "path": "packaging/manifest-no-id", "expect": { "error": "is not a valid package manifest" }, "summary": "A manifest without an id fails to load." },
     { "id": "pkg-01-neg-bad-status", "clause": "PKG-01", "polarity": "negative", "kind": "check", "path": "packaging/manifest-bad-status", "expect": { "error": "Expected status current|preview|superseded|withdrawn" }, "summary": "A status outside the enumeration fails and names the valid values." },

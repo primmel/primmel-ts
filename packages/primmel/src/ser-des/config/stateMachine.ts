@@ -241,7 +241,15 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
   if (sm.kind === 'operational') {
     out += '  kind operational\n';
   }
-  out += '  initial ' + sm.initialState + '\n';
+  // The initial line is emitted only when set. The spec marks `initial`
+  // required (state-machines §2: "Initial state. Required."), so an
+  // empty initial is a model error the checker owns (C109) — the
+  // serializer never emits the dangling keyword: an `initial ` line
+  // reparses with the NEXT token (`states`) as the value, silently
+  // mangling the machine (the editor wave-03 finding).
+  if (sm.initialState) {
+    out += '  initial ' + sm.initialState + '\n';
+  }
   if (sm.states.length > 0) {
     out += '  states {\n';
     for (const s of sm.states) {

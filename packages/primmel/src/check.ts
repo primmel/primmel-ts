@@ -286,6 +286,10 @@
 //      (the trust_ref stays opaque — the checker never resolves the
 //      trust plane), governance cited, policies well-formed, and one
 //      correspondence per scheme per element
+//   C109 state-machine-initial-present: every state machine declares
+//      its initial state (the spec marks it required; the serializer
+//      omits the line rather than emitting the dangling keyword — the
+//      editor wave-03 finding, primmel/editor#19)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4142,6 +4146,22 @@ export function checkPackage(
   const machineById = new Map(
     (standard.stateMachines ?? []).map(sm => [sm.entityName, sm]),
   );
+
+  // C109 — state-machine-initial-present: the spec marks `initial`
+  // required (state-machines §2: "Initial state. Required."), for both
+  // families. The parser stays total (a missing line loads as ''), the
+  // serializer omits the line rather than emitting the dangling keyword
+  // (the editor wave-03 finding: `initial ` reparsed as
+  // `initial states`), so the refusal lives here — the language's own
+  // validation layer.
+  for (const sm of standard.stateMachines ?? []) {
+    if (!sm.initialState) {
+      err(
+        'C109',
+        `state_machine ${sm.entityName}: declares no initial state — initial is required (state-machine-initial-present)`,
+      );
+    }
+  }
   const operationalIds = new Set(
     (standard.stateMachines ?? [])
       .filter(sm => sm.kind === 'operational')

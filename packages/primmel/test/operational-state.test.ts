@@ -156,6 +156,32 @@ describe('operational state machine — ser-des', () => {
     assert.equal(dump(m2), dumped);
   });
 
+  it('omits the initial line for a machine without one (editor wave-03 kernel finding)', () => {
+    // An empty initial dumped `initial ` (dangling keyword, trailing
+    // space) — on reparse the keyword consumed the NEXT token (`states`)
+    // as its value, silently mangling the machine. The serializer now
+    // omits the line; the spec-required violation (state-machines §2:
+    // "Initial state. Required.") is the checker's to report (C109),
+    // never the serializer's output shape.
+    const src = `state_machine Application {
+  states { DRAFT SUBMITTED }
+  transition DRAFT -> SUBMITTED action submit { }
+}
+`;
+    const m1 = load(src);
+    assert.equal(m1.stateMachines[0].initialState, '');
+    const dumped = dump(m1);
+    assert.ok(
+      !/^\s*initial/m.test(dumped),
+      `no dangling initial line in:\n${dumped}`,
+    );
+    // The dump reparses to the same machine — the fixed point holds even
+    // for the (spec-invalid) initial-less model.
+    const m2 = load(dumped);
+    assert.deepEqual(m2.stateMachines, m1.stateMachines);
+    assert.equal(dump(m2), dumped);
+  });
+
   it('accepts an explicit kind lifecycle and rejects an unknown kind', () => {
     const m = load(`state_machine M {
   kind lifecycle
@@ -679,5 +705,50 @@ describe('C41 precondition-on-violation-known', () => {
     assert.equal(c41[0].severity, 'warning');
     assert.ok(c41[0].message.includes('conformance_test T'));
     assert.ok(c41[0].message.includes('"temperature-stability"'));
+  });
+});
+
+describe('state-machine initial (C109)', () => {
+  // The spec's state machine syntax marks `initial` required (the
+  // starting state for new entities): a machine without one is refused
+  // at the language's own validation layer — the rule catalog — while
+  // the serializer stays total and simply omits the line (the editor
+  // wave-03 finding, primmel/editor#19: an empty initial used to dump
+  // the dangling keyword, unparseable).
+  const NO_INITIAL = `class Thing {
+  attributes {
+    status : string { }
+  }
+}
+state_machine Thing {
+  states { draft published }
+  transition draft -> published action publish { }
+}
+`;
+
+  it('C109 fires when a machine declares no initial state', () => {
+    const c109 = checkPackage(makeStatePackage(NO_INITIAL)).filter(
+      i => i.check === 'C109',
+    );
+    assert.equal(c109.length, 1);
+    assert.equal(c109[0].severity, 'error');
+    assert.ok(c109[0].message.includes('Thing'));
+    assert.ok(c109[0].message.includes('state-machine-initial-present'));
+  });
+
+  it('C109 stays silent when the machine declares its initial state', () => {
+    const dir = makeStatePackage(`class Thing {
+  attributes {
+    status : string { }
+  }
+}
+state_machine Thing {
+  initial draft
+  states { draft published }
+  transition draft -> published action publish { }
+}
+`);
+    const c109 = checkPackage(dir).filter(i => i.check === 'C109');
+    assert.deepEqual(c109, []);
   });
 });
