@@ -77,4 +77,37 @@ describe('term keyword', () => {
     const s = load(src);
     assert.equal(s.terms[0].symbolId, 'Emax');
   });
+
+  it('dumps the overlay marker (editor wave-03 kernel finding)', () => {
+    // The parser accepts `overlay true` (the term-level override marker
+    // that lifts uses-no-redefine at composition, types/Term.ts) but the
+    // dumper dropped it — a save lost the marker, which is why the
+    // editor's term inspector showed it read-only.
+    const src = `
+      term impartiality {
+        label "impartiality"
+        definition "presence of objectivity"
+        overlay true
+      }
+    `;
+    const s = load(src);
+    assert.equal(s.terms[0].overlay, true);
+    const out = dump(s);
+    assert.ok(out.includes('  overlay true\n'));
+    const re = load(out);
+    assert.equal(re.terms[0].overlay, true);
+  });
+
+  it('dumps no overlay line for an ordinary term', () => {
+    // The marker is emitted only when set — an absent overlay never
+    // canonicalizes to `overlay false`.
+    const src = `
+      term x {
+        label "X"
+        definition "..."
+      }
+    `;
+    const out = dump(load(src));
+    assert.ok(!out.includes('overlay'));
+  });
 });

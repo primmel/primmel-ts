@@ -151,6 +151,12 @@ export const dumpTerm: Dumper<Term> = function (term) {
   if (term.source) {
     out += '  source "' + escapeString(term.source) + '"\n';
   }
+  // The overlay marker (composition: uses-no-redefine is lifted for this
+  // term) rides with the provenance cluster; emitted only when set — an
+  // absent overlay never canonicalizes to `overlay false`.
+  if (term.overlay) {
+    out += '  overlay true\n';
+  }
   if (term.scopeNote) {
     out += '  scope_note "' + escapeString(term.scopeNote) + '"\n';
   }

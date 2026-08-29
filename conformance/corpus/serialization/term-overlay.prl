@@ -1,0 +1,13 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+}
+
+term impartiality {
+  label "impartiality"
+  definition "presence of objectivity"
+  overlay true
+}
