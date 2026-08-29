@@ -111,6 +111,49 @@ describe('round-trip: additional constructs', () => {
     assert.match(out, /output : number/);
   });
 
+  it('parses a bare numeric input default unmangled (editor wave-03 kernel finding)', () => {
+    // default 500 must parse to the string '500' and dump back as
+    // `default 500` — unwrapBlock on the bare token mangled it to '0',
+    // and a span-splice save persisted the corruption.
+    const src = `
+      calculation c1 {
+        name "Scale"
+        inputs {
+          capacity : number { unit "kg" default 500 }
+        }
+        output : number { unit "kg" }
+        expression "[capacity]"
+      }
+    `;
+    const s = load(src);
+    assert.equal(s.calculations[0].inputs[0].hasDefault, true);
+    assert.equal(s.calculations[0].inputs[0].defaultValue, '500');
+    const out = dump(s);
+    assert.match(out, /default 500/);
+    // The dump reparses to the same value (the save path's codec).
+    const re = load(out);
+    assert.equal(re.calculations[0].inputs[0].defaultValue, '500');
+  });
+
+  it('keeps a whitespace-carrying string input default through the round-trip', () => {
+    // The dump side of the same codec: a default with spaces must emit
+    // quoted (dumpBareSafe), or the reparse splits it into tokens.
+    const src = `
+      calculation c1 {
+        name "Label"
+        inputs {
+          prefix : string { unit "1" default "hello world" }
+        }
+        output : string { unit "1" }
+        expression "[prefix]"
+      }
+    `;
+    const s = load(src);
+    assert.equal(s.calculations[0].inputs[0].defaultValue, 'hello world');
+    const re = load(dump(s));
+    assert.equal(re.calculations[0].inputs[0].defaultValue, 'hello world');
+  });
+
   it('preserves a state_machine definition', () => {
     const src = `
       state_machine sm1 {

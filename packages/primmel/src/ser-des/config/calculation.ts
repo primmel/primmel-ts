@@ -172,7 +172,11 @@ function parseInputs(block: string): CalculationInput[] {
           } else if (cmd === 'description') {
             description = unwrapBlock(pt[j++]);
           } else if (cmd === 'default') {
-            defaultValue = unwrapBlock(pt[j++]);
+            // stripWrapping, never unwrapBlock: the value may be a bare
+            // token (`default 500`), which unwrapBlock mangles ('500' →
+            // '0') — the editor wave-03 kernel finding. Same codec as the
+            // requirement/subform/form-field default (field-parser.ts).
+            defaultValue = stripWrapping(pt[j++]);
             hasDefault = true;
           } else if (cmd === 'enum_values') {
             enumValues = tokenizePackage(unwrapBlock(pt[j++]));
@@ -320,7 +324,10 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
         line += ' description "' + escapeString(inp.description) + '"';
       }
       if (inp.hasDefault) {
-        line += ' default ' + inp.defaultValue;
+        // dumpBareSafe: a whitespace/brace-carrying default must emit
+        // quoted, or the reparse splits it into tokens (codec symmetry
+        // with the requirement/form-field default dumpers).
+        line += ' default ' + dumpBareSafe(inp.defaultValue);
       }
       if (inp.enumValues && inp.enumValues.length > 0) {
         line += ' enum_values { ' + inp.enumValues.join(' ') + ' }';
