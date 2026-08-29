@@ -1,0 +1,17 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+}
+
+calculation MaxFillError {
+  name "Maximum fill error"
+  inputs {
+    capacity : number { unit "kg" default 500 }
+    fill : number { unit "kg" }
+  }
+  output : number { unit "kg" }
+  expression "[fill] - [capacity]"
+}
