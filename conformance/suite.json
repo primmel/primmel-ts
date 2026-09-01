@@ -1,8 +1,8 @@
 {
   "name": "primmel-conformance-suite",
   "title": "The Primmel conformance test suite",
-  "version": "2.0.0",
-  "date": "2026-08-29",
+  "version": "2.1.0",
+  "date": "2026-09-01",
   "language": {
     "name": "Primmel",
     "referenceBaseline": "@primmel/primmel 1.8.0",
