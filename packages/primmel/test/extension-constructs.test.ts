@@ -207,6 +207,21 @@ describe('W1b extensions (G2–G7, G10)', () => {
     assert.equal(f.fields[0].bind, 'model.parameters.e_max');
   });
 
+  it('G5: the bind path dumps and round-trips (editor window-2 pin)', () => {
+    // The field parser has read `bind` since G5, but dumpFormField never
+    // emitted it — a load→dump cycle silently dropped the binding, which
+    // is why the editor's FormInspector pinned bind read-only.
+    const m = load(SRC);
+    const first = dump(m);
+    assert.match(first, /bind model\.parameters\.e_max/);
+    const reparsed = load(first);
+    assert.equal(
+      reparsed.forms.find(f => f.id === 'F1')!.fields[0].bind,
+      'model.parameters.e_max',
+    );
+    assert.equal(dump(reparsed), first);
+  });
+
   it('G10: role label/description + multi-source transitions + create cascade', () => {
     const m = load(SRC);
     const r = m.roles.find(r => r.id === 'ia_officer')!;
