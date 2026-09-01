@@ -13,3 +13,7 @@ packages/*/dist/
 packages/*/dist-browser/
 packages/*/dist-cli/
 build/
+
+# Yarn Berry is the package manager (.yarnrc.yml); a stray npm lockfile
+# only feeds Dependabot a stale, unconsumed manifest.
+package-lock.json

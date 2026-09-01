@@ -38,7 +38,7 @@
     "http-cache-semantics": "^4.1.1",
     "micromatch": "^4.0.8",
     "semver": "^7.5.4",
-    "tmp": "^0.2.3",
+    "tmp": "^0.2.6",
     "word-wrap": "^1.2.5"
   }
 }
