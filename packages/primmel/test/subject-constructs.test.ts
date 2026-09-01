@@ -234,4 +234,33 @@ describe('W1b subject-chain constructs', () => {
     assert.deepEqual(m2.conditionSets, m1.conditionSets);
     assert.equal(dump(m2), dumped);
   });
+
+  it('dumps the attribute definition vocabulary facets (note, enum_values, cites)', () => {
+    // The editor window-2 pin: note, enum_values, and the cites fold
+    // (referenceIds) all parsed but never dumped — a load→dump cycle
+    // silently dropped all three.
+    const src = `attribute_definition state {
+  name "Lifecycle state"
+  ref cites "urn:oiml:pub:b:18:2025"
+  value_type enum
+  enum_values { DRAFT ISSUED "under review" }
+  note "The vocabulary the attribute surface authors."
+}
+`;
+    const m = load(src);
+    const a = m.attributeDefinitions[0];
+    assert.equal(a.note, 'The vocabulary the attribute surface authors.');
+    assert.deepEqual(a.enumValues, ['DRAFT', 'ISSUED', 'under review']);
+    assert.deepEqual(a.referenceIds, ['urn:oiml:pub:b:18:2025']);
+    const first = dump(m);
+    assert.match(first, /enum_values \{ DRAFT ISSUED "under review" \}/);
+    assert.match(
+      first,
+      /note "The vocabulary the attribute surface authors\."/,
+    );
+    assert.match(first, /ref cites "urn:oiml:pub:b:18:2025"/);
+    const reparsed = load(first);
+    assert.deepEqual(reparsed.attributeDefinitions, m.attributeDefinitions);
+    assert.equal(dump(reparsed), first);
+  });
 });

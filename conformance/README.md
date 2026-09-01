@@ -1,16 +1,17 @@
 # The Primmel conformance test suite
 
-**Version 2.1.0 · 2026-09-01.** The public, versioned corpus and runner
+**Version 2.2.0 · 2026-09-01.** The public, versioned corpus and runner
 with which any implementation of the Primmel modelling language proves
 its conformance, clause by clause. The suite pairs with the Primmel
 Language Specification (MN 114, draft for comment, the 2026-08-28
 revision specifying Primmel v3.1): when the specification publishes its
 conformance clauses, this suite's clause identifiers re-key to them (see
 `clauses.json`, the `spec` block); the v3.1 clauses (DAT-01 to DAT-04)
-already anchor to MN 114 clause 19. Version 2.1.0 over 2.0.0: new cases
-inside existing clauses (SER-01/SER-02 pin the enum symbol's braced
-values codec — the unbraced dump reparsed to one char-stripped entry);
-every earlier case is unchanged and still passes.
+already anchor to MN 114 clause 19. Version 2.2.0 over 2.1.0: new cases
+inside existing clauses (SER-01/SER-02 pin the attribute definition's
+vocabulary facets — the note, the braced enum_values, and the cites
+references the dump never emitted); every earlier case is unchanged and
+still passes.
 
 ## What it is
 
@@ -28,7 +29,7 @@ every earlier case is unchanged and still passes.
   C104, C105, C106, C107, C108). Every
   clause carries at least one positive and one negative case; the runner
   enforces this invariant on every run.
-- **The corpus** (`corpus/`): 88 Primmel documents and packages, valid
+- **The corpus** (`corpus/`): 90 Primmel documents and packages, valid
   and invalid per the clauses, each entry in `corpus/cases.json`
   naming the clause it proves, its polarity, and its expectation.
 - **The runner** (`runner/run.mts`): executes an implementation against

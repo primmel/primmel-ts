@@ -1,0 +1,20 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+}
+
+attribute_definition state {
+  name "Lifecycle state"
+  definition "The workflow state of the entity"
+  ref cites "urn:oiml:pub:b:18:2025"
+  value_type enum
+  origin declared
+  scope model
+  category administrative
+  is_dimension false
+  enum_values { DRAFT ISSUED "under review" }
+  note "The vocabulary the attribute surface authors."
+}

@@ -1034,6 +1034,12 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
     // The canonical provenance spelling (docs/primmel/18 §18.4).
     out += dumpSourceRefAsRef(s, '  ', escapeString);
   }
+  for (const rid of a.referenceIds) {
+    // The citations channel (the `ref cites` fold) — dumped in the same
+    // canonical spelling, or a load→dump cycle silently drops it (the
+    // editor window-2 pin).
+    out += '  ref cites "' + escapeString(rid) + '"\n';
+  }
   out += dumpRefs(a.refs, '  ', escapeString);
   out += dumpCorrespondences(
     a.correspondences,
@@ -1065,11 +1071,22 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
   if (a.enumRef) {
     out += '  enum ' + a.enumRef + '\n';
   }
+  if (a.enumValues && a.enumValues.length > 0) {
+    // The inline vocabulary — the real packages author it right after
+    // `enum`; whitespace-carrying entries re-quote (readIdList unquotes
+    // on parse).
+    out +=
+      '  enum_values { ' + a.enumValues.map(dumpBareSafe).join(' ') + ' }\n';
+  }
   if (a.irdi) {
     out += '  irdi "' + escapeString(a.irdi) + '"\n';
   }
   if (a.derived) {
     out += '  derived "' + escapeString(a.derived) + '"\n';
+  }
+  if (a.note) {
+    // The note rides last, the real packages' authored order.
+    out += '  note "' + escapeString(a.note) + '"\n';
   }
   out += '}\n';
   return out;
