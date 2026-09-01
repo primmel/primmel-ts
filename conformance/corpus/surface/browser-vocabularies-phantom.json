@@ -1,0 +1,7 @@
+{
+  "$comment": "The exports probe for the SUR-01 negative case: names the language does not declare. A conforming surface reports them absent — an adapter that rubber-stamps every probe name as present fails this case.",
+  "probe": [
+    "PASSPORT_SECRET_CLASSES",
+    "ENDPOINT_MAGIC_KINDS"
+  ]
+}

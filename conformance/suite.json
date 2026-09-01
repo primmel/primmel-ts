@@ -1,7 +1,7 @@
 {
   "name": "primmel-conformance-suite",
   "title": "The Primmel conformance test suite",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "date": "2026-09-01",
   "language": {
     "name": "Primmel",
@@ -14,7 +14,8 @@
     "checks": "The constraint machinery: the rule-identified checks a conforming checker applies to a package.",
     "packaging": "The package layer: the manifest, editions, version pins, layered composition, and abstract imports.",
     "errors": "The named error cases: structural parse errors, enumerated facet rejection, and the duplicate-identifier issue.",
-    "dataspace": "The v3.1 extension set (MN 114 clause 19): the dataspace construct, the policy construct, the trust reference, and the correspondence annotations."
+    "dataspace": "The v3.1 extension set (MN 114 clause 19): the dataspace construct, the policy construct, the trust reference, and the correspondence annotations.",
+    "surface": "The runtime surface: the enumerated vocabularies the toolchain's browser-facing module exposes as data."
   },
   "layout": {
     "clauses.json": "the clause map: one conformance rule per clause, with its area and check-rule identifiers",
@@ -24,6 +25,7 @@
     "corpus/errors/": "documents for the error clauses",
     "corpus/checks/": "single-package directories for the check clauses",
     "corpus/packaging/": "package directories (some multi-package composition scenarios) for the packaging clauses",
+    "corpus/surface/": "the exports probes for the surface clause",
     "runner/run.mts": "the runner: executes an adapter against the corpus and reports clause by clause",
     "runner/reference-adapter.mts": "the reference adapter: the primmel-ts implementation of the adapter contract",
     "docs/running-a-third-party-implementation.md": "the adapter contract and the conformance-claim rules"

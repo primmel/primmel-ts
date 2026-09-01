@@ -1,6 +1,6 @@
 # Running the conformance suite against a third-party implementation
 
-**Version 2.2.0 · 2026-09-01.** How to execute the Primmel conformance
+**Version 3.0.0 · 2026-09-01.** How to execute the Primmel conformance
 suite (`conformance/` in this repository) against any implementation of
 the language: an OIML SMART Recommendation toolchain, an independent
 parser, or a work in progress. The suite never links against the
@@ -20,7 +20,7 @@ split on whitespace; put flags your adapter needs inside the quotes.
 
 ## The adapter contract
 
-The adapter is any executable honouring three subcommands. Each
+The adapter is any executable honouring four subcommands. Each
 invocation prints exactly one JSON object on stdout and exits 0. A
 non-zero exit, or stdout that is not one JSON object, is reported as a
 harness error for that case, never as a conformance failure.
@@ -76,6 +76,26 @@ and applies the check machinery.
   id) is reported as `{ "ok": false, "error": "..." }`; that is a
   verdict, not a malfunction.
 
+### `exports <probe.json>`
+
+Probes the implementation's browser-facing runtime surface (the module a
+browser consumer imports). The probe file is a JSON object whose `probe`
+array names exported bindings; the adapter partitions the names against
+its surface.
+
+```json
+{ "ok": true, "present": ["PASSPORT_UPI_LEVELS"], "absent": ["PASSPORT_SECRET_CLASSES"] }
+{ "ok": false, "error": "..." }
+```
+
+- `present` holds exactly the probed names the surface carries;
+  `absent` exactly the ones it does not. A surface that rubber-stamps
+  every probe name as present fails the negative case.
+- The reference toolchain's browser surface is the entry module of its
+  ES browser bundle (`vite.browser.config.ts`): the probe reads that
+  module's namespace. An implementation without a browser distribution
+  probes its nearest equivalent runtime entry and says so in its claim.
+
 ## Expectations, exactly
 
 The runner reads `corpus/cases.json`. Per case kind:
@@ -94,6 +114,9 @@ The runner reads `corpus/cases.json`. Per case kind:
   error-severity rule identifiers to equal the listed set exactly
   (warnings are not counted). `expect.error: "<fragment>"` requires
   `ok: false` with a matching message.
+- **exports**: `expect.exports: { "present": [...], "absent": [...] }`
+  requires `ok: true` and the reported partitions to equal the listed
+  sets exactly.
 
 ## Reading the report
 

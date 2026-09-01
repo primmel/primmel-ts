@@ -9,6 +9,7 @@
 //   reference-adapter.mts parse [--strict] <file.prl>
 //   reference-adapter.mts roundtrip <file.prl>
 //   reference-adapter.mts check <package-dir> [--with <id>=<dir>]...
+//   reference-adapter.mts exports <probe.json>
 //
 // Each invocation prints one JSON object on stdout and exits 0; a
 // non-zero exit means the adapter itself malfunctioned (never a
@@ -22,9 +23,11 @@ import {
   dump,
   loadWithIssues,
 } from '../../packages/primmel/src/ser-des/index.js';
-import { checkPackage } from '../../packages/primmel/src/check.js';
-
-function emit(result: unknown): void {
+// The browser runtime surface probe (the exports command): the namespace
+// of the browser bundle's entry module (vite.browser.config.ts), whose
+// export surface the ES lib build preserves verbatim.
+import * as browserSurface from '../../packages/primmel/src/ser-des/index.js';
+import { checkPackage } from '../../packages/primmel/src/check.js';function emit(result: unknown): void {
   process.stdout.write(JSON.stringify(result) + '\n');
 }
 
@@ -105,6 +108,26 @@ function runCheck(args: string[]): void {
   }
 }
 
+function runExports(args: string[]): void {
+  const file = args[0];
+  if (!file) {
+    fail('exports: missing probe file argument');
+  }
+  try {
+    const probe = JSON.parse(readFileSync(resolve(file!), 'utf8')) as {
+      probe?: string[];
+    };
+    const names = probe.probe ?? [];
+    emit({
+      ok: true,
+      present: names.filter(n => n in browserSurface),
+      absent: names.filter(n => !(n in browserSurface)),
+    });
+  } catch (e) {
+    emit({ ok: false, error: (e as Error).message });
+  }
+}
+
 function main(): void {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
@@ -117,10 +140,14 @@ function main(): void {
     case 'check':
       runCheck(rest);
       return;
+    case 'exports':
+      runExports(rest);
+      return;
     default:
       fail(
         'usage: reference-adapter.mts parse [--strict] <file> | ' +
-          'roundtrip <file> | check <dir> [--with <id>=<dir>]...',
+          'roundtrip <file> | check <dir> [--with <id>=<dir>]... | ' +
+          'exports <probe.json>',
       );
   }
 }

@@ -10,6 +10,7 @@
 //   <adapter> parse [--strict] <file.prl>
 //   <adapter> roundtrip <file.prl>
 //   <adapter> check <package-dir> [--with <id>=<dir>]...
+//   <adapter> exports <probe.json>
 //
 // Usage:
 //   run.mts --adapter '<command>' [--corpus <dir>] [--report <file.json>]
@@ -53,13 +54,14 @@ interface CaseExpect {
   clean?: boolean;
   rules?: string[];
   error?: string;
+  exports?: { present: string[]; absent: string[] };
 }
 
 interface SuiteCase {
   id: string;
   clause: string;
   polarity: 'positive' | 'negative';
-  kind: 'parse' | 'roundtrip' | 'check';
+  kind: 'parse' | 'roundtrip' | 'check' | 'exports';
   path: string;
   options?: { strict?: boolean };
   with?: Record<string, string>;
@@ -82,6 +84,8 @@ interface AdapterResult {
   issues?: AdapterIssue[];
   stable?: boolean;
   output?: string;
+  present?: string[];
+  absent?: string[];
 }
 
 type CaseStatus = 'pass' | 'fail' | 'error';
@@ -151,6 +155,17 @@ function validateSuite(corpusDir: string, clauses: Clause[], cases: SuiteCase[])
       const forms = [e.clean === true, e.rules !== undefined, e.error !== undefined].filter(Boolean).length;
       if (forms !== 1) {
         problems.push(`case ${c.id}: a check case names exactly one of clean, rules, error`);
+      }
+    } else if (c.kind === 'exports') {
+      if (
+        e.exports === undefined ||
+        !Array.isArray(e.exports.present) ||
+        !Array.isArray(e.exports.absent) ||
+        (e.exports.present.length === 0 && e.exports.absent.length === 0)
+      ) {
+        problems.push(
+          `case ${c.id}: an exports case names expect.exports with the present and absent partitions (at least one name)`,
+        );
       }
     } else {
       problems.push(`case ${c.id}: unknown kind ${c.kind}`);
@@ -258,6 +273,24 @@ function judge(corpusDir: string, c: SuiteCase, r: AdapterResult): CaseResult {
     }
     if (e.outputDiffersFromInput && r.output === input) {
       return fail('a non-canonical document was echoed verbatim (no canonicalization)');
+    }
+    return { ...base, status: 'pass' };
+  }
+
+  if (c.kind === 'exports') {
+    if (!r.ok) {
+      return fail(`expected a completed probe, got: ${r.error ?? 'no error message'}`);
+    }
+    const norm = (xs?: string[]) => [...(xs ?? [])].sort();
+    const exp = e.exports!;
+    if (
+      JSON.stringify(norm(r.present)) !== JSON.stringify(norm(exp.present)) ||
+      JSON.stringify(norm(r.absent)) !== JSON.stringify(norm(exp.absent))
+    ) {
+      return fail(
+        `expected present ${JSON.stringify(exp.present)} / absent ${JSON.stringify(exp.absent)}, ` +
+          `got present ${JSON.stringify(r.present ?? [])} / absent ${JSON.stringify(r.absent ?? [])}`,
+      );
     }
     return { ...base, status: 'pass' };
   }

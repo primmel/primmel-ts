@@ -43,4 +43,30 @@ describe('public API surface', () => {
     const dumped = dump(s);
     assert.match(dumped, /variable MassUnit/);
   });
+
+  it('the browser entry exposes the enumerated vocabularies (editor window-2 pin)', async () => {
+    // The browser bundle's entry is src/ser-des/index.ts — every runtime
+    // API the root index exposes must be re-exported there, or the
+    // browser build silently drops it. The editor's passport/endpoint
+    // surfaces read the vocabularies from here; they must never
+    // re-declare them.
+    const surface = (await import('../src/ser-des/index.js')) as Record<
+      string,
+      unknown
+    >;
+    for (const name of [
+      'PASSPORT_ACCESS_CLASSES',
+      'PASSPORT_CONTENT_CLASSES',
+      'PASSPORT_UPI_LEVELS',
+      'ENDPOINT_ACCESS_SCOPES',
+      'ENDPOINT_OPERATION_KINDS',
+    ]) {
+      assert.ok(name in surface, `the browser entry is missing ${name}`);
+      const value = surface[name];
+      assert.ok(
+        Array.isArray(value) && value.length > 0,
+        `${name} is a non-empty vocabulary`,
+      );
+    }
+  });
 });

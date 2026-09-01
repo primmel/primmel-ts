@@ -1,0 +1,10 @@
+{
+  "$comment": "The exports probe for the SUR-01 positive case: the enumerated vocabularies the toolchain's browser runtime surface must carry as data. The adapter partitions these names into present/absent against its browser-facing runtime module.",
+  "probe": [
+    "PASSPORT_ACCESS_CLASSES",
+    "PASSPORT_CONTENT_CLASSES",
+    "PASSPORT_UPI_LEVELS",
+    "ENDPOINT_ACCESS_SCOPES",
+    "ENDPOINT_OPERATION_KINDS"
+  ]
+}
