@@ -94,7 +94,16 @@ export const parseSymbol: Parser = function (id, data) {
       } else if (command === 'latex') {
         result.latex = unwrapped(value);
       } else if (command === 'values') {
-        result.values = tokenizePackage(value());
+        // The canonical spelling is the brace block (`values { A B }`).
+        // A bare single value reads whole — never through tokenizePackage,
+        // whose unconditional unwrapBlock strips the token's first and
+        // last characters (`values DRAFT` parsed to "RAF" — the editor
+        // window-2 pin). Entries store unquoted (the term-alt codec);
+        // the dump re-quotes whitespace-carrying entries.
+        const v = value();
+        result.values = v.startsWith('{')
+          ? tokenizePackage(v).map(stripWrapping)
+          : [stripWrapping(v)];
       } else if (command === 'series') {
         result.series = parseSeriesDecl(unwrapBlock(value()));
       } else if (command === 'kind') {
@@ -181,7 +190,10 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
     out += '  latex "' + escapeString(s.latex) + '"\n';
   }
   if (s.values.length > 0) {
-    out += '  values ' + s.values.join(' ') + '\n';
+    // The canonical spelling carries the braces: an unbraced dump
+    // reparsed to one char-stripped entry and silently dropped the rest
+    // (the editor window-2 pin). Whitespace-carrying entries re-quote.
+    out += '  values { ' + s.values.map(dumpBareSafe).join(' ') + ' }\n';
   }
   if (s.series) {
     out += '  ' + dumpSeriesDecl(s.series) + '\n';

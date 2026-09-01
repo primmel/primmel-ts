@@ -1,0 +1,13 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+}
+
+symbol state_class {
+  name "State classification"
+  type enum
+  values { DRAFT ISSUED "with conditions" }
+}

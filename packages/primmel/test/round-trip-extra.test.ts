@@ -190,4 +190,43 @@ describe('round-trip: additional constructs', () => {
     const src = `note n1 { type FATAL message "x" }`;
     assert.throws(() => load(src), /Unknown type FATAL/);
   });
+
+  it('symbol values: the enum values list re-serializes braced and survives', () => {
+    // The editor window-2 pin (dumpSymbol bare values): the dump emitted
+    // `values A B` without braces — the reparse consumed one token as the
+    // list (char-stripped by tokenizePackage's unconditional unwrapBlock)
+    // and silently dropped the rest, which is why the editor's symbol
+    // values list was pinned read-only.
+    const src = `symbol state_class {
+  name "State classification"
+  type enum
+  values { DRAFT ISSUED "with conditions" }
+}
+`;
+    const m = load(src);
+    // Entries store unquoted (the term-alt codec); the dump re-quotes.
+    assert.deepEqual(m.symbols[0].values, [
+      'DRAFT',
+      'ISSUED',
+      'with conditions',
+    ]);
+    const first = dump(m);
+    assert.match(first, /values \{ DRAFT ISSUED "with conditions" \}/);
+    const reparsed = load(first);
+    assert.deepEqual(reparsed.symbols[0].values, [
+      'DRAFT',
+      'ISSUED',
+      'with conditions',
+    ]);
+    assert.equal(dump(reparsed), first);
+  });
+
+  it('symbol values: a bare single value parses whole, never char-stripped', () => {
+    // `values DRAFT` (one token, no braces) read through tokenizePackage
+    // lost its first and last characters to unwrapBlock: "DRAFT" → "RAF".
+    const m = load('symbol s { type enum values DRAFT }');
+    assert.deepEqual(m.symbols[0].values, ['DRAFT']);
+    // The dump canonicalizes to the braced spelling.
+    assert.match(dump(m), /values \{ DRAFT \}/);
+  });
 });
