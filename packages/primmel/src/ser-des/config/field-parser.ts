@@ -709,6 +709,12 @@ export function dumpFormField(field: FormField, indent: string): string {
   if (field.examples) {
     inner.push('examples "' + escapeString(field.examples) + '"');
   }
+  if (field.bind) {
+    // The binding path into the subject chain (G5) — parsed since W1b,
+    // dropped on dump until the editor's window-2 pin. dumpBareSafe: a
+    // path with spaces or a trailing colon must re-quote.
+    inner.push('bind ' + dumpBareSafe(field.bind));
+  }
   if (field.required) {
     inner.push('required true');
   }

@@ -1,6 +1,6 @@
 # Running the conformance suite against a third-party implementation
 
-**Version 3.0.0 · 2026-09-01.** How to execute the Primmel conformance
+**Version 3.1.0 · 2026-09-01.** How to execute the Primmel conformance
 suite (`conformance/` in this repository) against any implementation of
 the language: an OIML SMART Recommendation toolchain, an independent
 parser, or a work in progress. The suite never links against the
