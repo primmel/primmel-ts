@@ -221,6 +221,14 @@
       "statement": "A corresponds facet declares an element's correspondence to an external concept (scheme token plus opaque concept identifier) with optional projection-steering blocks for the expression codecs; the facet is accepted on every construct (the multi-token skip discipline) and recorded on the projection-bearing kinds. One element carries at most one correspondence per scheme, an entry names its scheme and concept, and the irdi legacy spelling agrees with corresponds iec-cdd when both are present (C108).",
       "specAnchor": "MN 114 clause 19.4 (correspondence annotations)",
       "rules": ["C108"]
+    },
+    {
+      "id": "SUR-01",
+      "area": "surface",
+      "title": "The browser runtime surface",
+      "statement": "The toolchain's browser-facing runtime module exposes the language's enumerated vocabularies as data — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes — so browser consumers read them from the toolchain and never re-declare them. A probe name the surface does not carry is reported absent, never rubber-stamped present.",
+      "specAnchor": "the browser runtime surface (the reference toolchain's distribution)",
+      "rules": []
     }
   ]
 }

@@ -175,3 +175,17 @@ export {
   type TierName,
   type TierTally,
 } from '../model-diff';
+// The enumerated vocabularies are data, and browser consumers read them
+// from the toolchain — never re-declare them (the editor's passport and
+// endpoint surfaces, the window-2 pin). Same bug class as the coverage
+// overlay above: an export the root index carries but this entry drops
+// never reaches the browser bundle.
+export {
+  PASSPORT_ACCESS_CLASSES,
+  PASSPORT_CONTENT_CLASSES,
+  PASSPORT_UPI_LEVELS,
+} from '../types/Passport';
+export {
+  ENDPOINT_ACCESS_SCOPES,
+  ENDPOINT_OPERATION_KINDS,
+} from '../types/Twin';
