@@ -294,7 +294,7 @@ describe('cascade via facet — grammar (smart gap-close E12)', () => {
   });
 
   it(
-    'round-trips the REAL corpus machines byte-clean (the 34 shipped steps)',
+    'round-trips the REAL corpus machines byte-clean (the 83 spelled steps)',
     { skip: CORPUS_SKIP },
     () => {
       const text = readFileSync(
@@ -305,8 +305,8 @@ describe('cascade via facet — grammar (smart gap-close E12)', () => {
       assert.equal(
         m1.stateMachines.flatMap(s => s.transitions).flatMap(t => t.cascades)
           .length,
-        44,
-        'the shipped machines carry 44 cascade step instances after multi-source fan-out (34 spelled steps — 35 minus the E12 step-4 deletion)',
+        103,
+        'the shipped machines carry 103 cascade step instances after multi-source fan-out (83 spelled steps on the v2 estate — the v1 line’s E12 collapse trims this to 34 spelled / 44 fanned)',
       );
       const dumped = dump(m1);
       const m2 = load(dumped);
@@ -548,8 +548,8 @@ describe('corpus leg — the rollout pin, burned to zero (smart gap-close E12)',
         .sort();
       assert.equal(
         dirs.length,
-        28,
-        `expected the 28-package corpus at ${CORPUS} (acme-cgm-system + oiml-integrated-ref joined since the 26 pin)`,
+        29,
+        `expected the 29-package corpus at ${CORPUS} (oiml-cs-dataspace joined since the 28 pin)`,
       );
       // The smart declaration leg (gap E12) landed the 13 via facets +
       // the test_report_recalled edge and deleted the redundant step —
