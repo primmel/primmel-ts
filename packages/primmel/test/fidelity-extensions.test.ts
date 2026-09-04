@@ -67,6 +67,7 @@ describe('requirement fidelity extensions', () => {
         rangeMax: '100',
         hasRange: true,
         enumValues: ['a', 'b'],
+        bind: '',
       },
     ]);
     assert.equal(r.obligation, 'should');

@@ -62,6 +62,14 @@ export interface RequirementParameter {
   rangeMax: string;
   hasRange: boolean;
   enumValues: string[];
+  /**
+   * The aspect path the parameter instantiates from (v3.2, clause
+   * 11.1.3 — the instance-parameter schema; C118): the same path
+   * discipline as the requirement's binds_to and the form field's bind.
+   * Empty = no bind declared (the parameter falls back to its default,
+   * then to caller-supplied).
+   */
+  bind: string;
 }
 
 export interface Requirement {
