@@ -13,6 +13,12 @@
 //     `model_version` (the package's own version) are distinct fields
 //     that never borrow each other's value (the fixture declares
 //     version "2" against editions { 2021 2017 } — the observed drift).
+//   ask 3 — the flat retrieval facet: every unit carries one flat
+//     scalar map (string values only) keyed congruent with the
+//     consumer's chunk wire schema, the applicability dimensions
+//     flattened to `app_<dim>` keys, the whole shape versioned as
+//     `retrieval-facet/1` — and EXCLUDED from the content_hash input
+//     (a derived projection, never authored content).
 //   ask 4 — stable ids + digests: ids are the package-authored
 //     identifiers; a display-text rename moves the content_hash, never
 //     the id (identity = id, currency = digest); the digest recomputes
@@ -32,6 +38,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  RETRIEVAL_FACET_VERSION,
   RETRIEVAL_PROJECTION,
   canonicalJson,
   exportPackageRetrieval,
@@ -41,6 +48,7 @@ import {
   packageSourceHash,
   passportCanonical,
   retrievalDigest,
+  retrievalDocParts,
   type RetrievalUnit,
 } from '../src/export/retrieval';
 import { buildRetrievalFixturePackage } from './helpers/retrieval';
@@ -117,6 +125,118 @@ describe('retrieval export — the document block (ask 2)', () => {
     assert.equal(
       exportPackageRetrieval(dir).json,
       exportPackageRetrieval(dir).json,
+    );
+  });
+});
+
+describe('retrieval export — the flat facet (ask 3)', () => {
+  /** The scalar-only invariant, asserted recursively (flat by contract). */
+  function assertFlatScalar(facet: Record<string, unknown>, id: string): void {
+    for (const [k, v] of Object.entries(facet)) {
+      assert.equal(
+        typeof v,
+        'string',
+        `${id} facet.${k} is a scalar string (got ${typeof v})`,
+      );
+    }
+  }
+
+  it('versions the facet shape on the document', () => {
+    const { doc } = fixtureUnits();
+    assert.equal(doc.facet_version, RETRIEVAL_FACET_VERSION);
+  });
+
+  it('carries one flat scalar facet per unit, currency keys included', () => {
+    const { units } = fixtureUnits();
+    for (const unit of units.values()) {
+      assert.ok(unit.facet, `${unit.id} carries a facet`);
+      assertFlatScalar(unit.facet, unit.id);
+      assert.equal(unit.facet.unit_id, unit.id);
+      assert.equal(unit.facet.unit_hash, unit.content_hash);
+      assert.equal(unit.facet.block, unit.kind);
+      // The document fields flatten onto every unit of the package.
+      assert.equal(unit.facet.doc_id, 'test-retrieval');
+      assert.equal(unit.facet.edition, '2021');
+      assert.equal(unit.facet.model_version, '2');
+      assert.equal(unit.facet.language, 'eng-Latn');
+      assert.equal(unit.facet.status, 'current');
+      // The fixture base URN is not an oiml-pub URN: the parsed parts
+      // are empty (never invented) and docidentifier falls back to the
+      // package title.
+      assert.equal(unit.facet.doctype, '');
+      assert.equal(unit.facet.doc_number, '');
+      assert.equal(unit.facet.docidentifier, 'Retrieval fixture package');
+    }
+  });
+
+  it('parses the publication URN into the document parts', () => {
+    assert.deepEqual(retrievalDocParts('urn:oiml:pub:r:60:2021'), {
+      doctype: 'r',
+      doc_number: '60',
+      year: '2021',
+      label: 'OIML R 60:2021',
+    });
+    // The part-suffixed form the clause URNs carry.
+    assert.deepEqual(retrievalDocParts('urn:oiml:pub:r:60-1:2021'), {
+      doctype: 'r',
+      doc_number: '60-1',
+      year: '2021',
+      label: 'OIML R 60-1:2021',
+    });
+    // A year-less URN labels without the edition segment.
+    assert.deepEqual(retrievalDocParts('urn:oiml:pub:d:29'), {
+      doctype: 'd',
+      doc_number: '29',
+      year: '',
+      label: 'OIML D 29',
+    });
+    // A non-register URN parses to empty parts, never an invention.
+    assert.deepEqual(retrievalDocParts('urn:test:r:9:2021'), {
+      doctype: '',
+      doc_number: '',
+      year: '',
+      label: '',
+    });
+  });
+
+  it('carries the primary clause anchor and title, honestly empty when none', () => {
+    const { units } = fixtureUnits();
+    // Primary edge: urn:test:r:9-1:2021#clause-5.2 → the clause number.
+    assert.equal(units.get('/req/scope/alpha')!.facet.clause_anchor, '5.2');
+    assert.equal(units.get('/req/scope/alpha')!.facet.clause_title, 'Alpha');
+    // The sentence sub-address stays on the clause edge; the anchor is
+    // the bare clause number.
+    assert.equal(
+      units.get('/conf/scope/alpha-frob')!.facet.clause_anchor,
+      '7.1',
+    );
+    // Anchor-only provenance (the UUID demotion): the clause anchor is
+    // empty — NEVER the producer-internal UUID.
+    assert.equal(units.get('/req/scope/beta')!.facet.clause_anchor, '');
+    // No provenance at all: empty, not a lane marker.
+    assert.equal(units.get('/req/orphan')!.facet.clause_anchor, '');
+    // A nameless-by-construct unit falls back to its id for the title.
+    assert.equal(
+      units.get('/state-machine/WidgetOperational')!.facet.clause_title,
+      'WidgetOperational',
+    );
+  });
+
+  it('flattens the applicability dimensions to app_ keys', () => {
+    const { units } = fixtureUnits();
+    // Existential default: the values join, no _match key rides.
+    const alpha = units.get('/req/scope/alpha')!.facet;
+    assert.equal(alpha.app_accuracy_class, 'A|C');
+    assert.equal(alpha.app_accuracy_class_match, undefined);
+    // The declared match mode rides beside the values.
+    const beta = units.get('/req/scope/beta')!.facet;
+    assert.equal(beta.app_tech, 'analogue|digital');
+    assert.equal(beta.app_tech_match, 'all');
+    // A unit without applicability carries no app_ keys at all.
+    const orphan = units.get('/req/orphan')!.facet;
+    assert.deepEqual(
+      Object.keys(orphan).filter(k => k.startsWith('app_')),
+      [],
     );
   });
 });
@@ -265,13 +385,16 @@ describe('retrieval export — stable ids + content digests (ask 4)', () => {
   it('the digest recomputes from the shipped unit (the canonical form is documented)', () => {
     const { units } = fixtureUnits();
     for (const unit of units.values()) {
-      const { content_hash, passport, ...content } = unit;
+      // The digest input is the AUTHORED content: the derived
+      // projections (passport, facet) ride beside it, never inside it.
+      const { content_hash, passport, facet, ...content } = unit;
       assert.equal(
         retrievalDigest(content),
         content_hash,
         `${unit.id} digest recomputes`,
       );
       assert.equal(passport.content_hash, content_hash);
+      assert.equal(facet.unit_hash, content_hash);
     }
   });
 
@@ -465,11 +588,46 @@ describe('retrieval export — the R 60 corpus leg', () => {
             `${unit.id} urn derives from the doc`,
           );
         }
-        // Every digest recomputes (the documented canonical form).
-        const { content_hash, passport, ...content } = unit;
+        // Every digest recomputes (the documented canonical form); the
+        // facet is the derived projection, excluded from the input.
+        const { content_hash, passport, facet, ...content } = unit;
         assert.equal(retrievalDigest(content), content_hash);
         assert.equal(passport.content_hash, content_hash);
+        assert.equal(facet.unit_hash, content_hash);
+        // The facet (ask 3), corpus-wide: flat scalars, the package's
+        // document fields, the honest clause anchor.
+        assert.ok(facet, `${unit.id} carries a facet`);
+        for (const [k, v] of Object.entries(facet)) {
+          assert.equal(
+            typeof v,
+            'string',
+            `${unit.id} facet.${k} is a scalar string`,
+          );
+        }
+        assert.equal(facet.unit_id, unit.id);
+        assert.equal(facet.block, unit.kind);
+        assert.equal(facet.doc_id, 'oiml-r60');
+        assert.equal(facet.docidentifier, 'OIML R 60:2021');
+        assert.equal(facet.doctype, 'r');
+        assert.equal(facet.doc_number, '60');
+        assert.equal(facet.edition, '2021');
+        assert.equal(facet.model_version, '2021');
+        assert.equal(facet.language, 'eng-Latn');
+        assert.equal(facet.clause_anchor, unit.clause?.clause ?? '');
+        // The applicability flattening agrees with the typed entries.
+        const appKeys = Object.keys(facet).filter(
+          k => k.startsWith('app_') && !k.endsWith('_match'),
+        );
+        const dims = new Set(
+          (unit.applicability ?? []).map(a => `app_${a.dimension}`),
+        );
+        assert.deepEqual(new Set(appKeys), dims);
       }
+      // Applicability is exercised corpus-wide (never a fixture-only path).
+      assert.ok(
+        units.some(u => Object.keys(u.facet).some(k => k.startsWith('app_'))),
+        'the corpus carries app_ facet keys',
+      );
       // The deployed consumer's pin shape: standard → { source_hash, … }.
       assert.match(result.document.source_hash!, /^[0-9a-f]{64}$/);
       assert.equal(result.document.source_hash, packageSourceHash(R60));

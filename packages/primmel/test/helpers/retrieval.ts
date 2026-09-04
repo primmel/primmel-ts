@@ -4,10 +4,11 @@
 // normalizes — structured source blocks, derives-from refs (the §18.4
 // fold), a multi-URN term source string, a section-only term, a
 // producer-internal UUID anchor (in the doc-fragment AND the clause
-// slot), a non-clause fragment anchor (#table-2), and a provenance-free
-// orphan. The manifest deliberately declares version "2" against
-// editions { 2021 2017 } — the edition-vs-model_version drift case the
-// issue's ask 2 pins.
+// slot), a non-clause fragment anchor (#table-2), a provenance-free
+// orphan, and a match-all applicability entry (the facet's
+// `app_<dim>_match` case). The manifest deliberately declares version
+// "2" against editions { 2021 2017 } — the edition-vs-model_version
+// drift case the issue's ask 2 pins.
 // ─────────────────────────────────────────────────────────────────────
 
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -63,6 +64,9 @@ requirement /req/scope/beta {
   name "Beta"
   statement "The widget should beep."
   obligation should
+  applicability {
+    tech: [analogue digital] match all
+  }
   source { doc "urn:test:r:9-1:2021#_eb46a3a3-b2c3-4d5e-8f90-a1b2c3d4e5f6" clause "" }
 }
 

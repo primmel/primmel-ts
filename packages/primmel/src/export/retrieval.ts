@@ -13,7 +13,7 @@
 // that projection: one export, one contract, versioned as
 // `primmel-retrieval/1`.
 //
-// The contract (the four guarantees the issue asks for):
+// The contract (the guarantees the issue asks for):
 //
 //   1. CLAUSE URNS FIRST-CLASS, ALWAYS. Every unit's provenance is the
 //      DOCUMENT's own clause numbering plus the document identifier —
@@ -31,6 +31,19 @@
 //      (the package's own `version`). Edition steering reads the first;
 //      freshness gating reads the second; neither ever borrows the
 //      other's value.
+//   3. THE FLAT RETRIEVAL FACET. Every unit carries `facet` — one flat
+//      scalar map (string values only), versioned as
+//      `retrieval-facet/1` on the document's `facet_version`: the
+//      document fields (identifier, doc number, doctype, edition,
+//      language), the clause anchor, the unit kind, the applicability
+//      dimensions (`app_<dim>` keys), and the currency keys (unit_id,
+//      unit_hash, model_version). Retrieval indexes accept only scalar
+//      metadata per vector; the facet is the canonical pre-flattened
+//      form so a consumer's ingestion is a MAPPING, never a
+//      re-derivation. The facet is a derived projection of the unit's
+//      authored content, so it is EXCLUDED from the content_hash input
+//      (identity and currency ride the authored fields; the facet
+//      re-derives from them deterministically).
 //   4. STABLE UNIT IDS + CONTENT DIGESTS. Unit ids are the package's
 //      OWN authored identifiers (requirement `/req/class-a/mpe`, term
 //      `/term/durability`, …) — the stability tier is STABLE PUBLIC
@@ -70,10 +83,9 @@
 // the ReqIF/RDF surfaces: the package stays the single source of truth;
 // the export is generated, never authored, never re-imported.
 //
-// The facet (a pre-flattened scalar metadata map per unit — the issue's
-// ask 3) and the language-tagged variants (ask 7) layer onto this core;
-// the diff-as-data API (ask 5) is the model diff's (src/model-diff.ts),
-// whose id keying this projection shares.
+// The language-tagged variants (the issue's ask 7) layer onto this
+// core; the diff-as-data API (ask 5) is the model diff
+// (src/model-diff.ts), whose id keying this projection shares.
 // ─────────────────────────────────────────────────────────────────────
 
 import { createHash } from 'node:crypto';
@@ -108,6 +120,22 @@ import { loadPackageWithIssues } from '../ser-des/package';
  * they do not read).
  */
 export const RETRIEVAL_PROJECTION = 'primmel-retrieval/1';
+
+/**
+ * The facet shape version (ask 3 — the pre-flattened retrieval facet):
+ * semver'd independently of the projection — a facet key renamed,
+ * removed, or re-typed bumps it (a re-index signal); additive keys
+ * within a version are legal (indexes ignore what they do not read).
+ */
+export const RETRIEVAL_FACET_VERSION = 'retrieval-facet/1';
+
+/**
+ * The facet (ask 3): one FLAT scalar map per unit — string values only,
+ * no nesting — the metadata a retrieval index accepts per vector. The
+ * key set is documented in docs/retrieval-export.md and congruent with
+ * the deployed consumer's chunk wire schema where the two overlap.
+ */
+export type RetrievalFacet = Record<string, string>;
 
 /** The unit kind vocabulary (the consumer's tokens where deployed). */
 export type RetrievalUnitKind =
@@ -181,8 +209,8 @@ export interface UnitPassport {
 /**
  * One typed retrieval unit — the atom a RAG consumer indexes. Fields
  * are omitted when the unit declares nothing for them (the canonical
- * JSON stays tight); `id`, `kind`, `content_hash`, and `passport` are
- * always present.
+ * JSON stays tight); `id`, `kind`, `content_hash`, `passport`, and
+ * `facet` are always present.
  */
 export interface RetrievalUnit {
   /**
@@ -231,12 +259,21 @@ export interface RetrievalUnit {
   clauses?: RetrievalClause[];
   /**
    * sha256 over the unit's canonical JSON content (every field above,
-   * content_hash and passport excluded): the currency signal. Identity
-   * is the id; the digest says whether the CONTENT moved.
+   * content_hash, passport and facet excluded): the currency signal.
+   * Identity is the id; the digest says whether the CONTENT moved.
    */
   content_hash: string;
   /** The machine passport (ask 6) — the compact verifiable digest. */
   passport: UnitPassport;
+  /**
+   * The flat retrieval facet (ask 3) — the pre-flattened scalar metadata
+   * map, derived from the unit's authored content plus the package's
+   * document block. A DERIVED projection: excluded from the content_hash
+   * input (the digest covers authored content; the facet re-derives
+   * from it deterministically). Attached by the export, after the
+   * digest.
+   */
+  facet: RetrievalFacet;
 }
 
 /**
@@ -268,6 +305,8 @@ export interface RetrievalPackage {
 /** The retrieval document: the versioned projection of one package. */
 export interface RetrievalDocument {
   projection: typeof RETRIEVAL_PROJECTION;
+  /** The facet shape version every unit's `facet` map follows (ask 3). */
+  facet_version: typeof RETRIEVAL_FACET_VERSION;
   package: RetrievalPackage;
   /**
    * sha256 over every byte of the package directory (the freshness
@@ -589,14 +628,130 @@ function passportOf(unit: Omit<RetrievalUnit, 'passport'>): UnitPassport {
   };
 }
 
+// ── the flat retrieval facet (ask 3) ─────────────────────────────────
+
+/**
+ * The document-URN parts the facet flattens per unit, parsed with the
+ * deployed consumer's grammar (`urn:oiml:pub:<type>:<number>[:<year>]`,
+ * type ∈ r/d/b/g/e) extended with the part suffix the publication URNs
+ * carry (`60-1`); a non-matching base URN yields empty parts, never an
+ * invented value (the register mapping stays consumer-side).
+ */
+export interface RetrievalDocParts {
+  /** The lower-case publication-type letter (`r`, `d`, `b`, `g`, `e`). */
+  doctype: string;
+  /** The document number, part suffix included (`60`, `60-1`). */
+  doc_number: string;
+  /** The URN's publication year ('' when the URN carries none). */
+  year: string;
+  /** The display label (`OIML R 60:2021`; '' when unparseable). */
+  label: string;
+}
+
+const BASE_URN_PARTS = /^urn:oiml:pub:([rdbge]):(\d[\d-]*)(?::(\d{4}))?$/i;
+
+export function retrievalDocParts(baseUrn: string): RetrievalDocParts {
+  const m = BASE_URN_PARTS.exec(baseUrn);
+  if (!m) {
+    return { doctype: '', doc_number: '', year: '', label: '' };
+  }
+  const doctype = (m[1] ?? '').toLowerCase();
+  const docNumber = m[2] ?? '';
+  const year = m[3] ?? '';
+  return {
+    doctype,
+    doc_number: docNumber,
+    year,
+    label: `OIML ${doctype.toUpperCase()} ${docNumber}${year ? `:${year}` : ''}`,
+  };
+}
+
+/**
+ * Build the unit's flat facet (ask 3): the document fields every vector
+ * of this package carries, the unit's kind + currency keys, its primary
+ * clause anchor, and its applicability dimensions flattened to
+ * `app_<dim>` keys (values sorted, `|`-joined; a non-`any` match mode
+ * rides beside as `app_<dim>_match`).
+ *
+ * Key congruence with the deployed consumer's chunk wire schema
+ * (ChunkMetaModel): `doc_id`, `docidentifier`, `doctype`, `doc_number`,
+ * `edition`, `language`, `clause_anchor`, `clause_title`, `status`,
+ * `unit_id`, `block`, `unit_hash` carry the same names and semantics.
+ * The lane constants the schema also carries (`tier`, `corpus`,
+ * `producer`, `text_ref`, `superseded_by`) are DEPLOYMENT stamps, not
+ * package content — the consumer's adapter sets them per lane; the
+ * facet never invents them. Three deliberate value choices:
+ *
+ *   - `language` is the package's authored default spelling (the
+ *     ISO 24229 code, e.g. `eng-Latn`) — the consumer lanes stamp a
+ *     constant two-letter code today; the facet carries the authored
+ *     truth and the adapter maps.
+ *   - `clause_anchor` is the primary edge's document clause number, ''
+ *     when the unit names no clause (never a producer UUID — ask 1
+ *     already demoted those to `anchor`). The consumer's "model"
+ *     fallback for clause-less model units is its lane marker, applied
+ *     at its adapter.
+ *   - `edition` is the package block's canonical edition (ask 2), not
+ *     a re-parse of the base URN — the two coincide on URN-carrying
+ *     packages, and the package block is authoritative when they drift.
+ */
+export function retrievalFacet(
+  unit: RetrievalUnit,
+  pkg: RetrievalPackage,
+): RetrievalFacet {
+  const parts = retrievalDocParts(pkg.base_urn);
+  const facet: RetrievalFacet = {
+    unit_id: unit.id,
+    unit_hash: unit.content_hash,
+    block: unit.kind,
+    doc_id: pkg.id,
+    docidentifier: parts.label || pkg.title,
+    doctype: parts.doctype,
+    doc_number: parts.doc_number,
+    edition: pkg.edition,
+    model_version: pkg.model_version,
+    language: pkg.default_spelling,
+    clause_anchor: unit.clause?.clause ?? '',
+    clause_title: unit.name ?? unit.id,
+    ...(present(pkg.status) ? { status: pkg.status! } : {}),
+  };
+  const valuesByDim = new Map<string, Set<string>>();
+  const matchByDim = new Map<string, string>();
+  for (const entry of unit.applicability ?? []) {
+    const values =
+      entry.values.length > 0 ? entry.values : Object.keys(entry.mapping ?? {});
+    const set = valuesByDim.get(entry.dimension) ?? new Set<string>();
+    for (const v of values) {
+      set.add(v);
+    }
+    valuesByDim.set(entry.dimension, set);
+    if (
+      entry.match &&
+      entry.match !== 'any' &&
+      !matchByDim.has(entry.dimension)
+    ) {
+      matchByDim.set(entry.dimension, entry.match);
+    }
+  }
+  for (const dim of [...valuesByDim.keys()].sort()) {
+    facet[`app_${dim}`] = [...valuesByDim.get(dim)!].sort().join('|');
+    const match = matchByDim.get(dim);
+    if (match) {
+      facet[`app_${dim}_match`] = match;
+    }
+  }
+  return facet;
+}
+
 // ── unit construction ────────────────────────────────────────────────
 
 /**
  * The fields that participate in a unit's content digest: everything
  * the consumer indexes — the projected content, the normalized
- * provenance — minus the digest and passport themselves.
+ * provenance — minus the digest, the passport, and the facet (both
+ * derived projections of the authored content, never inputs to it).
  */
-type UnitContent = Omit<RetrievalUnit, 'content_hash' | 'passport'>;
+type UnitContent = Omit<RetrievalUnit, 'content_hash' | 'passport' | 'facet'>;
 
 function finalize(
   content: UnitContent,
@@ -1174,6 +1329,9 @@ export function exportStandardRetrieval(
   let nonUrnDocRefs = 0;
   let withoutProvenance = 0;
   for (const u of units) {
+    // The facet attaches last (a derived projection of the digested
+    // content — the unit_hash key reads the computed content_hash).
+    u.facet = retrievalFacet(u, pkg);
     byKind[u.kind] = (byKind[u.kind] ?? 0) + 1;
     const clauses = u.clauses ?? [];
     if (clauses.some(c => c.clause)) {
@@ -1190,6 +1348,7 @@ export function exportStandardRetrieval(
 
   const document: RetrievalDocument = {
     projection: RETRIEVAL_PROJECTION,
+    facet_version: RETRIEVAL_FACET_VERSION,
     package: pkg,
     ...(options.sourceHash !== undefined
       ? { source_hash: options.sourceHash }
