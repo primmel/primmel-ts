@@ -1,12 +1,12 @@
 {
   "name": "primmel-conformance-suite",
   "title": "The Primmel conformance test suite",
-  "version": "3.1.0",
-  "date": "2026-09-01",
+  "version": "3.2.0",
+  "date": "2026-09-05",
   "language": {
     "name": "Primmel",
-    "referenceBaseline": "@primmel/primmel 1.8.0",
-    "specification": "MN 114, the Primmel Language Specification (v3.1 draft, 2026-08-28); the v3.1 clauses (DAT-01 to DAT-04) anchor to its clause 19, and the v3 clauses' identifiers re-key to the specification's conformance clauses when it publishes."
+    "referenceBaseline": "@primmel/primmel 1.9.0",
+    "specification": "MN 114, the Primmel Language Specification (v3.2 draft, 2026-09-04); the v3.1 clauses (DAT-01 to DAT-04) anchor to its clause 19, the v3.2 clauses (CON-01 to CON-09) anchor to the v3.2 construct clauses, and all identifiers re-key to the specification's conformance clauses when it publishes."
   },
   "areas": {
     "syntax": "The document grammar: structure, identifiers, and the five entity kinds (requirement, conformance test, form, calculation, table).",
@@ -15,6 +15,7 @@
     "packaging": "The package layer: the manifest, editions, version pins, layered composition, and abstract imports.",
     "errors": "The named error cases: structural parse errors, enumerated facet rejection, and the duplicate-identifier issue.",
     "dataspace": "The v3.1 extension set (MN 114 clause 19): the dataspace construct, the policy construct, the trust reference, and the correspondence annotations.",
+    "consumption": "The v3.2 consumption set (MN 114 v3.2): the term alias family, the applicability dimension, the structured reference identity + edition lineage, units-typed quantities, and the verdict chain + instance-parameter schema.",
     "surface": "The runtime surface: the enumerated vocabularies the toolchain's browser-facing module exposes as data."
   },
   "layout": {
