@@ -14,6 +14,7 @@ never authored, never re-imported.
 ```jsonc
 {
   "projection": "primmel-retrieval/1",
+  "facet_version": "retrieval-facet/1",  // the per-unit facet shape version
   "package": {
     "id": "oiml-r60",
     "title": "OIML R 60:2021 — R 60 package",
@@ -81,10 +82,61 @@ are always present and always mean the same thing.
 
 ### 3. The pre-flattened retrieval facet
 
-*(Slice 2 of the issue lands the `facet` block: one flat scalar map per
-unit — document identifier, doc number, doctype, edition, language,
-clause, unit kind, applicability dimensions — versioned as
-`retrieval-facet/1`.)*
+Every unit carries `facet` — **one flat scalar map** (string values
+only, no nesting, no arrays), versioned independently of the projection
+as `retrieval-facet/1` on the document's `facet_version`. Retrieval
+indexes (Cloudflare Vectorize and peers) accept only scalar metadata
+per vector; the facet is the canonical pre-flattened form, so a
+consumer's ingestion is a *mapping*, never a re-derivation of the
+package tree.
+
+The key set (shape version `retrieval-facet/1`):
+
+| key | value | |
+|---|---|---|
+| `unit_id` | the unit's stable id (`/req/class-a/mpe`) | per unit |
+| `unit_hash` | the unit's `content_hash` | per unit |
+| `block` | the unit kind (`requirement`, `term`, …) | per unit |
+| `clause_anchor` | the primary edge's **document clause number** (`5.3.2`), `''` when the unit names no clause — never a producer UUID | per unit |
+| `clause_title` | the unit's display name, its id as fallback | per unit |
+| `app_<dimension>` | the applicability values, sorted, `\|`-joined (`A|C`) | per declared dimension |
+| `app_<dimension>_match` | the declared match mode, only when not `any` (`all`, `exact`) | per declared dimension |
+| `doc_id` | the package id (`oiml-r60`) | per package |
+| `docidentifier` | the display label derived from the base URN (`OIML R 60:2021`), the package title as fallback | per package |
+| `doctype` | the lower-case publication-type letter (`r`) | per package |
+| `doc_number` | the document number, part suffix included (`60`, `60-1`) | per package |
+| `edition` | the package block's canonical edition (ask 2 — not a URN re-parse) | per package |
+| `model_version` | the package's own version | per package |
+| `language` | the package's authored default spelling (ISO 24229, e.g. `eng-Latn`) | per package |
+| `status` | the manifest status (`current`), when declared | per package |
+
+The base-URN parse (`retrievalDocParts`) follows the deployed
+consumer's grammar — `urn:oiml:pub:<type>:<number>[:<year>]`, type ∈
+r/d/b/g/e — extended with the part suffix the publication URNs carry. A
+base URN outside the register yields **empty** `doctype` / `doc_number`
+and a title-fallback `docidentifier`, never an invented value (the
+register mapping stays consumer-side).
+
+Congruence with the deployed consumer's chunk wire schema (its
+`ChunkMetaModel`): the overlapping keys carry the same names and
+semantics. The schema's lane constants — `tier`, `corpus`, `producer`,
+`text_ref`, `superseded_by` — are **deployment stamps, not package
+content**: the consumer's adapter sets them per lane and the facet
+deliberately never carries them. Three deliberate value choices: the
+facet's `language` is the authored ISO 24229 spelling code (the lanes
+stamp a constant two-letter code today; the adapter maps), the facet's
+`clause_anchor` is `''` for clause-less units (the model lane's
+`"model"` fallback marker is the lane's own choice, applied at its
+adapter), and `edition` is the package block's field rather than a
+re-parse of the base URN.
+
+**The facet is a derived projection, excluded from the content_hash
+input.** The digest covers the unit's authored content; the facet
+re-derives from that content (plus the package block) deterministically
+— `unit_hash` inside the facet reads the computed digest, so the
+currency signal survives the flattening. Shape changes (a key renamed,
+removed, or re-typed) bump `retrieval-facet/1`; additive keys within a
+version are legal — indexes ignore what they do not read.
 
 ### 4. Stable unit ids + content digests
 
@@ -174,6 +226,9 @@ but no unit's `content_hash`; that split is the point.
   A field renamed, removed, or re-typed bumps the version and is a
   re-index signal for every consumer; additive fields within a version
   are legal (consumers ignore what they do not read).
+- **`facet_version`** (`retrieval-facet/1`) versions the per-unit facet
+  key set on the same rule (the facet is the derived projection —
+  excluded from the content_hash input; its shape versions separately).
 - **`passport.v`** versions the passport shape on the same rule.
 
 ## Congruence with the deployed consumer
