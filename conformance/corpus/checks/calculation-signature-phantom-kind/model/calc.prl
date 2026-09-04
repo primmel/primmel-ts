@@ -1,0 +1,12 @@
+quantity_register si {
+  kind mass { dimensions { M 1 } si_unit kg }
+  unit kg { symbol "kg" kind mass factor 1 }
+}
+
+# The input's quantity_kind names no registered kind: C115 must fire.
+calculation phantom_sig {
+  inputs {
+    q : number { unit "kg" quantity_kind phantom_kind }
+  }
+  output : number { unit "kg" quantity_kind mass }
+}

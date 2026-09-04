@@ -1,0 +1,7 @@
+# The sibling the successor's supersedes edge names: its forward edge
+# agrees, so the pair is coherent (the positive C113 case).
+package {
+  id corpus-checks-lineage-coherent-predecessor
+  base_urn urn:primmel:conformance:lineage:coherent:1
+  superseded_by { urn:primmel:conformance:lineage:coherent:2 }
+}

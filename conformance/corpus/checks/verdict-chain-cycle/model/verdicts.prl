@@ -1,0 +1,13 @@
+# Each verdict derives from the other — the acceptance chain cycles:
+# C117 must fire.
+verdict a {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { b }
+}
+
+verdict b {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { a }
+}

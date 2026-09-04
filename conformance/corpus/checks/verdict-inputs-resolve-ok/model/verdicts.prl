@@ -1,0 +1,19 @@
+symbol c_m { label "c" }
+
+conformance_test t1 {
+  name "T"
+  variables { variable measured_m { type number unit "kg" source measured } }
+  observables { observable obs1 { quantity_kind mass unit "kg" } }
+}
+
+verdict v_base {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { c_m measured_m obs1 }
+}
+
+verdict v_top {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { v_base }
+}

@@ -1,0 +1,7 @@
+# The input names no declared symbol, test variable or observable, or
+# verdict: C116 must fire.
+verdict v1 {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { phantom }
+}

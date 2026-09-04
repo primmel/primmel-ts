@@ -1,0 +1,24 @@
+quantity_register si {
+  kind mass { dimensions { M 1 } si_unit kg }
+  kind count { si_unit "1" }
+  unit kg { symbol "kg" kind mass factor 1 }
+  unit g { symbol "g" kind mass factor 0.001 }
+  unit counts { symbol "counts" kind count }
+}
+
+verdict mpe_error {
+  quantity { kind mass unit kg }
+  derive "ocl{self.e - self.ref}"
+}
+
+# The limit declares kind count; the bound verdict derives mass: C114
+# must fire.
+requirement /req/mpe {
+  name "MPE"
+  statement "The error shall not exceed the maximum permissible error."
+  limit {
+    expression "ocl{...}"
+    quantity { kind count unit kg }
+    accepts { verdict mpe_error op lte limit "ocl{...}" }
+  }
+}

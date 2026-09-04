@@ -1,0 +1,11 @@
+quantity_register si {
+  kind mass { dimensions { M 1 } si_unit kg }
+  unit kg { symbol "kg" kind mass factor 1 }
+}
+
+calculation mpe_absolute {
+  inputs {
+    e_l : number { unit "kg" quantity_kind mass range { min 0 } description "Error of indication at the test load." }
+  }
+  output : number { unit "kg" quantity_kind mass range { min 0 max 5 } name "mpe" description "Maximum permissible error, absolute." }
+}

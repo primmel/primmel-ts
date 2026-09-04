@@ -1,0 +1,13 @@
+symbol s_ind { label "s" }
+
+verdict v_base {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { s_ind }
+}
+
+verdict v_top {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { v_base }
+}

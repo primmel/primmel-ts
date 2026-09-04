@@ -1,0 +1,5 @@
+package {
+  id corpus-checks-lineage-coherent
+  base_urn urn:primmel:conformance:lineage:coherent:2
+  supersedes { urn:primmel:conformance:lineage:coherent:1 }
+}

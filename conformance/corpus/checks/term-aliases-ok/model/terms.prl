@@ -1,0 +1,6 @@
+term durability {
+  label "Durability"
+  definition "Ability to maintain performance over a period of use."
+  aliases { "long-term stability" }
+  abbreviations { "dur." }
+}
