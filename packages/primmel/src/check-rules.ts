@@ -1126,6 +1126,40 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.primmel/11, MN 114 clause 13.7.1 (primmel/spec#18 ask 4)',
   ),
+  // C116/C117: the verdict chain (clause 11.3) — a verdict's inputs may
+  // name another verdict, making the acceptance chain an explicit graph.
+  // Every input resolves to a declared symbol, a test variable or
+  // observable, or another verdict; the verdict→verdict graph never
+  // cycles. C118: the instance-parameter schema (clause 11.1.3) — a
+  // parameter's bind path resolves against the subject's aspect catalog
+  // (the binds_to path discipline), its unit resolves against the merged
+  // quantity register (the rollout WARNING leg, the C33 §6.8 precedent —
+  // tightens with C115's leg, TODO.primmel/11d), and a range's min never
+  // exceeds its max.
+  R(
+    'C116',
+    'verdict-inputs-resolve',
+    'characteristics',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 11.3 (primmel/spec#18 ask 5)',
+  ),
+  R(
+    'C117',
+    'verdict-chain-acyclic',
+    'characteristics',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 11.3 (primmel/spec#18 ask 5)',
+  ),
+  R(
+    'C118',
+    'requirement-parameter-shape',
+    'base',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 11.1.3 (primmel/spec#18 ask 5)',
+  ),
   // ── the dataspace family (TODO.primmel/10; MN 114 v3.1 clause 19) ──
   // The v3.1 extension set: the dataspace definition, the policy
   // construct (Primmel's own policy grammar; ODRL is a codec output),

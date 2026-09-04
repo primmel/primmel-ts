@@ -215,6 +215,7 @@ function readParameters(block: string): RequirementParameter[] {
       rangeMax: '',
       hasRange: false,
       enumValues: [],
+      bind: '',
     };
     if (i < t.length && !t[i].startsWith('{')) {
       param.type = stripWrapping(t[i++]);
@@ -231,6 +232,10 @@ function readParameters(block: string): RequirementParameter[] {
           param.description = stripWrapping(pt[j++]);
         } else if (pc === 'unit') {
           param.unit = stripWrapping(pt[j++]);
+        } else if (pc === 'bind') {
+          // v3.2 (clause 11.1.3): the aspect path the parameter
+          // instantiates from.
+          param.bind = stripWrapping(pt[j++]);
         } else if (pc === 'default') {
           param.defaultValue = stripWrapping(pt[j++]);
           param.hasDefault = true;
@@ -456,6 +461,9 @@ const dumpRequirement = function (r: Requirement): string {
       }
       if (p.unit) {
         line += 'unit "' + escapeString(p.unit) + '" ';
+      }
+      if (p.bind) {
+        line += 'bind "' + escapeString(p.bind) + '" ';
       }
       if (p.hasDefault) {
         line += 'default ' + dumpBareSafe(p.defaultValue) + ' ';

@@ -574,6 +574,9 @@ export function checkPackage(
   // ── C112: reference-identity (MN 114 v3.2, clause 14.7) ────────────
   issues.push(...checkReferences(standard));
 
+  // ── C116/C117: the verdict chain (MN 114 v3.2, clause 11.3) ────────
+  issues.push(...checkVerdictChains(standard));
+
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
   );
@@ -3912,6 +3915,67 @@ export function checkPackage(
     }
   }
 
+  // ── C118: requirement-parameter-shape (MN 114 v3.2, clause 11.1.3) ──
+  // The instance-parameter schema is the binding contract an execution
+  // environment reads: a parameter's bind path resolves against the
+  // subject's aspect catalog (the binds_to path discipline of C2), its
+  // unit resolves against the merged quantity register (the rollout
+  // WARNING leg — the C33 §6.8 precedent, shared with C115), and a
+  // range's min never exceeds its max.
+  for (const r of standard.requirements ?? []) {
+    for (const p of r.parameters ?? []) {
+      const where = `requirement ${r.id}: param ${p.name}`;
+      if (p.bind) {
+        const parts = String(p.bind).split('.');
+        const id = parts[2];
+        if (id) {
+          if (parts[1] === 'classification') {
+            const dim = DIM_ALIASES[id] ?? id;
+            if (!dimIds.has(dim) && !attrIds.has(id) && !attrIds.has(dim)) {
+              err(
+                'C118',
+                `${where}: bind "${p.bind}" — dimension "${id}" not declared (requirement-parameter-shape)`,
+              );
+            }
+          } else if (parts[1] === 'behaviors') {
+            if (!behaviorIds.has(id)) {
+              err(
+                'C118',
+                `${where}: bind "${p.bind}" — behavior "${id}" not declared (requirement-parameter-shape)`,
+              );
+            }
+          } else if (
+            !isIdentityPath(String(p.bind)) &&
+            !attrIds.has(id) &&
+            !symbolIds.has(id)
+          ) {
+            err(
+              'C118',
+              `${where}: bind "${p.bind}" — attribute "${id}" not defined (requirement-parameter-shape)`,
+            );
+          }
+        }
+      }
+      if (p.unit && registersExist && kindOfUnit(p.unit) === undefined) {
+        // Rollout warning leg (see the rule's catalog entry).
+        warn(
+          'C118',
+          `${where}: unit "${p.unit}" resolves to no registered unit of the merged quantity register (requirement-parameter-shape)`,
+        );
+      }
+      if (p.hasRange && p.rangeMin && p.rangeMax) {
+        const lo = Number(p.rangeMin);
+        const hi = Number(p.rangeMax);
+        if (!Number.isNaN(lo) && !Number.isNaN(hi) && lo > hi) {
+          err(
+            'C118',
+            `${where}: range min ${p.rangeMin} exceeds max ${p.rangeMax} (requirement-parameter-shape)`,
+          );
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {
@@ -6064,6 +6128,67 @@ export function checkReferences(standard: Standard): CheckIssue[] {
         message: `reference ${r.id}: carries neither urn nor the org-and-document pair — a display-string citation is not machine-traversable (reference-identity)`,
       });
     }
+  }
+  return issues;
+}
+
+/**
+ * C116/C117 — the verdict chain (MN 114 v3.2, clause 11.3;
+ * TODO.primmel/11): a verdict's `inputs` name the free identifiers of
+ * its derivation, and an input may name another VERDICT — the
+ * acceptance chain is then an explicit graph: requirement →
+ * limit.accepts.verdict → the verdict's inputs (symbols and
+ * sub-verdicts) → each verdict's acceptance.
+ *   C116 verdict-inputs-resolve: every input resolves to a declared
+ *      symbol, a test variable or observable, or another verdict.
+ *   C117 verdict-chain-acyclic: the verdict→verdict graph never cycles
+ *      (a consumption system traverses the chain; a cycle never
+ *      terminates).
+ */
+export function checkVerdictChains(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const symbolIds = new Set((standard.symbols ?? []).map(s => s.id));
+  const testNames = new Set<string>();
+  for (const t of standard.conformanceTests ?? []) {
+    for (const v of t.variables ?? []) {
+      testNames.add(v.name);
+    }
+    for (const o of t.observables ?? []) {
+      testNames.add(o.name);
+    }
+  }
+  const verdictIds = new Set((standard.verdicts ?? []).map(v => v.id));
+
+  // C116 — every input resolves.
+  for (const v of standard.verdicts ?? []) {
+    for (const inp of v.inputs ?? []) {
+      if (!symbolIds.has(inp) && !testNames.has(inp) && !verdictIds.has(inp)) {
+        issues.push({
+          check: 'C116',
+          severity: 'error',
+          message: `verdict ${v.id}: input "${inp}" resolves to no declared symbol, test variable or observable, or verdict (verdict-inputs-resolve)`,
+        });
+      }
+    }
+  }
+
+  // C117 — the verdict→verdict subgraph never cycles. Self-derivation
+  // stays in the adjacency: a verdict deriving from itself is the
+  // length-1 cycle this rule exists for.
+  const adj = new Map<string, string[]>();
+  for (const v of standard.verdicts ?? []) {
+    adj.set(
+      v.id,
+      (v.inputs ?? []).filter(i => verdictIds.has(i)),
+    );
+  }
+  const cycle = findCycle(adj);
+  if (cycle) {
+    issues.push({
+      check: 'C117',
+      severity: 'error',
+      message: `verdict chain cycle: ${cycle.join(' → ')} — the acceptance chain is a graph a consumer traverses, so it must be acyclic (verdict-chain-acyclic)`,
+    });
   }
   return issues;
 }
