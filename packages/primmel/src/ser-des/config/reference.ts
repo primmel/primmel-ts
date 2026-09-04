@@ -20,6 +20,12 @@ export const parseReference: Parser = (id: string, data: string) => {
           ref.clause = unwrapBlock(t[i++]);
         } else if (keyword === 'title') {
           ref.title = unwrapBlock(t[i++]);
+        } else if (keyword === 'org') {
+          ref.org = unwrapBlock(t[i++]);
+        } else if (keyword === 'edition') {
+          ref.edition = unwrapBlock(t[i++]);
+        } else if (keyword === 'urn') {
+          ref.urn = unwrapBlock(t[i++]);
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -43,6 +49,15 @@ export const dumpReference: Dumper<Reference> = function (ref) {
   out += '  clause "' + escapeString(ref.clause) + '"\n';
   if (ref.title) {
     out += '  title "' + escapeString(ref.title) + '"\n';
+  }
+  if (ref.org) {
+    out += '  org "' + escapeString(ref.org) + '"\n';
+  }
+  if (ref.edition) {
+    out += '  edition "' + escapeString(ref.edition) + '"\n';
+  }
+  if (ref.urn) {
+    out += '  urn "' + escapeString(ref.urn) + '"\n';
   }
   out += '}\n';
   return out;

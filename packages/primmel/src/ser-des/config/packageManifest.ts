@@ -76,7 +76,7 @@ const EDITION_STATUSES: readonly string[] = [
   'withdrawn',
 ];
 
-/** One URN or a `{ … }` list of them (supersedes/replaces). */
+/** One URN or a `{ … }` list of them (supersedes/replaces/superseded_by). */
 function readUrnList(token: string): string[] {
   return token.startsWith('{') ? readList(token) : [stripWrapping(token)];
 }
@@ -189,6 +189,8 @@ export const parsePackage: Parser = function (data) {
       manifest.supersedes = readUrnList(t[i++]);
     } else if (cmd === 'replaces') {
       manifest.replaces = readUrnList(t[i++]);
+    } else if (cmd === 'superseded_by') {
+      manifest.supersededBy = readUrnList(t[i++]);
     } else if (cmd === 'validity') {
       const vblock = unwrapBlock(t[i++]);
       const vt = tokenize(vblock);
@@ -338,6 +340,9 @@ export function dumpPackage(m: PackageManifest): string {
   }
   if (m.replaces && m.replaces.length > 0) {
     out += '  replaces { ' + m.replaces.join(' ') + ' }\n';
+  }
+  if (m.supersededBy && m.supersededBy.length > 0) {
+    out += '  superseded_by { ' + m.supersededBy.join(' ') + ' }\n';
   }
   if (m.validity && m.validity.from) {
     out +=

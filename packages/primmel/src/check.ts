@@ -549,11 +549,13 @@ export function checkPackage(
     }
   }
 
-  // ── C77–C80: edition lifecycle (TODO.roadmap/28, doctrine §13.4/§13.7) ──
+  // ── C77–C80 + C113: edition lifecycle (TODO.roadmap/28, doctrine §13.4/§13.7;
+  // v3.2 clause 9.3.1) ──
   // Versioning relations live on the package manifest, never in subject
   // models: status/register coherence (C77), validity windows (C78),
-  // supersedes/replaces resolution + acyclicity across sibling manifests
-  // (C79), and the INV-8 pin — every instance's definition_versions
+  // supersedes/replaces/superseded_by resolution + acyclicity across
+  // sibling manifests (C79) and the forward-edge coherence (C113), and the
+  // INV-8 pin — every instance's definition_versions
   // resolves against the package's edition register (C80).
   issues.push(...checkEditionLifecycle(dir, standard));
 
@@ -568,6 +570,9 @@ export function checkPackage(
 
   // ── C111: dimension-shape (MN 114 v3.2, clause 10.6) ───────────────
   issues.push(...checkDimensions(standard));
+
+  // ── C112: reference-identity (MN 114 v3.2, clause 14.7) ────────────
+  issues.push(...checkReferences(standard));
 
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
@@ -5905,7 +5910,41 @@ export function checkDimensions(standard: Standard): CheckIssue[] {
 }
 
 /**
- * C77–C80 + C85 — edition lifecycle (TODO.roadmap/28; doctrine ch. 13
+ * C112 — reference-identity (MN 114 v3.2, clause 14.7; TODO.primmel/11):
+ * the reference construct is the registry of named citation targets, and
+ * v3.2 grows its facet set from display strings to a resolvable identity.
+ * A malformed `urn` is an error — the same well-formedness class as C85's
+ * baseUrn check (a scheme, then no whitespace or IRI delimiters). When
+ * `urn` is present it IS the document's identity; when it is absent the
+ * org/document/edition/clause quadruple is what a consumer's locator
+ * resolves, so a reference carrying neither `urn` nor the
+ * org-and-document pair is a warning — a display-string citation is
+ * visible debt, never silently citable.
+ */
+export function checkReferences(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  for (const r of standard.references ?? []) {
+    if (r.urn !== undefined) {
+      if (!/^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/.test(r.urn)) {
+        issues.push({
+          check: 'C112',
+          severity: 'error',
+          message: `reference ${r.id}: urn "${r.urn}" is not a well-formed IRI (a scheme followed by no whitespace or IRI delimiters) (reference-identity)`,
+        });
+      }
+    } else if (!(r.org && r.document)) {
+      issues.push({
+        check: 'C112',
+        severity: 'warning',
+        message: `reference ${r.id}: carries neither urn nor the org-and-document pair — a display-string citation is not machine-traversable (reference-identity)`,
+      });
+    }
+  }
+  return issues;
+}
+
+/**
+ * C77–C80 + C85 + C113 — edition lifecycle (TODO.roadmap/28; doctrine ch. 13
  * §13.4/§13.7) and the manifest base URN (TODO.roadmap/27). Editions are
  * packagings: the relations live on the manifest, and the checks run
  * WITHOUT composing content (the checkManifestResolution sibling
@@ -5917,7 +5956,8 @@ export function checkDimensions(standard: Standard): CheckIssue[] {
  *      parser, like `kind` — an unknown token is a parse error.)
  *   C78 edition-validity-window: the window is well-formed ISO 8601 and
  *      `to` is not before `from`.
- *   C79 edition-supersedes-resolves: supersedes/replaces targets are
+ *   C79 edition-supersedes-resolves: supersedes/replaces/superseded_by
+ *      targets are
  *      well-formed URNs, never the package itself; a target naming an
  *      earlier edition OF THE SAME document resolves against the edition
  *      register (warning when the register omits it); the supersedes
@@ -5931,6 +5971,10 @@ export function checkDimensions(standard: Standard): CheckIssue[] {
  *      grounds every downstream IRI (the RDF projection, provenance
  *      comparisons), and the free-string field was the one manifest
  *      IRI surface nothing validated.
+ *   C113 edition-lineage-coherent (v3.2, clause 9.3.1): the forward
+ *      `superseded_by` edge, where declared, must agree with the
+ *      successor's backward edges across the composed closure; a missing
+ *      forward edge is never an error.
  */
 export function checkEditionLifecycle(
   dir: string,
@@ -6011,12 +6055,17 @@ export function checkEditionLifecycle(
     );
   }
 
-  // C79 — supersedes/replaces: well-formed URNs, never self, resolving
-  // against the register (same-document targets) and acyclic across the
-  // repo's manifests (§13.7).
+  // C79 — supersedes/replaces/superseded_by: well-formed URNs, never self,
+  // resolving against the register (same-document targets) and acyclic
+  // across the repo's manifests (§13.7). The v3.2 forward edge
+  // (superseded_by, clause 9.3.1) takes the same shape checks; coherence of
+  // the two directions is C113 below.
   const relations: [string, string][] = [
     ...(m.supersedes ?? []).map(t => ['supersedes', t] as [string, string]),
     ...(m.replaces ?? []).map(t => ['replaces', t] as [string, string]),
+    ...(m.supersededBy ?? []).map(
+      t => ['superseded_by', t] as [string, string],
+    ),
   ];
   const ownBasis = normalizeSourceRef(m.baseUrn ?? '', '').basis;
   for (const [rel, target] of relations) {
@@ -6035,7 +6084,7 @@ export function checkEditionLifecycle(
       continue;
     }
     const tNorm = normalizeSourceRef(target, '');
-    if (tNorm.basis === ownBasis && tNorm.edition) {
+    if (rel !== 'superseded_by' && tNorm.basis === ownBasis && tNorm.edition) {
       if (!register.has(tNorm.edition)) {
         warn(
           'C79',
@@ -6048,8 +6097,12 @@ export function checkEditionLifecycle(
     // The supersedes graph over the repo's manifests (sibling dirs keyed
     // by baseUrn) must be acyclic — no superseding oneself through a
     // chain. Edges to URNs no sibling declares are external and cannot
-    // close a cycle here.
-    const nodes = new Map<string, [string, string][]>(); // baseUrn → relations
+    // close a cycle here. The walk also captures each node's forward edge
+    // (superseded_by) for C113; the cycle detector deliberately reads the
+    // backward edges ONLY — a matched supersedes/superseded_by pair is
+    // one lineage fact declared at both ends, never a 2-cycle.
+    const nodes = new Map<string, [string, string][]>(); // baseUrn → backward relations
+    const forwardByNode = new Map<string, Set<string>>(); // baseUrn → superseded_by targets
     const parent = dirname(resolve(dir));
     for (const entry of readdirSync(parent).sort()) {
       const full = join(parent, entry);
@@ -6065,6 +6118,7 @@ export function checkEditionLifecycle(
           ),
           ...(sib.replaces ?? []).map(t => ['replaces', t] as [string, string]),
         ]);
+        forwardByNode.set(key, new Set(sib.supersededBy ?? []));
       } catch {
         // Not a package dir — not a graph node.
       }
@@ -6086,6 +6140,38 @@ export function checkEditionLifecycle(
         'C79',
         `supersedes cycle: ${cycle.join(' → ')} — the supersedes graph must be acyclic; a package cannot supersede itself through a chain (edition-supersedes-resolves)`,
       );
+    }
+
+    // C113 — edition-lineage-coherent (MN 114 v3.2, clause 9.3.1): the
+    // lineage graph is the union of the declared edges of both directions;
+    // when two composed packages declare opposite edges between the same
+    // pair, the declarations must agree. A MISSING forward edge is never
+    // an error — the backward edges remain the authored minimum — so each
+    // leg fires only when the opposite edge set is declared and omits this
+    // package. Edges to URNs no sibling declares are external: nothing to
+    // cohere with here.
+    const ownKey = m.baseUrn || m.id;
+    for (const target of [...(m.supersedes ?? []), ...(m.replaces ?? [])]) {
+      const fwd = forwardByNode.get(target);
+      if (fwd !== undefined && fwd.size > 0 && !fwd.has(ownKey)) {
+        err(
+          'C113',
+          `package "${m.id}": supersedes/replaces ${target}, but that package declares superseded_by { ${[...fwd].join(' ')} } without ${ownKey} — opposite lineage edges between the same pair must agree (edition-lineage-coherent)`,
+        );
+      }
+    }
+    for (const target of m.supersededBy ?? []) {
+      const bwdRels = nodes.get(target);
+      if (bwdRels === undefined) {
+        continue;
+      }
+      const bwd = new Set(bwdRels.map(([, t]) => t));
+      if (bwd.size > 0 && !bwd.has(ownKey)) {
+        err(
+          'C113',
+          `package "${m.id}": superseded_by ${target}, but that package declares supersedes/replaces { ${[...bwd].join(' ')} } without ${ownKey} — opposite lineage edges between the same pair must agree (edition-lineage-coherent)`,
+        );
+      }
     }
   }
 
