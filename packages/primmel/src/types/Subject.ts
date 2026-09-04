@@ -75,6 +75,16 @@ export interface ClassificationDimension {
   description: string;
   source: SourceRef | null;
   values: DimensionValue[];
+  /**
+   * Top-level dimensions only (MN 114 v3.2, clause 10.6): `values_of
+   * <register>` names a program register whose members ARE the value
+   * domain (the documented register is `capabilities`), so the axis
+   * never restates the register's list. A dimension carries either
+   * `values` or `values_of`, never both (C111).
+   */
+  valuesOf?: string;
+  /** The unified typed references (docs/primmel/18). */
+  refs?: import('./Ref').Ref[];
 }
 
 export interface ModelGroupDef {

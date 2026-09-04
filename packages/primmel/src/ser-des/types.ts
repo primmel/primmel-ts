@@ -25,6 +25,7 @@ import type {
   AttributeDefinition,
   Behavior,
   Capability,
+  ClassificationDimension,
   ConditionSet,
   Instrument,
   Subject,
@@ -244,6 +245,11 @@ export interface ParseContext {
   // policy grammar — ODRL is a codec output, never an import).
   dataspaces: Record<string, Dataspace>;
   policies: Record<string, Policy>;
+
+  // Primmel v3.2 consumption constructs (TODO.primmel/11; MN 114 clause
+  // 10.6): the top-level `dimension` declarations (free-standing
+  // applicability axes).
+  dimensions: Record<string, ClassificationDimension>;
 
   // Issues collected during parsing (duplicate IDs, etc.). NOT a model
   // collection — populated by parse() and surfaced via loadWithIssues().

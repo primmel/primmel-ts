@@ -72,6 +72,7 @@ function emptyContext(): ParseContext {
     texts: {},
     dataspaces: {},
     policies: {},
+    dimensions: {},
     issues: [],
   };
 }

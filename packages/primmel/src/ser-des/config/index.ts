@@ -121,6 +121,7 @@ import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
 import { dataspaceConstruct } from './dataspace';
 import { policyConstruct } from './policy';
+import { dimensionConstruct } from './dimension';
 import {
   dumpActivityArchetype,
   parseActivityArchetype,
@@ -515,6 +516,10 @@ const CONSTRUCTS: ConstructDefinition[] = [
   // top-level constructs.
   dataspaceConstruct as ConstructDefinition,
   policyConstruct as ConstructDefinition,
+  // Primmel v3.2 consumption constructs (TODO.primmel/11; MN 114 clause
+  // 10.6): the top-level applicability dimension (one grammar with the
+  // instrument's inline dimension blocks, two placements).
+  dimensionConstruct as ConstructDefinition,
 ];
 
 function buildParserConfig(
