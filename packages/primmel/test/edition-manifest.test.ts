@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────
-// Edition manifest tests (TODO.roadmap/28; doctrine ch. 13 §13.4/§13.7):
-// the lifecycle fields (supersedes/replaces, validity windows, status)
-// parse and dump on the package manifest — packaging, never subject
-// models — and the linter rules C77–C80 validate them, including the
-// INV-8 pin resolution against the edition register. Seeded invalid
-// manifests included.
+// Edition manifest tests (TODO.roadmap/28; doctrine ch. 13 §13.4/§13.7;
+// v3.2 clause 9.3.1): the lifecycle fields (supersedes/replaces/
+// superseded_by, validity windows, status) parse and dump on the package
+// manifest — packaging, never subject models — and the linter rules
+// C77–C80 + C113 validate them, including the INV-8 pin resolution
+// against the edition register. Seeded invalid manifests included.
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -84,6 +84,26 @@ describe('edition manifest — parse + dump round-trip', () => {
     assert.equal(m.status, 'superseded');
   });
 
+  it('parses and dumps the v3.2 superseded_by forward edge (clause 9.3.1)', () => {
+    const m = readPackageManifest(
+      manifestDir(`package {
+  id p
+  version "1"
+  editions { 1 }
+  baseUrn "urn:p:1"
+  superseded_by { urn:p:2 urn:p:3 }
+  status superseded
+  description "d"
+}`),
+    );
+    assert.deepEqual(m.supersededBy, ['urn:p:2', 'urn:p:3']);
+    const text = dumpPackage(m);
+    assert.match(text, /superseded_by \{ urn:p:2 urn:p:3 \}/);
+    const ctx = { packageManifest: null as PackageManifest | null };
+    parsePackage(text)(ctx as any);
+    assert.deepEqual(ctx.packageManifest?.supersededBy, m.supersededBy);
+  });
+
   it('dump → parse round-trips the lifecycle fields', () => {
     const m = readPackageManifest(manifestDir(VALID_MANIFEST));
     const text = dumpPackage(m);
@@ -122,12 +142,12 @@ describe('edition manifest — parse + dump round-trip', () => {
 });
 
 describe('edition lifecycle lint — valid packages stay clean', () => {
-  it('no C77–C80/C85 findings on the valid manifest', () => {
+  it('no C77–C80/C85/C113 findings on the valid manifest', () => {
     const dir = manifestDir(VALID_MANIFEST, [
       { name: 'instances.prl', text: SAMPLE_INSTANCE },
     ]);
     const issues = checkPackage(dir).filter(i =>
-      ['C77', 'C78', 'C79', 'C80', 'C85'].includes(i.check),
+      ['C77', 'C78', 'C79', 'C80', 'C85', 'C113'].includes(i.check),
     );
     assert.deepEqual(issues, []);
   });
@@ -383,5 +403,106 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
     ]);
     const c80 = checkPackage(dir).filter(i => i.check === 'C80');
     assert.deepEqual(c80, []);
+  });
+
+  it("C113: a declared forward edge must agree with the successor's backward edges (clause 9.3.1)", () => {
+    // A supersedes { B } while B declares superseded_by { C } without A —
+    // the spec's own contradiction case.
+    const parent = mkdtempSync(join(tmpdir(), 'primmel-ed-c113-'));
+    mkdirSync(join(parent, 'a'));
+    mkdirSync(join(parent, 'b'));
+    writeFileSync(
+      join(parent, 'a', 'package.primmel'),
+      'package { id a version "2" editions { 2 1 } baseUrn "urn:a:2" supersedes urn:b:1 description "d" }',
+    );
+    writeFileSync(
+      join(parent, 'b', 'package.primmel'),
+      'package { id b version "1" editions { 1 } baseUrn "urn:b:1" superseded_by { urn:c:1 } status superseded description "d" }',
+    );
+    const c113 = checkPackage(join(parent, 'a')).filter(
+      i => i.check === 'C113',
+    );
+    assert.equal(c113.length, 1);
+    assert.equal(c113[0].severity, 'error');
+    assert.match(
+      c113[0].message,
+      /supersedes\/replaces urn:b:1, but that package declares superseded_by \{ urn:c:1 \} without urn:a:2/,
+    );
+  });
+
+  it('C113: the mirror leg — a superseded_by the successor does not claim', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'primmel-ed-c113m-'));
+    mkdirSync(join(parent, 'a'));
+    mkdirSync(join(parent, 'b'));
+    writeFileSync(
+      join(parent, 'a', 'package.primmel'),
+      'package { id a version "2" editions { 2 1 } baseUrn "urn:a:2" supersedes urn:c:1 description "d" }',
+    );
+    writeFileSync(
+      join(parent, 'b', 'package.primmel'),
+      'package { id b version "1" editions { 1 } baseUrn "urn:b:1" superseded_by { urn:a:2 } status superseded description "d" }',
+    );
+    const c113 = checkPackage(join(parent, 'b')).filter(
+      i => i.check === 'C113',
+    );
+    assert.equal(c113.length, 1);
+    assert.match(
+      c113[0].message,
+      /superseded_by urn:a:2, but that package declares supersedes\/replaces \{ urn:c:1 \} without urn:b:1/,
+    );
+  });
+
+  it('C113: matched edges are clean, and a missing forward edge is never an error', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'primmel-ed-c113ok-'));
+    mkdirSync(join(parent, 'a'));
+    mkdirSync(join(parent, 'b'));
+    mkdirSync(join(parent, 'c'));
+    mkdirSync(join(parent, 'd'));
+    writeFileSync(
+      join(parent, 'a', 'package.primmel'),
+      'package { id a version "2" editions { 2 1 } baseUrn "urn:a:2" supersedes urn:b:1 description "d" }',
+    );
+    writeFileSync(
+      join(parent, 'b', 'package.primmel'),
+      'package { id b version "1" editions { 1 } baseUrn "urn:b:1" superseded_by { urn:a:2 } status superseded description "d" }',
+    );
+    // c → d: backward edge only, no forward declaration on either side —
+    // the authored minimum.
+    writeFileSync(
+      join(parent, 'c', 'package.primmel'),
+      'package { id c version "2" editions { 2 1 } baseUrn "urn:c:2" supersedes urn:d:1 description "d" }',
+    );
+    writeFileSync(
+      join(parent, 'd', 'package.primmel'),
+      'package { id d version "1" editions { 1 } baseUrn "urn:d:1" status superseded description "d" }',
+    );
+    for (const pkg of ['a', 'b', 'c', 'd']) {
+      assert.deepEqual(
+        checkPackage(join(parent, pkg)).filter(i => i.check === 'C113'),
+        [],
+        `package ${pkg} must be C113-clean`,
+      );
+    }
+    // And the matched pair stays C79-clean: a supersedes/superseded_by
+    // pair is one lineage fact at both ends, never a 2-cycle.
+    assert.deepEqual(
+      checkPackage(join(parent, 'a')).filter(i => i.check === 'C79'),
+      [],
+    );
+  });
+
+  it('C79: the forward edge takes the same shape checks (a non-URN superseded_by errors)', () => {
+    const dir = manifestDir(`package {
+  id p
+  version "1"
+  editions { 1 }
+  baseUrn "urn:p:1"
+  superseded_by { not-a-urn }
+  description "d"
+}`);
+    const c79 = checkPackage(dir).filter(i => i.check === 'C79');
+    assert.equal(c79.length, 1);
+    assert.equal(c79[0].severity, 'error');
+    assert.match(c79[0].message, /superseded_by "not-a-urn" is not a URN/);
   });
 });

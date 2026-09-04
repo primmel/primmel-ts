@@ -149,6 +149,14 @@ export interface PackageManifest {
   supersedes?: string[];
   /** Stronger than supersedes: this edition takes the place of the target. */
   replaces?: string[];
+  /**
+   * The forward lineage edge (v3.2, C113): the URNs of the editions that
+   * supersede THIS one, declared so a consumer meets the successor edge on
+   * the superseded package itself. The graph derives from the backward
+   * edges alone — a missing forward edge is never an error, but a declared
+   * one must agree with the successor's `supersedes`/`replaces`.
+   */
+  supersededBy?: string[];
   /** The edition's validity window; `to` absent = closes when superseded. */
   validity?: EditionValidity;
   /** Lifecycle status of THIS packaged edition (linter C77). */

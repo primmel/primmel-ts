@@ -703,6 +703,22 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/28, INV-8, doctrine §13.5',
   ),
+  // ── the v3.2 lineage edge (TODO.primmel/11; MN 114 v3.2 clause 9.3.1,
+  // primmel/spec#18) ──
+  // C113: the lineage graph is the union of the backward edges
+  // (supersedes/replaces) and the forward edge (superseded_by); when two
+  // composed packages declare opposite edges between the same pair the
+  // declarations must agree — A supersedes { B } while B declares
+  // superseded_by { C } without A is an error. A missing forward edge is
+  // NOT an error: the backward edges remain the authored minimum.
+  R(
+    'C113',
+    'edition-lineage-coherent',
+    'edition',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 9.3.1 (primmel/spec#18 ask 3)',
+  ),
   // ── the model supply chain (TODO.roadmap/36, doctrine ch. 15) ───────
   // Three publishers — standard (reference), manufacturer (product
   // reference), user (implementation) — with mapping as the only
@@ -1071,6 +1087,18 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'TODO.primmel/11, MN 114 clause 10.6 (primmel/spec#18 ask 2)',
+  ),
+  // C112: the structured reference identity (clause 14.7) — a malformed
+  // urn is an error (the same well-formedness class as C85); a reference
+  // carrying neither urn nor the org+document pair is a warning (a
+  // display-string citation is visible debt, never silently citable).
+  R(
+    'C112',
+    'reference-identity',
+    'base',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 14.7 (primmel/spec#18 ask 3)',
   ),
   // ── the dataspace family (TODO.primmel/10; MN 114 v3.1 clause 19) ──
   // The v3.1 extension set: the dataspace definition, the policy
