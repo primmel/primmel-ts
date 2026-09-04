@@ -1,0 +1,6 @@
+reference iso-iec-17025 {
+  document "ISO/IEC 17025"
+  org "ISO/IEC"
+  edition "2017"
+  urn "urn:iso:std:iso-iec:17025:ed-3"
+}

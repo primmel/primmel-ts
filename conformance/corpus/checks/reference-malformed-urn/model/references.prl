@@ -1,0 +1,5 @@
+# The urn carries a space — not a well-formed IRI: C112 must fire.
+reference bad {
+  document "A cited document"
+  urn "urn:bad urn"
+}

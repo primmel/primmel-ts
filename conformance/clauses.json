@@ -3,7 +3,7 @@
   "spec": {
     "document": "The Primmel Language Specification",
     "status": "MN 114, draft for comment (2026-08-28 revision, specifying Primmel v3.1)",
-    "mapping": "When the specification publishes, each clause's specAnchor is replaced by the specification's conformance-clause number. The suite identifiers (SYN-01, ..., DAT-04) never change; only the anchor is re-keyed, in a minor suite release. The v3.1 clauses (DAT-01 to DAT-04) already anchor to MN 114 clause 19."
+    "mapping": "When the specification publishes, each clause's specAnchor is replaced by the specification's conformance-clause number. The suite identifiers (SYN-01, ..., CON-09) never change; only the anchor is re-keyed, in a minor suite release. The v3.1 clauses (DAT-01 to DAT-04) already anchor to MN 114 clause 19; the v3.2 clauses (CON-01 to CON-09) anchor to the MN 114 v3.2 clauses."
   },
   "clauses": [
     {
@@ -229,6 +229,78 @@
       "statement": "The toolchain's browser-facing runtime module exposes the language's enumerated vocabularies as data — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes — so browser consumers read them from the toolchain and never re-declare them. A probe name the surface does not carry is reported absent, never rubber-stamped present.",
       "specAnchor": "the browser runtime surface (the reference toolchain's distribution)",
       "rules": []
+    },
+    {
+      "id": "CON-01",
+      "area": "consumption",
+      "title": "The term alias family",
+      "statement": "A term declares its everyday-words → defined-term bridge as the alias family (aliases, colloquial, abbreviations, deprecated, with spelling-tagged variant lists). Duplicate entries within one list of one term are errors (C110).",
+      "specAnchor": "MN 114 clause 13.10.1 (the term alias family)",
+      "rules": ["C110"]
+    },
+    {
+      "id": "CON-02",
+      "area": "consumption",
+      "title": "The dimension declaration",
+      "statement": "A top-level dimension declares the applicability axis's value domain — values or values_of, never both; value identifiers are unique, every implies target resolves inside its own dimension, and the implication graph is acyclic (C111).",
+      "specAnchor": "MN 114 clause 10.6 (the dimension declaration)",
+      "rules": ["C111"]
+    },
+    {
+      "id": "CON-03",
+      "area": "consumption",
+      "title": "The structured reference identity",
+      "statement": "A reference carries a resolvable identity: the urn facet, where present, is a well-formed IRI — a scheme followed by no whitespace or IRI delimiters (C112).",
+      "specAnchor": "MN 114 clause 14.7 (the structured reference)",
+      "rules": ["C112"]
+    },
+    {
+      "id": "CON-04",
+      "area": "consumption",
+      "title": "Edition lineage coherence",
+      "statement": "A manifest's superseded_by forward edge, where declared, agrees with the successor's backward supersedes/replaces edges across the composed closure — opposite lineage edges between the same pair must agree; a missing forward edge is never an error (C113).",
+      "specAnchor": "MN 114 clause 9.3.1 (edition lineage)",
+      "rules": ["C113"]
+    },
+    {
+      "id": "CON-05",
+      "area": "consumption",
+      "title": "Limit quantity coherence",
+      "statement": "A limit that declares its derived quantity's typing (quantity kind and unit) and binds a verdict agrees with the verdict's declared quantity, so a limit and its acceptance chain never drift apart in units (C114).",
+      "specAnchor": "MN 114 clause 11.1.2 (the limit quantity)",
+      "rules": ["C114"]
+    },
+    {
+      "id": "CON-06",
+      "area": "consumption",
+      "title": "The calculation signature",
+      "statement": "A calculation's declared quantity_kind resolves to a registered kind of the merged quantity register and agrees in kind with the declared unit (C115).",
+      "specAnchor": "MN 114 clause 13.7.1 (the calculation signature)",
+      "rules": ["C115"]
+    },
+    {
+      "id": "CON-07",
+      "area": "consumption",
+      "title": "Verdict inputs resolve",
+      "statement": "A verdict's inputs name the free identifiers of its derivation; every input resolves to a declared symbol, a conformance-test variable or observable, or another verdict (C116).",
+      "specAnchor": "MN 114 clause 11.3 (the verdict chain)",
+      "rules": ["C116"]
+    },
+    {
+      "id": "CON-08",
+      "area": "consumption",
+      "title": "The verdict chain is acyclic",
+      "statement": "An input naming another verdict makes the acceptance chain an explicit graph; the verdict→verdict derivation graph never cycles — a consumption system traverses the chain, and a cycle never terminates (C117).",
+      "specAnchor": "MN 114 clause 11.3 (the verdict chain)",
+      "rules": ["C117"]
+    },
+    {
+      "id": "CON-09",
+      "area": "consumption",
+      "title": "The instance-parameter schema",
+      "statement": "A requirement parameter's bind path names the aspect the value instantiates from and resolves against the subject's declared attribute, dimension, or behavior catalog (C118).",
+      "specAnchor": "MN 114 clause 11.1.3 (the instance-parameter schema)",
+      "rules": ["C118"]
     }
   ]
 }

@@ -1,0 +1,7 @@
+# The sibling's forward edge names a DIFFERENT successor: opposite edges
+# between the same pair must agree, so C113 must fire on the successor.
+package {
+  id corpus-checks-lineage-incoherent-predecessor
+  base_urn urn:primmel:conformance:lineage:incoherent:1
+  superseded_by { urn:primmel:conformance:lineage:incoherent:9 }
+}

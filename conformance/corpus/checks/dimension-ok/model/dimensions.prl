@@ -1,0 +1,8 @@
+dimension power-supply-axis {
+  label "Power supply"
+  values {
+    ac-mains { label "AC mains" }
+    battery { label "Battery" }
+    ac-and-battery { label "AC mains and battery" implies { ac-mains battery } }
+  }
+}

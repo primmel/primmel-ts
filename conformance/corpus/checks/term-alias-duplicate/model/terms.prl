@@ -1,0 +1,5 @@
+# One alias list repeats an entry: C110 must fire.
+term load-cell {
+  label "Load cell"
+  aliases { "weighing cell" "weighing cell" }
+}
