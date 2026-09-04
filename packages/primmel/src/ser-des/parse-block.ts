@@ -21,6 +21,21 @@
 
 import { tokenizePackage, unwrapBlock, unescapeString } from './tokenize';
 
+/** The term's alias-family keywords (MN 114 v3.2, clause 13.10.1) — the
+ *  tagged form (`colloquial fra-Latn { … }`) is a multi-token facet, so
+ *  the forward-compat skips must know the shape (§9.5). */
+const ALIAS_FAMILY_KEYWORDS = new Set([
+  'aliases',
+  'alt',
+  'colloquial',
+  'abbreviations',
+  'deprecated',
+]);
+
+export function isAliasFamilyKeyword(keyword: string): boolean {
+  return ALIAS_FAMILY_KEYWORDS.has(keyword);
+}
+
 export interface ParseEntryErrorContext {
   /** Construct name for error messages, e.g. "process", "enum value". */
   construct: string;
@@ -88,6 +103,14 @@ export function forEachEntry(
           i++; // the `key` keyword
           i++; // the key id
         }
+      } else if (isAliasFamilyKeyword(keyword)) {
+        // The spelling-tagged alias-family form (`colloquial fra-Latn
+        // { … }`, v3.2): a bare code before the list block is a second
+        // token a one-token skip would leave behind.
+        i++; // the list block (bare form) or the spelling code
+        if (!t[i - 1]!.startsWith('{') && t[i]?.startsWith('{')) {
+          i++; // the tagged form's list block
+        }
       } else {
         i++; // forward-compat: skip unknown keyword value
       }
@@ -130,6 +153,17 @@ export function skipUnknownValue(
       if (i < t.length) {
         i++; // the key id
       }
+    }
+    return i;
+  }
+  if (isAliasFamilyKeyword(keyword)) {
+    // The spelling-tagged alias-family form (v3.2): the bare code before
+    // the list block rides the skip too.
+    if (i < t.length) {
+      i++; // the list block (bare form) or the spelling code
+    }
+    if (!t[i - 1]?.startsWith('{') && t[i]?.startsWith('{')) {
+      i++; // the tagged form's list block
     }
     return i;
   }

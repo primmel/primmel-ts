@@ -1054,7 +1054,15 @@ function termUnit(t: Term, baseUrn: string): UnitContent {
     ...(present(t.section) ? { section: t.section } : {}),
     ...(present(t.language) ? { language: t.language } : {}),
     ...(t.vocabRef ? { vocab_ref: t.vocabRef } : {}),
-    ...(presentList(t.alt) ? { alt: t.alt } : {}),
+    // The alias family (MN 114 v3.2, clause 13.10.1): the parser folds
+    // the v2 `alt` spelling into the canonical aliases channel; the
+    // payload keeps the deployed `alt` key (contract stability) and adds
+    // the v3.2 facets.
+    ...(presentList(t.aliases ?? t.alt) ? { alt: (t.aliases ?? t.alt)! } : {}),
+    ...(presentList(t.colloquial) ? { colloquial: t.colloquial } : {}),
+    ...(t.aliasSpellings && Object.keys(t.aliasSpellings).length > 0
+      ? { alias_spellings: t.aliasSpellings }
+      : {}),
     ...(presentList(t.abbreviations) ? { abbreviations: t.abbreviations } : {}),
     ...(presentList(t.seeAlso) ? { see_also: t.seeAlso } : {}),
   };

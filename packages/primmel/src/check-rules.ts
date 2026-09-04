@@ -1042,6 +1042,22 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'docs/primmel/18 §18.6 (the unified reference/relation construct)',
   ),
+  // ── the v3.2 consumption constructs (TODO.primmel/11; MN 114 v3.2,
+  // primmel/spec#18) ──
+  // C110: the term alias family's shape (clause 13.10.1) — duplicate
+  // entries within one list are errors; the same string in two family
+  // fields of one term and the label echo are warning legs during the
+  // v3.2 rollout (the v2 `alt` semantics allowed the overlap; the
+  // cross-field leg tightens to the spec's error when the consumer wave
+  // re-authors the estate's terms — TODO.primmel/11d).
+  R(
+    'C110',
+    'term-alias-shape',
+    'base',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 13.10.1 (primmel/spec#18 ask 1)',
+  ),
   // ── the dataspace family (TODO.primmel/10; MN 114 v3.1 clause 19) ──
   // The v3.1 extension set: the dataspace definition, the policy
   // construct (Primmel's own policy grammar; ODRL is a codec output),

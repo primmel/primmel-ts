@@ -658,7 +658,10 @@ export function exportStandardRdf(standard: Standard): RdfExport {
       );
     }
     t(eIri, SKOSXL_PREF_LABEL, iri(prefIri));
-    (term.alt ?? []).forEach((a, i) => {
+    // The alias family's canonical channel (MN 114 v3.2): the parser
+    // folds the v2 `alt` spelling into `aliases`; read both for
+    // hand-built Terms.
+    (term.aliases ?? term.alt ?? []).forEach((a, i) => {
       const form = (term.abbreviations ?? []).includes(a) ? 'abbreviation' : '';
       t(eIri, SKOSXL_ALT_LABEL, iri(labelNode(`alt-${i + 1}`, form, a)));
     });

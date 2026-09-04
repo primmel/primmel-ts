@@ -290,6 +290,11 @@
 //      its initial state (the spec marks it required; the serializer
 //      omits the line rather than emitting the dangling keyword — the
 //      editor wave-03 finding, primmel/editor#19)
+//   C110 term-alias-shape (MN 114 v3.2 clause 13.10.1, TODO.primmel/11):
+//      the term alias family's shape — duplicates within one list
+//      (errors), the same string in two family fields of one term and
+//      label echoes (rollout warning legs; the cross-field leg tightens
+//      to the spec's error when 11d re-authors the estate's terms)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -545,6 +550,9 @@ export function checkPackage(
 
   // ── C103: declared-predicate (docs/primmel/18 §18.6) ───────────────
   issues.push(...checkDeclaredPredicates(standard));
+
+  // ── C110: term-alias-shape (MN 114 v3.2, clause 13.10.1) ───────────
+  issues.push(...checkTermAliases(standard));
 
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
@@ -5609,6 +5617,99 @@ export function checkDeclaredPredicates(standard: Standard): CheckIssue[] {
   }
   for (const i of standard.instruments ?? []) {
     visit(`instrument ${i.id}`, i.refs);
+  }
+  return issues;
+}
+
+/**
+ * C110 — term-alias-shape (MN 114 v3.2, clause 13.10.1;
+ * TODO.primmel/11): the term alias family is the everyday-words →
+ * defined-term bridge, so its shape is checked. Duplicate entries within
+ * one list of one term are errors; an entry that merely echoes the
+ * term's label is a warning (it adds no bridge). The same string in two
+ * different family fields of one term — the spec's "one entry has one
+ * home" error — ships as a WARNING leg during the v3.2 rollout: v2
+ * content authored `alt` under the old admitted-forms semantics, where
+ * an entry doubling as the term's abbreviation was legal, and the
+ * shipped corpus carries exactly that debt (`alt { LC }` +
+ * `abbreviations { LC }` on R 60's load-cell and mpe terms); the leg
+ * tightens to the spec's error once the consumer wave re-authors the
+ * family (TODO.primmel/11d). Each spelling-tagged variant list is its
+ * own scope: the same string in two spellings is the variant mechanism
+ * working, never a duplicate.
+ */
+export function checkTermAliases(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (message: string) =>
+    issues.push({ check: 'C110', severity: 'error', message });
+  const warn = (message: string) =>
+    issues.push({ check: 'C110', severity: 'warning', message });
+
+  const FACETS = ['aliases', 'colloquial', 'abbreviations', 'deprecated'];
+
+  for (const t of standard.terms ?? []) {
+    // The family scopes of the term: the default-spelling lists plus one
+    // scope per spelling-tagged variant.
+    const scopes: [string, Record<string, string[] | undefined>][] = [
+      [
+        '',
+        {
+          aliases: t.aliases ?? t.alt,
+          colloquial: t.colloquial,
+          abbreviations: t.abbreviations,
+          deprecated: t.deprecated,
+        },
+      ],
+      ...Object.entries(t.aliasSpellings ?? {}).map(
+        ([code, v]): [string, Record<string, string[] | undefined>] => [
+          ` ${code}`,
+          { ...v },
+        ],
+      ),
+    ];
+    for (const [tag, scope] of scopes) {
+      const where = (facet: string) =>
+        `term ${t.id}: ${facet}${tag ? ` ${tag}` : ''}`;
+      for (const facet of FACETS) {
+        const seen = new Set<string>();
+        for (const entry of scope[facet] ?? []) {
+          if (seen.has(entry)) {
+            err(
+              `${where(facet)}: duplicate entry "${entry}" — one entry has one home (term-alias-shape)`,
+            );
+          }
+          seen.add(entry);
+        }
+      }
+      const home = new Map<string, string>();
+      for (const facet of FACETS) {
+        for (const entry of scope[facet] ?? []) {
+          const prior = home.get(entry);
+          if (prior !== undefined && prior !== facet) {
+            // Rollout warning leg (see the rule's doc comment): the
+            // spec's error tightens when the estate re-authors.
+            warn(
+              `${where(facet)}: "${entry}" already appears in ${prior} — one entry has one home (term-alias-shape)`,
+            );
+          } else {
+            home.set(entry, facet);
+          }
+        }
+      }
+    }
+    // The label echo: any entry that restates the term's own label
+    // bridges nothing (checked across every scope).
+    if (t.label) {
+      for (const [tag, scope] of scopes) {
+        for (const facet of FACETS) {
+          if ((scope[facet] ?? []).includes(t.label)) {
+            warn(
+              `term ${t.id}: ${facet}${tag ? ` ${tag}` : ''} entry "${t.label}" merely echoes the term's label — an alias adds a bridge or it does not belong (term-alias-shape)`,
+            );
+          }
+        }
+      }
+    }
   }
   return issues;
 }
