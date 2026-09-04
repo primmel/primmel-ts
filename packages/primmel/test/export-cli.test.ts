@@ -1,7 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────
 // primmel export CLI tests (TODO.roadmap/27): usage diagnostics (exit
 // 2, no stack trace), stdout output, and --out file writing for the
-// ReqIF and RDF/OWL projections.
+// ReqIF and RDF/OWL projections — plus the retrieval projection's
+// surface (primmel-ts#65).
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -18,6 +19,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildFixturePackage, parseXml } from './helpers/reqif';
 import { parseTurtle } from './helpers/rdf';
+import { buildRetrievalFixturePackage } from './helpers/retrieval';
 
 const CLI = join(__dirname, '..', 'scripts', 'check.mts');
 
@@ -240,6 +242,68 @@ describe('primmel export rdf CLI (TODO.roadmap/27, surface 2)', () => {
       assert.match(stdout, /4 requirements, 2 requirement classes/);
       assert.match(stdout, /1 conformance test, 0 terms, \d+ triples/);
       assert.ok(parseTurtle(readFileSync(out, 'utf8')).triples.length > 0);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('primmel export retrieval CLI (primmel-ts#65)', () => {
+  it('--format on the retrieval surface: usage, exit 2', () => {
+    const { status, stderr } = run([
+      'export',
+      'retrieval',
+      '/tmp',
+      '--format',
+      'jsonld',
+    ]);
+    assert.equal(status, 2, `stderr: ${stderr}`);
+    assert.match(stderr, /--format applies to `primmel export rdf` only/);
+  });
+
+  it('an unreadable package dir: clean diagnostic, exit 2', () => {
+    const { status, stderr } = run(['export', 'retrieval', '/nonexistent/pkg']);
+    assert.equal(status, 2, `stderr: ${stderr}`);
+    assert.match(stderr, /cannot read package at \/nonexistent\/pkg:/);
+    assert.equal(stderr.trim().split('\n').length, 1);
+  });
+
+  it('exports the retrieval document to stdout by default', () => {
+    const dir = buildRetrievalFixturePackage();
+    const { status, stdout, stderr } = run(['export', 'retrieval', dir]);
+    assert.equal(status, 0, stderr);
+    const doc = JSON.parse(stdout);
+    assert.equal(doc.projection, 'primmel-retrieval/1');
+    assert.equal(doc.package.edition, '2021');
+    assert.equal(doc.package.model_version, '2');
+    assert.match(doc.source_hash, /^[0-9a-f]{64}$/);
+    assert.ok(
+      doc.units.some(
+        (u: Record<string, unknown>) => u.id === '/req/scope/alpha',
+      ),
+    );
+  });
+
+  it('--out writes the document with the stats summary', () => {
+    const dir = buildRetrievalFixturePackage();
+    const outDir = mkdtempSync(join(tmpdir(), 'primmel-retrieval-out-'));
+    const out = join(outDir, 'export.json');
+    try {
+      const { status, stdout, stderr } = run([
+        'export',
+        'retrieval',
+        dir,
+        '--out',
+        out,
+      ]);
+      assert.equal(status, 0, stderr);
+      assert.match(stdout, /^wrote /);
+      assert.match(stdout, /20 units/);
+      assert.match(stdout, /clause-cited/);
+      // The ask-1 debt surfaces in the summary, never silently.
+      assert.match(stdout, /anchor-only provenance/);
+      const doc = JSON.parse(readFileSync(out, 'utf8'));
+      assert.equal(doc.units.length, 20);
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }

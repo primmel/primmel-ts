@@ -5,6 +5,7 @@
 //   primmel diff  [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>
 //   primmel export reqif <package-dir> [--out <file>]
 //   primmel export rdf <package-dir> [--out <file>] [--format turtle|jsonld]
+//   primmel export retrieval <package-dir> [--out <file>]
 //
 // (The `check` token is optional for back-compatibility: `primmel
 // [--strict]… <package-dir>` runs check as before.)
@@ -82,6 +83,19 @@
 // projection's SHACL shapes (src/export/rdf-shapes.ts) and SPARQL
 // competency questions (src/export/rdf-competency-questions.ts) are
 // executed in the tests. Same one-way doctrine.
+//
+// `primmel export retrieval <package-dir> [--out <file>]` projects the
+// package into the canonical retrieval document (primmel-ts#65 —
+// src/export/retrieval.ts carries the contract): the typed units
+// (requirement / conformance_test / term / attribute / behavior /
+// calculation / formula / symbol / constraint / characteristic / table /
+// sequence / note / state_machine / dimension) with package-authored
+// stable ids, document-numbered clause provenance (a producer-internal
+// anchor rides as an optional extra, never as the clause), the distinct
+// edition / model_version document fields, a per-unit sha256 content
+// digest + machine passport, and the package-byte source_hash the
+// deployed consumer's pins key on. JSON, byte-deterministic; default
+// stdout, --out writes the document to a file.
 import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPackage } from '../src/check.ts';
@@ -89,6 +103,10 @@ import { CHECK_RULES } from '../src/check-rules.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
 import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
 import { exportPackageRdf, type RdfExport } from '../src/export/rdf.ts';
+import {
+  exportPackageRetrieval,
+  type RetrievalExport,
+} from '../src/export/retrieval.ts';
 import {
   formatTextCoverageReport,
   packageTextCoverageReport,
@@ -102,7 +120,7 @@ const CHECK_USAGE =
 const DIFF_USAGE =
   'Usage: primmel diff [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>';
 const EXPORT_USAGE =
-  'Usage: primmel export reqif|rdf <package-dir> [--out <file>] [--format turtle|jsonld]';
+  'Usage: primmel export reqif|rdf|retrieval <package-dir> [--out <file>] [--format turtle|jsonld]';
 
 // An unreadable/missing package directory — a positional argument or a
 // --with locator target — must not crash with a stack trace: print a
@@ -308,7 +326,7 @@ function diffCli(args: string[]): void {
 
 function exportCli(args: string[]): void {
   const surface = args[0];
-  if (surface !== 'reqif' && surface !== 'rdf') {
+  if (surface !== 'reqif' && surface !== 'rdf' && surface !== 'retrieval') {
     console.error(EXPORT_USAGE);
     process.exit(2);
   }
@@ -325,7 +343,7 @@ function exportCli(args: string[]): void {
   }
   // --format is the rdf surface's knob; turtle is canonical (default).
   const rdfFormat = values.get('--format') ?? 'turtle';
-  if (surface === 'reqif' && values.has('--format')) {
+  if (surface !== 'rdf' && values.has('--format')) {
     console.error('--format applies to `primmel export rdf` only');
     console.error(EXPORT_USAGE);
     process.exit(2);
@@ -345,7 +363,26 @@ function exportCli(args: string[]): void {
   let document: string;
   let summary: string;
   try {
-    if (surface === 'reqif') {
+    if (surface === 'retrieval') {
+      const result: RetrievalExport = exportPackageRetrieval(dir);
+      document = result.json;
+      const s = result.stats;
+      summary =
+        `${n(s.units, 'unit', 'units')} ` +
+        `(${Object.entries(s.byKind)
+          .map(([k, c]) => `${c} ${k}`)
+          .join(', ')}), ` +
+        `${n(s.withClause, 'unit', 'units')} clause-cited` +
+        (s.anchorOnlyProvenance > 0
+          ? `, ${n(s.anchorOnlyProvenance, 'unit', 'units')} with anchor-only provenance (ask-1 debt)`
+          : '') +
+        (s.nonUrnDocRefs > 0
+          ? `, ${n(s.nonUrnDocRefs, 'unit', 'units')} with legacy non-URN doc refs`
+          : '') +
+        (s.withoutProvenance > 0
+          ? `, ${n(s.withoutProvenance, 'unit', 'units')} without provenance`
+          : '');
+    } else if (surface === 'reqif') {
       const result: ReqifExport = exportPackageReqif(dir);
       document = result.xml;
       const s = result.stats;
