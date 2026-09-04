@@ -121,6 +121,29 @@ export {
   PRIMMEL_NS,
   SMART_NS,
 } from './src/export/rdf-vocabulary';
+export {
+  RETRIEVAL_PROJECTION,
+  applicabilitySummary,
+  canonicalJson,
+  collectClauses,
+  exportPackageRetrieval,
+  exportStandardRetrieval,
+  normalizeClause,
+  packageEdition,
+  packageSourceHash,
+  passportCanonical,
+  retrievalDigest,
+  termClauses,
+  type RetrievalClause,
+  type RetrievalDocument,
+  type RetrievalExport,
+  type RetrievalExportOptions,
+  type RetrievalExportStats,
+  type RetrievalPackage,
+  type RetrievalUnit,
+  type RetrievalUnitKind,
+  type UnitPassport,
+} from './src/export/retrieval';
 export { RDF_EXPORT_SHAPES_TTL } from './src/export/rdf-shapes';
 export {
   RDF_COMPETENCY_QUESTIONS,

@@ -1,0 +1,201 @@
+# The retrieval export (`primmel-retrieval/1`)
+
+`primmel export retrieval <package-dir> [--out <file>]` — the canonical,
+versioned serialization of a package's typed units for RAG and agent
+consumers (primmel/primmel-ts#65). The module is
+`packages/primmel/src/export/retrieval.ts`; this document is the
+contract its header summarizes. One-way projection, never the kernel's
+truth — the same doctrine as the ReqIF and RDF surfaces: the `.prl`
+package stays the single source of truth; the export is generated,
+never authored, never re-imported.
+
+## The document
+
+```jsonc
+{
+  "projection": "primmel-retrieval/1",
+  "package": {
+    "id": "oiml-r60",
+    "title": "OIML R 60:2021 — R 60 package",
+    "kind": "rec",
+    "edition": "2021",          // the publication edition the model corresponds to
+    "model_version": "2021",    // the package's own version field
+    "editions": ["2021", "2017", "2000", "1996"],
+    "base_urn": "urn:oiml:pub:r:60:2021",
+    "status": "current",
+    "default_spelling": "eng-Latn",
+    "spellings": ["eng-Latn"],
+    "supersedes": ["urn:oiml:pub:r:60:2017"]
+  },
+  "source_hash": "sha256…",      // over every byte of the package directory
+  "units": [ /* the typed units */ ]
+}
+```
+
+The JSON serialization is byte-deterministic per package state: object
+keys sorted recursively, two-space indent, trailing newline.
+
+## The seven guarantees, and where each lives
+
+### 1. Clause URNs first-class, always
+
+Every unit's provenance is the document's **own clause numbering** plus
+the **document identifier**:
+
+```jsonc
+"clause": {
+  "doc": "urn:oiml:pub:r:60-1:2021",
+  "clause": "3.6",
+  "urn": "urn:oiml:pub:r:60-1:2021#clause-3.6"
+}
+```
+
+`clauses` carries every edge (the first is the primary `clause`); the
+sentence sub-address rides as `fragment` and on the URN
+(`#clause-2.2/s1`). A producer-internal anchor is **never** the clause:
+a metanorma UUID (`_eb46a3a3-…`) — wherever it arrives, doc-fragment
+slot or clause slot — is demoted to the optional `anchor` extra, and
+the URN degrades to the bare document rather than presenting an
+uncitable token as provenance. A non-clause document fragment the
+source genuinely names (a table anchor, `#table-4`) is citable and
+diffable, so it stays on the URN as `anchor`.
+
+The debt is counted, never hidden: `stats.anchorOnlyProvenance` (units
+whose provenance carries no clause number at all) and
+`stats.nonUrnDocRefs` (units citing a legacy non-URN doc token) surface
+in the CLI summary.
+
+### 2. Canonical edition semantics
+
+Two distinct, stable fields, never borrowed from each other:
+
+- **`edition`** — the *publication* edition the model corresponds to:
+  the manifest's newest `editions` entry (the register is
+  newest-first), falling back to the base URN's trailing year segment.
+  Consumers steer on it ("answer from the current edition").
+- **`model_version`** — the package's own `version` field. Consumers
+  gate freshness on it.
+
+The two coincide in value on some packages and diverge on others; both
+are always present and always mean the same thing.
+
+### 3. The pre-flattened retrieval facet
+
+*(Slice 2 of the issue lands the `facet` block: one flat scalar map per
+unit — document identifier, doc number, doctype, edition, language,
+clause, unit kind, applicability dimensions — versioned as
+`retrieval-facet/1`.)*
+
+### 4. Stable unit ids + content digests
+
+**Stability tier: STABLE PUBLIC IDENTIFIER.** Unit ids are the
+package's own authored identifiers:
+
+| kind | id | source |
+|---|---|---|
+| `requirement`, `conformance_test` | as authored (`/req/class-a/mpe`, `/conf/…`) | the construct id |
+| `term`, `attribute`, `behavior`, `symbol`, `constraint`, `characteristic`, `table`, `sequence`, `note` | `/〈kind〉/〈id〉` | the construct id, namespaced |
+| `calculation` | the declared `identifier` (`/calc/mpe`), else `/calculation/〈id〉` | the canonical identifier path |
+| `formula` | `/calculation/〈id〉` | a calculation carrying an engine rule type |
+| `state_machine` | `/state-machine/〈entityName〉` | the bound entity's name |
+| `dimension` | `/dimension/〈id〉` | the classification dimension id |
+
+An id moves only when the package re-authors the identifier. A rename
+of display text (`name`, `label`, `statement`, `definition`) never
+moves an id. Consumers key retrieval, citation, and freshness gates on
+these ids; the kernel keeps them stable across refactors of the
+projection itself.
+
+Beside the id rides **`content_hash`**: sha256 over the unit's
+canonical JSON content — every unit field except `content_hash` and
+`passport`, serialized with keys sorted recursively and compact
+separators in UTF-8 (the form every JSON stack reproduces:
+`json.dumps(c, sort_keys=True, separators=(",", ":"),
+ensure_ascii=False)`; `canonicalJson` in the module). **Identity = id;
+currency = digest.** A rename moves the digest, never the id — so a
+display-text change no longer masquerades as an identity change, and a
+content change never hides behind a stable id.
+
+### 5. Semantic edition diff as a data API
+
+The model diff (`primmel diff --json`, `src/model-diff.ts`) is the data
+API: per-element added/removed/changed/moved keyed by the same
+package-authored ids, with the clause-drift table (the edition-to-
+edition clause mapping) and the changed-aspect classification. Slice 4
+of the issue adds the changed-field list to each change entry.
+
+### 6. The machine passport
+
+Every unit carries `passport` — the compact digest an agent (an MCP
+server) carries and verifies without loading the package:
+
+```jsonc
+"passport": {
+  "v": 1,
+  "kind": "requirement",
+  "id": "/req/class-a/mpe",
+  "text": "For Class A load cells, the maximum permissible error shall not exceed…",
+  "expression": "ocl{group.parameters.mpe = lookupMPE(load, …)}",
+  "units": [],
+  "applicability": "accuracy_class=A",
+  "acceptance": "",
+  "provenance": ["urn:oiml:pub:r:60-1:2021#table-4"],
+  "content_hash": "sha256…"
+}
+```
+
+`passportCanonical` renders the canonical string form; re-hashing it
+(`retrievalDigest`) is the verification. Every passport field is always
+present (empty string / empty list when the unit declares nothing), so
+the canonical form has one shape per passport version.
+
+### 7. Language-tagged variants
+
+*(Slice 3 lands the `variants` block: the ISO 24229 `text` content sets
+resolved onto their units — per-field `{ spelling, via, value }`
+entries — plus the unit's `language` from the package's default
+spelling.)*
+
+## The bundle freshness signal
+
+`source_hash` is sha256 over every file of the package directory —
+sorted walk, `.DS_Store` skipped, relative path + NUL + the file's own
+sha256 + LF. This is **the same algorithm the deployed consumer runs**
+(oimlsmart/smart `browser/scripts/derive-model-plane.ts`), so the
+consumer's pins (`standard → { source_hash, node_count }`) key on this
+export without translation. The hash is deliberately byte-sensitive:
+any package change — a re-authored constraint, a re-cited clause, a
+payload byte — moves it. Content-free reordering moves `source_hash`
+but no unit's `content_hash`; that split is the point.
+
+## Versioning
+
+- **`projection`** (`primmel-retrieval/1`) versions the document shape.
+  A field renamed, removed, or re-typed bumps the version and is a
+  re-index signal for every consumer; additive fields within a version
+  are legal (consumers ignore what they do not read).
+- **`passport.v`** versions the passport shape on the same rule.
+
+## Congruence with the deployed consumer
+
+The export is the upstream canonical form of the content the OIML SMART
+estate's model plane ships today
+(`browser/public/data/model-plane/*.json` → oimlsmart/rag
+`model_plane.py`). Deliberately identical: the unit ids, the
+`clause: { doc, clause, urn }` shape, the sha256 currency signals, the
+`source_hash` algorithm, the `edition`/`model_version` split. Deliberate
+divergences: the document block nests under `package` (the plane's
+bundle carries `label`/`base_urn` top-level); the kind vocabulary is
+the kernel's honest one (`formula` for a rule-typed calculation,
+matching the consumer's calculations/formulas split; `characteristic`
+for a verdict, matching the plane's characteristics.yaml projection);
+and the digest input is the compact canonical JSON above (the
+consumer's D1 `content_hash` uses Python's default separators over a
+differently-shaped node — byte-parity was never possible, the semantic
+is the same).
+
+The language-level half of these guarantees — aliases, typed
+applicability, resolvable refs, lineage edges, units-typed quantities,
+verdict structure, the impact graph — is primmel/spec#18; this export
+consumes the language as it stands and cross-references rather than
+duplicates those asks.
