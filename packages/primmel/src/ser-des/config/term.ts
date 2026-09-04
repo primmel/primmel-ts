@@ -13,6 +13,38 @@ import {
 } from './correspondence';
 import { dumpBareSafe } from './field-parser';
 import type Term from '../../types/Term';
+import type { TermAliasSpelling } from '../../types/Term';
+
+type AliasFacet = keyof TermAliasSpelling;
+
+const ALIAS_KEYWORDS: Record<string, AliasFacet> = {
+  aliases: 'aliases',
+  alt: 'aliases',
+  colloquial: 'colloquial',
+  abbreviations: 'abbreviations',
+  deprecated: 'deprecated',
+};
+
+function isAliasKeyword(command: string): boolean {
+  return command in ALIAS_KEYWORDS;
+}
+
+/** Append a default-spelling list onto its facet channel. The `aliases`
+ *  and legacy `alt` fields always carry the same list (alt is the
+ *  backwards-compatible read of the canonical channel). */
+function appendAliasEntries(
+  term: Term,
+  facet: AliasFacet,
+  entries: string[],
+): void {
+  if (facet === 'aliases') {
+    const merged = [...(term.aliases ?? []), ...entries];
+    term.aliases = merged;
+    term.alt = merged;
+  } else {
+    (term[facet] ??= []).push(...entries);
+  }
+}
 
 export const parseTerm: Parser = function (id, data) {
   const result: Term = {
@@ -95,15 +127,33 @@ export const parseTerm: Parser = function (id, data) {
         result.formType = unwrapped(value);
       } else if (command === 'part_of_speech') {
         result.partOfSpeech = unwrapped(value);
-      } else if (command === 'alt') {
-        // List entries may be bare IDs or quoted strings with spaces
-        // (`alt { "conformity assessment programme" }`) — stripWrapping
-        // unquotes the latter without mangling the former.
-        result.alt = tokenizePackage(value()).map(stripWrapping);
-      } else if (command === 'deprecated') {
-        result.deprecated = tokenizePackage(value()).map(stripWrapping);
-      } else if (command === 'abbreviations') {
-        result.abbreviations = tokenizePackage(value()).map(stripWrapping);
+      } else if (isAliasKeyword(command)) {
+        // The alias family (MN 114 v3.2, clause 13.10.1): the bare form
+        // (`aliases { … }`) declares the package's default spelling; the
+        // tagged form (`colloquial fra-Latn { … }`) carries one alternate
+        // spelling's list inline. `alt` is the v2 spelling of `aliases`
+        // and folds into the same channel.
+        const first = value();
+        let spelling: string | undefined;
+        let listToken = first;
+        if (!first.startsWith('{')) {
+          spelling = first;
+          const next = peek();
+          if (next === undefined || !next.startsWith('{')) {
+            throw new Error(
+              `Parsing error: term. ID ${id}: alias-family facet "${command}" with spelling code "${spelling}" expects a list block`,
+            );
+          }
+          listToken = value();
+        }
+        const entries = tokenizePackage(listToken).map(stripWrapping);
+        const facet = ALIAS_KEYWORDS[command]!;
+        if (spelling === undefined) {
+          appendAliasEntries(result, facet, entries);
+        } else {
+          const variant = ((result.aliasSpellings ??= {})[spelling] ??= {});
+          (variant[facet] ??= []).push(...entries);
+        }
       } else if (command === 'see_also') {
         result.seeAlso = tokenizePackage(value()).map(stripWrapping);
       } else {
@@ -173,18 +223,43 @@ export const dumpTerm: Dumper<Term> = function (term) {
   // load→dump cycle splits them into separate tokens.
   const listEntry = (s: string) =>
     /\s/.test(s) ? '"' + escapeString(s) + '"' : s;
-  if (term.alt && term.alt.length > 0) {
-    out += '  alt { ' + term.alt.map(listEntry).join(' ') + ' }\n';
+  // The alias family (MN 114 v3.2, clause 13.10.1): the serializer emits
+  // the canonical `aliases` spelling regardless of the authored spelling
+  // (`alt` folds), then the spelling-tagged variants, one tagged list per
+  // spelling (spelling codes sorted for a deterministic canonical form).
+  const aliasLine = (facet: AliasFacet, list: string[], tag?: string) =>
+    '  ' +
+    facet +
+    (tag ? ' ' + tag : '') +
+    ' { ' +
+    list.map(listEntry).join(' ') +
+    ' }\n';
+  const aliases = term.aliases ?? term.alt;
+  if (aliases && aliases.length > 0) {
+    out += aliasLine('aliases', aliases);
   }
-  if (term.deprecated && term.deprecated.length > 0) {
-    out +=
-      '  deprecated { ' + term.deprecated.map(listEntry).join(' ') + ' }\n';
+  if (term.colloquial && term.colloquial.length > 0) {
+    out += aliasLine('colloquial', term.colloquial);
   }
   if (term.abbreviations && term.abbreviations.length > 0) {
-    out +=
-      '  abbreviations { ' +
-      term.abbreviations.map(listEntry).join(' ') +
-      ' }\n';
+    out += aliasLine('abbreviations', term.abbreviations);
+  }
+  if (term.deprecated && term.deprecated.length > 0) {
+    out += aliasLine('deprecated', term.deprecated);
+  }
+  for (const code of Object.keys(term.aliasSpellings ?? {}).sort()) {
+    const variant = term.aliasSpellings![code];
+    for (const facet of [
+      'aliases',
+      'colloquial',
+      'abbreviations',
+      'deprecated',
+    ] as AliasFacet[]) {
+      const list = variant[facet];
+      if (list && list.length > 0) {
+        out += aliasLine(facet, list, code);
+      }
+    }
   }
   if (term.seeAlso && term.seeAlso.length > 0) {
     out += '  see_also { ' + term.seeAlso.map(listEntry).join(' ') + ' }\n';

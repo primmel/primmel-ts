@@ -49,14 +49,47 @@ interface Term {
   formType?: string;
   /** noun | verb | adjective | … */
   partOfSpeech?: string;
-  /** Alternative designations. */
+  /**
+   * Alternative designations (the v2 spelling of the admitted-alternate
+   * facet). The v3.2 alias family (MN 114 clause 13.10.1) names this
+   * channel `aliases`; the parser folds both spellings into `aliases`
+   * and this field is kept for backwards compatibility — it always
+   * carries the same list.
+   */
   alt?: string[];
+  /**
+   * Admitted alternate designations of the term (MN 114 v3.2, clause
+   * 13.10.1): the canonical alias-family channel. The v2 `alt` facet
+   * folds in here; the serializer emits the canonical `aliases` form.
+   */
+  aliases?: string[];
+  /**
+   * Informal, everyday phrasings that bridge retrieval to the term
+   * (v3.2). NOT designations: no normative force, never rendered as the
+   * term's name.
+   */
+  colloquial?: string[];
   /** Deprecated designations. */
   deprecated?: string[];
   /** Abbreviations of the term. */
   abbreviations?: string[];
+  /**
+   * Spelling-tagged alias-family variants (v3.2): ISO 24229 spelling
+   * code → the family's lists authored in that spelling
+   * (`colloquial fra-Latn { … }`). The bare facet forms declare the
+   * package's default spelling and live on the fields above.
+   */
+  aliasSpellings?: Record<string, TermAliasSpelling>;
   /** Related term ids. */
   seeAlso?: string[];
+}
+
+/** The alias family of one alternate spelling (MN 114 clause 13.10.1). */
+export interface TermAliasSpelling {
+  aliases?: string[];
+  colloquial?: string[];
+  abbreviations?: string[];
+  deprecated?: string[];
 }
 
 export default Term;
