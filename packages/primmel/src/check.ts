@@ -3787,6 +3787,131 @@ export function checkPackage(
     }
   }
 
+  // ── C114/C115: the v3.2 units-typed quantities (MN 114 v3.2, clauses
+  // 11.1.2 and 13.7.1; TODO.primmel/11) ──
+  // C114 — limit-quantity-coherence: a limit that declares its derived
+  // quantity's typing AND binds a verdict must agree with the verdict's
+  // declared quantity, so a limit and its acceptance chain can never
+  // drift apart in units. Silent when either side leaves the facet
+  // undeclared (the block is the migration path); an unresolvable
+  // accepts.verdict is the resolution rule's leg, not this one's.
+  for (const r of standard.requirements ?? []) {
+    const q = r.limit?.quantity;
+    const accepts = r.limit?.accepts;
+    if (!q || !accepts) {
+      continue;
+    }
+    const verdict = (standard.verdicts ?? []).find(
+      v => v.id === accepts.verdict,
+    );
+    if (!verdict) {
+      continue;
+    }
+    if (q.kind && verdict.quantityKind && q.kind !== verdict.quantityKind) {
+      err(
+        'C114',
+        `requirement ${r.id}: limit declares quantity kind "${q.kind}" but accepts verdict ${verdict.id} derives kind "${verdict.quantityKind}" — a limit and its acceptance chain never drift apart in units (limit-quantity-coherence)`,
+      );
+    }
+    if (q.unit && verdict.unit && q.unit !== verdict.unit) {
+      err(
+        'C114',
+        `requirement ${r.id}: limit declares quantity unit "${q.unit}" but accepts verdict ${verdict.id} derives unit "${verdict.unit}" (limit-quantity-coherence)`,
+      );
+    }
+  }
+
+  // C115 — calculation-signature-shape: a retrieved calculation is
+  // executable exactly when its signature is data. Every declared unit
+  // resolves to a registered unit and every quantity_kind to a registered
+  // kind of the merged quantity register, the two agree in kind, a
+  // range's min never exceeds its max, and an enum-typed input declares
+  // its values. The parser's dimensionless default ('1') is not an
+  // authored unit — the unit legs fire on authored units only. The
+  // unit-resolution leg ships as a WARNING during the v3.2 rollout (see
+  // the rule's catalog entry).
+  type SignatureEntry = {
+    owner: string;
+    type: string;
+    unit: string;
+    isInput: boolean;
+    quantityKind?: string;
+    rangeMin?: string;
+    rangeMax?: string;
+    hasRange?: boolean;
+    enumValues?: string[];
+  };
+  for (const c of standard.calculations ?? []) {
+    const entries: SignatureEntry[] = [
+      ...(c.inputs ?? []).map(inp => ({
+        owner: `calculation ${c.id}: input ${inp.name}`,
+        type: inp.type,
+        unit: inp.unit,
+        isInput: true,
+        quantityKind: inp.quantityKind,
+        rangeMin: inp.rangeMin,
+        rangeMax: inp.rangeMax,
+        hasRange: inp.hasRange,
+        enumValues: inp.enumValues,
+      })),
+      {
+        owner: `calculation ${c.id}: output`,
+        type: c.output.type,
+        unit: c.output.unit,
+        isInput: false,
+        quantityKind: c.output.quantityKind,
+        rangeMin: c.output.rangeMin,
+        rangeMax: c.output.rangeMax,
+        hasRange: c.output.hasRange,
+      },
+    ];
+    for (const e of entries) {
+      const declaredUnit = e.unit && e.unit !== '1' ? e.unit : '';
+      const unitKind = declaredUnit ? kindOfUnit(declaredUnit) : undefined;
+      if (declaredUnit && registersExist && unitKind === undefined) {
+        // Rollout warning leg (see the rule's catalog entry): the spec's
+        // error tightens when the estate's registers catch up.
+        warn(
+          'C115',
+          `${e.owner}: unit "${declaredUnit}" resolves to no registered unit of the merged quantity register (calculation-signature-shape)`,
+        );
+      }
+      if (e.quantityKind) {
+        if (!kindDecl.has(e.quantityKind)) {
+          err(
+            'C115',
+            `${e.owner}: quantity_kind "${e.quantityKind}" resolves to no registered kind of the merged quantity register (calculation-signature-shape)`,
+          );
+        } else if (unitKind !== undefined && unitKind !== e.quantityKind) {
+          err(
+            'C115',
+            `${e.owner}: declared quantity_kind "${e.quantityKind}" but unit "${declaredUnit}" measures kind ${unitKind} — the typed-unit pair must agree in kind (calculation-signature-shape)`,
+          );
+        }
+      }
+      if (e.hasRange && e.rangeMin && e.rangeMax) {
+        const lo = Number(e.rangeMin);
+        const hi = Number(e.rangeMax);
+        if (!Number.isNaN(lo) && !Number.isNaN(hi) && lo > hi) {
+          err(
+            'C115',
+            `${e.owner}: range min ${e.rangeMin} exceeds max ${e.rangeMax} (calculation-signature-shape)`,
+          );
+        }
+      }
+      if (
+        e.isInput &&
+        e.type === 'enum' &&
+        (e.enumValues === undefined || e.enumValues.length === 0)
+      ) {
+        err(
+          'C115',
+          `${e.owner}: an enum-typed input declares its values — enum_values is absent or empty (calculation-signature-shape)`,
+        );
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {

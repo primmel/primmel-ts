@@ -27,7 +27,9 @@ import tokenize, {
   unwrapBlock,
 } from '../tokenize';
 import { dumpBareSafe, stripColon } from './field-parser';
+import { parseCorresponds } from './correspondence';
 import type { ConstructDefinition } from './index';
+import type { Correspondence } from '../../types/Correspondence';
 import type {
   QuantityKindDef,
   QuantityRegister,
@@ -72,6 +74,10 @@ function parseKind(id: string, block: string): QuantityKindDef {
       out.siUnit = stripWrapping(t[i++]);
     } else if (cmd === 'description') {
       out.description = stripWrapping(t[i++]);
+    } else if (cmd === 'corresponds') {
+      const { corr, next } = parseCorresponds(t, i, stripWrapping);
+      (out.correspondences ??= []).push(corr);
+      i = next;
     } else {
       unwrapBlock(t[i++]);
     }
@@ -108,6 +114,10 @@ function parseUnit(id: string, block: string): UnitDef {
       out.offsetToSI = readNumber(t[i++], 0);
     } else if (cmd === 'definition') {
       out.definition = stripWrapping(t[i++]);
+    } else if (cmd === 'corresponds') {
+      const { corr, next } = parseCorresponds(t, i, stripWrapping);
+      (out.correspondences ??= []).push(corr);
+      i = next;
     } else {
       unwrapBlock(t[i++]);
     }
@@ -154,6 +164,34 @@ const parseQuantityRegister: ConstructDefinition['parse'] = function (
 
 // ── dump ─────────────────────────────────────────────────────────────
 
+/** The inline corresponds form — register entries dump on ONE line, so
+ *  the facet rides inside the entry's braces (v3.2, clause 13.4). */
+function dumpCorrespondencesInline(
+  corrs: Correspondence[] | undefined,
+): string {
+  let out = '';
+  for (const c of corrs ?? []) {
+    out +=
+      ' corresponds ' +
+      dumpBareSafe(c.scheme) +
+      ' "' +
+      escapeString(c.concept) +
+      '"';
+    if (c.projections.length > 0) {
+      out += ' {';
+      for (const p of c.projections) {
+        out += ' projection ' + dumpBareSafe(p.codec) + ' {';
+        for (const e of p.entries) {
+          out += ' ' + dumpBareSafe(e.key) + ' ' + dumpBareSafe(e.value);
+        }
+        out += ' }';
+      }
+      out += ' }';
+    }
+  }
+  return out;
+}
+
 function dumpDimensions(dimensions: Record<string, number>): string {
   const keys = Object.keys(dimensions);
   if (keys.length === 0) {
@@ -174,6 +212,7 @@ const dumpQuantityRegister = function (reg: QuantityRegister): string {
     if (k.description) {
       line += ' description "' + escapeString(k.description) + '"';
     }
+    line += dumpCorrespondencesInline(k.correspondences);
     out += line + ' }\n';
   }
   for (const u of reg.units) {
@@ -196,6 +235,7 @@ const dumpQuantityRegister = function (reg: QuantityRegister): string {
     if (u.definition) {
       line += ' definition "' + escapeString(u.definition) + '"';
     }
+    line += dumpCorrespondencesInline(u.correspondences);
     out += line + ' }\n';
   }
   if (reg.referenceIds.length > 0) {

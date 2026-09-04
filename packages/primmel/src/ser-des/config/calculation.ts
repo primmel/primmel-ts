@@ -160,6 +160,10 @@ function parseInputs(block: string): CalculationInput[] {
     let defaultValue = '';
     let hasDefault = false;
     let enumValues: string[] | undefined;
+    let quantityKind: string | undefined;
+    let rangeMin: string | undefined;
+    let rangeMax: string | undefined;
+    let hasRange = false;
     if (i < t.length && t[i].startsWith('{')) {
       const propBlock = unwrapBlock(t[i++]);
       const pt = tokenizePackage(propBlock);
@@ -168,7 +172,31 @@ function parseInputs(block: string): CalculationInput[] {
         const cmd = pt[j++];
         if (j < pt.length) {
           if (cmd === 'unit') {
-            unit = unwrapBlock(pt[j++]);
+            // stripWrapping, never unwrapBlock: the unit may be a bare
+            // token (`unit kg`), which unwrapBlock mangles ('kg' → 'k').
+            unit = stripWrapping(pt[j++]);
+          } else if (cmd === 'quantity_kind') {
+            quantityKind = stripWrapping(pt[j++]);
+          } else if (cmd === 'range') {
+            // v3.2 (clause 13.7.1): range { min <v> max <v> } — either
+            // bound may be absent.
+            const rt = tokenizePackage(unwrapBlock(pt[j++]));
+            let k = 0;
+            while (k < rt.length) {
+              const rc = rt[k++];
+              if (k >= rt.length) {
+                break;
+              }
+              if (rc === 'min') {
+                rangeMin = stripWrapping(rt[k++]);
+                hasRange = true;
+              } else if (rc === 'max') {
+                rangeMax = stripWrapping(rt[k++]);
+                hasRange = true;
+              } else {
+                unwrapBlock(rt[k++]);
+              }
+            }
           } else if (cmd === 'description') {
             description = unwrapBlock(pt[j++]);
           } else if (cmd === 'default') {
@@ -186,7 +214,7 @@ function parseInputs(block: string): CalculationInput[] {
         }
       }
     }
-    inputs.push({
+    const inp: CalculationInput = {
       name,
       type,
       unit,
@@ -194,7 +222,22 @@ function parseInputs(block: string): CalculationInput[] {
       defaultValue,
       hasDefault,
       enumValues,
-    });
+    };
+    // Optional v3.2 keys are set only when present — a reparse of the
+    // dump must produce the identical shape (round-trip deepEqual).
+    if (quantityKind !== undefined) {
+      inp.quantityKind = quantityKind;
+    }
+    if (hasRange) {
+      inp.hasRange = true;
+      if (rangeMin !== undefined) {
+        inp.rangeMin = rangeMin;
+      }
+      if (rangeMax !== undefined) {
+        inp.rangeMax = rangeMax;
+      }
+    }
+    inputs.push(inp);
   }
   return inputs;
 }
@@ -209,6 +252,10 @@ function parseOutput(block: string): CalculationOutput {
   let unit = '1';
   let name = '';
   let description = '';
+  let quantityKind: string | undefined;
+  let rangeMin: string | undefined;
+  let rangeMax: string | undefined;
+  let hasRange = false;
   if (t[i] === ':') {
     i++;
   }
@@ -223,7 +270,29 @@ function parseOutput(block: string): CalculationOutput {
       const cmd = pt[j++];
       if (j < pt.length) {
         if (cmd === 'unit') {
-          unit = unwrapBlock(pt[j++]);
+          // stripWrapping, never unwrapBlock: the unit may be a bare
+          // token (`unit kg`), which unwrapBlock mangles ('kg' → 'k').
+          unit = stripWrapping(pt[j++]);
+        } else if (cmd === 'quantity_kind') {
+          quantityKind = stripWrapping(pt[j++]);
+        } else if (cmd === 'range') {
+          const rt = tokenizePackage(unwrapBlock(pt[j++]));
+          let k = 0;
+          while (k < rt.length) {
+            const rc = rt[k++];
+            if (k >= rt.length) {
+              break;
+            }
+            if (rc === 'min') {
+              rangeMin = stripWrapping(rt[k++]);
+              hasRange = true;
+            } else if (rc === 'max') {
+              rangeMax = stripWrapping(rt[k++]);
+              hasRange = true;
+            } else {
+              unwrapBlock(rt[k++]);
+            }
+          }
         } else if (cmd === 'name') {
           name = stripWrapping(pt[j++]);
         } else if (cmd === 'description') {
@@ -243,6 +312,18 @@ function parseOutput(block: string): CalculationOutput {
   }
   if (description) {
     out.description = description;
+  }
+  if (quantityKind !== undefined) {
+    out.quantityKind = quantityKind;
+  }
+  if (hasRange) {
+    out.hasRange = true;
+    if (rangeMin !== undefined) {
+      out.rangeMin = rangeMin;
+    }
+    if (rangeMax !== undefined) {
+      out.rangeMax = rangeMax;
+    }
   }
   return out;
 }
@@ -320,6 +401,9 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     for (const inp of c.inputs) {
       let line = '    ' + inp.name + ' : ' + inp.type + ' { ';
       line += 'unit "' + escapeString(inp.unit) + '"';
+      if (inp.quantityKind) {
+        line += ' quantity_kind ' + inp.quantityKind;
+      }
       if (inp.description) {
         line += ' description "' + escapeString(inp.description) + '"';
       }
@@ -332,6 +416,16 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
       if (inp.enumValues && inp.enumValues.length > 0) {
         line += ' enum_values { ' + inp.enumValues.join(' ') + ' }';
       }
+      if (inp.hasRange) {
+        line += ' range {';
+        if (inp.rangeMin) {
+          line += ' min ' + dumpBareSafe(inp.rangeMin);
+        }
+        if (inp.rangeMax) {
+          line += ' max ' + dumpBareSafe(inp.rangeMax);
+        }
+        line += ' }';
+      }
       line += ' }\n';
       out += line;
     }
@@ -343,11 +437,24 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     ' { unit "' +
     escapeString(c.output.unit) +
     '"';
+  if (c.output.quantityKind) {
+    outputLine += ' quantity_kind ' + c.output.quantityKind;
+  }
   if (c.output.name) {
     outputLine += ' name "' + escapeString(c.output.name) + '"';
   }
   if (c.output.description) {
     outputLine += ' description "' + escapeString(c.output.description) + '"';
+  }
+  if (c.output.hasRange) {
+    outputLine += ' range {';
+    if (c.output.rangeMin) {
+      outputLine += ' min ' + dumpBareSafe(c.output.rangeMin);
+    }
+    if (c.output.rangeMax) {
+      outputLine += ' max ' + dumpBareSafe(c.output.rangeMax);
+    }
+    outputLine += ' }';
   }
   out += outputLine + ' }\n';
   if (c.expression) {

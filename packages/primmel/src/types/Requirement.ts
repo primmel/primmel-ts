@@ -32,6 +32,12 @@ export interface RequirementLimit {
   notes: string;
   /** Canonical acceptance via the verdict registry (derive once). */
   accepts: RequirementLimitAccepts | null;
+  /**
+   * The derived quantity's typing (v3.2, clause 11.1.2) — the same
+   * contract the verdict construct carries. When the limit binds a
+   * verdict (`accepts`), the two declarations must agree (C114).
+   */
+  quantity: { kind: string; unit: string } | null;
   /** Acceptance decision rule (guarding, criterion, statistics). */
   acceptance: AcceptanceDecision | null;
   sourceDiscrepancy: SourceDiscrepancy | null;
