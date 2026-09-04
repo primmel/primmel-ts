@@ -26,6 +26,13 @@
 //   ask 6 — the machine passport: every unit carries the compact
 //     digest (kind, text, expression, units, applicability, acceptance,
 //     provenance URNs, content hash) with a canonical serialized form.
+//   ask 7 — language-tagged variants: every unit carries `language`
+//     (the package default spelling, tagging the inline prose) and
+//     `variants` (the package's text blocks resolved by the C89
+//     longest-prefix address rule onto the KERNEL element id, keyed by
+//     field path) — authored content, digest-participating; blocks
+//     addressed at unprojected elements are counted, never dropped
+//     silently.
 //
 // Plus the bundle-level contract: the projection version, byte
 // determinism, and the source_hash algorithm (the deployed consumer's
@@ -47,6 +54,7 @@ import {
   packageEdition,
   packageSourceHash,
   passportCanonical,
+  resolveTextAddress,
   retrievalDigest,
   retrievalDocParts,
   type RetrievalUnit,
@@ -238,6 +246,96 @@ describe('retrieval export — the flat facet (ask 3)', () => {
       Object.keys(orphan).filter(k => k.startsWith('app_')),
       [],
     );
+  });
+});
+
+describe('retrieval export — language-tagged variants (ask 7)', () => {
+  it('tags every unit with the package default spelling', () => {
+    const { units } = fixtureUnits();
+    for (const unit of units.values()) {
+      // The INLINE prose values' tag — the same code facet.language
+      // carries, on the unit for the agent reading one unit.
+      assert.equal(unit.language, 'eng-Latn', `${unit.id} language tag`);
+    }
+  });
+
+  it('resolves text blocks onto their units, keyed by the field path', () => {
+    const { units, stats } = fixtureUnits();
+    const alpha = units.get('/req/scope/alpha')!;
+    assert.deepEqual(alpha.variants, {
+      statement: [
+        { spelling: 'fra-Latn', value: 'Le widget doit frobniquer.' },
+        {
+          spelling: 'zho-Latn',
+          via: 'BGN-PCGN:zho-Hans:Latn:1979',
+          value: '该小部件应进行frobnicate。',
+        },
+      ],
+    });
+    // Kernel-id addressing: the term's text block addresses
+    // `frobnicator`, not the namespaced unit id /term/frobnicator.
+    const term = units.get('/term/frobnicator')!;
+    assert.deepEqual(term.variants, {
+      definition: [
+        { spelling: 'fra-Latn', value: 'un dispositif qui frobnique' },
+      ],
+    });
+    // A unit no text block addresses carries no variants key.
+    assert.equal(units.get('/req/scope/beta')!.variants, undefined);
+    // The block addressed at the instrument (registered with C89, not
+    // projected as a unit) is counted, never silently dropped.
+    assert.equal(stats.withVariants, 2);
+    assert.equal(stats.droppedTextBlocks, 1);
+  });
+
+  it('resolves the longest registered dot-boundary prefix (the C89 rule)', () => {
+    // Element ids may themselves carry dots (r144-3/sec-3.4)…
+    const ids = new Set(['/req/a', 'r144-3/sec-3.4', 'a.b']);
+    assert.deepEqual(resolveTextAddress('/req/a.statement', ids), {
+      elementId: '/req/a',
+      path: 'statement',
+    });
+    assert.deepEqual(resolveTextAddress('r144-3/sec-3.4.guidance', ids), {
+      elementId: 'r144-3/sec-3.4',
+      path: 'guidance',
+    });
+    // …and a dotted element id wins over its own prefix (a.b the
+    // element, not a + path b.statement).
+    assert.deepEqual(resolveTextAddress('a.b.statement', ids), {
+      elementId: 'a.b',
+      path: 'statement',
+    });
+    // The nested prose path (gap-close E13) rides whole as the key.
+    assert.deepEqual(resolveTextAddress('a.b.fields.indication.label', ids), {
+      elementId: 'a.b',
+      path: 'fields.indication.label',
+    });
+    // No registered prefix, or a shapeless address: unresolved.
+    assert.equal(resolveTextAddress('nope.statement', ids), null);
+    assert.equal(resolveTextAddress('bareid', ids), null);
+  });
+
+  it('variants are authored content: a translation change moves the unit digest', () => {
+    const dir = buildRetrievalFixturePackage();
+    const before = exportPackageRetrieval(dir);
+    // Reauthor the French alternate: alpha's content moved…
+    writeFileSync(
+      join(dir, 'texts.prl'),
+      readFileSync(join(dir, 'texts.prl'), 'utf8').replace(
+        'Le widget doit frobniquer.',
+        'Le widget doit frobniquer doucement.',
+      ),
+    );
+    const after = exportPackageRetrieval(dir);
+    const b = before.document.units.find(u => u.id === '/req/scope/alpha')!;
+    const a = after.document.units.find(u => u.id === '/req/scope/alpha')!;
+    assert.notEqual(a.content_hash, b.content_hash);
+    // …identity and every other unit unmoved; the bundle hash moved.
+    assert.equal(a.id, b.id);
+    const betaB = before.document.units.find(u => u.id === '/req/scope/beta')!;
+    const betaA = after.document.units.find(u => u.id === '/req/scope/beta')!;
+    assert.equal(betaA.content_hash, betaB.content_hash);
+    assert.notEqual(after.document.source_hash, before.document.source_hash);
   });
 });
 
@@ -614,6 +712,9 @@ describe('retrieval export — the R 60 corpus leg', () => {
         assert.equal(facet.model_version, '2021');
         assert.equal(facet.language, 'eng-Latn');
         assert.equal(facet.clause_anchor, unit.clause?.clause ?? '');
+        // The language tag rides every unit (ask 7; the R 60 package
+        // ships no text blocks — variants absent, never fabricated).
+        assert.equal(unit.language, 'eng-Latn');
         // The applicability flattening agrees with the typed entries.
         const appKeys = Object.keys(facet).filter(
           k => k.startsWith('app_') && !k.endsWith('_match'),
@@ -628,6 +729,9 @@ describe('retrieval export — the R 60 corpus leg', () => {
         units.some(u => Object.keys(u.facet).some(k => k.startsWith('app_'))),
         'the corpus carries app_ facet keys',
       );
+      // R 60 ships no text blocks: the variant tallies are honestly zero.
+      assert.equal(result.stats.withVariants, 0);
+      assert.equal(result.stats.droppedTextBlocks, 0);
       // The deployed consumer's pin shape: standard → { source_hash, … }.
       assert.match(result.document.source_hash!, /^[0-9a-f]{64}$/);
       assert.equal(result.document.source_hash, packageSourceHash(R60));

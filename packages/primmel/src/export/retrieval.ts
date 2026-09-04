@@ -62,6 +62,17 @@
 //      derivation), the declared units, the applicability summary, the
 //      acceptance summary, the provenance URNs, and the content hash.
 //      `passportCanonical` renders it as the canonical string form.
+//   7. LANGUAGE-TAGGED VARIANTS. Every unit carries `language` — the
+//      package's default spelling, the ISO 24229 tag of the INLINE
+//      prose values — and, when the package ships `text` blocks,
+//      `variants`: the alternate spellings resolved onto the unit by
+//      the C89 address rule (the longest registered dot-boundary
+//      prefix; the kernel element id, not the namespaced unit id),
+//      keyed by the addressed field path, each entry
+//      `{ spelling, via?, value }`. Both are authored content and
+//      participate in the content_hash; a text block addressed at an
+//      element the projection does not ship is counted
+//      (droppedTextBlocks), never silently lost.
 //
 // Congruence with the deployed consumer (oimlsmart/smart
 // derive-model-plane.ts → oimlsmart/rag model_plane.py): the unit ids,
@@ -83,8 +94,7 @@
 // the ReqIF/RDF surfaces: the package stays the single source of truth;
 // the export is generated, never authored, never re-imported.
 //
-// The language-tagged variants (the issue's ask 7) layer onto this
-// core; the diff-as-data API (ask 5) is the model diff
+// The diff-as-data API (the issue's ask 5) is the model diff
 // (src/model-diff.ts), whose id keying this projection shares.
 // ─────────────────────────────────────────────────────────────────────
 
@@ -105,6 +115,7 @@ import type Verdict from '../types/Verdict';
 import type { TestSequence } from '../types/TestSequence';
 import type StateMachine from '../types/StateMachine';
 import type { ApplicabilityEntry } from '../types/Form';
+import type { SpellingEntry } from '../types/Text';
 import type {
   AttributeDefinition,
   Behavior,
@@ -251,6 +262,22 @@ export interface RetrievalUnit {
   channel?: string;
   /** Requirement/test ids this unit depends on. */
   dependencies?: string[];
+  /**
+   * The base prose value's spelling — the package's `default_spelling`
+   * (ISO 24229; ask 7). The default spelling's values live inline (the
+   * `name`/`statement`/`definition` fields above); this is their tag.
+   * Omitted when the package declares no default spelling.
+   */
+  language?: string;
+  /**
+   * The ISO 24229 alternate spellings of the unit's prose fields
+   * (ask 7), resolved from the package's `text` blocks: keyed by the
+   * addressed field path relative to the element (`statement`, or the
+   * nested `<path…>.<field>` form of gap-close E13), values in authored
+   * order. AUTHORED content — a translation change moves the
+   * content_hash like any other content change.
+   */
+  variants?: Record<string, SpellingEntry[]>;
   /** Kind-specific payload (typed IO, table columns, sequence steps…). */
   payload?: Record<string, unknown>;
   /** The primary provenance edge (the first of `clauses`). */
@@ -340,6 +367,17 @@ export interface RetrievalExportStats {
   nonUrnDocRefs: number;
   /** Units with no provenance at all. */
   withoutProvenance: number;
+  /**
+   * Units carrying at least one language-tagged variant field (ask 7).
+   */
+  withVariants: number;
+  /**
+   * `text` blocks whose variants reached no unit: the address resolves
+   * to an element the projection does not ship as a unit (a form, a
+   * subject, an instrument), or resolves to nothing at all (a C89-red
+   * package). Counted, never silently dropped.
+   */
+  droppedTextBlocks: number;
 }
 
 /** The export product: the document, its canonical JSON, and the stats. */
@@ -743,30 +781,171 @@ export function retrievalFacet(
   return facet;
 }
 
+// ── language-tagged variants (ask 7) ─────────────────────────────────
+
+/**
+ * Resolve a `text` block's address onto its element: the LONGEST
+ * dot-boundary prefix registered in the package (element ids may
+ * themselves carry dots — `r144-3/sec-3.4`); the rest is the path into
+ * the element's structure, the terminal segment the prose field. The
+ * same rule the C89 linter resolves with (check.ts) — the projection
+ * and the linter never disagree about which element a text block
+ * addresses.
+ */
+export function resolveTextAddress(
+  address: string,
+  elementIds: ReadonlySet<string>,
+): { elementId: string; path: string } | null {
+  const segments = address.split('.');
+  if (segments.length < 2 || segments.some(s => s === '')) {
+    return null;
+  }
+  for (let i = segments.length - 1; i >= 1; i--) {
+    const candidate = segments.slice(0, i).join('.');
+    if (elementIds.has(candidate)) {
+      return { elementId: candidate, path: segments.slice(i).join('.') };
+    }
+  }
+  return null;
+}
+
+/**
+ * The id-keyed collections a text block may address — the mirror of the
+ * C89 linter's element registry (check.ts). Resolution runs against the
+ * FULL registry (not only the projected kinds): an address whose
+ * longest registered prefix is an unprojected element (a form, an
+ * instrument) must NOT fall through to a shorter projected prefix —
+ * that misattribution is worse than a drop, and the drop is counted.
+ */
+const TEXT_ADDRESS_COLLECTIONS: (keyof Standard)[] = [
+  'requirements',
+  'requirementClasses',
+  'conformanceTests',
+  'conformanceClasses',
+  'terms',
+  'forms',
+  'subforms',
+  'symbols',
+  'tables',
+  'calculations',
+  'notes',
+  'provisions',
+  'processes',
+  'instruments',
+  'attributeDefinitions',
+  'capabilities',
+  'behaviors',
+  'conditionSets',
+  'subjects',
+  'referenceMaterials',
+  'artifactDefinitions',
+  'monitors',
+  'passports',
+  'invariants',
+  'testSequences',
+  'formulasUsed',
+  'stateMachines',
+  'figures',
+  'links',
+];
+
+/**
+ * Attach the language tag and the variants to the built unit contents
+ * (pre-digest — both are authored content): `language` is the package's
+ * default spelling on every unit; `variants` resolves each `text` block
+ * onto its unit (by the KERNEL element id — a term's text block
+ * addresses `frobnicator`, not `/term/frobnicator`) and keys the
+ * entries by the addressed field path. Returns the count of text blocks
+ * whose variants reached no unit (the droppedTextBlocks honesty tally).
+ */
+function attachVariants(
+  built: { content: UnitContent; elementId: string }[],
+  standard: Standard,
+  pkg: RetrievalPackage,
+): number {
+  if (present(pkg.default_spelling)) {
+    for (const b of built) {
+      b.content.language = pkg.default_spelling;
+    }
+  }
+  const texts = standard.texts ?? [];
+  if (texts.length === 0) {
+    return 0;
+  }
+  const registry = new Set<string>();
+  for (const field of TEXT_ADDRESS_COLLECTIONS) {
+    for (const item of (standard[field] as { id?: string }[]) ?? []) {
+      if (item?.id) {
+        registry.add(item.id);
+      }
+    }
+  }
+  const unitByElement = new Map(built.map(b => [b.elementId, b.content]));
+  let dropped = 0;
+  for (const t of texts) {
+    const resolved = resolveTextAddress(t.id, registry);
+    const content = resolved
+      ? unitByElement.get(resolved.elementId)
+      : undefined;
+    if (!resolved || !content) {
+      dropped++;
+      continue;
+    }
+    const variants = (content.variants ??= {});
+    variants[resolved.path] = [
+      ...(variants[resolved.path] ?? []),
+      ...t.entries,
+    ];
+  }
+  return dropped;
+}
+
 // ── unit construction ────────────────────────────────────────────────
 
 /**
  * The fields that participate in a unit's content digest: everything
  * the consumer indexes — the projected content, the normalized
- * provenance — minus the digest, the passport, and the facet (both
- * derived projections of the authored content, never inputs to it).
+ * provenance, the language tag and variants (authored content) — minus
+ * the digest, the passport, and the facet (the derived projections of
+ * the authored content, never inputs to it).
  */
 type UnitContent = Omit<RetrievalUnit, 'content_hash' | 'passport' | 'facet'>;
 
-function finalize(
+/**
+ * Attach the provenance edges to a built unit content. The digest,
+ * passport and facet arrive later (`completeUnit`) — the language tag
+ * and variants (ask 7) attach between assembly and digestion, so they
+ * participate in the content_hash like any authored field.
+ */
+function assemble(
   content: UnitContent,
   clauses: RetrievalClause[],
-): RetrievalUnit {
+): UnitContent {
   if (clauses.length > 0) {
     content.clause = clauses[0];
     content.clauses = clauses;
   }
+  return content;
+}
+
+/**
+ * Complete an assembled unit content into the shipped unit: the content
+ * digest (over the authored fields — language and variants included),
+ * then the derived projections (passport, facet) that read it.
+ */
+function completeUnit(
+  content: UnitContent,
+  pkg: RetrievalPackage,
+): RetrievalUnit {
   const hash = retrievalDigest(content);
   const unit: RetrievalUnit = {
     ...content,
     content_hash: hash,
   } as RetrievalUnit;
   unit.passport = passportOf(unit);
+  // The facet attaches last (a derived projection of the digested
+  // content — the unit_hash key reads the computed content_hash).
+  unit.facet = retrievalFacet(unit, pkg);
   return unit;
 }
 
@@ -782,8 +961,8 @@ const present = (s: string | undefined | null): s is string =>
 const presentList = <T>(xs: T[] | undefined | null): T[] | undefined =>
   xs && xs.length > 0 ? xs : undefined;
 
-function requirementUnit(r: Requirement): RetrievalUnit {
-  return finalize(
+function requirementUnit(r: Requirement): UnitContent {
+  return assemble(
     {
       id: r.id,
       kind: 'requirement',
@@ -828,7 +1007,7 @@ function requirementUnit(r: Requirement): RetrievalUnit {
   );
 }
 
-function conformanceTestUnit(t: ConformanceTest): RetrievalUnit {
+function conformanceTestUnit(t: ConformanceTest): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(t.kind) ? { test_kind: t.kind } : {}),
     ...(present(t.methodRef) ? { method_ref: t.methodRef } : {}),
@@ -843,7 +1022,7 @@ function conformanceTestUnit(t: ConformanceTest): RetrievalUnit {
         }
       : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: t.id,
       kind: 'conformance_test',
@@ -870,7 +1049,7 @@ function conformanceTestUnit(t: ConformanceTest): RetrievalUnit {
   );
 }
 
-function termUnit(t: Term, baseUrn: string): RetrievalUnit {
+function termUnit(t: Term, baseUrn: string): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(t.section) ? { section: t.section } : {}),
     ...(present(t.language) ? { language: t.language } : {}),
@@ -879,7 +1058,7 @@ function termUnit(t: Term, baseUrn: string): RetrievalUnit {
     ...(presentList(t.abbreviations) ? { abbreviations: t.abbreviations } : {}),
     ...(presentList(t.seeAlso) ? { see_also: t.seeAlso } : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/term/${t.id}`,
       kind: 'term',
@@ -891,7 +1070,7 @@ function termUnit(t: Term, baseUrn: string): RetrievalUnit {
   );
 }
 
-function attributeUnit(a: AttributeDefinition): RetrievalUnit {
+function attributeUnit(a: AttributeDefinition): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(a.symbol) ? { symbol: a.symbol } : {}),
     ...(present(a.quantityKind) ? { quantity_kind: a.quantityKind } : {}),
@@ -902,7 +1081,7 @@ function attributeUnit(a: AttributeDefinition): RetrievalUnit {
     ...(present(a.irdi) ? { irdi: a.irdi } : {}),
     ...(presentList(a.enumValues) ? { enum_values: a.enumValues } : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/attribute/${a.id}`,
       kind: 'attribute',
@@ -915,12 +1094,12 @@ function attributeUnit(a: AttributeDefinition): RetrievalUnit {
   );
 }
 
-function behaviorUnit(b: Behavior): RetrievalUnit {
+function behaviorUnit(b: Behavior): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(b.kind) ? { behavior_kind: b.kind } : {}),
     ...(present(b.stimulus) ? { stimulus: b.stimulus } : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/behavior/${b.id}`,
       kind: 'behavior',
@@ -945,7 +1124,7 @@ function calculationUnits(c: Calculation): string[] {
   return [...out].sort();
 }
 
-function calculationUnit(c: Calculation): RetrievalUnit {
+function calculationUnit(c: Calculation): UnitContent {
   // The consumer's calculations/formulas split: a calculation carrying
   // an engine rule type projects as a `formula` unit (the operator
   // signature), the rest as `calculation` (typed IO).
@@ -970,7 +1149,7 @@ function calculationUnit(c: Calculation): RetrievalUnit {
     ...(c.lookup ? { lookup: c.lookup } : {}),
     ...(present(c.profile) ? { profile: c.profile } : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: present(c.identifier) ? c.identifier! : `/calculation/${c.id}`,
       kind,
@@ -989,7 +1168,7 @@ function calculationUnit(c: Calculation): RetrievalUnit {
   );
 }
 
-function symbolUnit(s: Symbol): RetrievalUnit {
+function symbolUnit(s: Symbol): UnitContent {
   const units = present(s.unit) && s.unit !== '1' ? [s.unit] : undefined;
   const payload: Record<string, unknown> = {
     ...(present(s.type) ? { symbol_type: s.type } : {}),
@@ -1002,7 +1181,7 @@ function symbolUnit(s: Symbol): RetrievalUnit {
       : {}),
     ...(present(s.calculation) ? { calculation: s.calculation } : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/symbol/${s.id}`,
       kind: 'symbol',
@@ -1027,8 +1206,8 @@ function symbolUnit(s: Symbol): RetrievalUnit {
   );
 }
 
-function constraintUnit(c: Constraint): RetrievalUnit {
-  return finalize(
+function constraintUnit(c: Constraint): UnitContent {
+  return assemble(
     {
       id: `/constraint/${c.id}`,
       kind: 'constraint',
@@ -1044,7 +1223,7 @@ function constraintUnit(c: Constraint): RetrievalUnit {
   );
 }
 
-function characteristicUnit(v: Verdict): RetrievalUnit {
+function characteristicUnit(v: Verdict): UnitContent {
   // The deployed plane's `characteristic` kind: the canonical verdict
   // quantity (derive once, reference everywhere).
   const units = present(v.unit) && v.unit !== '1' ? [v.unit] : undefined;
@@ -1053,7 +1232,7 @@ function characteristicUnit(v: Verdict): RetrievalUnit {
     ...(present(v.quantityKind) ? { quantity_kind: v.quantityKind } : {}),
     ...(v.seriesReduction ? { series_reduction: v.seriesReduction } : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/characteristic/${v.id}`,
       kind: 'characteristic',
@@ -1074,7 +1253,7 @@ function characteristicUnit(v: Verdict): RetrievalUnit {
   );
 }
 
-function tableUnit(t: Table): RetrievalUnit {
+function tableUnit(t: Table): UnitContent {
   const units = (t.columnDefs ?? [])
     .map(c => c.unit)
     .filter(u => present(u) && u !== '1')
@@ -1094,7 +1273,7 @@ function tableUnit(t: Table): RetrievalUnit {
     ...(presentList(t.data) ? { rows: t.data } : {}),
     ...(t.profiles ? { profiles: t.profiles } : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/table/${t.id}`,
       kind: 'table',
@@ -1111,7 +1290,7 @@ function tableUnit(t: Table): RetrievalUnit {
   );
 }
 
-function sequenceUnit(s: TestSequence): RetrievalUnit {
+function sequenceUnit(s: TestSequence): UnitContent {
   const payload: Record<string, unknown> = {
     steps: s.steps.map(st => ({
       order: st.order,
@@ -1124,7 +1303,7 @@ function sequenceUnit(s: TestSequence): RetrievalUnit {
       ? { sample_applicability: s.sampleApplicability }
       : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/sequence/${s.id}`,
       kind: 'sequence',
@@ -1136,8 +1315,8 @@ function sequenceUnit(s: TestSequence): RetrievalUnit {
   );
 }
 
-function noteUnit(n: Note): RetrievalUnit {
-  return finalize(
+function noteUnit(n: Note): UnitContent {
+  return assemble(
     {
       id: `/note/${n.id}`,
       kind: 'note',
@@ -1148,7 +1327,7 @@ function noteUnit(n: Note): RetrievalUnit {
   );
 }
 
-function stateMachineUnit(m: StateMachine): RetrievalUnit {
+function stateMachineUnit(m: StateMachine): UnitContent {
   // The state machine keys by the bound entity's name (the construct
   // declares no id — the model diff's E12 keying).
   const id = m.entityName;
@@ -1167,7 +1346,7 @@ function stateMachineUnit(m: StateMachine): RetrievalUnit {
         }
       : {}),
   };
-  return finalize(
+  return assemble(
     {
       id: `/state-machine/${id}`,
       kind: 'state_machine',
@@ -1178,7 +1357,7 @@ function stateMachineUnit(m: StateMachine): RetrievalUnit {
   );
 }
 
-function dimensionUnit(d: ClassificationDimension): RetrievalUnit {
+function dimensionUnit(d: ClassificationDimension): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(d.scope) ? { scope: d.scope } : {}),
     ...(present(d.cardinality) ? { cardinality: d.cardinality } : {}),
@@ -1189,7 +1368,7 @@ function dimensionUnit(d: ClassificationDimension): RetrievalUnit {
       ...(present(v.termRef) ? { term_ref: v.termRef } : {}),
     })),
   };
-  return finalize(
+  return assemble(
     {
       id: `/dimension/${d.id}`,
       kind: 'dimension',
@@ -1277,62 +1456,82 @@ export function exportStandardRetrieval(
   options: RetrievalExportOptions = {},
 ): RetrievalExport {
   const pkg = packageBlock(standard);
-  const units: RetrievalUnit[] = [];
+  // Build the unit contents paired with the KERNEL element id — the
+  // address a `text` block targets (a term's variants address
+  // `frobnicator`, not the namespaced unit id `/term/frobnicator`).
+  const built: { content: UnitContent; elementId: string }[] = [];
+  const push = (content: UnitContent, elementId: string): void => {
+    built.push({ content, elementId });
+  };
   for (const r of standard.requirements ?? []) {
-    units.push(requirementUnit(r));
+    push(requirementUnit(r), r.id);
   }
   for (const t of standard.conformanceTests ?? []) {
-    units.push(conformanceTestUnit(t));
+    push(conformanceTestUnit(t), t.id);
   }
   for (const t of standard.terms ?? []) {
-    units.push(termUnit(t, pkg.base_urn));
+    push(termUnit(t, pkg.base_urn), t.id);
   }
   for (const a of standard.attributeDefinitions ?? []) {
-    units.push(attributeUnit(a));
+    push(attributeUnit(a), a.id);
   }
   for (const b of standard.behaviors ?? []) {
-    units.push(behaviorUnit(b));
+    push(behaviorUnit(b), b.id);
   }
   for (const c of standard.calculations ?? []) {
-    units.push(calculationUnit(c));
+    // The kernel element id is the construct id (`calculation frobIndex`),
+    // never the declared `identifier` path the unit id prefers.
+    push(calculationUnit(c), c.id);
   }
   for (const s of standard.symbols ?? []) {
-    units.push(symbolUnit(s));
+    push(symbolUnit(s), s.id);
   }
   for (const c of standard.constraints ?? []) {
-    units.push(constraintUnit(c));
+    push(constraintUnit(c), c.id);
   }
   for (const v of standard.verdicts ?? []) {
-    units.push(characteristicUnit(v));
+    push(characteristicUnit(v), v.id);
   }
   for (const t of standard.tables ?? []) {
-    units.push(tableUnit(t));
+    push(tableUnit(t), t.id);
   }
   for (const s of standard.testSequences ?? []) {
-    units.push(sequenceUnit(s));
+    push(sequenceUnit(s), s.id);
   }
   for (const n of standard.notes ?? []) {
-    units.push(noteUnit(n));
+    push(noteUnit(n), n.id);
   }
   for (const m of standard.stateMachines ?? []) {
-    units.push(stateMachineUnit(m));
+    // The construct declares no id (the unit keys by the bound entity's
+    // name) — C89 registers nothing, so no text block can address it.
+    push(stateMachineUnit(m), m.entityName);
   }
   for (const i of standard.instruments ?? []) {
     for (const d of i.dimensions ?? []) {
-      units.push(dimensionUnit(d));
+      // Dimensions nest under the instrument in the C89 registry — a
+      // text block addresses them by path through the instrument, which
+      // the projection does not ship as a unit: those blocks count as
+      // dropped, never misattached.
+      push(dimensionUnit(d), d.id);
     }
   }
+
+  // The language tag + variants attach pre-digest (authored content —
+  // they move the content_hash like any authored field).
+  const droppedTextBlocks = attachVariants(built, standard, pkg);
+  const units = built.map(b => completeUnit(b.content, pkg));
 
   const byKind: Partial<Record<RetrievalUnitKind, number>> = {};
   let withClause = 0;
   let anchorOnlyProvenance = 0;
   let nonUrnDocRefs = 0;
   let withoutProvenance = 0;
+  let withVariants = 0;
   for (const u of units) {
-    // The facet attaches last (a derived projection of the digested
-    // content — the unit_hash key reads the computed content_hash).
-    u.facet = retrievalFacet(u, pkg);
     byKind[u.kind] = (byKind[u.kind] ?? 0) + 1;
+    if (u.variants && Object.keys(u.variants).length > 0) {
+      withVariants++;
+    }
     const clauses = u.clauses ?? [];
     if (clauses.some(c => c.clause)) {
       withClause++;
@@ -1365,6 +1564,8 @@ export function exportStandardRetrieval(
       anchorOnlyProvenance,
       nonUrnDocRefs,
       withoutProvenance,
+      withVariants,
+      droppedTextBlocks,
     },
   };
 }
