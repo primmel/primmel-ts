@@ -125,6 +125,8 @@ export default function parse(
     // Primmel v3.1 dataspace + trust (TODO.primmel/10)
     dataspaces: {},
     policies: {},
+    // Primmel v3.2 consumption constructs (TODO.primmel/11)
+    dimensions: {},
     // Issue collection (duplicate IDs, etc.)
     issues: [],
   };

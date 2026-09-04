@@ -1058,6 +1058,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.primmel/11, MN 114 clause 13.10.1 (primmel/spec#18 ask 1)',
   ),
+  // C111: the dimension declaration's shape (clause 10.6) — value ids
+  // unique within a dimension, implies targets resolving inside their
+  // own dimension and acyclic, values vs values_of never combined, an
+  // undocumented values_of register warned, and one dimension identifier
+  // once per applicability namespace (the is_dimension-attribute/inline
+  // mirror pattern tolerated — R 144's power_supply precedent).
+  R(
+    'C111',
+    'dimension-shape',
+    'base',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 10.6 (primmel/spec#18 ask 2)',
+  ),
   // ── the dataspace family (TODO.primmel/10; MN 114 v3.1 clause 19) ──
   // The v3.1 extension set: the dataspace definition, the policy
   // construct (Primmel's own policy grammar; ODRL is a codec output),

@@ -295,6 +295,13 @@
 //      (errors), the same string in two family fields of one term and
 //      label echoes (rollout warning legs; the cross-field leg tightens
 //      to the spec's error when 11d re-authors the estate's terms)
+//   C111 dimension-shape (MN 114 v3.2 clause 10.6, TODO.primmel/11):
+//      the applicability dimension namespace's declarations — unique
+//      value ids, implies resolving and acyclic, values vs values_of,
+//      one identifier once per namespace; and C3's resolution widens to
+//      the full namespace (clause 11.1.1: instrument dimensions +
+//      is_dimension attribute mirrors + the top-level declarations,
+//      values_of capabilities resolving from the capability register)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -339,7 +346,12 @@ import {
 } from './mapping-coverage';
 import type MapProfile from './types/MapProfile';
 import type Standard from './types/Standard';
-import type { AttributeDefinition, Behavior, Subject } from './types/Subject';
+import type {
+  AttributeDefinition,
+  Behavior,
+  ClassificationDimension,
+  Subject,
+} from './types/Subject';
 import type { DataClass } from './types/data';
 import type { ProcessParameter, ProcessStep } from './types/process';
 import type { Requirement } from './types/Requirement';
@@ -554,6 +566,9 @@ export function checkPackage(
   // ── C110: term-alias-shape (MN 114 v3.2, clause 13.10.1) ───────────
   issues.push(...checkTermAliases(standard));
 
+  // ── C111: dimension-shape (MN 114 v3.2, clause 10.6) ───────────────
+  issues.push(...checkDimensions(standard));
+
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
   );
@@ -573,14 +588,56 @@ export function checkPackage(
   // binds_to / limit.uses may reference them (e.g. sample.test_context
   // quantities that are measured test outputs).
   const symbolIds = new Set((standard.symbols ?? []).map((s: Symbol) => s.id));
-  const dimIds = new Map<string, Set<string>>();
+  // The applicability dimension namespace (MN 114 v3.2, clause 11.1.1):
+  // the union of the instruments' classification dimensions, the
+  // attribute definitions declared is_dimension true (the bound enum or
+  // the inline enum_values supply the domain), and the top-level
+  // `dimension` declarations (clause 10.6; `values_of capabilities`
+  // resolves its domain from the merged capability register). A null
+  // domain means the axis is declared but its value set is open here
+  // (an undocumented values_of register — C111 warns there).
+  const dimIds = new Map<string, Set<string> | null>();
   const dimCardinality = new Map<string, string>();
+  // Attribute-mirror dimensions carry no cardinality facet — the
+  // match-mode warning (C3) only fires on a KNOWN single cardinality.
+  const dimCardinalityOpen = new Set<string>();
   for (const inst of standard.instruments ?? []) {
     for (const d of inst.dimensions ?? []) {
       dimIds.set(d.id, new Set(d.values.map(v => v.id)));
       if (d.cardinality) {
         dimCardinality.set(d.id, d.cardinality);
       }
+    }
+  }
+  for (const a of standard.attributeDefinitions ?? []) {
+    if (a.isDimension !== true || dimIds.has(a.id)) {
+      continue;
+    }
+    const enumDef = (standard.enums ?? []).find(e => e.id === a.enumRef);
+    const domain = enumDef
+      ? new Set(enumDef.values.map(v => v.id))
+      : a.enumValues && a.enumValues.length > 0
+        ? new Set(a.enumValues)
+        : null;
+    dimIds.set(a.id, domain);
+    dimCardinalityOpen.add(a.id);
+  }
+  for (const d of standard.dimensions ?? []) {
+    if (dimIds.has(d.id)) {
+      continue; // the duplicate declaration is C111's finding
+    }
+    if (d.valuesOf) {
+      dimIds.set(
+        d.id,
+        d.valuesOf === 'capabilities'
+          ? new Set((standard.capabilities ?? []).map(c => c.id))
+          : null,
+      );
+    } else {
+      dimIds.set(d.id, new Set(d.values.map(v => v.id)));
+    }
+    if (d.cardinality) {
+      dimCardinality.set(d.id, d.cardinality);
     }
   }
 
@@ -731,7 +788,10 @@ export function checkPackage(
           'C3',
           `conformance test ${t.id}: test_subject dimension "${dim}" not declared`,
         );
-      } else if (!dimIds.get(dim)!.has(String(value))) {
+      } else if (
+        dimIds.get(dim) !== null &&
+        !dimIds.get(dim)!.has(String(value))
+      ) {
         err(
           'C3',
           `conformance test ${t.id}: test_subject ${dim}="${value}" not in the dimension's values`,
@@ -750,11 +810,22 @@ export function checkPackage(
           `requirement ${r.id}: applicability dimension "${a.dimension}" not declared`,
         );
       } else {
+        const domain = dimIds.get(a.dimension) ?? null;
         for (const v of a.values ?? []) {
-          if (!dimIds.get(a.dimension)!.has(v)) {
+          if (domain !== null && !domain.has(v)) {
             err(
               'C3',
               `requirement ${r.id}: applicability ${a.dimension}="${v}" not in the dimension's values`,
+            );
+          }
+        }
+        // The parameter-mapping form ({ A: 5, C: 3 }): the map's keys
+        // are listed values of the dimension (clause 11.1.1).
+        for (const k of Object.keys(a.mapping ?? {})) {
+          if (domain !== null && !domain.has(k)) {
+            err(
+              'C3',
+              `requirement ${r.id}: applicability ${a.dimension} mapping key "${k}" not in the dimension's values`,
             );
           }
         }
@@ -763,10 +834,13 @@ export function checkPackage(
         // value, so `match all` and `match exact` both reduce to plain
         // membership (equivalent to the default any). Flag the redundant
         // mode so the data author either sets the dimension's cardinality
-        // or drops the mode.
+        // or drops the mode. An attribute-mirror dimension carries no
+        // cardinality facet: the warning only fires on a KNOWN single
+        // cardinality (clause 11.1.1).
         if (
           (a.match === 'all' || a.match === 'exact') &&
-          dimCardinality.get(a.dimension) !== 'set'
+          dimCardinality.get(a.dimension) !== 'set' &&
+          !dimCardinalityOpen.has(a.dimension)
         ) {
           warn(
             'C3',
@@ -5709,6 +5783,122 @@ export function checkTermAliases(standard: Standard): CheckIssue[] {
           }
         }
       }
+    }
+  }
+  return issues;
+}
+
+/**
+ * C111 — dimension-shape (MN 114 v3.2, clause 10.6; TODO.primmel/11):
+ * the applicability dimension namespace is typed and shared, so its
+ * declarations are checked. Per dimension (the instruments' inline
+ * blocks AND the top-level declarations — one grammar, two placements):
+ * value identifiers are unique, every `implies` target resolves inside
+ * its own dimension, and the implication graph is acyclic (the
+ * applicability engine walks the closure). A top-level dimension carries
+ * `values` or `values_of`, never both; a `values_of` naming a register
+ * the kernel does not know (the documented register is `capabilities`)
+ * warns — the domain stays open, C3's value resolution skips it.
+ * Namespace uniqueness: a top-level declaration colliding with an
+ * instrument's inline dimension or an is_dimension attribute, or two
+ * instruments declaring the same dimension id in the merged package, is
+ * an error. The one tolerated overlap is the estate's mirror pattern: an
+ * attribute definition declared `is_dimension true` and an instrument's
+ * inline dimension carrying the SAME id are one axis declared at two
+ * layers (the attribute carries the typed aspect and the enum domain,
+ * the inline block the presentation) — R 144's power_supply axis is the
+ * shipped precedent.
+ */
+export function checkDimensions(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (message: string) =>
+    issues.push({ check: 'C111', severity: 'error', message });
+  const warn = (message: string) =>
+    issues.push({ check: 'C111', severity: 'warning', message });
+
+  const checkShape = (owner: string, d: ClassificationDimension) => {
+    const seen = new Set<string>();
+    for (const v of d.values) {
+      if (seen.has(v.id)) {
+        err(
+          `${owner} dimension ${d.id}: duplicate value id "${v.id}" (dimension-shape)`,
+        );
+      }
+      seen.add(v.id);
+    }
+    const valueIds = new Set(d.values.map(v => v.id));
+    const adj = new Map<string, string[]>();
+    for (const v of d.values) {
+      for (const target of v.implies ?? []) {
+        if (!valueIds.has(target)) {
+          err(
+            `${owner} dimension ${d.id}: value ${v.id} implies "${target}", which is not a value of this dimension — implies targets resolve inside their own dimension (dimension-shape)`,
+          );
+        }
+      }
+      adj.set(
+        v.id,
+        (v.implies ?? []).filter(t => valueIds.has(t)),
+      );
+    }
+    const cycle = findCycle(adj);
+    if (cycle) {
+      err(
+        `${owner} dimension ${d.id}: implies cycle ${cycle.join(' → ')} — the applicability engine walks the implication closure, so the graph must be acyclic (dimension-shape)`,
+      );
+    }
+    if (d.valuesOf && d.values.length > 0) {
+      err(
+        `${owner} dimension ${d.id}: declares both values and values_of — a dimension carries one value domain (dimension-shape)`,
+      );
+    }
+    if (d.valuesOf && d.valuesOf !== 'capabilities') {
+      warn(
+        `${owner} dimension ${d.id}: values_of "${d.valuesOf}" names a register the kernel does not document (the documented register is capabilities) — the value domain stays open (dimension-shape)`,
+      );
+    }
+  };
+
+  for (const inst of standard.instruments ?? []) {
+    for (const d of inst.dimensions ?? []) {
+      checkShape(`instrument ${inst.id}:`, d);
+    }
+  }
+  for (const d of standard.dimensions ?? []) {
+    checkShape('top-level', d);
+  }
+
+  // Namespace uniqueness. The inline-vs-attribute mirror is tolerated
+  // (see the rule's doc comment); every other double declaration is an
+  // error.
+  const inlineHome = new Map<string, string>(); // dim id → instrument id
+  for (const inst of standard.instruments ?? []) {
+    for (const d of inst.dimensions ?? []) {
+      const prior = inlineHome.get(d.id);
+      if (prior !== undefined && prior !== inst.id) {
+        err(
+          `dimension ${d.id}: declared inline on both instrument ${prior} and instrument ${inst.id} — one dimension identifier once per applicability namespace (dimension-shape)`,
+        );
+      } else {
+        inlineHome.set(d.id, inst.id);
+      }
+    }
+  }
+  const attrDims = new Set(
+    (standard.attributeDefinitions ?? [])
+      .filter(a => a.isDimension === true)
+      .map(a => a.id),
+  );
+  for (const d of standard.dimensions ?? []) {
+    if (inlineHome.has(d.id)) {
+      err(
+        `dimension ${d.id}: declared both top-level and inline on instrument ${inlineHome.get(d.id)} — one dimension identifier once per applicability namespace (dimension-shape)`,
+      );
+    }
+    if (attrDims.has(d.id)) {
+      err(
+        `dimension ${d.id}: declared both top-level and as the is_dimension attribute definition of the same id — one dimension identifier once per applicability namespace (dimension-shape)`,
+      );
     }
   }
   return issues;

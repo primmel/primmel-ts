@@ -482,7 +482,10 @@ function parseStructure(id: string, block: string): StructureEntry {
   return s;
 }
 
-function parseDimension(id: string, block: string): ClassificationDimension {
+export function parseDimension(
+  id: string,
+  block: string,
+): ClassificationDimension {
   const dim: ClassificationDimension = {
     id,
     label: '',
@@ -520,6 +523,18 @@ function parseDimension(id: string, block: string): ClassificationDimension {
       dim.source = readSource(unwrapBlock(t[i++]));
     } else if (cmd === 'values') {
       dim.values = parseDimensionValues(unwrapBlock(t[i++]));
+    } else if (cmd === 'values_of') {
+      // Top-level dimensions only (MN 114 v3.2, clause 10.6): the named
+      // register's members ARE the value domain.
+      dim.valuesOf = stripWrapping(t[i++]);
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18); derives-from folds
+      // onto the dimension's provenance slot.
+      const r = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(dim as never, r.ref)) {
+        (dim.refs ??= []).push(r.ref);
+      }
+      i = r.next;
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -601,6 +616,89 @@ function parseDimensionValues(block: string): DimensionValue[] {
     }
     out.push(value);
   }
+  return out;
+}
+
+/**
+ * Serialize one classification dimension at the given indent — the one
+ * grammar's two placements (MN 114 v3.2, clause 10.6): the instrument's
+ * inline `dimension` blocks (indent '  ') and the top-level `dimension`
+ * construct (indent ''). The top-level-only `values_of` facet emits when
+ * present; the unified typed refs (non-provenance) follow the values.
+ */
+export function dumpDimension(
+  d: ClassificationDimension,
+  indent: string,
+): string {
+  const inner = indent + '  ';
+  const valueIndent = indent + '    ';
+  let out = indent + 'dimension ' + d.id + ' {\n';
+  if (d.label) {
+    out += inner + 'label "' + escapeString(d.label) + '"\n';
+  }
+  if (d.scope) {
+    out += inner + 'scope ' + d.scope + '\n';
+  }
+  if (d.cardinality) {
+    out += inner + 'cardinality ' + d.cardinality + '\n';
+  }
+  if (d.labelSeparator) {
+    out += inner + 'label_separator "' + escapeString(d.labelSeparator) + '"\n';
+  }
+  if (d.description) {
+    out += inner + 'description "' + escapeString(d.description) + '"\n';
+  }
+  out += dumpSource('reference', d.source, inner);
+  if (d.valuesOf) {
+    out += inner + 'values_of ' + d.valuesOf + '\n';
+  }
+  if (d.values.length > 0) {
+    out += inner + 'values {\n';
+    for (const v of d.values) {
+      let line = valueIndent + v.id;
+      const hasProps =
+        v.label ||
+        v.description ||
+        v.termRef ||
+        Object.keys(v.payload).length > 0 ||
+        v.implies.length > 0;
+      if (hasProps) {
+        line += ' { ';
+        if (v.label) {
+          line += 'label "' + escapeString(v.label) + '" ';
+        }
+        if (v.description) {
+          line += 'description "' + escapeString(v.description) + '" ';
+        }
+        if (v.termRef) {
+          line += 'term_ref ' + v.termRef + ' ';
+        }
+        if (v.implies.length > 0) {
+          line += 'implies { ' + v.implies.join(' ') + ' } ';
+        }
+        if (Object.keys(v.payload).length > 0) {
+          line += 'payload { ';
+          for (const [k, val] of Object.entries(v.payload)) {
+            if (typeof val === 'object' && val !== null) {
+              line += k + ' { ';
+              for (const [nk, nv] of Object.entries(val)) {
+                line += nk + ': "' + escapeString(String(nv)) + '" ';
+              }
+              line += '} ';
+            } else {
+              line += k + ': "' + escapeString(String(val)) + '" ';
+            }
+          }
+          line += '} ';
+        }
+        line += '}';
+      }
+      out += line + '\n';
+    }
+    out += inner + '}\n';
+  }
+  out += dumpRefs(d.refs, inner, escapeString);
+  out += indent + '}\n';
   return out;
 }
 
@@ -761,69 +859,7 @@ const dumpInstrument = function (inst: Instrument): string {
     out += line + '}\n';
   }
   for (const d of inst.dimensions) {
-    out += '  dimension ' + d.id + ' {\n';
-    if (d.label) {
-      out += '    label "' + escapeString(d.label) + '"\n';
-    }
-    if (d.scope) {
-      out += '    scope ' + d.scope + '\n';
-    }
-    if (d.cardinality) {
-      out += '    cardinality ' + d.cardinality + '\n';
-    }
-    if (d.labelSeparator) {
-      out += '    label_separator "' + escapeString(d.labelSeparator) + '"\n';
-    }
-    if (d.description) {
-      out += '    description "' + escapeString(d.description) + '"\n';
-    }
-    out += dumpSource('reference', d.source, '    ');
-    if (d.values.length > 0) {
-      out += '    values {\n';
-      for (const v of d.values) {
-        let line = '      ' + v.id;
-        const hasProps =
-          v.label ||
-          v.description ||
-          v.termRef ||
-          Object.keys(v.payload).length > 0 ||
-          v.implies.length > 0;
-        if (hasProps) {
-          line += ' { ';
-          if (v.label) {
-            line += 'label "' + escapeString(v.label) + '" ';
-          }
-          if (v.description) {
-            line += 'description "' + escapeString(v.description) + '" ';
-          }
-          if (v.termRef) {
-            line += 'term_ref ' + v.termRef + ' ';
-          }
-          if (v.implies.length > 0) {
-            line += 'implies { ' + v.implies.join(' ') + ' } ';
-          }
-          if (Object.keys(v.payload).length > 0) {
-            line += 'payload { ';
-            for (const [k, val] of Object.entries(v.payload)) {
-              if (typeof val === 'object' && val !== null) {
-                line += k + ' { ';
-                for (const [nk, nv] of Object.entries(val)) {
-                  line += nk + ': "' + escapeString(String(nv)) + '" ';
-                }
-                line += '} ';
-              } else {
-                line += k + ': "' + escapeString(String(val)) + '" ';
-              }
-            }
-            line += '} ';
-          }
-          line += '}';
-        }
-        out += line + '\n';
-      }
-      out += '    }\n';
-    }
-    out += '  }\n';
+    out += dumpDimension(d, '  ');
   }
   if (
     inst.familyMetamodelClass ||

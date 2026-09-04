@@ -24,6 +24,7 @@ import type {
   AttributeDefinition,
   Behavior,
   Capability,
+  ClassificationDimension,
   ConditionSet,
   Instrument,
   Subject,
@@ -201,6 +202,13 @@ export default interface Standard {
   // usage-policy sets in Primmel's own policy grammar.
   dataspaces: Dataspace[];
   policies: Policy[];
+
+  // Primmel v3.2 consumption constructs (TODO.primmel/11; MN 114 clause
+  // 10.6): the top-level `dimension` declarations — free-standing
+  // applicability axes populating the same applicability dimension
+  // namespace as the instruments' inline dimensions and the
+  // `is_dimension true` attribute definitions (clause 11.1.1).
+  dimensions: ClassificationDimension[];
 
   root: Subprocess | null;
 }
