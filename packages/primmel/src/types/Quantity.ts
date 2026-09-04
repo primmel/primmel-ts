@@ -52,6 +52,11 @@ export interface QuantityKindDef {
   /** SI coherent unit of the kind (symbol; "1" for dimensionless). */
   siUnit: string;
   description: string;
+  /**
+   * The external unit-vocabulary bindings (v3.2, clause 13.4) — e.g.
+   * `corresponds unitsml "<unit-identifier>"`. Maps-to, never imports.
+   */
+  correspondences?: import('./Correspondence').Correspondence[];
 }
 
 /** One unit in a quantity register. */
@@ -73,6 +78,8 @@ export interface UnitDef {
   offsetToSI: number;
   /** Free-text definition (e.g. "kg⋅m/s²" for N). */
   definition: string;
+  /** The external unit-vocabulary bindings (v3.2, clause 13.4). */
+  correspondences?: import('./Correspondence').Correspondence[];
 }
 
 /**

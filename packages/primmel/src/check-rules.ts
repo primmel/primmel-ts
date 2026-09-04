@@ -1100,6 +1100,32 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.primmel/11, MN 114 clause 14.7 (primmel/spec#18 ask 3)',
   ),
+  // C114: the limit's quantity typing agrees with the verdict it binds
+  // (clause 11.1.2) — a limit and its acceptance chain can never drift
+  // apart in units. C115: the calculation signature (clause 13.7.1) —
+  // units and quantity kinds resolve against the merged quantity register
+  // and agree in kind, a range's min never exceeds its max, and an
+  // enum-typed input declares its values. The unit-resolution leg ships
+  // as a WARNING during the v3.2 rollout (the C33 doctrine §6.8
+  // precedent: unmapped units are warnings — the estate's R 60 declares
+  // counts/v on inputs no register carries; the leg tightens to the
+  // spec's error when the register catches up — TODO.primmel/11d).
+  R(
+    'C114',
+    'limit-quantity-coherence',
+    'quantities',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 11.1.2 (primmel/spec#18 ask 4)',
+  ),
+  R(
+    'C115',
+    'calculation-signature-shape',
+    'quantities',
+    'error',
+    'normal',
+    'TODO.primmel/11, MN 114 clause 13.7.1 (primmel/spec#18 ask 4)',
+  ),
   // ── the dataspace family (TODO.primmel/10; MN 114 v3.1 clause 19) ──
   // The v3.1 extension set: the dataspace definition, the policy
   // construct (Primmel's own policy grammar; ODRL is a codec output),

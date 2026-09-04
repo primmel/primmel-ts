@@ -99,6 +99,7 @@ function readLimit(block: string): RequirementLimit {
     relativeTo: '',
     notes: '',
     accepts: null,
+    quantity: null,
     acceptance: null,
     sourceDiscrepancy: null,
   };
@@ -119,6 +120,26 @@ function readLimit(block: string): RequirementLimit {
       limit.relativeTo = stripWrapping(t[i++]);
     } else if (cmd === 'notes') {
       limit.notes = stripWrapping(t[i++]);
+    } else if (cmd === 'quantity') {
+      // v3.2 (clause 11.1.2): quantity { kind <id> unit <id> } — the
+      // derived quantity's typing; either facet may be absent.
+      const quantity: { kind: string; unit: string } = { kind: '', unit: '' };
+      const qt = tokenize(unwrapBlock(t[i++]));
+      let k = 0;
+      while (k < qt.length) {
+        const qc = qt[k++];
+        if (k >= qt.length) {
+          break;
+        }
+        if (qc === 'kind') {
+          quantity.kind = stripWrapping(qt[k++]);
+        } else if (qc === 'unit') {
+          quantity.unit = stripWrapping(qt[k++]);
+        } else {
+          unwrapBlock(qt[k++]);
+        }
+      }
+      limit.quantity = quantity;
     } else if (cmd === 'accepts') {
       limit.accepts = readAccepts(unwrapBlock(t[i++]));
     } else if (cmd === 'acceptance') {
@@ -363,6 +384,16 @@ function dumpLimit(limit: RequirementLimit): string {
   }
   if (limit.notes) {
     out += '    notes "' + escapeString(limit.notes) + '"\n';
+  }
+  if (limit.quantity) {
+    let line = '    quantity {';
+    if (limit.quantity.kind) {
+      line += ' kind ' + limit.quantity.kind;
+    }
+    if (limit.quantity.unit) {
+      line += ' unit ' + limit.quantity.unit;
+    }
+    out += line + ' }\n';
   }
   if (limit.accepts) {
     const a = limit.accepts;

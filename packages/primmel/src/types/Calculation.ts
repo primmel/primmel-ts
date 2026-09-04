@@ -10,6 +10,16 @@ export interface CalculationInput {
   hasDefault: boolean;
   /** Inline enum values for enum-typed inputs. */
   enumValues?: string[];
+  /**
+   * The typed-unit pair's kind half (v3.2 signature, C115) — resolves
+   * against the merged quantity register and must agree with `unit`'s
+   * kind. Set only when declared (round-trip shape discipline).
+   */
+  quantityKind?: string;
+  /** Admissible domain (v3.2, C115); either bound may be absent. */
+  rangeMin?: string;
+  rangeMax?: string;
+  hasRange?: boolean;
 }
 
 export interface CalculationOutput {
@@ -17,6 +27,11 @@ export interface CalculationOutput {
   unit: string;
   name?: string;
   description?: string;
+  /** v3.2 signature facets (C115) — set only when declared. */
+  quantityKind?: string;
+  rangeMin?: string;
+  rangeMax?: string;
+  hasRange?: boolean;
 }
 
 /** Table-lookup declaration (key + carried variable + multiplier). */
