@@ -3,7 +3,9 @@
 //
 // The structural diff is id-keyed (never position-keyed), tier-annotated,
 // and classified (added/removed/changed/moved). These tests pin the
-// contract: aspect classification, declaration-order independence, the
+// contract: aspect classification, the changed-field list on every
+// changed entry (the issue's ask 5 — Mko::Diff-congruent, refined
+// through plain-object values), declaration-order independence, the
 // no-op ZERO-FALSE-POSITIVE proof, edition-normalized provenance, and
 // the clause-drift table (the R 60:2017→2021 renumbering detector).
 // ─────────────────────────────────────────────────────────────────────
@@ -126,6 +128,100 @@ describe('model diff — added/removed/changed', () => {
     );
     assert.equal(d.changed.length, 1);
     assert.deepEqual(d.changed[0].aspects, ['structure']);
+  });
+});
+
+describe('model diff — the changed-field list (ask 5, Mko::Diff-congruent)', () => {
+  it('names the exact field of a statement change', () => {
+    const d = diff(
+      BASE,
+      BASE.replace(
+        'The error shall not exceed',
+        'The error shall never exceed',
+      ),
+    );
+    assert.equal(d.changed.length, 1);
+    assert.deepEqual(d.changed[0].aspects, ['statement']);
+    assert.deepEqual(d.changed[0].fields, ['statement']);
+  });
+
+  it('refines through plain-object values: the limit EXPRESSION, not the limit', () => {
+    const d = diff(BASE, BASE.replace('abs(e_l) <= mpe', 'abs(e_l) < mpe'));
+    assert.deepEqual(d.changed[0].aspects, ['limit']);
+    // "R 60's creep requirement tightened from X to Y" answers from the
+    // data: the expression moved, the uses did not.
+    assert.deepEqual(d.changed[0].fields, ['limit.expression']);
+  });
+
+  it('lists every changed field of a multi-field change, sorted', () => {
+    const d = diff(
+      BASE,
+      BASE.replace('Maximum permissible error', 'MPE').replace(
+        'The error shall not exceed',
+        'The error shall never exceed',
+      ),
+    );
+    const entry = d.changed.find(e => e.id === '/req/metrological/mpe')!;
+    assert.deepEqual(entry.aspects, ['statement']);
+    assert.deepEqual(entry.fields, ['name', 'statement']);
+  });
+
+  it('names the structure field by its own name', () => {
+    const d = diff(
+      BASE,
+      BASE.replace(
+        'binds_to { model.parameters.mpe }\n  reference',
+        'binds_to { model.parameters.mpe }\n  kind influence\n  reference',
+      ),
+    );
+    assert.deepEqual(d.changed[0].aspects, ['structure']);
+    assert.deepEqual(d.changed[0].fields, ['kind']);
+  });
+
+  it('keeps the expected edition re-citation invisible (no fields either)', () => {
+    const d = diff(
+      BASE,
+      BASE.replace('urn:oiml:pub:r:60-1:2021', 'urn:oiml:pub:r:60-1:2017'),
+    );
+    // Edition-stripped comparison: nothing changed, no entry, no fields.
+    const entry = d.changed.find(e => e.id === '/req/metrological/mpe');
+    assert.equal(entry, undefined);
+  });
+
+  it('a clause move names the provenance CHANNEL it moved on', () => {
+    const d = diff(BASE, BASE.replace('clause "5.2.1"', 'clause "5.2.2"'));
+    const entry = d.changed.find(e => e.id === '/req/metrological/mpe')!;
+    assert.deepEqual(entry.aspects, ['provenance']);
+    assert.deepEqual(entry.fields, ['source']);
+  });
+
+  it('a translation change names the spelling entry field (value vs via)', () => {
+    const withText =
+      BASE +
+      '\ntext /req/metrological/mpe.statement {\n  spell fra-Latn "L\'erreur ne doit pas dépasser l\'EMT."\n}\n';
+    const d = diff(withText, withText.replace('ne doit pas', 'ne doit jamais'));
+    const entry = d.changed.find(
+      e => e.id === '/req/metrological/mpe.statement',
+    )!;
+    assert.deepEqual(entry.aspects, ['spelling:fra-Latn (changed)']);
+    assert.deepEqual(entry.fields, ['spelling:fra-Latn.value']);
+    // A spelling ADDED names the entry whole.
+    const d2 = diff(BASE, withText);
+    const added = d2.changed.find(
+      e => e.id === '/req/metrological/mpe.statement',
+    );
+    // (the text block itself is an ADDED element — no change entry)
+    assert.equal(added, undefined);
+    assert.ok(d2.added.some(e => e.id === '/req/metrological/mpe.statement'));
+  });
+
+  it('the report renders the changed-field list inline', () => {
+    const d = diff(BASE, BASE.replace('abs(e_l) <= mpe', 'abs(e_l) < mpe'));
+    const report = formatDiffReport(d);
+    assert.match(
+      report,
+      /~ \[secondary\/requirements\] \/req\/metrological\/mpe — limit \(fields: limit\.expression\)/,
+    );
   });
 });
 

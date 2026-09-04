@@ -171,11 +171,37 @@ content change never hides behind a stable id.
 
 ### 5. Semantic edition diff as a data API
 
-The model diff (`primmel diff --json`, `src/model-diff.ts`) is the data
-API: per-element added/removed/changed/moved keyed by the same
-package-authored ids, with the clause-drift table (the edition-to-
-edition clause mapping) and the changed-aspect classification. Slice 4
-of the issue adds the changed-field list to each change entry.
+The model diff (`primmel diff [--json]`, `src/model-diff.ts`) is the
+data API: per-element added/removed/changed/moved keyed by the same
+package-authored ids the retrieval units carry, with the clause-drift
+table (the edition-to-edition clause mapping — renumbered / re-cited /
+de-cited rows with their citing elements) and the changed-aspect
+classification. Every changed entry carries **`fields`** — the
+changed-field list: the differing field names within the changed
+aspects, refined through plain-object values, so "R 60's creep
+requirement tightened from X to Y in the 2021 edition" answers from the
+data (`fields: ["limit.expression"]`), not a reading marathon.
+
+The shape is congruent with the Metanorma-side semantic diff
+(`Mko::Diff`, metanorma-mko#1 — `{ from, to, added, removed, changed:
+[{ …, fields: [...] }] }` over stable-id-paired units): same change-set
+vocabulary, same `fields` key, same hash-skips-unchanged pairing
+discipline. Primmel's additions are the tier annotation, the moved
+class (an anchor-only re-anchor is not a content change), and the
+clause-drift table; Mko's `rows(+N)` table-row annotation has no
+equivalent — arrays compare whole and the field names the array.
+
+Refinement rules: plain-object values recurse (`limit.expression`,
+`limit.accepts`, `spelling:fra-Latn.value` for the ISO 24229 content
+sets — value vs `via` named separately); arrays and scalars compare
+whole; present-vs-absent names the field itself. Provenance compares
+edition-stripped (the expected re-citation stays invisible) and names
+the channel a citation moved on — `source` / `sourceRef` /
+`sourceRefs` / `reference`; channels the parser aliases (an authored
+`source { … }` block lands in `source` *and* `sourceRefs`) report once
+when they move identically. The human report renders the list inline:
+`~ [secondary/requirements] /req/metrological/mpe — limit (fields:
+limit.expression)`.
 
 ### 6. The machine passport
 

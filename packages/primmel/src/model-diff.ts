@@ -30,7 +30,12 @@
 // never moved — §13.2's moved is "same id, different anchor or
 // location", and a signature is neither. The four sets partition the
 // element space (§13.7): an id is added, removed, or shared; a shared id
-// is unchanged, moved, or changed.
+// is unchanged, moved, or changed. A changed entry also carries the
+// changed-FIELD list (the issue's ask 5; the Mko::Diff-congruent
+// `fields`): the differing field names within the changed aspects,
+// refined through plain-object values (`limit.expression`,
+// `spelling:fra-Latn.value`) — "R 60's creep requirement tightened from
+// X to Y" answers from the data, not a reading marathon.
 //
 // Provenance is edition-normalized: a source ref
 // `urn:oiml:pub:r:60-2:2021 # clause-2.10.4` compares on its doc BASIS
@@ -265,6 +270,16 @@ export interface DiffElement {
   tier: TierName;
   /** Aspect name → canonical content (only aspects with content present). */
   aspects: Record<string, string>;
+  /**
+   * The per-FIELD comparable values (field name → the field's own value,
+   * a reference — never a copy): the changed-field list's input (the
+   * issue's ask 5 — the Mko::Diff-congruent `fields` on a change entry).
+   * Provenance channels (`source` / `sourceRef` / `sourceRefs` /
+   * `reference`) hold their edition-stripped edge lists; a text content
+   * set holds one entry per spelling code (`spelling:<code>`). Read-only
+   * by convention — the diff never mutates them.
+   */
+  fields: Record<string, unknown>;
   /** Edition-normalized provenance edges (empty when the element cites none). */
   provenance: NormalizedSourceRef[];
 }
@@ -354,17 +369,29 @@ interface RawSourceRef {
   fragment?: string;
 }
 
-function provenanceOf(el: Record<string, unknown>): NormalizedSourceRef[] {
-  const out: NormalizedSourceRef[] = [];
-  const push = (r: RawSourceRef | null | undefined): void => {
+/**
+ * The element's provenance, both views: `edges` is the merged,
+ * de-duplicated edge list (the provenance aspect's input); `channels`
+ * keeps each arrival channel's own edition-stripped edges (the
+ * changed-field list's input — a re-cited clause names the channel it
+ * moved on).
+ */
+function provenanceOf(el: Record<string, unknown>): {
+  edges: NormalizedSourceRef[];
+  channels: Record<string, NormalizedSourceRef[]>;
+} {
+  const channels: Record<string, NormalizedSourceRef[]> = {};
+  const push = (channel: string, r: RawSourceRef | null | undefined): void => {
     if (r && typeof r === 'object' && (r.doc || r.clause)) {
-      out.push(normalizeSourceRef(r.doc ?? '', r.clause ?? '', r.fragment));
+      (channels[channel] ??= []).push(
+        normalizeSourceRef(r.doc ?? '', r.clause ?? '', r.fragment),
+      );
     }
   };
-  push(el.source as RawSourceRef);
-  push(el.sourceRef as RawSourceRef);
+  push('source', el.source as RawSourceRef);
+  push('sourceRef', el.sourceRef as RawSourceRef);
   for (const r of (el.sourceRefs as RawSourceRef[]) ?? []) {
-    push(r);
+    push('sourceRefs', r);
   }
   // A conformance test's `reference` field holds the raw doc URN of its
   // structured reference block (v2) — edition and all. It duplicates the
@@ -373,20 +400,27 @@ function provenanceOf(el: Record<string, unknown>): NormalizedSourceRef[] {
   // urn-shaped — stays in structure, where it diffs as content).
   const refString = el.reference;
   if (typeof refString === 'string' && refString.startsWith('urn:')) {
-    push({ doc: refString, clause: '' });
+    push('reference', { doc: refString, clause: '' });
   }
   // De-duplicate identical edges ON THE COMPARABLE FORM (edition-stripped
   // — the YAML→PRL emission repeats the headline `reference:` as a source
-  // entry; one edge, not two).
-  const seen = new Set<string>();
-  return out.filter(r => {
-    const k = provenanceEdgeKey(r);
-    if (seen.has(k)) {
-      return false;
-    }
-    seen.add(k);
-    return true;
-  });
+  // entry; one edge, not two) — within each channel for the field view,
+  // and across the merge for the aspect view.
+  const dedup = (rs: NormalizedSourceRef[]): NormalizedSourceRef[] => {
+    const seen = new Set<string>();
+    return rs.filter(r => {
+      const k = provenanceEdgeKey(r);
+      if (seen.has(k)) {
+        return false;
+      }
+      seen.add(k);
+      return true;
+    });
+  };
+  for (const [channel, rs] of Object.entries(channels)) {
+    channels[channel] = dedup(rs);
+  }
+  return { edges: dedup(Object.values(channels).flat()), channels };
 }
 
 /**
@@ -403,28 +437,32 @@ function elementOf(field: string, el: Record<string, unknown>): DiffElement {
   // entity's name (the construct declares entityName, no id).
   const id = String(el.id ?? el.entityName ?? '');
   const tier = TIER_BY_FIELD[field] ?? 'cross-cutting';
-  const provenance = provenanceOf(el);
+  const { edges: provenance, channels: provenanceChannels } = provenanceOf(el);
   const consumed = new Set<string>(PROVENANCE_FIELDS);
   // The urn-shaped `reference` string was lifted into provenance — do not
   // diff its raw (edition-carrying) form again in structure.
   if (typeof el.reference === 'string' && el.reference.startsWith('urn:')) {
     consumed.add('reference');
   }
+  // The per-field comparable values (the changed-field list's input):
+  // every consumed field lands here under its own name as it is picked.
+  const fields: Record<string, unknown> = {};
   const aspects: Record<string, string> = {};
   const spec = ASPECT_SPECS[field];
-  const pick = (fields: string[]): Record<string, unknown> => {
+  const pick = (names: string[]): Record<string, unknown> => {
     const out: Record<string, unknown> = {};
-    for (const f of fields) {
+    for (const f of names) {
       if (el[f] !== undefined) {
         out[f] = el[f];
         consumed.add(f);
+        fields[f] = el[f];
       }
     }
     return out;
   };
   if (spec) {
-    for (const [aspect, fields] of Object.entries(spec)) {
-      const picked = pick(fields ?? []);
+    for (const [aspect, names] of Object.entries(spec)) {
+      const picked = pick(names ?? []);
       if (Object.keys(picked).length > 0) {
         aspects[aspect] = canonical(picked);
       }
@@ -436,17 +474,17 @@ function elementOf(field: string, el: Record<string, unknown>): DiffElement {
     // the conversion provenance (`via`) are the entry's content. A
     // duplicate code within one set is a data error (C89 owns it): the
     // last entry wins the aspect, like a duplicate element id wins its
-    // slot.
+    // slot. The per-entry object also rides in `fields` — the field-diff
+    // refinement names `spelling:<code>.value` / `.via`.
     consumed.add('entries');
     const entries =
       (el.entries as { spelling?: string; value?: string; via?: string }[]) ??
       [];
     for (const e of entries) {
       if (e && typeof e.spelling === 'string') {
-        aspects[`spelling:${e.spelling}`] = canonical({
-          value: e.value,
-          via: e.via,
-        });
+        const entry = { value: e.value, via: e.via };
+        aspects[`spelling:${e.spelling}`] = canonical(entry);
+        fields[`spelling:${e.spelling}`] = entry;
       }
     }
   } else {
@@ -470,15 +508,34 @@ function elementOf(field: string, el: Record<string, unknown>): DiffElement {
         fragment: r.fragment,
       })),
     );
+    // The field view keeps each channel's own edges — a re-cited clause
+    // names the channel it moved on (`sourceRef`, never the whole edge
+    // set).
+    for (const [channel, edges] of Object.entries(provenanceChannels)) {
+      fields[channel] = edges.map(r => ({
+        basis: r.basis,
+        clause: r.clause,
+        fragment: r.fragment,
+      }));
+    }
   }
   const rest: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(el)) {
     if (!consumed.has(k) && k !== 'id') {
       rest[k] = v;
+      fields[k] = v;
     }
   }
   aspects.structure = canonical(rest);
-  return { key: `${field}:${id}`, id, kind: field, tier, aspects, provenance };
+  return {
+    key: `${field}:${id}`,
+    id,
+    kind: field,
+    tier,
+    aspects,
+    fields,
+    provenance,
+  };
 }
 
 /**
@@ -530,6 +587,19 @@ export interface DiffEntry {
 /** A shared id whose content differs — with the classified aspects. */
 export interface ChangeEntry extends DiffEntry {
   aspects: string[];
+  /**
+   * The changed-FIELD list (the issue's ask 5; Mko::Diff-congruent):
+   * the differing field names within the changed aspects, one level
+   * refined through plain-object values — a restated requirement names
+   * `statement`, a tightened limit names `limit.expression` (or
+   * `limit.accepts`), a moved citation names the provenance channel
+   * (`source` — channels the parser aliases, `source`/`sourceRefs`,
+   * report once when they move identically), a translation change names
+   * `spelling:fra-Latn.value`. Arrays compare whole (the clause-drift
+   * table carries the precise renumbering). Sorted, never empty on a
+   * changed entry.
+   */
+  fields: string[];
 }
 
 /**
@@ -921,6 +991,75 @@ function labelAspect(elA: DiffElement, elB: DiffElement, name: string): string {
   return `${name} (changed)`;
 }
 
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * The changed-field paths of one field: plain-object values refine one
+ * level at a time (`limit` → `limit.expression`, a spelling entry →
+ * `spelling:fra-Latn.value`); arrays and scalars compare whole (the
+ * clause-drift table already carries the precise renumbering of a
+ * provenance channel). Absent-vs-present names the field itself.
+ */
+function fieldDiffPaths(
+  prefix: string,
+  a: unknown,
+  b: unknown,
+  out: string[],
+): void {
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort();
+    for (const k of keys) {
+      fieldDiffPaths(`${prefix}.${k}`, a[k], b[k], out);
+    }
+    return;
+  }
+  if (canonical(a) !== canonical(b)) {
+    out.push(prefix);
+  }
+}
+
+/**
+ * The changed-field list of a changed element (the issue's ask 5;
+ * Mko::Diff-congruent): every field whose comparable value differs,
+ * refined through plain-object values, sorted. Never empty on a changed
+ * element — a differing aspect always contains a differing field.
+ *
+ * Provenance channels that move IDENTICALLY report once, under the
+ * first channel name: the parser aliases an authored `source { … }`
+ * block into `sourceRefs` (one authored edge, two loaded channels) — a
+ * clause move on it is ONE change, reported as `source`. Channels that
+ * move differently (genuinely authored apart) report each.
+ */
+function changedFields(elA: DiffElement, elB: DiffElement): string[] {
+  const names = [
+    ...new Set([...Object.keys(elA.fields), ...Object.keys(elB.fields)]),
+  ].sort();
+  const out: string[] = [];
+  for (const name of names) {
+    fieldDiffPaths(name, elA.fields[name], elB.fields[name], out);
+  }
+  const PROVENANCE_CHANNELS = [
+    'source',
+    'sourceRef',
+    'sourceRefs',
+    'reference',
+  ];
+  const seenMoves = new Set<string>();
+  return out.filter(path => {
+    if (!PROVENANCE_CHANNELS.includes(path)) {
+      return true;
+    }
+    const move =
+      canonical(elA.fields[path]) + ' → ' + canonical(elB.fields[path]);
+    if (seenMoves.has(move)) {
+      return false;
+    }
+    seenMoves.add(move);
+    return true;
+  });
+}
+
 /**
  * The structural model diff between two loaded Standards (§13.2). `a` is
  * the OLD state, `b` the NEW one (edition comparison reads 2017 → 2021).
@@ -993,6 +1132,7 @@ export function diffStandards(
         kind: elA.kind,
         tier: elA.tier,
         aspects: differing.map(name => labelAspect(elA, elB, name)).sort(),
+        fields: changedFields(elA, elB),
       });
       tally[elA.tier].changed++;
     }
@@ -1119,7 +1259,9 @@ export function formatDiffReport(diff: ModelDiff): string {
   if (diff.changed.length > 0) {
     lines.push('', 'changed:');
     for (const e of diff.changed) {
-      lines.push(`  ~ ${fmtEntry(e)} — ${e.aspects.join(', ')}`);
+      lines.push(
+        `  ~ ${fmtEntry(e)} — ${e.aspects.join(', ')} (fields: ${e.fields.join(', ')})`,
+      );
     }
   }
   if (diff.moved.length > 0) {
