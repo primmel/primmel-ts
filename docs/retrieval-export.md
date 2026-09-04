@@ -159,9 +159,10 @@ these ids; the kernel keeps them stable across refactors of the
 projection itself.
 
 Beside the id rides **`content_hash`**: sha256 over the unit's
-canonical JSON content — every unit field except `content_hash` and
-`passport`, serialized with keys sorted recursively and compact
-separators in UTF-8 (the form every JSON stack reproduces:
+canonical JSON content — every unit field except `content_hash`,
+`passport`, and `facet` (the derived projections), serialized with keys
+sorted recursively and compact separators in UTF-8 (the form every JSON
+stack reproduces:
 `json.dumps(c, sort_keys=True, separators=(",", ":"),
 ensure_ascii=False)`; `canonicalJson` in the module). **Identity = id;
 currency = digest.** A rename moves the digest, never the id — so a
@@ -203,10 +204,42 @@ the canonical form has one shape per passport version.
 
 ### 7. Language-tagged variants
 
-*(Slice 3 lands the `variants` block: the ISO 24229 `text` content sets
-resolved onto their units — per-field `{ spelling, via, value }`
-entries — plus the unit's `language` from the package's default
-spelling.)*
+Every unit carries **`language`** — the package's `default_spelling`
+(ISO 24229, e.g. `eng-Latn`), the tag of the *inline* prose values
+(`name` / `statement` / `definition`). When the package ships ISO 24229
+`text` blocks (the per-spelling alternate content sets), the unit
+carries **`variants`**: the alternates resolved onto the unit, keyed by
+the addressed field path, each entry `{ spelling, via?, value }` in
+authored order:
+
+```jsonc
+"language": "eng-Latn",
+"variants": {
+  "statement": [
+    { "spelling": "fra-Latn", "value": "La valeur de la plus grande charge …" },
+    { "spelling": "zho-Latn", "via": "BGN-PCGN:zho-Hans:Latn:1979", "value": "…" }
+  ]
+}
+```
+
+Resolution follows the **same address rule as the C89 linter**: the
+addressed element is the longest dot-boundary prefix of the address
+registered in the package (element ids may carry dots —
+`r144-3/sec-3.4`), the remainder is the path into the element's
+structure (the nested `<path…>.<field>` form keys whole:
+`fields.runs.fields.indication.label`). The match is on the **kernel
+element id**, not the namespaced unit id — a term's variants address
+`frobnicator`, and the projection attaches them to `/term/frobnicator`.
+`resolveTextAddress` is exported for consumers building their own
+indexes.
+
+Both fields are **authored content and participate in the
+`content_hash`** — a translation change moves the unit's digest like
+any other content change (the freshness gate sees it; identity still
+never moves). A `text` block addressed at an element the projection
+does not ship as a unit (a form, a subject, an instrument) is counted
+in `stats.droppedTextBlocks` — never silently lost, and never
+misattached to a shorter-prefix element that happens to be projected.
 
 ## The bundle freshness signal
 

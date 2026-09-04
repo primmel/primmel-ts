@@ -381,6 +381,12 @@ function exportCli(args: string[]): void {
           : '') +
         (s.withoutProvenance > 0
           ? `, ${n(s.withoutProvenance, 'unit', 'units')} without provenance`
+          : '') +
+        (s.withVariants > 0
+          ? `, ${n(s.withVariants, 'unit', 'units')} with language variants`
+          : '') +
+        (s.droppedTextBlocks > 0
+          ? `, ${n(s.droppedTextBlocks, 'text block', 'text blocks')} addressed at unprojected elements (dropped)`
           : '');
     } else if (surface === 'reqif') {
       const result: ReqifExport = exportPackageReqif(dir);

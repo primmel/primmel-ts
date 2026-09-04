@@ -5,10 +5,12 @@
 // fold), a multi-URN term source string, a section-only term, a
 // producer-internal UUID anchor (in the doc-fragment AND the clause
 // slot), a non-clause fragment anchor (#table-2), a provenance-free
-// orphan, and a match-all applicability entry (the facet's
-// `app_<dim>_match` case). The manifest deliberately declares version
-// "2" against editions { 2021 2017 } — the edition-vs-model_version
-// drift case the issue's ask 2 pins.
+// orphan, a match-all applicability entry (the facet's
+// `app_<dim>_match` case), and ISO 24229 text blocks (ask 7: authored +
+// via-converted alternates, kernel-id term addressing, and a block
+// addressed at the unprojected instrument). The manifest deliberately
+// declares version "2" against editions { 2021 2017 } — the
+// edition-vs-model_version drift case the issue's ask 2 pins.
 // ─────────────────────────────────────────────────────────────────────
 
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -278,6 +280,28 @@ calculation lookupFrob {
     `note frob-note {
   type CAUTION
   message "Frobnicate only under supervision."
+}`,
+  );
+
+  // ISO 24229 alternates (ask 7): the default spelling's values stay
+  // inline; text blocks carry the alternates, addressed
+  // `<element-id>.<field>` — a requirement by its authored id, a term by
+  // its KERNEL id (not the namespaced /term/ unit id), and one block
+  // addressed at the instrument (registered with C89 but not projected
+  // as a unit — the droppedTextBlocks case).
+  writeFileSync(
+    join(dir, 'texts.prl'),
+    `text /req/scope/alpha.statement {
+  spell fra-Latn "Le widget doit frobniquer."
+  spell zho-Latn via BGN-PCGN:zho-Hans:Latn:1979 "该小部件应进行frobnicate。"
+}
+
+text frobnicator.definition {
+  spell fra-Latn "un dispositif qui frobnique"
+}
+
+text Widget.definition {
+  spell fra-Latn "Un widget."
 }`,
   );
 

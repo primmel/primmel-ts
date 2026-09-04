@@ -133,6 +133,7 @@ export {
   packageEdition,
   packageSourceHash,
   passportCanonical,
+  resolveTextAddress,
   retrievalDigest,
   retrievalDocParts,
   retrievalFacet,
