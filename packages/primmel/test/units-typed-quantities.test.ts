@@ -68,7 +68,29 @@ describe('limit quantity: parse + round-trip', () => {
 `;
     const first = dump(load(src));
     assert.equal(dump(load(first)), first);
-    assert.match(first, /quantity \{ kind mass unit kg \}/);
+    // The unit facet emits quoted always (the verdict-quantity spelling of
+    // clause 11.3; the codec's canonical unit form everywhere else).
+    assert.match(first, /quantity \{ kind mass unit "kg" \}/);
+  });
+
+  it('emits a compound unit quoted (counts/v), byte-clean both directions', () => {
+    const src = `requirement /req/sensitivity {
+  name "Sensitivity"
+  statement "s"
+  limit {
+    expression "ocl{self.f > 0}"
+    uses { f }
+    quantity { kind volume-fraction unit "counts/v" }
+  }
+}
+`;
+    const first = dump(load(src));
+    assert.match(first, /quantity \{ kind volume-fraction unit "counts\/v" \}/);
+    assert.equal(dump(load(first)), first);
+    assert.deepEqual(load(first).requirements[0].limit?.quantity, {
+      kind: 'volume-fraction',
+      unit: 'counts/v',
+    });
   });
 
   it('a limit without quantity keeps its v3.1 shape', () => {

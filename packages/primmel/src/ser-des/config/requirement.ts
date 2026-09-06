@@ -396,7 +396,11 @@ function dumpLimit(limit: RequirementLimit): string {
       line += ' kind ' + limit.quantity.kind;
     }
     if (limit.quantity.unit) {
-      line += ' unit ' + limit.quantity.unit;
+      // Quoted always, as on every other unit facet (the verdict quantity,
+      // calculation signatures, conformance-test variables): the unit is a
+      // string value, and a bare emission of a unit like counts/v diverges
+      // from the estate's canonical spelling.
+      line += ' unit "' + escapeString(limit.quantity.unit) + '"';
     }
     out += line + ' }\n';
   }
