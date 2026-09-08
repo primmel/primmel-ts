@@ -1,0 +1,6 @@
+package {
+  id toy-layer
+  kind core
+  title "The scheme layer owning a requirement namespace"
+  provides { scheme-provisions }
+}

@@ -1,0 +1,11 @@
+requirement_class /req/scheme {
+  name "Scheme provisions"
+  subject "Thing"
+  guidance "The layer's owned namespace"
+}
+
+requirement /req/scheme/application-completeness {
+  name "Application completeness"
+  statement "The authority shall review the application for completeness."
+  verification { method examination }
+}

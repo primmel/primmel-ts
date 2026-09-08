@@ -1,0 +1,11 @@
+requirement_class /req/rec {
+  name "The rec's own scope"
+  subject "Thing"
+  guidance "Beside the layer's namespace, never under it"
+}
+
+requirement /req/rec/local {
+  name "Rec-local provision"
+  statement "The instrument shall comply."
+  verification { method testing }
+}
