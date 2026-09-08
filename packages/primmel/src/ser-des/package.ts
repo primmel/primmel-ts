@@ -422,10 +422,14 @@ export interface CompositionInfo {
 }
 
 export type CompositionRule =
-  'uses-resolves' | 'uses-no-redefine' | 'uses-cycle' | 'requires-satisfied';
+  | 'uses-resolves'
+  | 'uses-no-redefine'
+  | 'uses-cycle'
+  | 'requires-satisfied'
+  | 'namespace-pin-violation';
 
 /** A composition failure — a hard load error. checkPackage reports these
- *  as linter issues C27–C29 and C31 instead of throwing. */
+ *  as linter issues C27–C29, C31 and C119 instead of throwing. */
 export class CompositionError extends Error {
   constructor(
     public readonly rule: CompositionRule,
@@ -632,8 +636,46 @@ function composePackage(
       provenance.get(field)!.set(key, order[0]!);
     }
   }
+  // Requirement-namespace pins (the smart AGENTS.d/07 pin doctrine,
+  // TODO.editor/05 Q3 — linter rule C119): a requirement scope (a
+  // requirement_class id path, e.g. /req/cs) declared by an upstream
+  // package is OWNED by that package — a downstream package may reference
+  // its provisions but MUST NOT declare a requirement class or a
+  // requirement whose id sits at or under an owned namespace (the REC-WINS
+  // merge would otherwise silently redefine scheme provisions). The
+  // exact-id case is uses-no-redefine above; this guard is the
+  // strict-descendant leg.
+  const ownedScopes = new Map<string, string>(); // scope id → owning package
+  const harvestScopes = (id: string, ctx: ParseContext) => {
+    for (const key of Object.keys(ctx.requirementClasses)) {
+      if (!ownedScopes.has(key)) {
+        ownedScopes.set(key, id);
+      }
+    }
+  };
+  const pinGuard = (id: string, next: ParseContext) => {
+    if (ownedScopes.size === 0) {
+      return;
+    }
+    for (const field of ['requirementClasses', 'requirements'] as const) {
+      const label =
+        field === 'requirementClasses' ? 'requirement class' : 'requirement';
+      for (const key of Object.keys(next[field])) {
+        for (const [scope, owner] of ownedScopes) {
+          if (key.startsWith(scope + '/')) {
+            throw new CompositionError(
+              'namespace-pin-violation',
+              `package "${id}" declares ${label} "${key}" under the requirement namespace "${scope}" owned by package "${owner}" — a layer-owned namespace is single-sourced: a downstream package may reference its provisions, never declare scopes or requirements at or under it (namespace-pin-violation)`,
+            );
+          }
+        }
+      }
+    }
+  };
+  harvestScopes(order[0]!, acc);
   for (const id of order.slice(1)) {
     const next = ctxs.get(id)!;
+    pinGuard(id, next);
     for (const field of MERGE_FIELDS) {
       const target = acc[field] as Record<string, unknown>;
       const pm = provenance.get(field)!;
@@ -669,6 +711,7 @@ function composePackage(
     if (!acc.metadata && next.metadata) {
       acc.metadata = next.metadata;
     }
+    harvestScopes(id, next);
   }
 
   // Post-merge: every requires entry names a composed package id or one

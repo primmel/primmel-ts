@@ -167,6 +167,14 @@
       "rules": ["C83"]
     },
     {
+      "id": "PKG-06",
+      "area": "packaging",
+      "title": "Requirement-namespace pins",
+      "statement": "A requirement scope (a requirement class identifier path) declared by a composed package is owned by that package; a downstream package may reference its provisions but never declares a requirement class or a requirement whose identifier sits at or under an owned namespace.",
+      "specAnchor": "composition (uses, layering)",
+      "rules": ["C119"]
+    },
+    {
       "id": "ERR-01",
       "area": "errors",
       "title": "Structural parse errors",

@@ -499,7 +499,7 @@ export function checkPackage(
   const warn = (check: string, message: string) =>
     issues.push({ check, severity: 'warning', message });
 
-  // ── C27–C31: `uses` composition (TODO.roadmap/05) ──────────────────
+  // ── C27–C31 + C119: `uses` composition (TODO.roadmap/05) ──────────
   // Composition errors are HARD load errors (the merge cannot proceed),
   // so the loader throws CompositionError; the linter reports them as
   // rule-identified issues instead. Composition WARNINGS (unconsumed
@@ -513,6 +513,7 @@ export function checkPackage(
     'uses-no-redefine': 'C28',
     'uses-cycle': 'C29',
     'requires-satisfied': 'C31',
+    'namespace-pin-violation': 'C119',
   };
   let standard: Standard;
   try {

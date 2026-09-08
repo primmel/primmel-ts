@@ -1,0 +1,7 @@
+package {
+  id toy-rec
+  kind rec
+  title "A rec whose overlay respects the layer's namespace pin"
+  uses { toy-layer }
+  requires { toy-layer scheme-provisions }
+}

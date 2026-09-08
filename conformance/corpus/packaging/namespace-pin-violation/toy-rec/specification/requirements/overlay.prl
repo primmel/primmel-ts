@@ -1,0 +1,7 @@
+# The rec overlay declares a scope under the layer-owned /req/scheme
+# namespace: C119 must fire.
+requirement_class /req/scheme/local {
+  name "A rec-local scope inside the layer's namespace"
+  subject "Thing"
+  guidance "illegal"
+}

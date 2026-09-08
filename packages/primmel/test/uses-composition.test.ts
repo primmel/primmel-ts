@@ -613,3 +613,119 @@ describe('manifest-only resolution stopgap (no composition)', () => {
     assert.deepEqual(checkPackage(join(root, 'pkg-solo')), []);
   });
 });
+
+describe('uses composition — C119 namespace-pin-violation', () => {
+  const LAYER_FILES = {
+    'specification/requirements/cs.prl': `requirement_class /req/owned {
+  name "Owned scheme provisions"
+  subject "ToyBase"
+  guidance "The layer's owned namespace"
+}
+
+requirement /req/owned/application-completeness {
+  name "Application completeness"
+  statement "The authority shall review the application for completeness."
+  verification { method examination }
+}`,
+  };
+
+  function makePinComposition(recFiles: Record<string, string>): string {
+    makePackage(
+      'toy-layer',
+      'package { id toy-layer kind core provides { scheme-provisions } }',
+      LAYER_FILES,
+    );
+    return makePackage(
+      'toy-pin-rec',
+      'package { id toy-pin-rec kind rec uses { toy-layer } requires { toy-layer scheme-provisions } }',
+      recFiles,
+    );
+  }
+
+  it('a downstream requirement class under an owned namespace is a load error naming both packages', () => {
+    const recDir = makePinComposition({
+      'specification/requirements/overlay.prl': `requirement_class /req/owned/local {
+  name "A rec-local scope inside the layer's namespace"
+  subject "ToyBase"
+  guidance "illegal"
+}`,
+    });
+    assert.throws(
+      () => loadPackage(recDir, { resolvePackage }),
+      (e: unknown) => {
+        assert.ok(e instanceof CompositionError);
+        assert.equal(e.rule, 'namespace-pin-violation');
+        assert.match(e.message, /toy-pin-rec/);
+        assert.match(e.message, /\/req\/owned/);
+        assert.match(e.message, /toy-layer/);
+        return true;
+      },
+    );
+  });
+
+  it('a downstream requirement under an owned namespace trips the same pin', () => {
+    const recDir = makePinComposition({
+      'specification/requirements/overlay.prl': `requirement /req/owned/sneaky {
+  name "A rec-authored provision in the layer's namespace"
+  statement "The instrument shall be nice."
+  verification { method examination }
+}`,
+    });
+    assert.throws(
+      () => loadPackage(recDir, { resolvePackage }),
+      (e: unknown) =>
+        e instanceof CompositionError && e.rule === 'namespace-pin-violation',
+    );
+  });
+
+  it('sibling scopes, own-namespace requirements, and string-prefix lookalikes stay clean', () => {
+    const recDir = makePinComposition({
+      'specification/requirements/rec.prl': `requirement_class /req/mine {
+  name "The rec's own scope"
+  subject "ToyBase"
+  guidance "beside the layer's namespace, not under it"
+}
+
+requirement /req/mine/local {
+  name "Rec-local provision"
+  statement "The instrument shall comply."
+  verification { method testing }
+}
+
+requirement_class /req/owned2 {
+  name "A string-prefix lookalike — not a path descendant of /req/owned"
+  subject "ToyBase"
+  guidance "the pin is a path-prefix rule, never a string-prefix rule"
+}`,
+    });
+    const { standard, composition } = loadPackageWithIssues(recDir, {
+      resolvePackage,
+    });
+    assert.deepEqual(composition?.order, ['toy-layer', 'toy-pin-rec']);
+    assert.ok(standard.requirementClasses.some(rc => rc.id === '/req/owned2'));
+  });
+
+  it('checkPackage reports the pin violation as a C119 issue (not a throw)', () => {
+    const recDir = makePinComposition({
+      'specification/requirements/overlay.prl': `requirement_class /req/owned/local {
+  name "illegal"
+  subject "ToyBase"
+  guidance "illegal"
+}`,
+    });
+    const issues = checkPackage(recDir, { resolvePackage });
+    const c119 = issues.filter(i => i.check === 'C119');
+    assert.equal(c119.length, 1);
+    assert.equal(c119[0].severity, 'error');
+    assert.match(c119[0].message, /namespace-pin-violation/);
+  });
+
+  it('a clean composition stays silent on C119', () => {
+    const recDir = makeHappyComposition();
+    const issues = checkPackage(recDir, { resolvePackage });
+    assert.deepEqual(
+      issues.filter(i => i.check === 'C119'),
+      [],
+    );
+  });
+});

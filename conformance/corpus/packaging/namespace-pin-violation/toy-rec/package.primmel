@@ -1,0 +1,7 @@
+package {
+  id toy-rec
+  kind rec
+  title "A rec whose overlay declares a scope under the layer's namespace"
+  uses { toy-layer }
+  requires { toy-layer scheme-provisions }
+}
