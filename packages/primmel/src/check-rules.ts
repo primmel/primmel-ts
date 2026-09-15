@@ -369,6 +369,24 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart AGENTS.d/07 (TODO.editor/05 Q3)',
   ),
+  // C120 (smart TODO.roadmap/40; the packages-as-SSOT epic): the
+  // certification-framework registers' cross-references resolve —
+  // participant_kind organ/declaration/kind edges, organ sub-committee
+  // and independence edges, declaration holder + gate edges (incl. the
+  // gate's blocked processes), scheme-lifecycle organ edges + the
+  // entry's conditions_ref + trigger actions, framework_document
+  // approving organs, decision_rule organ + exemption edges. Per-
+  // register gating (the C58 doctrine): an edge is checked only when
+  // its target register is in composition scope. Mirror of the OIML
+  // SMART linker's R25.
+  R(
+    'C120',
+    'framework-references-resolve',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

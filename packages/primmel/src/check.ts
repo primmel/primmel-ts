@@ -302,6 +302,14 @@
 //      the full namespace (clause 11.1.1: instrument dimensions +
 //      is_dimension attribute mirrors + the top-level declarations,
 //      values_of capabilities resolving from the capability register)
+//   C120 framework-references-resolve (smart TODO.roadmap/40; the
+//      packages-as-SSOT epic): the certification-framework registers'
+//      cross-references resolve against the composed registers — organ
+//      edges, participant-kind edges, declaration holder + gate edges
+//      (incl. blocked processes), scheme-lifecycle organ/trigger edges,
+//      document approving organs, decision_rule edges. Per-register
+//      gating (the C58 doctrine): an edge is checked only when its
+//      target register is in composition scope
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -1558,6 +1566,145 @@ export function checkPackage(
           );
         }
       }
+    }
+  }
+
+  // ── C120: framework-references-resolve (smart TODO.roadmap/40; the ──
+  // packages-as-SSOT epic) ────────────────────────────────────────────
+  // The certification-framework registers cross-reference each other:
+  // participant_kind approval organs and declaration edges, the organs'
+  // own sub-committee/independence edges, declaration holder + gate
+  // edges, scheme-lifecycle organ edges and the entry's conditions_ref,
+  // framework_document approving organs, and decision_rule organ +
+  // exemption edges. Every such edge must resolve against the composed
+  // registers WHEN the target register is in scope (composed via uses) —
+  // per-register gating, the C58 doctrine: a package carrying only some
+  // of the framework registers (a scheme-side package mid-migration)
+  // cannot adjudicate the rest. Mirror of the OIML SMART linker's R25
+  // framework-references.
+  const organIds = new Set((standard.governanceOrgans ?? []).map(o => o.id));
+  const kindIds = new Set((standard.participantKinds ?? []).map(k => k.id));
+  const declIds = new Set((standard.declarationKinds ?? []).map(d => d.id));
+  const autoInclusionIds = new Set(
+    (standard.autoInclusions ?? []).map(a => a.id),
+  );
+  const frameworkProcessIds = new Set(
+    (standard.processes ?? []).map(p => p.id),
+  );
+  const resolveOrgan = (where: string, facet: string, id: string) => {
+    if (organIds.size > 0 && id !== '' && !organIds.has(id)) {
+      err(
+        'C120',
+        `${where}: ${facet} "${id}" is not a declared governance organ (framework-references-resolve)`,
+      );
+    }
+  };
+  const resolveKind = (where: string, facet: string, id: string) => {
+    if (kindIds.size > 0 && id !== '' && !kindIds.has(id)) {
+      err(
+        'C120',
+        `${where}: ${facet} "${id}" is not a declared participant kind (framework-references-resolve)`,
+      );
+    }
+  };
+  const resolveDeclaration = (where: string, facet: string, id: string) => {
+    if (declIds.size > 0 && id !== '' && !declIds.has(id)) {
+      err(
+        'C120',
+        `${where}: ${facet} "${id}" is not a declared declaration kind (framework-references-resolve)`,
+      );
+    }
+  };
+  for (const o of standard.governanceOrgans ?? []) {
+    resolveOrgan(
+      `governance_organ ${o.id}`,
+      'sub_committee_of',
+      o.sub_committee_of,
+    );
+    resolveOrgan(
+      `governance_organ ${o.id}`,
+      'independent_of',
+      o.independent_of,
+    );
+  }
+  for (const k of standard.participantKinds ?? []) {
+    const where = `participant_kind ${k.id}`;
+    resolveOrgan(where, 'approved_by', k.approved_by);
+    resolveKind(where, 'designated_by', k.designated_by);
+    resolveKind(where, 'becomes', k.becomes);
+    resolveDeclaration(where, 'declaration', k.declaration);
+    if (k.approval) {
+      resolveOrgan(where, 'approval.decided_by', k.approval.decided_by);
+      resolveOrgan(
+        where,
+        'approval.on_recommendation_of',
+        k.approval.on_recommendation_of,
+      );
+    }
+  }
+  for (const d of standard.declarationKinds ?? []) {
+    resolveKind(`declaration_kind ${d.id}`, 'holder', d.holder);
+  }
+  for (const g of standard.declarationGates ?? []) {
+    const where = `declaration_gate ${g.id}`;
+    resolveKind(where, 'holder', g.holder);
+    resolveDeclaration(where, 'declaration', g.declaration);
+    if (frameworkProcessIds.size > 0) {
+      for (const b of g.blocks) {
+        if (!frameworkProcessIds.has(b)) {
+          err(
+            'C120',
+            `${where}: blocks "${b}" is not a declared process (framework-references-resolve)`,
+          );
+        }
+      }
+    }
+  }
+  for (const l of standard.schemeLifecycles ?? []) {
+    const where = `scheme_lifecycle ${l.id}`;
+    if (
+      autoInclusionIds.size > 0 &&
+      l.entry &&
+      l.entry.conditions_ref !== '' &&
+      !autoInclusionIds.has(l.entry.conditions_ref)
+    ) {
+      err(
+        'C120',
+        `${where}: entry.conditions_ref "${l.entry.conditions_ref}" is not a declared auto_inclusion block (framework-references-resolve)`,
+      );
+    }
+    const actionIds = new Set(l.transitions.map(t => t.action));
+    for (const t of l.transitions) {
+      resolveOrgan(
+        `${where} transition ${t.action}`,
+        'decided_by',
+        t.decided_by,
+      );
+      resolveOrgan(
+        `${where} transition ${t.action}`,
+        'on_proposal_of',
+        t.on_proposal_of,
+      );
+    }
+    for (const tr of l.triggers) {
+      if (tr.action !== '' && !actionIds.has(tr.action)) {
+        err(
+          'C120',
+          `${where}: trigger ${tr.id} fires action "${tr.action}", which no transition of the machine declares (framework-references-resolve)`,
+        );
+      }
+    }
+  }
+  for (const d of standard.frameworkDocuments ?? []) {
+    resolveOrgan(`framework_document ${d.id}`, 'approved_by', d.approved_by);
+  }
+  for (const r of standard.decisionRules ?? []) {
+    const where = `decision_rule ${r.id}`;
+    resolveOrgan(where, 'organ', r.organ);
+    resolveOrgan(where, 'on_recommendation_of', r.on_recommendation_of);
+    resolveOrgan(where, 'independent_of', r.independent_of);
+    for (const k of r.no_entrance_fees_for) {
+      resolveKind(where, 'no_entrance_fees_for', k);
     }
   }
 

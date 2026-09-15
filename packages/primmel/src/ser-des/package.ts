@@ -471,7 +471,11 @@ function extendsDeprecationIssue(m: PackageManifest): ValidationIssue | null {
 }
 
 /** The id-keyed ParseContext collections that merge across packages. */
-const MERGE_FIELDS: (keyof ParseContext)[] = [
+// The composition contract (TODO.roadmap/05): every id-keyed
+// ParseContext collection MUST appear here — a missing field is
+// silently dropped from `uses` composition. test/merge-fields.test.ts
+// guards the equivalence at runtime.
+export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'approvals',
   'roles',
   'processes',
@@ -545,6 +549,23 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   'documentPrecedences',
   'autoInclusions',
   'decisionRules',
+  // The pre-existing drift closed (the packages-as-SSOT epic): these
+  // collections existed as constructs but were never merged, so `uses`
+  // composition silently dropped them — comments, predicates, the
+  // artifact registers, the activity archetypes, connector profiles,
+  // monitors, passports, dataspaces, policies, and the top-level
+  // dimensions all compose with the same no-redefine semantics now.
+  'comments',
+  'predicates',
+  'artifactDefinitions',
+  'artifactInstances',
+  'activityArchetypes',
+  'connectorProfiles',
+  'monitors',
+  'passports',
+  'dataspaces',
+  'policies',
+  'dimensions',
 ];
 
 /** Parse one package's content files (manifest excluded) as a single
