@@ -541,6 +541,9 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   'declarationGates',
   'schemeDefinitions',
   'schemeLifecycles',
+  'frameworkDocuments',
+  'documentPrecedences',
+  'autoInclusions',
 ];
 
 /** Parse one package's content files (manifest excluded) as a single

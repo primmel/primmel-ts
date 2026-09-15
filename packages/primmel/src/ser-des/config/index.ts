@@ -142,6 +142,14 @@ import {
   parseSchemeDefinition,
   parseSchemeLifecycle,
 } from './scheme';
+import {
+  dumpAutoInclusion,
+  dumpDocumentPrecedence,
+  dumpFrameworkDocument,
+  parseAutoInclusion,
+  parseDocumentPrecedence,
+  parseFrameworkDocument,
+} from './frameworkDocument';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -535,6 +543,29 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseSchemeLifecycle,
     dump: dumpSchemeLifecycle as never,
+  }),
+  // The governing-document hierarchy (clause 6) + precedence + the §4.2
+  // auto-inclusion blocks.
+  defineConstruct({
+    keyword: 'framework_document',
+    field: 'frameworkDocuments',
+    takesID: true,
+    parse: parseFrameworkDocument,
+    dump: dumpFrameworkDocument as never,
+  }),
+  defineConstruct({
+    keyword: 'document_precedence',
+    field: 'documentPrecedences',
+    takesID: true,
+    parse: parseDocumentPrecedence,
+    dump: dumpDocumentPrecedence as never,
+  }),
+  defineConstruct({
+    keyword: 'auto_inclusion',
+    field: 'autoInclusions',
+    takesID: true,
+    parse: parseAutoInclusion,
+    dump: dumpAutoInclusion as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT

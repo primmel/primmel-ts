@@ -42,6 +42,8 @@ import type GovernanceOrgan from './GovernanceOrgan';
 import type DeclarationKind from './Declaration';
 import type { DeclarationGate, DeclarationStatus } from './Declaration';
 import type { SchemeDefinition, SchemeLifecycle } from './Scheme';
+import type FrameworkDocument from './FrameworkDocument';
+import type { AutoInclusion, DocumentPrecedence } from './FrameworkDocument';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -175,6 +177,13 @@ export default interface Standard {
   // triggers and deciding-organ facets.
   schemeDefinitions: SchemeDefinition[];
   schemeLifecycles: SchemeLifecycle[];
+
+  // The governing-document hierarchy (B 18:2025 clause 6) with its
+  // precedence rule, and the §4.2 automatic-inclusion blocks the scheme
+  // lifecycle's entry references.
+  frameworkDocuments: FrameworkDocument[];
+  documentPrecedences: DocumentPrecedence[];
+  autoInclusions: AutoInclusion[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve

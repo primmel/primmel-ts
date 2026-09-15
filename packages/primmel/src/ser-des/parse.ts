@@ -116,6 +116,9 @@ export default function parse(
     declarationGates: {},
     schemeDefinitions: {},
     schemeLifecycles: {},
+    frameworkDocuments: {},
+    documentPrecedences: {},
+    autoInclusions: {},
     // Primmel v3 twin interface (TODO.roadmap/32)
     connectorProfiles: {},
     // Primmel v3 continuous compliance (TODO.roadmap/34)
