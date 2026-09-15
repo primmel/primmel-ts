@@ -41,6 +41,7 @@ import type ParticipantKind from './ParticipantKind';
 import type GovernanceOrgan from './GovernanceOrgan';
 import type DeclarationKind from './Declaration';
 import type { DeclarationGate, DeclarationStatus } from './Declaration';
+import type { SchemeDefinition, SchemeLifecycle } from './Scheme';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -168,6 +169,12 @@ export default interface Standard {
   declarationKinds: DeclarationKind[];
   declarationStatuses: DeclarationStatus[];
   declarationGates: DeclarationGate[];
+
+  // The two-Scheme architecture (B 18:2025 3.37/3.38, §5.4) and the
+  // per-category scheme lifecycle machines (clause 15) with their timer
+  // triggers and deciding-organ facets.
+  schemeDefinitions: SchemeDefinition[];
+  schemeLifecycles: SchemeLifecycle[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve

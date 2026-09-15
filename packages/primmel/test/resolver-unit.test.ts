@@ -68,6 +68,8 @@ function emptyContext(): ParseContext {
     declarationKinds: {},
     declarationStatuses: {},
     declarationGates: {},
+    schemeDefinitions: {},
+    schemeLifecycles: {},
     connectorProfiles: {},
     monitors: {},
     passports: {},

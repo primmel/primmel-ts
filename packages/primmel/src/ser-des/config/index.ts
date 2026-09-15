@@ -136,6 +136,12 @@ import {
   parseDeclarationKind,
   parseDeclarationStatus,
 } from './declaration';
+import {
+  dumpSchemeDefinition,
+  dumpSchemeLifecycle,
+  parseSchemeDefinition,
+  parseSchemeLifecycle,
+} from './scheme';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -513,6 +519,22 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseDeclarationGate,
     dump: dumpDeclarationGate as never,
+  }),
+  // The two-Scheme architecture (B 18:2025 3.37/3.38, §5.4) + the
+  // per-category lifecycle machines (clause 15).
+  defineConstruct({
+    keyword: 'scheme_definition',
+    field: 'schemeDefinitions',
+    takesID: true,
+    parse: parseSchemeDefinition,
+    dump: dumpSchemeDefinition as never,
+  }),
+  defineConstruct({
+    keyword: 'scheme_lifecycle',
+    field: 'schemeLifecycles',
+    takesID: true,
+    parse: parseSchemeLifecycle,
+    dump: dumpSchemeLifecycle as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT

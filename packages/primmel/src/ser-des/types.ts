@@ -43,6 +43,7 @@ import type ParticipantKind from '../types/ParticipantKind';
 import type GovernanceOrgan from '../types/GovernanceOrgan';
 import type DeclarationKind from '../types/Declaration';
 import type { DeclarationGate, DeclarationStatus } from '../types/Declaration';
+import type { SchemeDefinition, SchemeLifecycle } from '../types/Scheme';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
 import type Dataspace from '../types/Dataspace';
@@ -221,6 +222,8 @@ export interface ParseContext {
   declarationKinds: Record<string, DeclarationKind>;
   declarationStatuses: Record<string, DeclarationStatus>;
   declarationGates: Record<string, DeclarationGate>;
+  schemeDefinitions: Record<string, SchemeDefinition>;
+  schemeLifecycles: Record<string, SchemeLifecycle>;
 
   // Primmel v3 twin interface (TODO.roadmap/32): connector profiles.
   // Endpoints/serve bindings live on the subject (is.endpoints/has.serves).
