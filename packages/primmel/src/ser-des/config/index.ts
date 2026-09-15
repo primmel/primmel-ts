@@ -55,6 +55,7 @@ import { dumpGateway, parseExclusiveGate } from './gateway';
 
 import { parseMetadata } from './metadata';
 import { dumpProcess, parseProcess, resolveProcess } from './process';
+import { dumpProcessModel, parseProcessModel } from './processModel';
 import { dumpProvision, parseProvision, resolveProvision } from './provision';
 import { dumpReference, parseReference } from './reference';
 import { dumpRole, parseRole } from './role';
@@ -200,6 +201,15 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseProcess,
     resolve: resolveProcess as never,
     dump: dumpProcess as never,
+  }),
+  // The abstract-process model's file-level home (smart TODO.roadmap/40
+  // batch 2): the pipeline sequence + the participant/expert registers.
+  defineConstruct({
+    keyword: 'process_model',
+    field: 'processModels',
+    takesID: true,
+    parse: parseProcessModel,
+    dump: dumpProcessModel as never,
   }),
   defineConstruct({
     keyword: 'approval',

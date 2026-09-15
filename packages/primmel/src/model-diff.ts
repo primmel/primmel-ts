@@ -127,6 +127,10 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   testPointSets: 'secondary',
   referenceMaterials: 'secondary',
   processes: 'tertiary',
+  // Process models (smart TODO.roadmap/40 batch 2) are tertiary beside
+  // processes: the pipeline sequence/registers are the abstract-process
+  // model's file-level furniture.
+  processModels: 'tertiary',
   pages: 'tertiary',
   dataclasses: 'tertiary',
   regs: 'tertiary',

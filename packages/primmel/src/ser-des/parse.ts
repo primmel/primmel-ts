@@ -54,6 +54,8 @@ export default function parse(
     approvals: {},
     roles: {},
     processes: {},
+    // The abstract-process models (smart TODO.roadmap/40 batch 2)
+    processModels: {},
     pages: {},
     gateways: {},
     regs: {},

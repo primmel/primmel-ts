@@ -14,6 +14,7 @@ import type MapProfile from '../types/MapProfile';
 import type Metadata from '../types/Metadata';
 import type { ResolvableNote } from '../types/Note';
 import type { ResolvableProcess } from '../types/process';
+import type ProcessModel from '../types/ProcessModel';
 import type { ResolvableSubprocess } from '../types/flow';
 import type { ResolvableProvision } from '../types/Provision';
 import type { ResolvableApproval } from '../types/Approval';
@@ -154,6 +155,8 @@ export interface ParseContext {
   approvals: Record<string, ResolvableApproval>;
   provisions: Record<string, ResolvableProvision>;
   processes: Record<string, ResolvableProcess>;
+  /** The abstract-process models (smart TODO.roadmap/40 batch 2). */
+  processModels: Record<string, ProcessModel>;
   pages: Record<string, ResolvableSubprocess>;
 
   // XXX: Make resolvable

@@ -483,6 +483,9 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'approvals',
   'roles',
   'processes',
+  // The abstract-process models (smart TODO.roadmap/40 batch 2) compose
+  // like the processes they sequence, with uses-no-redefine semantics.
+  'processModels',
   'pages',
   'gateways',
   'regs',

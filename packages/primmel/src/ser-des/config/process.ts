@@ -106,16 +106,60 @@
 // hand), never roles — a scheme may bind one role to evaluation, review
 // AND decision, so the norms quantify over process involvement. C59
 // (segregation-members-resolve) checks declaration well-formedness.
+//
+// The abstract-process model (smart TODO.roadmap/40 batch 2; the
+// packages-as-SSOT epic — the OIML-CS / CASCO evaluation pipelines) adds
+// the framework-binding facets:
+//
+//   process ia_application {
+//     name "IA application"
+//     summary "The manufacturer … applies to an OIML Issuing Authority …"
+//     executor actor
+//     roles { applicant }                  # the role binding list —
+//                                          # DISTINCT from executor
+//     organs { management_committee }      # → governance_organ (C121)
+//     participant_kinds { issuing_authority }   # → participant_kind
+//     signature { in { } out { applications } } # bare name = untyped
+//                                          # entity-store reference
+//     evidence {
+//       application_record { description "…" required true }
+//     }
+//     decision { rule mc_80_vote clause "PD-03, 5.3.2" }
+//     declaration { kind issuing_authority_declaration action sign }
+//     discharges_gate declaration-signed-before-issuance
+//     realized_by { submit_application }   # documentary
+//     approved_by { ia_accept_application }# documentary
+//     windows {
+//       window lodging_window {
+//         kind max_elapsed                 # max_elapsed | min_elapsed
+//         clause "PD-01, 8.2/8.3"
+//         anchor informed_at
+//         applies_to lodged_at
+//         window { months 1 }              # the scheme_lifecycle window
+//                                          # duration sub-grammar
+//         breach rule_inadmissible         # optional
+//         description "…"
+//       }
+//     }
+//   }
+//
+// The cross-references resolve at check time, per-register gated (C121
+// abstract-process-references-resolve, the C58 doctrine); the codec stays
+// total.
 // ─────────────────────────────────────────────────────────────────────
 
 import Process, {
+  EvidenceEntry,
   ProcessCallBinding,
+  ProcessDecision,
+  ProcessDeclaration,
   ProcessFlow,
   ProcessFlowEdge,
   ProcessParameter,
   ProcessSignature,
   ProcessStep,
   ProcessStepKind,
+  ProcessWindow,
   ResolvableProcess,
   SegregationEntry,
 } from '../../types/process';
@@ -196,15 +240,25 @@ function parseParamList(
   const t = tokenize(block);
   let i = 0;
   while (i < t.length) {
-    const name = stripColon(t[i++]);
+    const head = t[i++];
+    const name = stripColon(head);
     if (!name) {
       break;
     }
-    let type = '';
+    // The type token is OPTIONAL (smart TODO.roadmap/40 batch 2): a bare
+    // name is an untyped entity-store reference — the abstract-process
+    // model's signatures quantify over record stores (`in { applications
+    // }`), not quantity kinds. A type is read only when a colon marker
+    // was present — attached (`name:`) or separate (`name : type`);
+    // without one the next token is the next ENTRY's head, never this
+    // entry's type.
+    let typed = head.endsWith(':');
     if (i < t.length && t[i] === ':') {
+      typed = true;
       i++;
     }
-    if (i < t.length) {
+    let type = '';
+    if (typed && i < t.length) {
       type = stripWrapping(t[i++]);
     }
     const param: ProcessParameter = { name, type };
@@ -394,6 +448,159 @@ function parseSegregation(block: string): SegregationEntry[] {
           unwrapBlock(et[j++]);
         }
       }
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+/**
+ * Evidence-record slots (smart TODO.roadmap/40 batch 2): `<id> { … }`
+ * entries of an `evidence { … }` block — the records a run of the
+ * abstract process must produce into the evidence store.
+ */
+function parseProcessEvidence(block: string): EvidenceEntry[] {
+  const out: EvidenceEntry[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const eid = stripWrapping(t[i++]);
+    if (!eid) {
+      break;
+    }
+    const entry: EvidenceEntry = { id: eid, description: '', required: false };
+    if (i < t.length && t[i].startsWith('{')) {
+      forEachEntry(
+        unwrapBlock(t[i++]),
+        (keyword, value) => {
+          if (keyword === 'description') {
+            entry.description = stripWrapping(value());
+          } else if (keyword === 'required') {
+            entry.required = stripWrapping(value()) === 'true';
+          } else {
+            return false;
+          }
+          return true;
+        },
+        { construct: 'process evidence', id: eid },
+      );
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+/**
+ * The decision facet (smart TODO.roadmap/40 batch 2):
+ * `decision { rule <decision_rule-id> clause "…" }`.
+ */
+function parseProcessDecision(block: string): ProcessDecision {
+  const decision: ProcessDecision = { rule: '', clause: '' };
+  forEachEntry(
+    block,
+    (keyword, value) => {
+      if (keyword === 'rule') {
+        decision.rule = stripWrapping(value());
+      } else if (keyword === 'clause') {
+        decision.clause = stripWrapping(value());
+      } else {
+        return false;
+      }
+      return true;
+    },
+    { construct: 'process decision', id: '' },
+  );
+  return decision;
+}
+
+/**
+ * The declaration facet (smart TODO.roadmap/40 batch 2):
+ * `declaration { kind <declaration_kind-id> action sign|update }`. The
+ * action vocabulary is check-time (C121) — the codec stays total.
+ */
+function parseProcessDeclaration(block: string): ProcessDeclaration {
+  const declaration: ProcessDeclaration = { kind: '', action: '' };
+  forEachEntry(
+    block,
+    (keyword, value) => {
+      if (keyword === 'kind') {
+        declaration.kind = stripWrapping(value());
+      } else if (keyword === 'action') {
+        declaration.action = stripWrapping(value());
+      } else {
+        return false;
+      }
+      return true;
+    },
+    { construct: 'process declaration', id: '' },
+  );
+  return declaration;
+}
+
+/**
+ * The calendar windows (smart TODO.roadmap/40 batch 2): `window <id>
+ * { … }` entries of a `windows { … }` block. The duration reuses the
+ * scheme_lifecycle window sub-grammar — `window { years 2 }` /
+ * `window { months 1 }` (config/scheme.ts parseTrigger); the shape
+ * discipline (kind vocabulary, exactly one of years/months) is
+ * check-time (C121).
+ */
+function parseProcessWindows(block: string): ProcessWindow[] {
+  const out: ProcessWindow[] = [];
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (cmd !== 'window') {
+      i = skipUnknownEntry(t, i);
+      continue;
+    }
+    const wid = stripWrapping(t[i++]);
+    const entry: ProcessWindow = {
+      id: wid,
+      kind: '',
+      clause: '',
+      anchor: '',
+      applies_to: '',
+      windowYears: 0,
+      windowMonths: 0,
+      breach: '',
+      description: '',
+    };
+    if (i < t.length && t[i].startsWith('{')) {
+      forEachEntry(
+        unwrapBlock(t[i++]),
+        (keyword, value) => {
+          if (keyword === 'kind') {
+            entry.kind = stripWrapping(value());
+          } else if (keyword === 'clause') {
+            entry.clause = stripWrapping(value());
+          } else if (keyword === 'anchor') {
+            entry.anchor = stripWrapping(value());
+          } else if (keyword === 'applies_to') {
+            entry.applies_to = stripWrapping(value());
+          } else if (keyword === 'window') {
+            const wt = tokenizePackage(unwrapBlock(value()));
+            for (let k = 0; k + 1 < wt.length; k += 2) {
+              if (wt[k] === 'years') {
+                entry.windowYears =
+                  parseInt(stripWrapping(wt[k + 1]!), 10) || 0;
+              } else if (wt[k] === 'months') {
+                entry.windowMonths =
+                  parseInt(stripWrapping(wt[k + 1]!), 10) || 0;
+              }
+            }
+          } else if (keyword === 'breach') {
+            entry.breach = stripWrapping(value());
+          } else if (keyword === 'description') {
+            entry.description = stripWrapping(value());
+          } else {
+            return false;
+          }
+          return true;
+        },
+        { construct: 'process window', id: wid },
+      );
     }
     out.push(entry);
   }
@@ -701,6 +908,18 @@ export const parseProcess: Parser = function (id, data) {
     instances: null,
     childComposition: 'all',
     does: null,
+    // The abstract-process model (smart TODO.roadmap/40 batch 2)
+    summary: '',
+    roles: [],
+    organs: [],
+    participantKinds: [],
+    evidence: [],
+    decision: null,
+    declaration: null,
+    dischargesGate: '',
+    realizedBy: [],
+    approvedBy: [],
+    windows: [],
     source: null,
     provisionRefs: [],
     _relations: {
@@ -794,6 +1013,51 @@ export const parseProcess: Parser = function (id, data) {
           .map(stripColon)
           .map(stripWrapping)
           .filter(s => s.length > 0);
+      } else if (keyword === 'summary') {
+        // The abstract-process model (smart TODO.roadmap/40 batch 2).
+        result.summary = unwrapped(value);
+      } else if (keyword === 'roles') {
+        // roles { applicant … } — the role binding list; kept DISTINCT
+        // from `executor` (the typing token) — never collapsed.
+        result.roles = tokenize(stripWrapping(value()))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0);
+      } else if (keyword === 'organs') {
+        result.organs = tokenize(stripWrapping(value()))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0);
+      } else if (keyword === 'participant_kinds') {
+        result.participantKinds = tokenize(stripWrapping(value()))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0);
+      } else if (keyword === 'evidence') {
+        // evidence { <id> { description "…" required true } … }
+        result.evidence = parseProcessEvidence(unwrapBlock(value()));
+      } else if (keyword === 'decision') {
+        // decision { rule <decision_rule-id> clause "…" }
+        result.decision = parseProcessDecision(unwrapBlock(value()));
+      } else if (keyword === 'declaration') {
+        // declaration { kind <declaration_kind-id> action sign|update }
+        result.declaration = parseProcessDeclaration(unwrapBlock(value()));
+      } else if (keyword === 'discharges_gate') {
+        result.dischargesGate = stripWrapping(value());
+      } else if (keyword === 'realized_by') {
+        result.realizedBy = tokenize(stripWrapping(value()))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0);
+      } else if (keyword === 'approved_by') {
+        result.approvedBy = tokenize(stripWrapping(value()))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0);
+      } else if (keyword === 'windows') {
+        // windows { window <id> { … } … } — the calendar windows, reusing
+        // the scheme_lifecycle window duration sub-grammar.
+        result.windows = parseProcessWindows(unwrapBlock(value()));
       } else if (keyword === 'segregation') {
         // segregation { constraint <id> { … } … } — ISO/IEC 17065 role
         // segregation (TODO.roadmap/39b; C59).
@@ -1043,6 +1307,9 @@ export const dumpProcess: (
 ) => string = function (process, ctx) {
   let out: string = 'process ' + process.id + ' {\n';
   out += '  name "' + escapeString(process.name) + '"\n';
+  if (process.summary) {
+    out += '  summary "' + escapeString(process.summary) + '"\n';
+  }
   if (process.actor !== null) {
     out += '  actor ' + process.actor.id + '\n';
   }
@@ -1096,6 +1363,104 @@ export const dumpProcess: (
       '  activity_kind { ' +
       process.activityKinds.map(dumpBareSafe).join(' ') +
       ' }\n';
+  }
+  // ── The abstract-process model (smart TODO.roadmap/40 batch 2) ──
+  if (process.roles && process.roles.length > 0) {
+    out += '  roles { ' + process.roles.map(dumpBareSafe).join(' ') + ' }\n';
+  }
+  if (process.organs && process.organs.length > 0) {
+    out += '  organs { ' + process.organs.map(dumpBareSafe).join(' ') + ' }\n';
+  }
+  if (process.participantKinds && process.participantKinds.length > 0) {
+    out +=
+      '  participant_kinds { ' +
+      process.participantKinds.map(dumpBareSafe).join(' ') +
+      ' }\n';
+  }
+  if (process.evidence && process.evidence.length > 0) {
+    out += '  evidence {\n';
+    for (const e of process.evidence) {
+      out += '    ' + dumpBareSafe(e.id) + ' {';
+      if (e.description) {
+        out += ' description "' + escapeString(e.description) + '"';
+      }
+      if (e.required) {
+        out += ' required true';
+      }
+      out += ' }\n';
+    }
+    out += '  }\n';
+  }
+  if (process.decision) {
+    out += '  decision {';
+    if (process.decision.rule) {
+      out += ' rule ' + dumpBareSafe(process.decision.rule);
+    }
+    if (process.decision.clause) {
+      out += ' clause "' + escapeString(process.decision.clause) + '"';
+    }
+    out += ' }\n';
+  }
+  if (process.declaration) {
+    out += '  declaration {';
+    if (process.declaration.kind) {
+      out += ' kind ' + dumpBareSafe(process.declaration.kind);
+    }
+    if (process.declaration.action) {
+      out += ' action ' + dumpBareSafe(process.declaration.action);
+    }
+    out += ' }\n';
+  }
+  if (process.dischargesGate) {
+    out += '  discharges_gate ' + dumpBareSafe(process.dischargesGate) + '\n';
+  }
+  if (process.realizedBy && process.realizedBy.length > 0) {
+    out +=
+      '  realized_by { ' +
+      process.realizedBy.map(dumpBareSafe).join(' ') +
+      ' }\n';
+  }
+  if (process.approvedBy && process.approvedBy.length > 0) {
+    out +=
+      '  approved_by { ' +
+      process.approvedBy.map(dumpBareSafe).join(' ') +
+      ' }\n';
+  }
+  if (process.windows && process.windows.length > 0) {
+    out += '  windows {\n';
+    for (const w of process.windows) {
+      out += '    window ' + dumpBareSafe(w.id) + ' {\n';
+      if (w.kind) {
+        out += '      kind ' + dumpBareSafe(w.kind) + '\n';
+      }
+      if (w.clause) {
+        out += '      clause "' + escapeString(w.clause) + '"\n';
+      }
+      if (w.anchor) {
+        out += '      anchor ' + dumpBareSafe(w.anchor) + '\n';
+      }
+      if (w.applies_to) {
+        out += '      applies_to ' + dumpBareSafe(w.applies_to) + '\n';
+      }
+      if (w.windowYears > 0 || w.windowMonths > 0) {
+        out += '      window {';
+        if (w.windowYears > 0) {
+          out += ' years ' + w.windowYears;
+        }
+        if (w.windowMonths > 0) {
+          out += ' months ' + w.windowMonths;
+        }
+        out += ' }\n';
+      }
+      if (w.breach) {
+        out += '      breach ' + dumpBareSafe(w.breach) + '\n';
+      }
+      if (w.description) {
+        out += '      description "' + escapeString(w.description) + '"\n';
+      }
+      out += '    }\n';
+    }
+    out += '  }\n';
   }
   if (process.segregation && process.segregation.length > 0) {
     out += '  segregation {\n';

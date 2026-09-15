@@ -82,6 +82,77 @@ export interface SegregationEntry {
   statement: string;
 }
 
+/**
+ * One evidence-record slot of an abstract process (smart TODO.roadmap/40
+ * batch 2 — the OIML-CS abstract-process model): a record the process's
+ * run must produce into the evidence store (the application record, the
+ * review report). `required` false marks an optional slot.
+ */
+export interface EvidenceEntry {
+  id: string;
+  description: string;
+  required: boolean;
+}
+
+/**
+ * The decision facet of an abstract process (smart TODO.roadmap/40 batch
+ * 2): the process applies a framework `decision_rule` (its voting/
+ * recommendation machinery), cited with the governing clause. The rule
+ * reference resolves against the composed decision_rule register at check
+ * time (C121); the codec stays total.
+ */
+export interface ProcessDecision {
+  /** decision_rule id. */
+  rule: string;
+  /** The clause governing the decision (e.g. "PD-03, 5.3.2"). */
+  clause: string;
+}
+
+/**
+ * The declaration facet of an abstract process (smart TODO.roadmap/40
+ * batch 2): the process signs or updates a framework Declaration
+ * (`declaration_kind`). The action vocabulary (sign | update) and the
+ * kind's resolution against the declaration_kind register are check-time
+ * (C121); the codec stays total.
+ */
+export interface ProcessDeclaration {
+  /** declaration_kind id. */
+  kind: string;
+  /** 'sign' | 'update' ('' = undeclared). */
+  action: string;
+}
+
+/**
+ * One calendar window constraining an abstract process (smart
+ * TODO.roadmap/40 batch 2 — e.g. PD-01 8.2/8.3: the written appeal
+ * reaches the Executive Secretary within ONE MONTH of the appellant
+ * being informed). `kind` is max_elapsed (a deadline) or min_elapsed (a
+ * cooling-off); `anchor` and `applies_to` name the record date fields
+ * opening resp. constrained by the window (field resolution is the
+ * consumer's business — the R26 precedent); the duration reuses the
+ * scheme_lifecycle window sub-grammar (exactly one of years/months);
+ * `breach` names the state-machine action a breach fires ('' = none).
+ * Shape and vocabulary are check-time (C121); the codec stays total.
+ */
+export interface ProcessWindow {
+  id: string;
+  /** 'max_elapsed' | 'min_elapsed' ('' = undeclared). */
+  kind: string;
+  /** The clause stating the window (e.g. "PD-01, 8.2/8.3"). */
+  clause: string;
+  /** The record date field opening the window. */
+  anchor: string;
+  /** The record date field the window constrains. */
+  applies_to: string;
+  /** Window duration, years component (0 = undeclared). */
+  windowYears: number;
+  /** Window duration, months component (0 = undeclared). */
+  windowMonths: number;
+  /** The state-machine action a breach fires ('' = none). */
+  breach: string;
+  description: string;
+}
+
 /** The eight step kinds of the v3 step vocabulary. */
 export type ProcessStepKind =
   | 'action'
@@ -224,7 +295,10 @@ export default interface Process {
   // ── Primmel v3 process model (TODO.roadmap/02) — all optional; a
   // process declaring none of these is exactly the v2 process. ──
 
-  /** IS: the I/O signature (null = undeclared). */
+  /** IS: the I/O signature (null = undeclared). A signature parameter's
+   *  type token is OPTIONAL (smart TODO.roadmap/40 batch 2): a bare name
+   *  is an untyped entity-store reference — the abstract-process model's
+   *  signatures quantify over record stores, not quantity kinds. */
   signature: ProcessSignature | null;
   /** IS: OCL invariants over the signature and registers. */
   invariants: string[];
@@ -275,6 +349,39 @@ export default interface Process {
   childComposition: 'all' | 'gateway';
   /** DOES: the executable body. null = abstract process (always valid). */
   does: ProcessFlow | null;
+
+  // ── The abstract-process model (smart TODO.roadmap/40 batch 2 — the
+  // OIML-CS / CASCO evaluation pipelines) — all optional; an abstract
+  // process declaring none of these is exactly the batch-1 form. ──
+
+  /** IS: the one-paragraph functional summary of the abstract process. */
+  summary: string;
+  /**
+   * IS: the role ids bound to the process's performance (YAML `roles:`).
+   * Kept DISTINCT from `executor` (the typing token actor|machine):
+   * multi-role processes exist, so the binding list never collapses into
+   * the executor token. Resolve against the role register at check time
+   * (C121).
+   */
+  roles: string[];
+  /** IS: the governance_organ ids acting in the process (C121). */
+  organs: string[];
+  /** IS: the participant_kind ids acting in the process (C121). */
+  participantKinds: string[];
+  /** HAS: the evidence-record slots the process's run must produce. */
+  evidence: EvidenceEntry[];
+  /** IS: the decision facet — the framework decision_rule applied. */
+  decision: ProcessDecision | null;
+  /** IS: the declaration facet — the Declaration signed/updated. */
+  declaration: ProcessDeclaration | null;
+  /** The declaration_gate this process discharges ('' = none; C121). */
+  dischargesGate: string;
+  /** The concrete processes realizing this abstract one (documentary). */
+  realizedBy: string[];
+  /** The approvals authorizing the process's outcome (documentary). */
+  approvedBy: string[];
+  /** HAS: the calendar windows constraining the process's records. */
+  windows: ProcessWindow[];
 
   /**
    * Clause-URN provenance (the same facet requirement/provision carry):

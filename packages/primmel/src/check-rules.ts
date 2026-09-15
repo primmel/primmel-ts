@@ -387,6 +387,24 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 (the packages-as-SSOT epic)',
   ),
+  // C121 (smart TODO.roadmap/40 batch 2; the packages-as-SSOT epic): the
+  // abstract-process model's framework bindings resolve — the process's
+  // roles / organs / participant_kinds lists, the decision rule, the
+  // declaration kind + the sign|update action vocabulary, the discharged
+  // declaration gate, realized_by → process, approved_by → approval, and
+  // the calendar windows' shape (kind vocabulary; exactly one of
+  // years/months); the process_model's sequence members and register
+  // maintainers ride the same rule. Per-register gating (the C58
+  // doctrine): an edge is checked only when its target register is in
+  // composition scope.
+  R(
+    'C121',
+    'abstract-process-references-resolve',
+    'process',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 2 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

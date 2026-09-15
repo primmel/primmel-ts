@@ -310,6 +310,14 @@
 //      document approving organs, decision_rule edges. Per-register
 //      gating (the C58 doctrine): an edge is checked only when its
 //      target register is in composition scope
+//   C121 abstract-process-references-resolve (smart TODO.roadmap/40
+//      batch 2): the abstract-process model's framework bindings resolve
+//      — roles/organs/participant_kinds lists, decision.rule, the
+//      declaration kind + sign|update action vocabulary,
+//      discharges_gate, realized_by → process, approved_by → approval,
+//      the calendar windows' shape (kind vocabulary; exactly one of
+//      years/months), and the process_model's sequence + register
+//      maintainer edges. Per-register gating (the C58 doctrine)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -1772,6 +1780,166 @@ export function checkPackage(
             );
           }
         }
+      }
+    }
+  }
+
+  // ── C121: abstract-process-references-resolve (smart TODO.roadmap/40 ──
+  // batch 2; the packages-as-SSOT epic) ───────────────────────────────
+  // The abstract-process model's framework bindings resolve against the
+  // composed registers: the role binding list, the organ and participant
+  // kind facets, the decision rule, the declaration kind (plus the sign |
+  // update action vocabulary), the discharged declaration gate, the
+  // realizing processes and the authorizing approvals; the calendar
+  // windows' shape legs (the max_elapsed | min_elapsed kind vocabulary;
+  // exactly one of years/months — the scheme_lifecycle duration
+  // sub-grammar) are register-free. The process_model's sequence members
+  // (→ process) and register maintainers (→ governance_organ) ride the
+  // same rule. Per-register gating (the C58 doctrine): an edge is checked
+  // only when its target register is in composition scope. The windows'
+  // anchor/applies_to FIELD resolution stays consumer-side (the R26
+  // precedent). Mirror of the OIML SMART linker's abstract-process
+  // reference legs.
+  {
+    const apRoleIds = new Set((standard.roles ?? []).map(r => r.id));
+    const apGateIds = new Set((standard.declarationGates ?? []).map(g => g.id));
+    const apRuleIds = new Set((standard.decisionRules ?? []).map(r => r.id));
+    const apApprovalIds = new Set((standard.approvals ?? []).map(a => a.id));
+    // The C120 organ/kind/declaration resolvers report under C120 — the
+    // abstract-process edges are C121's, so the rule carries its own
+    // per-register-gated resolvers over the same composed registers.
+    const resolveOrganAp = (where: string, facet: string, id: string) => {
+      if (organIds.size > 0 && id !== '' && !organIds.has(id)) {
+        err(
+          'C121',
+          `${where}: ${facet} "${id}" is not a declared governance organ (abstract-process-references-resolve)`,
+        );
+      }
+    };
+    const resolveKindAp = (where: string, facet: string, id: string) => {
+      if (kindIds.size > 0 && id !== '' && !kindIds.has(id)) {
+        err(
+          'C121',
+          `${where}: ${facet} "${id}" is not a declared participant kind (abstract-process-references-resolve)`,
+        );
+      }
+    };
+    const resolveDeclarationAp = (where: string, facet: string, id: string) => {
+      if (declIds.size > 0 && id !== '' && !declIds.has(id)) {
+        err(
+          'C121',
+          `${where}: ${facet} "${id}" is not a declared declaration kind (abstract-process-references-resolve)`,
+        );
+      }
+    };
+    const resolveProcessRef = (where: string, facet: string, id: string) => {
+      if (frameworkProcessIds.size > 0 && !frameworkProcessIds.has(id)) {
+        err(
+          'C121',
+          `${where}: ${facet} "${id}" is not a declared process (abstract-process-references-resolve)`,
+        );
+      }
+    };
+    for (const p of standard.processes ?? []) {
+      const where = `process ${p.id}`;
+      if (apRoleIds.size > 0) {
+        for (const r of p.roles ?? []) {
+          if (!apRoleIds.has(r)) {
+            err(
+              'C121',
+              `${where}: roles "${r}" is not a declared role (abstract-process-references-resolve)`,
+            );
+          }
+        }
+      }
+      for (const o of p.organs ?? []) {
+        resolveOrganAp(where, 'organs', o);
+      }
+      for (const k of p.participantKinds ?? []) {
+        resolveKindAp(where, 'participant_kinds', k);
+      }
+      if (p.decision) {
+        if (p.decision.rule === '') {
+          err(
+            'C121',
+            `${where}: the decision facet declares no rule — a decision names the decision_rule it applies (abstract-process-references-resolve)`,
+          );
+        } else if (apRuleIds.size > 0 && !apRuleIds.has(p.decision.rule)) {
+          err(
+            'C121',
+            `${where}: decision.rule "${p.decision.rule}" is not a declared decision rule (abstract-process-references-resolve)`,
+          );
+        }
+      }
+      if (p.declaration) {
+        if (p.declaration.kind === '') {
+          err(
+            'C121',
+            `${where}: the declaration facet declares no kind — a declaration names the declaration_kind it signs or updates (abstract-process-references-resolve)`,
+          );
+        } else {
+          resolveDeclarationAp(where, 'declaration.kind', p.declaration.kind);
+        }
+        if (
+          p.declaration.action !== 'sign' &&
+          p.declaration.action !== 'update'
+        ) {
+          err(
+            'C121',
+            `${where}: declaration action "${p.declaration.action || '(none)'}" — a declaration is signed or updated (valid: sign, update) (abstract-process-references-resolve)`,
+          );
+        }
+      }
+      if (
+        p.dischargesGate !== '' &&
+        apGateIds.size > 0 &&
+        !apGateIds.has(p.dischargesGate)
+      ) {
+        err(
+          'C121',
+          `${where}: discharges_gate "${p.dischargesGate}" is not a declared declaration gate (abstract-process-references-resolve)`,
+        );
+      }
+      for (const r of p.realizedBy ?? []) {
+        resolveProcessRef(where, 'realized_by', r);
+      }
+      if (apApprovalIds.size > 0) {
+        for (const a of p.approvedBy ?? []) {
+          if (!apApprovalIds.has(a)) {
+            err(
+              'C121',
+              `${where}: approved_by "${a}" is not a declared approval (abstract-process-references-resolve)`,
+            );
+          }
+        }
+      }
+      for (const w of p.windows ?? []) {
+        const wwhere = `${where} window ${w.id}`;
+        if (w.kind !== 'max_elapsed' && w.kind !== 'min_elapsed') {
+          err(
+            'C121',
+            `${wwhere}: kind "${w.kind || '(none)'}" — a calendar window is a deadline or a cooling-off (valid: max_elapsed, min_elapsed) (abstract-process-references-resolve)`,
+          );
+        }
+        if (w.windowYears > 0 === w.windowMonths > 0) {
+          err(
+            'C121',
+            `${wwhere}: the window duration declares ${
+              w.windowYears > 0
+                ? 'both years and months'
+                : 'neither years nor months'
+            } — exactly one is required (the scheme_lifecycle window sub-grammar) (abstract-process-references-resolve)`,
+          );
+        }
+      }
+    }
+    for (const m of standard.processModels ?? []) {
+      const where = `process_model ${m.id}`;
+      for (const s of m.sequence ?? []) {
+        resolveProcessRef(where, 'sequence', s);
+      }
+      for (const r of m.registers ?? []) {
+        resolveOrganAp(`${where} register ${r.id}`, 'maintainer', r.maintainer);
       }
     }
   }

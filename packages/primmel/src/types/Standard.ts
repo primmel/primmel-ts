@@ -15,6 +15,7 @@ import type MapProfile from './MapProfile';
 import type Metadata from './Metadata';
 import type Note from './Note';
 import type Process from './process';
+import type ProcessModel from './ProcessModel';
 import type { Subprocess } from './flow';
 import type Provision from './Provision';
 import type Reference from './Reference';
@@ -71,6 +72,10 @@ export default interface Standard {
   provisions: Provision[];
   pages: Subprocess[];
   processes: Process[];
+  /** The abstract-process models (smart TODO.roadmap/40 batch 2): the
+   *  file-level pipelines (sequence + participant/expert registers) the
+   *  processes belong to. */
+  processModels: ProcessModel[];
   dataclasses: DataClass[];
   regs: Registry[];
   events: EventNode[];
