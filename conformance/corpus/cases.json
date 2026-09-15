@@ -1,152 +1,1636 @@
 {
-  "$comment": "The case index. Every case names its clause (clauses.json), its polarity (positive: a conforming implementation accepts; negative: it rejects or flags), its kind (the adapter command: parse | roundtrip | check), the corpus path, and the expectation. Paths are relative to this file's directory. The optional 'with' map names the package locator for composition cases, again relative to this directory. Expectation fields per kind: parse -> parse: ok|error, errorMatch (required when error), issues (exact code set, optional); roundtrip -> roundtrip: ok|error, outputEqualsInput / outputDiffersFromInput (optional); check -> clean: true, rules (exact error-severity rule id set), or error (the evaluation itself must fail with a matching message).",
-  "cases": [
-    { "id": "syn-01-pos-full", "clause": "SYN-01", "polarity": "positive", "kind": "parse", "path": "syntax/full-document.prl", "expect": { "parse": "ok" }, "summary": "A complete document with header and all five entity kinds parses." },
-    { "id": "syn-01-pos-minimal", "clause": "SYN-01", "polarity": "positive", "kind": "parse", "path": "syntax/minimal-document.prl", "expect": { "parse": "ok" }, "summary": "The smallest complete document parses." },
-    { "id": "syn-01-pos-comments", "clause": "SYN-01", "polarity": "positive", "kind": "parse", "path": "syntax/comments.prl", "expect": { "parse": "ok" }, "summary": "Both comment forms are ignored by the parser." },
-    { "id": "syn-01-pos-lenient", "clause": "SYN-01", "polarity": "positive", "kind": "parse", "path": "syntax/strict-unknown-keyword.prl", "expect": { "parse": "ok" }, "summary": "A lenient parse skips an unknown top-level keyword." },
-    { "id": "syn-01-neg-strict", "clause": "SYN-01", "polarity": "negative", "kind": "parse", "path": "syntax/strict-unknown-keyword.prl", "options": { "strict": true }, "expect": { "parse": "error", "errorMatch": "Unknown keyword \"future_keyword\"" }, "summary": "A strict parse rejects the unknown keyword by name." },
-
-    { "id": "syn-02-pos-quoted", "clause": "SYN-02", "polarity": "positive", "kind": "parse", "path": "syntax/quoted-identifier.prl", "expect": { "parse": "ok" }, "summary": "A quoted identifier carrying a space parses and is cross-referenced in the same quoted form." },
-    { "id": "syn-02-neg-missing-id", "clause": "SYN-02", "polarity": "negative", "kind": "parse", "path": "syntax/missing-id.prl", "expect": { "parse": "error", "errorMatch": "expects an ID and payload" }, "summary": "An id-taking keyword without its id token is rejected." },
-
-    { "id": "syn-03-pos", "clause": "SYN-03", "polarity": "positive", "kind": "parse", "path": "syntax/requirement-entity.prl", "expect": { "parse": "ok" }, "summary": "The requirement entity parses in both spellings (provision and requirement)." },
-    { "id": "syn-03-neg", "clause": "SYN-03", "polarity": "negative", "kind": "parse", "path": "syntax/provision-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Parsing error: provision. ID ProvMPE: Expecting value for condition" }, "summary": "A condition keyword without its value is rejected." },
-
-    { "id": "syn-04-pos", "clause": "SYN-04", "polarity": "positive", "kind": "parse", "path": "syntax/conformance-test-entity.prl", "expect": { "parse": "ok" }, "summary": "A conformance test with targets, procedure, and validation measurements parses." },
-    { "id": "syn-04-neg", "clause": "SYN-04", "polarity": "negative", "kind": "parse", "path": "syntax/conformance-test-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Parsing error: conformance_test. ID ErrorTest: Expecting value for name" }, "summary": "A name keyword without its value is rejected." },
-
-    { "id": "syn-05-pos", "clause": "SYN-05", "polarity": "positive", "kind": "parse", "path": "syntax/form-entity.prl", "expect": { "parse": "ok" }, "summary": "A form with labelled fields parses." },
-    { "id": "syn-05-neg", "clause": "SYN-05", "polarity": "negative", "kind": "parse", "path": "syntax/form-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Parsing error: form. ID ErrorForm: Expecting value for name" }, "summary": "A name keyword without its value is rejected." },
-
-    { "id": "syn-06-pos", "clause": "SYN-06", "polarity": "positive", "kind": "parse", "path": "syntax/calculation-entity.prl", "expect": { "parse": "ok" }, "summary": "A calculation over bracketed quantity references parses." },
-    { "id": "syn-06-neg", "clause": "SYN-06", "polarity": "negative", "kind": "parse", "path": "syntax/calculation-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Parsing error: calculation. ID ErrorCalc: Expecting value for expression" }, "summary": "An expression keyword without its value is rejected." },
-
-    { "id": "syn-07-pos", "clause": "SYN-07", "polarity": "positive", "kind": "parse", "path": "syntax/table-entity.prl", "expect": { "parse": "ok" }, "summary": "A table with columns and rows parses." },
-    { "id": "syn-07-neg", "clause": "SYN-07", "polarity": "negative", "kind": "parse", "path": "syntax/table-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Parsing error: table. ID MpeTable: Expecting value for name" }, "summary": "A name keyword without its value is rejected." },
-
-    { "id": "ser-01-pos-full", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/full-document.prl", "expect": { "roundtrip": "ok" }, "summary": "The composite document re-serializes to a fixed point." },
-    { "id": "ser-01-pos-requirement", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/requirement-entity.prl", "expect": { "roundtrip": "ok" }, "summary": "The requirement entity round-trips." },
-    { "id": "ser-01-pos-conformance-test", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/conformance-test-entity.prl", "expect": { "roundtrip": "ok" }, "summary": "The conformance test entity round-trips." },
-    { "id": "ser-01-pos-form", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/form-entity.prl", "expect": { "roundtrip": "ok" }, "summary": "The form entity round-trips." },
-    { "id": "ser-01-pos-calculation", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/calculation-entity.prl", "expect": { "roundtrip": "ok" }, "summary": "The calculation entity round-trips." },
-    { "id": "ser-01-pos-calculation-default", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "serialization/calculation-bare-numeric-default.prl", "expect": { "roundtrip": "ok" }, "summary": "A calculation whose input carries a bare numeric default re-serializes to a fixed point." },
-    { "id": "ser-01-pos-term-overlay", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "serialization/term-overlay.prl", "expect": { "roundtrip": "ok" }, "summary": "A term carrying the overlay marker re-serializes to a fixed point." },
-    { "id": "ser-01-pos-table", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/table-entity.prl", "expect": { "roundtrip": "ok" }, "summary": "The table entity round-trips." },
-    { "id": "ser-01-neg-unparseable", "clause": "SER-01", "polarity": "negative", "kind": "roundtrip", "path": "syntax/form-missing-value.prl", "expect": { "roundtrip": "error", "errorMatch": "Expecting value for name" }, "summary": "A document that fails to parse has no serialization." },
-    { "id": "ser-01-neg-missing-id", "clause": "SER-01", "polarity": "negative", "kind": "roundtrip", "path": "syntax/missing-id.prl", "expect": { "roundtrip": "error", "errorMatch": "expects an ID and payload" }, "summary": "A structurally malformed document has no serialization." },
-
-    { "id": "ser-02-pos-canonical", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/canonical-document.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "A document in canonical form serializes to itself byte-for-byte." },
-    { "id": "ser-02-pos-escaped", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/escaped-strings.prl", "expect": { "roundtrip": "ok" }, "summary": "Escaped quotes and backslashes survive the round trip." },
-    { "id": "ser-02-neg-shuffled", "clause": "SER-02", "polarity": "negative", "kind": "roundtrip", "path": "serialization/shuffled-document.prl", "expect": { "roundtrip": "ok", "outputDiffersFromInput": true }, "summary": "A non-canonical input order must not be echoed; the serializer canonicalizes." },
-    { "id": "ser-02-pos-calculation-default", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/calculation-bare-numeric-default.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "A bare numeric calculation-input default is canonical bare — `default 500` serializes to itself byte-for-byte (the value never mangles to \"0\")." },
-    { "id": "ser-02-pos-term-overlay", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/term-overlay.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "A term's `overlay true` marker survives the canonical emission — the serializer never drops it." },
-    { "id": "ser-01-pos-symbol-values", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "serialization/symbol-values.prl", "expect": { "roundtrip": "ok" }, "summary": "An enum symbol's values list re-serializes to a fixed point — the dump never drops the braces (the editor window-2 pin: an unbraced dump reparsed to one char-stripped entry)." },
-    { "id": "ser-02-pos-symbol-values", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/symbol-values.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "The values list is canonical braced — `values { DRAFT ISSUED \"with conditions\" }` serializes to itself byte-for-byte, whitespace-carrying entries quoted." },
-    { "id": "ser-01-pos-attribute-definition-vocabulary", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "serialization/attribute-definition-vocabulary.prl", "expect": { "roundtrip": "ok" }, "summary": "An attribute definition's note, enum_values, and cites references re-serialize to a fixed point (the editor window-2 pin: all three parsed but never dumped)." },
-    { "id": "ser-02-pos-attribute-definition-vocabulary", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/attribute-definition-vocabulary.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "The attribute definition's vocabulary facets are canonical — the note, the braced enum_values (whitespace entries quoted), and the cites ref line serialize to themselves byte-for-byte." },
-    { "id": "ser-01-pos-form-field-bind", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "serialization/form-field-bind.prl", "expect": { "roundtrip": "ok" }, "summary": "A form field's bind path re-serializes to a fixed point (the editor window-2 pin: the field parser reads bind, the field dumper never emitted it)." },
-    { "id": "ser-02-pos-form-field-bind", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/form-field-bind.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "The bind path is canonical on the field line — `bind model.parameters.e_max` serializes to itself byte-for-byte, never dropped." },
-    { "id": "ser-01-pos-limit-quantity-unit", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "serialization/limit-quantity-unit-quoting.prl", "expect": { "roundtrip": "ok" }, "summary": "A limit's quantity typing (v3.2, clause 11.1.2) re-serializes to a fixed point." },
-    { "id": "ser-02-pos-limit-quantity-unit", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/limit-quantity-unit-quoting.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "The quantity unit is canonical quoted — `unit \"counts/v\"` serializes to itself byte-for-byte, the string-facet spelling every other unit site (the verdict quantity, clause 11.3) already emits." },
-    { "id": "ser-01-pos-view-profile-layer-reference", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "serialization/view-profile-layer-reference.prl", "expect": { "roundtrip": "ok" }, "summary": "A view_profile read against a layer namespace re-serializes to a fixed point (the #79 pin: the unbraced list dump desynced the pairwise parse walk and the trailing against facet died value-less — \"Expecting value for qms-ref\")." },
-    { "id": "ser-02-pos-view-profile-layer-reference", "clause": "SER-02", "polarity": "positive", "kind": "roundtrip", "path": "serialization/view-profile-layer-reference.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "The view_profile list facets are canonical braced — `roles { qms-manager }` and `visible { … }` serialize to themselves byte-for-byte; the serializer never emits the value-less bare form." },
-
-    { "id": "chk-01-pos", "clause": "CHK-01", "polarity": "positive", "kind": "check", "path": "checks/bind-scope-ok", "expect": { "clean": true }, "summary": "A field bound to a declared in-scope attribute passes." },
-    { "id": "chk-01-neg", "clause": "CHK-01", "polarity": "negative", "kind": "check", "path": "checks/bind-scope-violation", "expect": { "rules": ["C1"] }, "summary": "A bind path naming an undeclared attribute is flagged C1." },
-
-    { "id": "chk-02-pos", "clause": "CHK-02", "polarity": "positive", "kind": "check", "path": "checks/targets-ok", "expect": { "clean": true }, "summary": "A conformance test targeting a declared requirement passes." },
-    { "id": "chk-02-neg", "clause": "CHK-02", "polarity": "negative", "kind": "check", "path": "checks/targets-ghost", "expect": { "rules": ["C2"] }, "summary": "A target naming no declared requirement is flagged C2." },
-
-    { "id": "chk-03-pos", "clause": "CHK-03", "polarity": "positive", "kind": "check", "path": "checks/store-ok", "expect": { "clean": true }, "summary": "Distinct stores pass." },
-    { "id": "chk-03-neg", "clause": "CHK-03", "polarity": "negative", "kind": "check", "path": "checks/store-shared", "expect": { "rules": ["C4"] }, "summary": "Two classes claiming one store are flagged C4." },
-
-    { "id": "chk-04-pos", "clause": "CHK-04", "polarity": "positive", "kind": "check", "path": "checks/process-ok", "expect": { "clean": true }, "summary": "A well-formed process passes." },
-    { "id": "chk-04-neg-two-starts", "clause": "CHK-04", "polarity": "negative", "kind": "check", "path": "checks/process-two-starts", "expect": { "rules": ["C10"] }, "summary": "Two start events are flagged C10." },
-    { "id": "chk-04-neg-dangling-flow", "clause": "CHK-04", "polarity": "negative", "kind": "check", "path": "checks/process-dangling-flow", "expect": { "rules": ["C11"] }, "summary": "A flow edge ending at an undeclared step is flagged C11." },
-
-    { "id": "chk-05-pos", "clause": "CHK-05", "polarity": "positive", "kind": "check", "path": "checks/distinct-ids", "expect": { "clean": true }, "summary": "Distinct identifiers pass." },
-    { "id": "chk-05-neg", "clause": "CHK-05", "polarity": "negative", "kind": "check", "path": "checks/duplicate-ids", "expect": { "rules": ["C96"] }, "summary": "A redeclared identifier is flagged C96." },
-
-    { "id": "chk-06-pos", "clause": "CHK-06", "polarity": "positive", "kind": "check", "path": "checks/state-machine-initial-ok", "expect": { "clean": true }, "summary": "A state machine declaring its initial state passes." },
-    { "id": "chk-06-pos-codec", "clause": "CHK-06", "polarity": "positive", "kind": "roundtrip", "path": "serialization/state-machine-no-initial.prl", "expect": { "roundtrip": "ok" }, "summary": "An initial-less machine still serializes to parseable text — the serializer omits the keyword rather than emitting it value-less (the reparse never mangles)." },
-    { "id": "chk-06-neg", "clause": "CHK-06", "polarity": "negative", "kind": "check", "path": "checks/state-machine-no-initial", "expect": { "rules": ["C109"] }, "summary": "A state machine without an initial state is flagged C109 — the language refuses at its own validation layer." },
-
-    { "id": "pkg-01-pos", "clause": "PKG-01", "polarity": "positive", "kind": "check", "path": "packaging/manifest-minimal", "expect": { "clean": true }, "summary": "A manifest declaring only the id loads and checks clean." },
-    { "id": "pkg-01-neg-no-id", "clause": "PKG-01", "polarity": "negative", "kind": "check", "path": "packaging/manifest-no-id", "expect": { "error": "is not a valid package manifest" }, "summary": "A manifest without an id fails to load." },
-    { "id": "pkg-01-neg-bad-status", "clause": "PKG-01", "polarity": "negative", "kind": "check", "path": "packaging/manifest-bad-status", "expect": { "error": "Expected status current|preview|superseded|withdrawn" }, "summary": "A status outside the enumeration fails and names the valid values." },
-
-    { "id": "pkg-02-pos", "clause": "PKG-02", "polarity": "positive", "kind": "check", "path": "packaging/edition-register-ok", "expect": { "clean": true }, "summary": "The current status packages the register's newest edition." },
-    { "id": "pkg-02-neg", "clause": "PKG-02", "polarity": "negative", "kind": "check", "path": "packaging/edition-status-violation", "expect": { "rules": ["C77"] }, "summary": "A current status on a superseded version is flagged C77." },
-
-    { "id": "pkg-03-pos", "clause": "PKG-03", "polarity": "positive", "kind": "check", "path": "packaging/pin-resolves", "expect": { "clean": true }, "summary": "An instance pin naming a declared edition passes." },
-    { "id": "pkg-03-neg", "clause": "PKG-03", "polarity": "negative", "kind": "check", "path": "packaging/pin-violation", "expect": { "rules": ["C80"] }, "summary": "A pin outside the edition register is flagged C80." },
-
-    { "id": "pkg-04-pos", "clause": "PKG-04", "polarity": "positive", "kind": "check", "path": "packaging/uses-happy/toy-rec", "with": { "toy-core": "packaging/uses-happy/toy-core" }, "expect": { "clean": true }, "summary": "A layered composition with satisfied requires passes." },
-    { "id": "pkg-04-neg-unresolved", "clause": "PKG-04", "polarity": "negative", "kind": "check", "path": "packaging/uses-unresolved/toy-ghost", "expect": { "rules": ["C27"] }, "summary": "An unresolvable uses edge is flagged C27." },
-    { "id": "pkg-04-neg-cycle", "clause": "PKG-04", "polarity": "negative", "kind": "check", "path": "packaging/uses-cycle/cyc-a", "with": { "cyc-b": "packaging/uses-cycle/cyc-b" }, "expect": { "rules": ["C29"] }, "summary": "A uses cycle is flagged C29." },
-    { "id": "pkg-04-neg-redefine", "clause": "PKG-04", "polarity": "negative", "kind": "check", "path": "packaging/uses-redefine/toy-redef", "with": { "toy-core": "packaging/uses-redefine/toy-core" }, "expect": { "rules": ["C28"] }, "summary": "A redeclared upstream identifier is flagged C28." },
-
-    { "id": "pkg-05-pos", "clause": "PKG-05", "polarity": "positive", "kind": "check", "path": "packaging/product-pinned/cons", "with": { "toy-product": "packaging/product-pinned/prod" }, "expect": { "clean": true }, "summary": "A pinned abstract import passes." },
-    { "id": "pkg-05-neg-unpinned", "clause": "PKG-05", "polarity": "negative", "kind": "check", "path": "packaging/product-unpinned/cons", "with": { "toy-product": "packaging/product-unpinned/prod" }, "expect": { "rules": ["C83"] }, "summary": "An unpinned abstract import is flagged C83." },
-    { "id": "pkg-05-neg-bad-pin", "clause": "PKG-05", "polarity": "negative", "kind": "check", "path": "packaging/product-bad-pin/cons", "with": { "toy-product": "packaging/product-bad-pin/prod" }, "expect": { "rules": ["C83"] }, "summary": "A pin outside the product's register is flagged C83." },
-
-    { "id": "pkg-06-pos", "clause": "PKG-06", "polarity": "positive", "kind": "check", "path": "packaging/namespace-pin-ok/toy-rec", "with": { "toy-layer": "packaging/namespace-pin-ok/toy-layer" }, "expect": { "clean": true }, "summary": "A rec whose scopes sit beside the layer-owned namespace passes." },
-    { "id": "pkg-06-neg", "clause": "PKG-06", "polarity": "negative", "kind": "check", "path": "packaging/namespace-pin-violation/toy-rec", "with": { "toy-layer": "packaging/namespace-pin-violation/toy-layer" }, "expect": { "rules": ["C119"] }, "summary": "A rec scope under the layer-owned namespace is flagged C119." },
-
-    { "id": "err-01-pos", "clause": "ERR-01", "polarity": "positive", "kind": "parse", "path": "syntax/full-document.prl", "expect": { "parse": "ok" }, "summary": "A well-formed document parses without error." },
-    { "id": "err-01-neg-missing-value", "clause": "ERR-01", "polarity": "negative", "kind": "parse", "path": "syntax/form-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Parsing error: form. ID ErrorForm: Expecting value for name" }, "summary": "The error names the construct, the identifier, and the expected token." },
-    { "id": "err-01-neg-end-event", "clause": "ERR-01", "polarity": "negative", "kind": "parse", "path": "errors/end-event-nonempty.prl", "expect": { "parse": "error", "errorMatch": "Expecting empty body" }, "summary": "An end event with a non-empty body is rejected." },
-    { "id": "err-01-neg-missing-id", "clause": "ERR-01", "polarity": "negative", "kind": "parse", "path": "syntax/missing-id.prl", "expect": { "parse": "error", "errorMatch": "expects an ID and payload" }, "summary": "A keyword missing its identifier is rejected." },
-
-    { "id": "err-02-pos", "clause": "ERR-02", "polarity": "positive", "kind": "parse", "path": "errors/link-valid.prl", "expect": { "parse": "ok" }, "summary": "An enumerated facet carrying a declared value parses." },
-    { "id": "err-02-neg", "clause": "ERR-02", "polarity": "negative", "kind": "parse", "path": "errors/link-bad-kind.prl", "expect": { "parse": "error", "errorMatch": "Unknown kind banana (valid: REPO, URL)" }, "summary": "An undeclared enum value is rejected with the valid set named." },
-
-    { "id": "err-03-pos", "clause": "ERR-03", "polarity": "positive", "kind": "parse", "path": "errors/distinct-ids.prl", "expect": { "parse": "ok", "issues": [] }, "summary": "Distinct identifiers raise no issues." },
-    { "id": "err-03-neg", "clause": "ERR-03", "polarity": "negative", "kind": "parse", "path": "errors/duplicate-id.prl", "expect": { "parse": "ok", "issues": ["duplicate-id"] }, "summary": "A redeclared identifier reports duplicate-id on the issues channel." },
-
-    { "id": "dat-01-pos", "clause": "DAT-01", "polarity": "positive", "kind": "parse", "path": "syntax/dataspace-entity.prl", "expect": { "parse": "ok" }, "summary": "A dataspace with every facet shape parses." },
-    { "id": "dat-01-neg-missing-value", "clause": "DAT-01", "polarity": "negative", "kind": "parse", "path": "syntax/dataspace-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Expecting value for name" }, "summary": "A value-taking dataspace facet without its value is a parse error." },
-    { "id": "dat-01-pos-check", "clause": "DAT-01", "polarity": "positive", "kind": "check", "path": "checks/dataspace-sound", "expect": { "clean": true }, "summary": "A dataspace with resolving references checks clean." },
-    { "id": "dat-01-neg-dangling-policy", "clause": "DAT-01", "polarity": "negative", "kind": "check", "path": "checks/dataspace-dangling-policy", "expect": { "rules": ["C104"] }, "summary": "A policy register entry no package declares is flagged C104." },
-
-    { "id": "dat-02-pos", "clause": "DAT-02", "polarity": "positive", "kind": "parse", "path": "syntax/policy-entity.prl", "expect": { "parse": "ok" }, "summary": "A policy with rules of each kind parses." },
-    { "id": "dat-02-neg-rule-kind", "clause": "DAT-02", "polarity": "negative", "kind": "parse", "path": "syntax/policy-unknown-rule-kind.prl", "expect": { "parse": "error", "errorMatch": "unknown rule kind" }, "summary": "An undeclared rule kind is rejected, fail-closed." },
-    { "id": "dat-02-neg-posture", "clause": "DAT-02", "polarity": "negative", "kind": "parse", "path": "syntax/policy-bad-default-posture.prl", "expect": { "parse": "error", "errorMatch": "default_posture is true | false" }, "summary": "A non-boolean default_posture is rejected." },
-    { "id": "dat-02-pos-check", "clause": "DAT-02", "polarity": "positive", "kind": "check", "path": "checks/policy-sound", "expect": { "clean": true }, "summary": "A well-formed policy checks clean." },
-    { "id": "dat-02-neg-shape", "clause": "DAT-02", "polarity": "negative", "kind": "check", "path": "checks/policy-shape", "expect": { "rules": ["C107"] }, "summary": "A rule without its action is flagged C107." },
-
-    { "id": "dat-03-pos", "clause": "DAT-03", "polarity": "positive", "kind": "parse", "path": "syntax/trust-ref-forms.prl", "expect": { "parse": "ok" }, "summary": "Both trust_ref forms (org-only, org+key) parse." },
-    { "id": "dat-03-neg-missing-value", "clause": "DAT-03", "polarity": "negative", "kind": "parse", "path": "syntax/trust-ref-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Expecting value for trust_ref" }, "summary": "A trust_ref without its organization identifier is a parse error." },
-    { "id": "dat-03-pos-opaque", "clause": "DAT-03", "polarity": "positive", "kind": "check", "path": "checks/trust-ref-opaque", "expect": { "clean": true }, "summary": "The resolution contract, pinned: a trust_ref naming an organization no package declares is not a finding — the checker never resolves the trust plane." },
-    { "id": "dat-03-neg-shape", "clause": "DAT-03", "polarity": "negative", "kind": "check", "path": "checks/dataspace-trust-anchor-shape", "expect": { "rules": ["C105"] }, "summary": "A trust anchor without its trust_ref is flagged C105." },
-
-    { "id": "dat-04-pos", "clause": "DAT-04", "polarity": "positive", "kind": "parse", "path": "syntax/corresponds-annotations.prl", "expect": { "parse": "ok" }, "summary": "Correspondence annotations with projection blocks parse across node kinds." },
-    { "id": "dat-04-neg-missing-value", "clause": "DAT-04", "polarity": "negative", "kind": "parse", "path": "syntax/corresponds-missing-value.prl", "expect": { "parse": "error", "errorMatch": "Expecting value for corresponds" }, "summary": "A corresponds facet without its scheme and concept is a parse error." },
-    { "id": "dat-04-pos-canonical", "clause": "DAT-04", "polarity": "positive", "kind": "roundtrip", "path": "serialization/corresponds-canonical.prl", "expect": { "roundtrip": "ok", "outputEqualsInput": true }, "summary": "A canonical document with correspondence annotations serializes to itself byte-for-byte." },
-    { "id": "dat-04-neg-duplicate-scheme", "clause": "DAT-04", "polarity": "negative", "kind": "check", "path": "checks/correspondence-shape", "expect": { "rules": ["C108"] }, "summary": "Two entries on one scheme are flagged C108." },
-    { "id": "dat-04-neg-empty-concept", "clause": "DAT-04", "polarity": "negative", "kind": "check", "path": "checks/correspondence-empty-concept", "expect": { "rules": ["C108"] }, "summary": "An entry with an empty concept is flagged C108." },
-
-    { "id": "sur-01-pos-browser-vocabularies", "clause": "SUR-01", "polarity": "positive", "kind": "exports", "path": "surface/browser-vocabularies.json", "expect": { "exports": { "present": ["PASSPORT_ACCESS_CLASSES", "PASSPORT_CONTENT_CLASSES", "PASSPORT_UPI_LEVELS", "ENDPOINT_ACCESS_SCOPES", "ENDPOINT_OPERATION_KINDS"], "absent": [] } }, "summary": "The browser runtime surface carries the five enumerated vocabularies — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes (the editor window-2 pin: the browser bundle dropped them)." },
-    { "id": "sur-01-neg-no-phantom-vocabularies", "clause": "SUR-01", "polarity": "negative", "kind": "exports", "path": "surface/browser-vocabularies-phantom.json", "expect": { "exports": { "present": [], "absent": ["PASSPORT_SECRET_CLASSES", "ENDPOINT_MAGIC_KINDS"] } }, "summary": "Names the language does not declare are reported absent — the probe is never rubber-stamped." },
-
-    { "id": "con-01-pos", "clause": "CON-01", "polarity": "positive", "kind": "check", "path": "checks/term-aliases-ok", "expect": { "clean": true }, "summary": "A term whose alias-family lists carry distinct entries passes." },
-    { "id": "con-01-neg", "clause": "CON-01", "polarity": "negative", "kind": "check", "path": "checks/term-alias-duplicate", "expect": { "rules": ["C110"] }, "summary": "An entry repeated within one alias list is flagged C110." },
-    { "id": "con-02-pos", "clause": "CON-02", "polarity": "positive", "kind": "check", "path": "checks/dimension-ok", "expect": { "clean": true }, "summary": "A top-level dimension with unique values and an acyclic implies graph passes." },
-    { "id": "con-02-neg", "clause": "CON-02", "polarity": "negative", "kind": "check", "path": "checks/dimension-duplicate-value", "expect": { "rules": ["C111"] }, "summary": "A value id declared twice in one dimension is flagged C111." },
-    { "id": "con-03-pos", "clause": "CON-03", "polarity": "positive", "kind": "check", "path": "checks/reference-identity-ok", "expect": { "clean": true }, "summary": "A reference carrying a well-formed urn passes." },
-    { "id": "con-03-neg", "clause": "CON-03", "polarity": "negative", "kind": "check", "path": "checks/reference-malformed-urn", "expect": { "rules": ["C112"] }, "summary": "A malformed urn is flagged C112." },
-    { "id": "con-04-pos", "clause": "CON-04", "polarity": "positive", "kind": "check", "path": "packaging/lineage-coherent/successor", "expect": { "clean": true }, "summary": "A supersedes edge whose target's superseded_by names this package is coherent." },
-    { "id": "con-04-neg", "clause": "CON-04", "polarity": "negative", "kind": "check", "path": "packaging/lineage-incoherent/successor", "expect": { "rules": ["C113"] }, "summary": "A supersedes edge whose target's superseded_by omits this package is flagged C113." },
-    { "id": "con-05-pos", "clause": "CON-05", "polarity": "positive", "kind": "check", "path": "checks/limit-quantity-coherent", "expect": { "clean": true }, "summary": "A limit whose quantity agrees with the bound verdict passes." },
-    { "id": "con-05-neg", "clause": "CON-05", "polarity": "negative", "kind": "check", "path": "checks/limit-quantity-kind-mismatch", "expect": { "rules": ["C114"] }, "summary": "A limit whose quantity kind disagrees with the bound verdict is flagged C114." },
-    { "id": "con-06-pos", "clause": "CON-06", "polarity": "positive", "kind": "check", "path": "checks/calculation-signature-ok", "expect": { "clean": true }, "summary": "A calculation signature whose units and kinds resolve and agree passes." },
-    { "id": "con-06-neg", "clause": "CON-06", "polarity": "negative", "kind": "check", "path": "checks/calculation-signature-phantom-kind", "expect": { "rules": ["C115"] }, "summary": "A quantity_kind no register declares is flagged C115." },
-    { "id": "con-07-pos", "clause": "CON-07", "polarity": "positive", "kind": "check", "path": "checks/verdict-inputs-resolve-ok", "expect": { "clean": true }, "summary": "Verdict inputs resolving to a symbol, a test variable, an observable, and a verdict pass." },
-    { "id": "con-07-neg", "clause": "CON-07", "polarity": "negative", "kind": "check", "path": "checks/verdict-input-phantom", "expect": { "rules": ["C116"] }, "summary": "A verdict input naming nothing declared is flagged C116." },
-    { "id": "con-08-pos", "clause": "CON-08", "polarity": "positive", "kind": "check", "path": "checks/verdict-chain-ok", "expect": { "clean": true }, "summary": "A two-verdict acceptance chain without a cycle passes." },
-    { "id": "con-08-neg", "clause": "CON-08", "polarity": "negative", "kind": "check", "path": "checks/verdict-chain-cycle", "expect": { "rules": ["C117"] }, "summary": "A verdict chain cycling through two verdicts is flagged C117." },
-    { "id": "con-09-pos", "clause": "CON-09", "polarity": "positive", "kind": "check", "path": "checks/parameter-bind-ok", "expect": { "clean": true }, "summary": "A parameter bound to a declared attribute passes." },
-    { "id": "con-09-neg", "clause": "CON-09", "polarity": "negative", "kind": "check", "path": "checks/parameter-bind-ghost", "expect": { "rules": ["C118"] }, "summary": "A bind path naming an undeclared attribute is flagged C118." }
-  ]
+ "$comment": "The case index. Every case names its clause (clauses.json), its polarity (positive: a conforming implementation accepts; negative: it rejects or flags), its kind (the adapter command: parse | roundtrip | check), the corpus path, and the expectation. Paths are relative to this file's directory. The optional 'with' map names the package locator for composition cases, again relative to this directory. Expectation fields per kind: parse -> parse: ok|error, errorMatch (required when error), issues (exact code set, optional); roundtrip -> roundtrip: ok|error, outputEqualsInput / outputDiffersFromInput (optional); check -> clean: true, rules (exact error-severity rule id set), or error (the evaluation itself must fail with a matching message).",
+ "cases": [
+  {
+   "id": "syn-01-pos-full",
+   "clause": "SYN-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/full-document.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A complete document with header and all five entity kinds parses."
+  },
+  {
+   "id": "syn-01-pos-minimal",
+   "clause": "SYN-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/minimal-document.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The smallest complete document parses."
+  },
+  {
+   "id": "syn-01-pos-comments",
+   "clause": "SYN-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/comments.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Both comment forms are ignored by the parser."
+  },
+  {
+   "id": "syn-01-pos-lenient",
+   "clause": "SYN-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/strict-unknown-keyword.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A lenient parse skips an unknown top-level keyword."
+  },
+  {
+   "id": "syn-01-neg-strict",
+   "clause": "SYN-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/strict-unknown-keyword.prl",
+   "options": {
+    "strict": true
+   },
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown keyword \"future_keyword\""
+   },
+   "summary": "A strict parse rejects the unknown keyword by name."
+  },
+  {
+   "id": "syn-02-pos-quoted",
+   "clause": "SYN-02",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/quoted-identifier.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A quoted identifier carrying a space parses and is cross-referenced in the same quoted form."
+  },
+  {
+   "id": "syn-02-neg-missing-id",
+   "clause": "SYN-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/missing-id.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "expects an ID and payload"
+   },
+   "summary": "An id-taking keyword without its id token is rejected."
+  },
+  {
+   "id": "syn-03-pos",
+   "clause": "SYN-03",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/requirement-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The requirement entity parses in both spellings (provision and requirement)."
+  },
+  {
+   "id": "syn-03-neg",
+   "clause": "SYN-03",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/provision-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Parsing error: provision. ID ProvMPE: Expecting value for condition"
+   },
+   "summary": "A condition keyword without its value is rejected."
+  },
+  {
+   "id": "syn-04-pos",
+   "clause": "SYN-04",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/conformance-test-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A conformance test with targets, procedure, and validation measurements parses."
+  },
+  {
+   "id": "syn-04-neg",
+   "clause": "SYN-04",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/conformance-test-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Parsing error: conformance_test. ID ErrorTest: Expecting value for name"
+   },
+   "summary": "A name keyword without its value is rejected."
+  },
+  {
+   "id": "syn-05-pos",
+   "clause": "SYN-05",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/form-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A form with labelled fields parses."
+  },
+  {
+   "id": "syn-05-neg",
+   "clause": "SYN-05",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/form-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Parsing error: form. ID ErrorForm: Expecting value for name"
+   },
+   "summary": "A name keyword without its value is rejected."
+  },
+  {
+   "id": "syn-06-pos",
+   "clause": "SYN-06",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/calculation-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A calculation over bracketed quantity references parses."
+  },
+  {
+   "id": "syn-06-neg",
+   "clause": "SYN-06",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/calculation-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Parsing error: calculation. ID ErrorCalc: Expecting value for expression"
+   },
+   "summary": "An expression keyword without its value is rejected."
+  },
+  {
+   "id": "syn-07-pos",
+   "clause": "SYN-07",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/table-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A table with columns and rows parses."
+  },
+  {
+   "id": "syn-07-neg",
+   "clause": "SYN-07",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/table-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Parsing error: table. ID MpeTable: Expecting value for name"
+   },
+   "summary": "A name keyword without its value is rejected."
+  },
+  {
+   "id": "ser-01-pos-full",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "syntax/full-document.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "The composite document re-serializes to a fixed point."
+  },
+  {
+   "id": "ser-01-pos-requirement",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "syntax/requirement-entity.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "The requirement entity round-trips."
+  },
+  {
+   "id": "ser-01-pos-conformance-test",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "syntax/conformance-test-entity.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "The conformance test entity round-trips."
+  },
+  {
+   "id": "ser-01-pos-form",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "syntax/form-entity.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "The form entity round-trips."
+  },
+  {
+   "id": "ser-01-pos-calculation",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "syntax/calculation-entity.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "The calculation entity round-trips."
+  },
+  {
+   "id": "ser-01-pos-calculation-default",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/calculation-bare-numeric-default.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "A calculation whose input carries a bare numeric default re-serializes to a fixed point."
+  },
+  {
+   "id": "ser-01-pos-term-overlay",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/term-overlay.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "A term carrying the overlay marker re-serializes to a fixed point."
+  },
+  {
+   "id": "ser-01-pos-table",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "syntax/table-entity.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "The table entity round-trips."
+  },
+  {
+   "id": "ser-01-neg-unparseable",
+   "clause": "SER-01",
+   "polarity": "negative",
+   "kind": "roundtrip",
+   "path": "syntax/form-missing-value.prl",
+   "expect": {
+    "roundtrip": "error",
+    "errorMatch": "Expecting value for name"
+   },
+   "summary": "A document that fails to parse has no serialization."
+  },
+  {
+   "id": "ser-01-neg-missing-id",
+   "clause": "SER-01",
+   "polarity": "negative",
+   "kind": "roundtrip",
+   "path": "syntax/missing-id.prl",
+   "expect": {
+    "roundtrip": "error",
+    "errorMatch": "expects an ID and payload"
+   },
+   "summary": "A structurally malformed document has no serialization."
+  },
+  {
+   "id": "ser-02-pos-canonical",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/canonical-document.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "A document in canonical form serializes to itself byte-for-byte."
+  },
+  {
+   "id": "ser-02-pos-escaped",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/escaped-strings.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "Escaped quotes and backslashes survive the round trip."
+  },
+  {
+   "id": "ser-02-neg-shuffled",
+   "clause": "SER-02",
+   "polarity": "negative",
+   "kind": "roundtrip",
+   "path": "serialization/shuffled-document.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputDiffersFromInput": true
+   },
+   "summary": "A non-canonical input order must not be echoed; the serializer canonicalizes."
+  },
+  {
+   "id": "ser-02-pos-calculation-default",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/calculation-bare-numeric-default.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "A bare numeric calculation-input default is canonical bare — `default 500` serializes to itself byte-for-byte (the value never mangles to \"0\")."
+  },
+  {
+   "id": "ser-02-pos-term-overlay",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/term-overlay.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "A term's `overlay true` marker survives the canonical emission — the serializer never drops it."
+  },
+  {
+   "id": "ser-01-pos-symbol-values",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/symbol-values.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "An enum symbol's values list re-serializes to a fixed point — the dump never drops the braces (the editor window-2 pin: an unbraced dump reparsed to one char-stripped entry)."
+  },
+  {
+   "id": "ser-02-pos-symbol-values",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/symbol-values.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "The values list is canonical braced — `values { DRAFT ISSUED \"with conditions\" }` serializes to itself byte-for-byte, whitespace-carrying entries quoted."
+  },
+  {
+   "id": "ser-01-pos-attribute-definition-vocabulary",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/attribute-definition-vocabulary.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "An attribute definition's note, enum_values, and cites references re-serialize to a fixed point (the editor window-2 pin: all three parsed but never dumped)."
+  },
+  {
+   "id": "ser-02-pos-attribute-definition-vocabulary",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/attribute-definition-vocabulary.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "The attribute definition's vocabulary facets are canonical — the note, the braced enum_values (whitespace entries quoted), and the cites ref line serialize to themselves byte-for-byte."
+  },
+  {
+   "id": "ser-01-pos-form-field-bind",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/form-field-bind.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "A form field's bind path re-serializes to a fixed point (the editor window-2 pin: the field parser reads bind, the field dumper never emitted it)."
+  },
+  {
+   "id": "ser-02-pos-form-field-bind",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/form-field-bind.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "The bind path is canonical on the field line — `bind model.parameters.e_max` serializes to itself byte-for-byte, never dropped."
+  },
+  {
+   "id": "ser-01-pos-limit-quantity-unit",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/limit-quantity-unit-quoting.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "A limit's quantity typing (v3.2, clause 11.1.2) re-serializes to a fixed point."
+  },
+  {
+   "id": "ser-02-pos-limit-quantity-unit",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/limit-quantity-unit-quoting.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "The quantity unit is canonical quoted — `unit \"counts/v\"` serializes to itself byte-for-byte, the string-facet spelling every other unit site (the verdict quantity, clause 11.3) already emits."
+  },
+  {
+   "id": "ser-01-pos-view-profile-layer-reference",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/view-profile-layer-reference.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "A view_profile read against a layer namespace re-serializes to a fixed point (the #79 pin: the unbraced list dump desynced the pairwise parse walk and the trailing against facet died value-less — \"Expecting value for qms-ref\")."
+  },
+  {
+   "id": "ser-02-pos-view-profile-layer-reference",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/view-profile-layer-reference.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "The view_profile list facets are canonical braced — `roles { qms-manager }` and `visible { … }` serialize to themselves byte-for-byte; the serializer never emits the value-less bare form."
+  },
+  {
+   "id": "chk-01-pos",
+   "clause": "CHK-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/bind-scope-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A field bound to a declared in-scope attribute passes."
+  },
+  {
+   "id": "chk-01-neg",
+   "clause": "CHK-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/bind-scope-violation",
+   "expect": {
+    "rules": [
+     "C1"
+    ]
+   },
+   "summary": "A bind path naming an undeclared attribute is flagged C1."
+  },
+  {
+   "id": "chk-02-pos",
+   "clause": "CHK-02",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/targets-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A conformance test targeting a declared requirement passes."
+  },
+  {
+   "id": "chk-02-neg",
+   "clause": "CHK-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/targets-ghost",
+   "expect": {
+    "rules": [
+     "C2"
+    ]
+   },
+   "summary": "A target naming no declared requirement is flagged C2."
+  },
+  {
+   "id": "chk-03-pos",
+   "clause": "CHK-03",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/store-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Distinct stores pass."
+  },
+  {
+   "id": "chk-03-neg",
+   "clause": "CHK-03",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/store-shared",
+   "expect": {
+    "rules": [
+     "C4"
+    ]
+   },
+   "summary": "Two classes claiming one store are flagged C4."
+  },
+  {
+   "id": "chk-04-pos",
+   "clause": "CHK-04",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/process-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A well-formed process passes."
+  },
+  {
+   "id": "chk-04-neg-two-starts",
+   "clause": "CHK-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/process-two-starts",
+   "expect": {
+    "rules": [
+     "C10"
+    ]
+   },
+   "summary": "Two start events are flagged C10."
+  },
+  {
+   "id": "chk-04-neg-dangling-flow",
+   "clause": "CHK-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/process-dangling-flow",
+   "expect": {
+    "rules": [
+     "C11"
+    ]
+   },
+   "summary": "A flow edge ending at an undeclared step is flagged C11."
+  },
+  {
+   "id": "chk-05-pos",
+   "clause": "CHK-05",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/distinct-ids",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Distinct identifiers pass."
+  },
+  {
+   "id": "chk-05-neg",
+   "clause": "CHK-05",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/duplicate-ids",
+   "expect": {
+    "rules": [
+     "C96"
+    ]
+   },
+   "summary": "A redeclared identifier is flagged C96."
+  },
+  {
+   "id": "chk-06-pos",
+   "clause": "CHK-06",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/state-machine-initial-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A state machine declaring its initial state passes."
+  },
+  {
+   "id": "chk-06-pos-codec",
+   "clause": "CHK-06",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/state-machine-no-initial.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "An initial-less machine still serializes to parseable text — the serializer omits the keyword rather than emitting it value-less (the reparse never mangles)."
+  },
+  {
+   "id": "chk-06-neg",
+   "clause": "CHK-06",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/state-machine-no-initial",
+   "expect": {
+    "rules": [
+     "C109"
+    ]
+   },
+   "summary": "A state machine without an initial state is flagged C109 — the language refuses at its own validation layer."
+  },
+  {
+   "id": "pkg-01-pos",
+   "clause": "PKG-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/manifest-minimal",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A manifest declaring only the id loads and checks clean."
+  },
+  {
+   "id": "pkg-01-neg-no-id",
+   "clause": "PKG-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/manifest-no-id",
+   "expect": {
+    "error": "is not a valid package manifest"
+   },
+   "summary": "A manifest without an id fails to load."
+  },
+  {
+   "id": "pkg-01-neg-bad-status",
+   "clause": "PKG-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/manifest-bad-status",
+   "expect": {
+    "error": "Expected status current|preview|superseded|withdrawn"
+   },
+   "summary": "A status outside the enumeration fails and names the valid values."
+  },
+  {
+   "id": "pkg-02-pos",
+   "clause": "PKG-02",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/edition-register-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "The current status packages the register's newest edition."
+  },
+  {
+   "id": "pkg-02-neg",
+   "clause": "PKG-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/edition-status-violation",
+   "expect": {
+    "rules": [
+     "C77"
+    ]
+   },
+   "summary": "A current status on a superseded version is flagged C77."
+  },
+  {
+   "id": "pkg-03-pos",
+   "clause": "PKG-03",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/pin-resolves",
+   "expect": {
+    "clean": true
+   },
+   "summary": "An instance pin naming a declared edition passes."
+  },
+  {
+   "id": "pkg-03-neg",
+   "clause": "PKG-03",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/pin-violation",
+   "expect": {
+    "rules": [
+     "C80"
+    ]
+   },
+   "summary": "A pin outside the edition register is flagged C80."
+  },
+  {
+   "id": "pkg-04-pos",
+   "clause": "PKG-04",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/uses-happy/toy-rec",
+   "with": {
+    "toy-core": "packaging/uses-happy/toy-core"
+   },
+   "expect": {
+    "clean": true
+   },
+   "summary": "A layered composition with satisfied requires passes."
+  },
+  {
+   "id": "pkg-04-neg-unresolved",
+   "clause": "PKG-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/uses-unresolved/toy-ghost",
+   "expect": {
+    "rules": [
+     "C27"
+    ]
+   },
+   "summary": "An unresolvable uses edge is flagged C27."
+  },
+  {
+   "id": "pkg-04-neg-cycle",
+   "clause": "PKG-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/uses-cycle/cyc-a",
+   "with": {
+    "cyc-b": "packaging/uses-cycle/cyc-b"
+   },
+   "expect": {
+    "rules": [
+     "C29"
+    ]
+   },
+   "summary": "A uses cycle is flagged C29."
+  },
+  {
+   "id": "pkg-04-neg-redefine",
+   "clause": "PKG-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/uses-redefine/toy-redef",
+   "with": {
+    "toy-core": "packaging/uses-redefine/toy-core"
+   },
+   "expect": {
+    "rules": [
+     "C28"
+    ]
+   },
+   "summary": "A redeclared upstream identifier is flagged C28."
+  },
+  {
+   "id": "pkg-05-pos",
+   "clause": "PKG-05",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/product-pinned/cons",
+   "with": {
+    "toy-product": "packaging/product-pinned/prod"
+   },
+   "expect": {
+    "clean": true
+   },
+   "summary": "A pinned abstract import passes."
+  },
+  {
+   "id": "pkg-05-neg-unpinned",
+   "clause": "PKG-05",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/product-unpinned/cons",
+   "with": {
+    "toy-product": "packaging/product-unpinned/prod"
+   },
+   "expect": {
+    "rules": [
+     "C83"
+    ]
+   },
+   "summary": "An unpinned abstract import is flagged C83."
+  },
+  {
+   "id": "pkg-05-neg-bad-pin",
+   "clause": "PKG-05",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/product-bad-pin/cons",
+   "with": {
+    "toy-product": "packaging/product-bad-pin/prod"
+   },
+   "expect": {
+    "rules": [
+     "C83"
+    ]
+   },
+   "summary": "A pin outside the product's register is flagged C83."
+  },
+  {
+   "id": "pkg-06-pos",
+   "clause": "PKG-06",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/namespace-pin-ok/toy-rec",
+   "with": {
+    "toy-layer": "packaging/namespace-pin-ok/toy-layer"
+   },
+   "expect": {
+    "clean": true
+   },
+   "summary": "A rec whose scopes sit beside the layer-owned namespace passes."
+  },
+  {
+   "id": "pkg-06-neg",
+   "clause": "PKG-06",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/namespace-pin-violation/toy-rec",
+   "with": {
+    "toy-layer": "packaging/namespace-pin-violation/toy-layer"
+   },
+   "expect": {
+    "rules": [
+     "C119"
+    ]
+   },
+   "summary": "A rec scope under the layer-owned namespace is flagged C119."
+  },
+  {
+   "id": "err-01-pos",
+   "clause": "ERR-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/full-document.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A well-formed document parses without error."
+  },
+  {
+   "id": "err-01-neg-missing-value",
+   "clause": "ERR-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/form-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Parsing error: form. ID ErrorForm: Expecting value for name"
+   },
+   "summary": "The error names the construct, the identifier, and the expected token."
+  },
+  {
+   "id": "err-01-neg-end-event",
+   "clause": "ERR-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "errors/end-event-nonempty.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting empty body"
+   },
+   "summary": "An end event with a non-empty body is rejected."
+  },
+  {
+   "id": "err-01-neg-missing-id",
+   "clause": "ERR-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/missing-id.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "expects an ID and payload"
+   },
+   "summary": "A keyword missing its identifier is rejected."
+  },
+  {
+   "id": "err-02-pos",
+   "clause": "ERR-02",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "errors/link-valid.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "An enumerated facet carrying a declared value parses."
+  },
+  {
+   "id": "err-02-neg",
+   "clause": "ERR-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "errors/link-bad-kind.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown kind banana (valid: REPO, URL)"
+   },
+   "summary": "An undeclared enum value is rejected with the valid set named."
+  },
+  {
+   "id": "err-03-pos",
+   "clause": "ERR-03",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "errors/distinct-ids.prl",
+   "expect": {
+    "parse": "ok",
+    "issues": []
+   },
+   "summary": "Distinct identifiers raise no issues."
+  },
+  {
+   "id": "err-03-neg",
+   "clause": "ERR-03",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "errors/duplicate-id.prl",
+   "expect": {
+    "parse": "ok",
+    "issues": [
+     "duplicate-id"
+    ]
+   },
+   "summary": "A redeclared identifier reports duplicate-id on the issues channel."
+  },
+  {
+   "id": "dat-01-pos",
+   "clause": "DAT-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/dataspace-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A dataspace with every facet shape parses."
+  },
+  {
+   "id": "dat-01-neg-missing-value",
+   "clause": "DAT-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/dataspace-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for name"
+   },
+   "summary": "A value-taking dataspace facet without its value is a parse error."
+  },
+  {
+   "id": "dat-01-pos-check",
+   "clause": "DAT-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/dataspace-sound",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A dataspace with resolving references checks clean."
+  },
+  {
+   "id": "dat-01-neg-dangling-policy",
+   "clause": "DAT-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/dataspace-dangling-policy",
+   "expect": {
+    "rules": [
+     "C104"
+    ]
+   },
+   "summary": "A policy register entry no package declares is flagged C104."
+  },
+  {
+   "id": "dat-02-pos",
+   "clause": "DAT-02",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/policy-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A policy with rules of each kind parses."
+  },
+  {
+   "id": "dat-02-neg-rule-kind",
+   "clause": "DAT-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/policy-unknown-rule-kind.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "unknown rule kind"
+   },
+   "summary": "An undeclared rule kind is rejected, fail-closed."
+  },
+  {
+   "id": "dat-02-neg-posture",
+   "clause": "DAT-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/policy-bad-default-posture.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "default_posture is true | false"
+   },
+   "summary": "A non-boolean default_posture is rejected."
+  },
+  {
+   "id": "dat-02-pos-check",
+   "clause": "DAT-02",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/policy-sound",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A well-formed policy checks clean."
+  },
+  {
+   "id": "dat-02-neg-shape",
+   "clause": "DAT-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/policy-shape",
+   "expect": {
+    "rules": [
+     "C107"
+    ]
+   },
+   "summary": "A rule without its action is flagged C107."
+  },
+  {
+   "id": "dat-03-pos",
+   "clause": "DAT-03",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/trust-ref-forms.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Both trust_ref forms (org-only, org+key) parse."
+  },
+  {
+   "id": "dat-03-neg-missing-value",
+   "clause": "DAT-03",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/trust-ref-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for trust_ref"
+   },
+   "summary": "A trust_ref without its organization identifier is a parse error."
+  },
+  {
+   "id": "dat-03-pos-opaque",
+   "clause": "DAT-03",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/trust-ref-opaque",
+   "expect": {
+    "clean": true
+   },
+   "summary": "The resolution contract, pinned: a trust_ref naming an organization no package declares is not a finding — the checker never resolves the trust plane."
+  },
+  {
+   "id": "dat-03-neg-shape",
+   "clause": "DAT-03",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/dataspace-trust-anchor-shape",
+   "expect": {
+    "rules": [
+     "C105"
+    ]
+   },
+   "summary": "A trust anchor without its trust_ref is flagged C105."
+  },
+  {
+   "id": "dat-04-pos",
+   "clause": "DAT-04",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/corresponds-annotations.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Correspondence annotations with projection blocks parse across node kinds."
+  },
+  {
+   "id": "dat-04-neg-missing-value",
+   "clause": "DAT-04",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/corresponds-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for corresponds"
+   },
+   "summary": "A corresponds facet without its scheme and concept is a parse error."
+  },
+  {
+   "id": "dat-04-pos-canonical",
+   "clause": "DAT-04",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/corresponds-canonical.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "A canonical document with correspondence annotations serializes to itself byte-for-byte."
+  },
+  {
+   "id": "dat-04-neg-duplicate-scheme",
+   "clause": "DAT-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/correspondence-shape",
+   "expect": {
+    "rules": [
+     "C108"
+    ]
+   },
+   "summary": "Two entries on one scheme are flagged C108."
+  },
+  {
+   "id": "dat-04-neg-empty-concept",
+   "clause": "DAT-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/correspondence-empty-concept",
+   "expect": {
+    "rules": [
+     "C108"
+    ]
+   },
+   "summary": "An entry with an empty concept is flagged C108."
+  },
+  {
+   "id": "sur-01-pos-browser-vocabularies",
+   "clause": "SUR-01",
+   "polarity": "positive",
+   "kind": "exports",
+   "path": "surface/browser-vocabularies.json",
+   "expect": {
+    "exports": {
+     "present": [
+      "PASSPORT_ACCESS_CLASSES",
+      "PASSPORT_CONTENT_CLASSES",
+      "PASSPORT_UPI_LEVELS",
+      "ENDPOINT_ACCESS_SCOPES",
+      "ENDPOINT_OPERATION_KINDS"
+     ],
+     "absent": []
+    }
+   },
+   "summary": "The browser runtime surface carries the five enumerated vocabularies — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes (the editor window-2 pin: the browser bundle dropped them)."
+  },
+  {
+   "id": "sur-01-neg-no-phantom-vocabularies",
+   "clause": "SUR-01",
+   "polarity": "negative",
+   "kind": "exports",
+   "path": "surface/browser-vocabularies-phantom.json",
+   "expect": {
+    "exports": {
+     "present": [],
+     "absent": [
+      "PASSPORT_SECRET_CLASSES",
+      "ENDPOINT_MAGIC_KINDS"
+     ]
+    }
+   },
+   "summary": "Names the language does not declare are reported absent — the probe is never rubber-stamped."
+  },
+  {
+   "id": "con-01-pos",
+   "clause": "CON-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/term-aliases-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A term whose alias-family lists carry distinct entries passes."
+  },
+  {
+   "id": "con-01-neg",
+   "clause": "CON-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/term-alias-duplicate",
+   "expect": {
+    "rules": [
+     "C110"
+    ]
+   },
+   "summary": "An entry repeated within one alias list is flagged C110."
+  },
+  {
+   "id": "con-02-pos",
+   "clause": "CON-02",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/dimension-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A top-level dimension with unique values and an acyclic implies graph passes."
+  },
+  {
+   "id": "con-02-neg",
+   "clause": "CON-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/dimension-duplicate-value",
+   "expect": {
+    "rules": [
+     "C111"
+    ]
+   },
+   "summary": "A value id declared twice in one dimension is flagged C111."
+  },
+  {
+   "id": "con-03-pos",
+   "clause": "CON-03",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/reference-identity-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A reference carrying a well-formed urn passes."
+  },
+  {
+   "id": "con-03-neg",
+   "clause": "CON-03",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/reference-malformed-urn",
+   "expect": {
+    "rules": [
+     "C112"
+    ]
+   },
+   "summary": "A malformed urn is flagged C112."
+  },
+  {
+   "id": "con-04-pos",
+   "clause": "CON-04",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/lineage-coherent/successor",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A supersedes edge whose target's superseded_by names this package is coherent."
+  },
+  {
+   "id": "con-04-neg",
+   "clause": "CON-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/lineage-incoherent/successor",
+   "expect": {
+    "rules": [
+     "C113"
+    ]
+   },
+   "summary": "A supersedes edge whose target's superseded_by omits this package is flagged C113."
+  },
+  {
+   "id": "con-05-pos",
+   "clause": "CON-05",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/limit-quantity-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A limit whose quantity agrees with the bound verdict passes."
+  },
+  {
+   "id": "con-05-neg",
+   "clause": "CON-05",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/limit-quantity-kind-mismatch",
+   "expect": {
+    "rules": [
+     "C114"
+    ]
+   },
+   "summary": "A limit whose quantity kind disagrees with the bound verdict is flagged C114."
+  },
+  {
+   "id": "con-06-pos",
+   "clause": "CON-06",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/calculation-signature-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A calculation signature whose units and kinds resolve and agree passes."
+  },
+  {
+   "id": "con-06-neg",
+   "clause": "CON-06",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/calculation-signature-phantom-kind",
+   "expect": {
+    "rules": [
+     "C115"
+    ]
+   },
+   "summary": "A quantity_kind no register declares is flagged C115."
+  },
+  {
+   "id": "con-07-pos",
+   "clause": "CON-07",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/verdict-inputs-resolve-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Verdict inputs resolving to a symbol, a test variable, an observable, and a verdict pass."
+  },
+  {
+   "id": "con-07-neg",
+   "clause": "CON-07",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/verdict-input-phantom",
+   "expect": {
+    "rules": [
+     "C116"
+    ]
+   },
+   "summary": "A verdict input naming nothing declared is flagged C116."
+  },
+  {
+   "id": "con-08-pos",
+   "clause": "CON-08",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/verdict-chain-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A two-verdict acceptance chain without a cycle passes."
+  },
+  {
+   "id": "con-08-neg",
+   "clause": "CON-08",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/verdict-chain-cycle",
+   "expect": {
+    "rules": [
+     "C117"
+    ]
+   },
+   "summary": "A verdict chain cycling through two verdicts is flagged C117."
+  },
+  {
+   "id": "con-09-pos",
+   "clause": "CON-09",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/parameter-bind-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A parameter bound to a declared attribute passes."
+  },
+  {
+   "id": "con-09-neg",
+   "clause": "CON-09",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/parameter-bind-ghost",
+   "expect": {
+    "rules": [
+     "C118"
+    ]
+   },
+   "summary": "A bind path naming an undeclared attribute is flagged C118."
+  },
+  {
+   "id": "fwk-01-pos",
+   "clause": "FWK-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/participant-kind-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The three participant kinds — the competence and approval blocks, the designating edge, the Declaration edge, the subkinds with the MTL facets — parse."
+  },
+  {
+   "id": "fwk-01-neg",
+   "clause": "FWK-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/participant-kind-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for label"
+   },
+   "summary": "A label keyword without its value is rejected."
+  },
+  {
+   "id": "fwk-02-pos",
+   "clause": "FWK-02",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/governance-organ-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The three organs — the mandates and the sub-committee/independence edges — parse."
+  },
+  {
+   "id": "fwk-02-neg",
+   "clause": "FWK-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/governance-organ-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for mandate"
+   },
+   "summary": "A mandate keyword without its value is rejected."
+  },
+  {
+   "id": "fwk-03-pos",
+   "clause": "FWK-03",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/declaration-entities.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The declaration kinds with their content slots, the lifecycle statuses, and the signing gate with its block/scope lists parse."
+  },
+  {
+   "id": "fwk-03-neg",
+   "clause": "FWK-03",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/declaration-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for statement"
+   },
+   "summary": "A statement keyword without its value is rejected."
+  },
+  {
+   "id": "fwk-04-pos",
+   "clause": "FWK-04",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/scheme-entities.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The scheme definitions with their demonstration blocks and the lifecycle with its entry, transitions, and timer trigger parse."
+  },
+  {
+   "id": "fwk-04-neg",
+   "clause": "FWK-04",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/scheme-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for applies_to"
+   },
+   "summary": "An applies_to keyword without its value is rejected."
+  },
+  {
+   "id": "fwk-05-pos",
+   "clause": "FWK-05",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/framework-document-entities.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The two hierarchy ranks, the precedence rule, and the auto-inclusion block with its conditions parse."
+  },
+  {
+   "id": "fwk-05-neg",
+   "clause": "FWK-05",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/framework-document-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for title"
+   },
+   "summary": "A title keyword without its value is rejected."
+  },
+  {
+   "id": "fwk-06-pos",
+   "clause": "FWK-06",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/decision-rule-entity.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The participation rule with the full voting block and the advisory, appeal, registration, legacy, and financing rules parse."
+  },
+  {
+   "id": "fwk-06-neg",
+   "clause": "FWK-06",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/decision-rule-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for organ"
+   },
+   "summary": "An organ keyword without its value is rejected."
+  },
+  {
+   "id": "fwk-07-pos",
+   "clause": "FWK-07",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/framework-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A coherent framework — every cross-register edge resolved — checks clean."
+  },
+  {
+   "id": "fwk-07-neg",
+   "clause": "FWK-07",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/framework-organ-dangling",
+   "expect": {
+    "rules": [
+     "C120"
+    ]
+   },
+   "summary": "An approval block naming an undeclared organ is flagged C120."
+  },
+  {
+   "id": "pkg-04-neg-redefine-comment",
+   "clause": "PKG-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/uses-redefine-comment/toy-redef",
+   "with": {
+    "toy-core-comments": "packaging/uses-redefine-comment/toy-core"
+   },
+   "expect": {
+    "rules": [
+     "C28"
+    ]
+   },
+   "summary": "A redeclared upstream comment identifier is flagged C28 — the comment register composes through uses like every id-keyed collection (the composition closure)."
+  },
+  {
+   "id": "ser-01-pos-framework",
+   "clause": "SER-01",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/framework-canonical.prl",
+   "expect": {
+    "roundtrip": "ok"
+   },
+   "summary": "The v3.3 framework constructs re-serialize to a fixed point."
+  },
+  {
+   "id": "ser-02-pos-framework-canonical",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/framework-canonical.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "The framework constructs' canonical form serializes to itself byte-for-byte."
+  }
+ ]
 }

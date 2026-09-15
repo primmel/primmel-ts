@@ -1,0 +1,9 @@
+# The downstream package redeclares an upstream comment identifier: the
+# comment register composes like every id-keyed collection, so the
+# no-redefine rule fires (C28) — before the composition closure the
+# upstream comment was silently dropped from the merge.
+package {
+  id toy-redef-comment
+  kind rec
+  uses { toy-core-comments }
+}

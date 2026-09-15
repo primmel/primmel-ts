@@ -1,0 +1,68 @@
+# Conformance corpus: the scheme-architecture constructs (v3.3) —
+# scheme_definition and scheme_lifecycle.
+# Clause: FWK-04 (positive).
+
+scheme_definition scheme_b {
+  label "Scheme B"
+  term "3.38"
+  clause "5.4.2"
+  definition "Introductory level of the OIML-CS where a self-declaration is used as the basis for demonstrating compliance."
+  demonstration {
+    method self_declaration
+    clause "5.4.2.1"
+    note "Self-declaration with additional supporting evidence (§5.4.2.1); the Scheme B application and approval process for IAs is specified in PD-03, for TLs in PD-04 (§5.4.1.1)."
+  }
+  source { doc "urn:oiml:pub:b:18:2025" clause "3.38" }
+}
+
+scheme_definition scheme_a {
+  label "Scheme A"
+  term "3.37"
+  clause "5.4.3"
+  definition "Advanced level of the OIML-CS where accreditation or peer assessment is used as the basis for demonstrating compliance."
+  demonstration {
+    method peer_evaluation
+    clause "5.4.3.1"
+    basis { accreditation peer_assessment }
+    note "Compliance demonstrated by peer evaluation on the basis of an accreditation assessment or a peer assessment (§5.4.3.1)."
+  }
+  source { doc "urn:oiml:pub:b:18:2025" clause "3.37" }
+}
+
+scheme_lifecycle category_scheme {
+  applies_to instrument_category
+  initial SCHEME_B
+  entry {
+    action category_included
+    automatic true
+    clause "15.1"
+    conditions_ref auto_inclusion
+    description "A category of measuring instrument covered by a new or existing OIML Recommendation is automatically included in the OIML-CS in Scheme B when the conditions of §4.2 are met (§15.1); the initial placement in Scheme B is §4.3."
+  }
+  transition SCHEME_B -> SCHEME_A action transition_period_elapsed {
+    clause "15.2"
+    description "Two years after inclusion in the OIML-CS, the category automatically transitions to Scheme A (§15.2) — the timer-driven transition."
+  }
+  transition SCHEME_B -> SCHEME_A action transition_advanced {
+    clause "15.2"
+    decided_by ciml
+    on_proposal_of management_committee
+    description "The Management Committee may propose to the CIML that a category transitions to Scheme A in a time period of less than two years (§15.2, second sentence; CIML decides, §9 e)."
+  }
+  transition SCHEME_A -> SCHEME_B action moved_to_scheme_b {
+    clause "15.7"
+    decided_by ciml
+    on_proposal_of management_committee
+    description "It may be proposed by the Management Committee and decided by the CIML to move a category of measuring instrument from Scheme A back to Scheme B (§15.7; §9 e)."
+  }
+  trigger two-year-transition {
+    kind timer
+    action transition_period_elapsed
+    window { years 2 }
+    clause "15.2"
+    deferrable true
+    deferral_note "The Management Committee may propose to the CIML that a category does not automatically transition after two years (§15.3); a granted deferral extends this timer's window per the CIML decision (§9 e iii)."
+    description "The two-year Scheme-B window opened by the category's inclusion: when it elapses, transition_period_elapsed fires and the category moves to Scheme A automatically (§15.2)."
+  }
+  source { doc "urn:oiml:pub:b:18:2025" clause "15" }
+}

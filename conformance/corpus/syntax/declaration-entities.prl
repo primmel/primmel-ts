@@ -1,0 +1,59 @@
+# Conformance corpus: the Declaration constructs (v3.3) —
+# declaration_kind, declaration_status, declaration_gate.
+# Clause: FWK-03 (positive).
+
+declaration_kind issuing_authority_declaration {
+  label "OIML Issuing Authority Declaration"
+  holder issuing_authority
+  clause "5.5.1"
+  procedure "PD-08"
+  definition "Declaration signed by an OIML Issuing Authority accepted for participation in the OIML-CS, indicating its scope for issuing OIML certificates and OIML type evaluation reports under Scheme A and/or Scheme B (§5.5.1)."
+  scope_model categories_x_schemes
+  scheme_a_obligation "When an OIML Issuing Authority is accepted under Scheme A, the OIML Member State shall designate at least one Utilizer for each instrument category concerned, unless the category is not regulated in that Member State (§5.5.1; PD-08 cl. 4 Note 2)."
+  source { doc "urn:oiml:pub:b:18:2025" clause "5.5.1" }
+}
+
+declaration_kind utilizer_declaration {
+  label "Utilizer Declaration"
+  holder utilizer
+  clause "5.6.1"
+  procedure "PD-08"
+  definition "Declaration signed by a Utilizer indicating its scope of acceptance of OIML certificates and/or OIML type evaluation reports issued under Scheme A and/or Scheme B (§5.6.1)."
+  scope_model categories_x_schemes
+  content additional_national_requirements {
+    clause "5.6.1"
+    description "Additional national requirements (3.2) deviating from the Recommendation — the Utilizer may specify them (PD-09, 4.1)."
+  }
+  content mtl_acceptance_policy {
+    clause "5.6.3"
+    description "Whether the Utilizer accepts OIML certificates and/or type evaluation reports issued on the basis of test reports from a Manufacturer's Test Laboratory (§5.6.3) — acceptance is voluntary and requires no justification (PD-08 cl. 6)."
+  }
+  source { doc "urn:oiml:pub:b:18:2025" clause "5.6.1" }
+}
+
+declaration_status draft {
+  description "Initiated, not yet signed by the participant."
+}
+
+declaration_status signed {
+  description "Signed by the participant and recorded by the Executive Secretary — the only status that discharges the signing gate."
+}
+
+declaration_status suspended {
+  description "The participant is suspended by the Management Committee (§11.4) — no new applications (PD-03 cl. 8)."
+}
+
+declaration_status withdrawn {
+  description "Participation withdrawn; the Declaration no longer grounds issuance or acceptance."
+}
+
+declaration_gate declaration-signed-before-issuance {
+  clause "PD-08 cl. 5"
+  statement "An OIML Issuing Authority shall not issue any OIML certificate or OIML type evaluation report before its Declaration covering the instrument category and Scheme is signed (PD-08 clause 5; B 18:2025 §5.5.1)."
+  holder issuing_authority
+  declaration issuing_authority_declaration
+  blocks { issue evaluation }
+  blocks_note "The gated abstract processes of the scheme process model: issue (certificate issuance) and evaluation (the OIML type evaluation report)."
+  scope_checked { category scheme }
+  source { doc "urn:oiml:pub:b:18:2025" clause "5.5.1" }
+}

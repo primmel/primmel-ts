@@ -1,314 +1,424 @@
 {
-  "$comment": "The clause map of the Primmel conformance suite. Every clause states one conformance rule of the language; every case in corpus/cases.json names the clause it proves. The runner enforces the structural invariant: each clause carries at least one positive and one negative case. The 'spec' block names the document these clauses will re-key to when the Primmel Language Specification (TODO.standards/01) publishes its conformance clauses; until then the suite's own identifiers are the stable handles. Area anchors anticipate the specification's clause numbering without claiming it.",
-  "spec": {
-    "document": "The Primmel Language Specification",
-    "status": "MN 114, draft for comment (2026-08-28 revision, specifying Primmel v3.1)",
-    "mapping": "When the specification publishes, each clause's specAnchor is replaced by the specification's conformance-clause number. The suite identifiers (SYN-01, ..., CON-09) never change; only the anchor is re-keyed, in a minor suite release. The v3.1 clauses (DAT-01 to DAT-04) already anchor to MN 114 clause 19; the v3.2 clauses (CON-01 to CON-09) anchor to the MN 114 v3.2 clauses."
+ "$comment": "The clause map of the Primmel conformance suite. Every clause states one conformance rule of the language; every case in corpus/cases.json names the clause it proves. The runner enforces the structural invariant: each clause carries at least one positive and one negative case. The 'spec' block names the document these clauses will re-key to when the Primmel Language Specification (TODO.standards/01) publishes its conformance clauses; until then the suite's own identifiers are the stable handles. Area anchors anticipate the specification's clause numbering without claiming it.",
+ "spec": {
+  "document": "The Primmel Language Specification",
+  "status": "MN 114, draft for comment (2026-08-28 revision, specifying Primmel v3.1)",
+  "mapping": "When the specification publishes, each clause's specAnchor is replaced by the specification's conformance-clause number. The suite identifiers (SYN-01, ..., CON-09) never change; only the anchor is re-keyed, in a minor suite release. The v3.1 clauses (DAT-01 to DAT-04) already anchor to MN 114 clause 19; the v3.2 clauses (CON-01 to CON-09) anchor to the MN 114 v3.2 clauses."
+ },
+ "clauses": [
+  {
+   "id": "SYN-01",
+   "area": "syntax",
+   "title": "Document structure",
+   "statement": "A Primmel document is a sequence of whitespace-delimited tokens forming (keyword, identifier, payload) triples; the header carries root, version, and the metadata block. A strict parse rejects an unknown top-level keyword; a lenient parse skips it.",
+   "specAnchor": "document structure and headers",
+   "rules": []
   },
-  "clauses": [
-    {
-      "id": "SYN-01",
-      "area": "syntax",
-      "title": "Document structure",
-      "statement": "A Primmel document is a sequence of whitespace-delimited tokens forming (keyword, identifier, payload) triples; the header carries root, version, and the metadata block. A strict parse rejects an unknown top-level keyword; a lenient parse skips it.",
-      "specAnchor": "document structure and headers",
-      "rules": []
-    },
-    {
-      "id": "SYN-02",
-      "area": "syntax",
-      "title": "Identifiers",
-      "statement": "A construct keyword that takes an identifier consumes exactly one id token, bare or double-quoted; a quoted identifier may embed spaces and is referenced in the same quoted form. The id token is mandatory.",
-      "specAnchor": "identifiers",
-      "rules": []
-    },
-    {
-      "id": "SYN-03",
-      "area": "syntax",
-      "title": "The requirement entity",
-      "statement": "The requirement entity is declared as provision (narrative condition plus modality) or requirement (name, statement, modality, bindings); both spellings belong to the requirement kind. A value-taking keyword inside the body must carry its value.",
-      "specAnchor": "the requirement entity",
-      "rules": []
-    },
-    {
-      "id": "SYN-04",
-      "area": "syntax",
-      "title": "The conformance test entity",
-      "statement": "The conformance_test entity declares a name, an optional type, targets referencing declared requirements, a numbered procedure, and validation measurements. A value-taking keyword inside the body must carry its value.",
-      "specAnchor": "the conformance test entity",
-      "rules": []
-    },
-    {
-      "id": "SYN-05",
-      "area": "syntax",
-      "title": "The form entity",
-      "statement": "The form entity declares a name and a set of fields, each field optionally carrying label, hint, and a bind path. A value-taking keyword inside the body must carry its value.",
-      "specAnchor": "the form entity",
-      "rules": []
-    },
-    {
-      "id": "SYN-06",
-      "area": "syntax",
-      "title": "The calculation entity",
-      "statement": "The calculation entity declares a name and an expression over bracketed quantity references. A value-taking keyword inside the body must carry its value.",
-      "specAnchor": "the calculation entity",
-      "rules": []
-    },
-    {
-      "id": "SYN-07",
-      "area": "syntax",
-      "title": "The table entity",
-      "statement": "The table entity declares a name, a column list, and rows keyed by row id with one value per column. A value-taking keyword inside the body must carry its value.",
-      "specAnchor": "the table entity",
-      "rules": []
-    },
-    {
-      "id": "SER-01",
-      "area": "serialization",
-      "title": "Re-serialization fixed point",
-      "statement": "Serializing a parsed document and parsing the serialization again yields a model whose serialization is byte-identical: dump(parse(dump(parse(d)))) equals dump(parse(d)) for every valid document d. A document that fails to parse has no serialization.",
-      "specAnchor": "the codec round-trip rule",
-      "rules": []
-    },
-    {
-      "id": "SER-02",
-      "area": "serialization",
-      "title": "Canonical emission",
-      "statement": "The serializer emits one canonical form: the metadata block first, constructs in the language's declaration order, strings with embedded quotes and backslashes escaped. A document in canonical form serializes to itself byte-for-byte; a document in any other order does not serialize to its own input text.",
-      "specAnchor": "the canonical form",
-      "rules": []
-    },
-    {
-      "id": "CHK-01",
-      "area": "checks",
-      "title": "Attribute bind scope",
-      "statement": "A form field's bind path names a declared attribute definition whose scope matches the path's scope prefix.",
-      "specAnchor": "the bind-scope constraint",
-      "rules": ["C1"]
-    },
-    {
-      "id": "CHK-02",
-      "area": "checks",
-      "title": "Reference targets resolve",
-      "statement": "Every cross-reference in the model (a conformance test's targets, a form's process link, a capability's satisfactions) resolves to a declared element.",
-      "specAnchor": "reference resolution",
-      "rules": ["C2"]
-    },
-    {
-      "id": "CHK-03",
-      "area": "checks",
-      "title": "Store uniqueness",
-      "statement": "No two storable classes claim the same store.",
-      "specAnchor": "store uniqueness",
-      "rules": ["C4"]
-    },
-    {
-      "id": "CHK-04",
-      "area": "checks",
-      "title": "Process flow integrity",
-      "statement": "An executable process carries exactly one start event, and every flow edge begins and ends at a declared step.",
-      "specAnchor": "process structure",
-      "rules": ["C10", "C11"]
-    },
-    {
-      "id": "CHK-05",
-      "area": "checks",
-      "title": "Duplicate identification",
-      "statement": "An identifier is declared at most once per id-keyed collection; a redeclaration is reported.",
-      "specAnchor": "identifier uniqueness",
-      "rules": ["C96"]
-    },
-    {
-      "id": "CHK-06",
-      "area": "checks",
-      "title": "State machine initial",
-      "statement": "A state machine declares its initial state — the starting state for new entities is required, so a machine without one is flagged; the serializer never emits the keyword without its value.",
-      "specAnchor": "state machine syntax (initial is required)",
-      "rules": ["C109"]
-    },
-    {
-      "id": "PKG-01",
-      "area": "packaging",
-      "title": "The package manifest",
-      "statement": "A package is a directory whose package.primmel manifest declares at least the package id; the enumerated manifest facets (kind, status) carry only their declared values.",
-      "specAnchor": "the package manifest",
-      "rules": []
-    },
-    {
-      "id": "PKG-02",
-      "area": "packaging",
-      "title": "The edition register",
-      "statement": "A package whose status is current or preview packages the edition register's newest entry.",
-      "specAnchor": "editions and status",
-      "rules": ["C77"]
-    },
-    {
-      "id": "PKG-03",
-      "area": "packaging",
-      "title": "Definition version pins",
-      "statement": "An instance's definition_versions pins resolve against the package's edition register.",
-      "specAnchor": "version pinning",
-      "rules": ["C80"]
-    },
-    {
-      "id": "PKG-04",
-      "area": "packaging",
-      "title": "Layered composition",
-      "statement": "A package's uses edges resolve against a package locator, never redefine an upstream identifier, and never form a cycle.",
-      "specAnchor": "composition (uses, layering)",
-      "rules": ["C27", "C28", "C29"]
-    },
-    {
-      "id": "PKG-05",
-      "area": "packaging",
-      "title": "Abstract import pins",
-      "statement": "A uses edge to a product reference package carries a version pin (id@edition), and the pin resolves against the product package's edition register.",
-      "specAnchor": "abstract imports",
-      "rules": ["C83"]
-    },
-    {
-      "id": "PKG-06",
-      "area": "packaging",
-      "title": "Requirement-namespace pins",
-      "statement": "A requirement scope (a requirement class identifier path) declared by a composed package is owned by that package; a downstream package may reference its provisions but never declares a requirement class or a requirement whose identifier sits at or under an owned namespace.",
-      "specAnchor": "composition (uses, layering)",
-      "rules": ["C119"]
-    },
-    {
-      "id": "ERR-01",
-      "area": "errors",
-      "title": "Structural parse errors",
-      "statement": "A structurally malformed document is rejected with an error that names the construct, the identifier where one exists, and the expected token.",
-      "specAnchor": "parse error reporting",
-      "rules": []
-    },
-    {
-      "id": "ERR-02",
-      "area": "errors",
-      "title": "Enumerated facet values",
-      "statement": "A facet whose values are enumerated rejects an undeclared value with an error naming the valid set.",
-      "specAnchor": "enumerated facets",
-      "rules": []
-    },
-    {
-      "id": "ERR-03",
-      "area": "errors",
-      "title": "Duplicate identifier detection",
-      "statement": "A document that redeclares an identifier parses with a duplicate-id issue on the issues channel.",
-      "specAnchor": "the parse issues channel",
-      "rules": []
-    },
-    {
-      "id": "DAT-01",
-      "area": "dataspace",
-      "title": "The dataspace construct",
-      "statement": "A dataspace declares its participant classes, its artifact classes (each optionally naming its content element and per-class policy override), the policy register, the default policy, the trust anchors, the compatibility register, and the governance citations. The policy register, the default policy, the per-class overrides, the content elements, and the compatibility register resolve (C104); the governance citations are present (C106, a warning).",
-      "specAnchor": "MN 114 clause 19.1 (the dataspace construct)",
-      "rules": ["C104", "C106"]
-    },
-    {
-      "id": "DAT-02",
-      "area": "dataspace",
-      "title": "The policy construct",
-      "statement": "A policy declares rules of kind permission, obligation, or prohibition (a closed, parse-enforced vocabulary) over the dataspace's artifact classes and their actions, with constraints in the embedded expression dialect; default_posture is a closed parse-enforced boolean. A policy declares at least one rule, every rule carries its action, a rule's artifact stays inside the governs register, the governed classes resolve, and at most one default-posture policy governs a class (C107).",
-      "specAnchor": "MN 114 clause 19.2 (the policy construct)",
-      "rules": ["C107"]
-    },
-    {
-      "id": "DAT-03",
-      "area": "dataspace",
-      "title": "Trust references",
-      "statement": "A trust_ref names an organization by its registry identifier, optionally with one published key by key id. The reference is opaque to the model: it carries addressing only, the consumer resolves it at runtime, and a conforming checker never resolves it — an organization no package declares is not a finding. The checker verifies the anchor's shape only (C105).",
-      "specAnchor": "MN 114 clause 19.3 (trust references)",
-      "rules": ["C105"]
-    },
-    {
-      "id": "DAT-04",
-      "area": "dataspace",
-      "title": "Correspondence annotations",
-      "statement": "A corresponds facet declares an element's correspondence to an external concept (scheme token plus opaque concept identifier) with optional projection-steering blocks for the expression codecs; the facet is accepted on every construct (the multi-token skip discipline) and recorded on the projection-bearing kinds. One element carries at most one correspondence per scheme, an entry names its scheme and concept, and the irdi legacy spelling agrees with corresponds iec-cdd when both are present (C108).",
-      "specAnchor": "MN 114 clause 19.4 (correspondence annotations)",
-      "rules": ["C108"]
-    },
-    {
-      "id": "SUR-01",
-      "area": "surface",
-      "title": "The browser runtime surface",
-      "statement": "The toolchain's browser-facing runtime module exposes the language's enumerated vocabularies as data — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes — so browser consumers read them from the toolchain and never re-declare them. A probe name the surface does not carry is reported absent, never rubber-stamped present.",
-      "specAnchor": "the browser runtime surface (the reference toolchain's distribution)",
-      "rules": []
-    },
-    {
-      "id": "CON-01",
-      "area": "consumption",
-      "title": "The term alias family",
-      "statement": "A term declares its everyday-words → defined-term bridge as the alias family (aliases, colloquial, abbreviations, deprecated, with spelling-tagged variant lists). Duplicate entries within one list of one term are errors (C110).",
-      "specAnchor": "MN 114 clause 13.10.1 (the term alias family)",
-      "rules": ["C110"]
-    },
-    {
-      "id": "CON-02",
-      "area": "consumption",
-      "title": "The dimension declaration",
-      "statement": "A top-level dimension declares the applicability axis's value domain — values or values_of, never both; value identifiers are unique, every implies target resolves inside its own dimension, and the implication graph is acyclic (C111).",
-      "specAnchor": "MN 114 clause 10.6 (the dimension declaration)",
-      "rules": ["C111"]
-    },
-    {
-      "id": "CON-03",
-      "area": "consumption",
-      "title": "The structured reference identity",
-      "statement": "A reference carries a resolvable identity: the urn facet, where present, is a well-formed IRI — a scheme followed by no whitespace or IRI delimiters (C112).",
-      "specAnchor": "MN 114 clause 14.7 (the structured reference)",
-      "rules": ["C112"]
-    },
-    {
-      "id": "CON-04",
-      "area": "consumption",
-      "title": "Edition lineage coherence",
-      "statement": "A manifest's superseded_by forward edge, where declared, agrees with the successor's backward supersedes/replaces edges across the composed closure — opposite lineage edges between the same pair must agree; a missing forward edge is never an error (C113).",
-      "specAnchor": "MN 114 clause 9.3.1 (edition lineage)",
-      "rules": ["C113"]
-    },
-    {
-      "id": "CON-05",
-      "area": "consumption",
-      "title": "Limit quantity coherence",
-      "statement": "A limit that declares its derived quantity's typing (quantity kind and unit) and binds a verdict agrees with the verdict's declared quantity, so a limit and its acceptance chain never drift apart in units (C114).",
-      "specAnchor": "MN 114 clause 11.1.2 (the limit quantity)",
-      "rules": ["C114"]
-    },
-    {
-      "id": "CON-06",
-      "area": "consumption",
-      "title": "The calculation signature",
-      "statement": "A calculation's declared quantity_kind resolves to a registered kind of the merged quantity register and agrees in kind with the declared unit (C115).",
-      "specAnchor": "MN 114 clause 13.7.1 (the calculation signature)",
-      "rules": ["C115"]
-    },
-    {
-      "id": "CON-07",
-      "area": "consumption",
-      "title": "Verdict inputs resolve",
-      "statement": "A verdict's inputs name the free identifiers of its derivation; every input resolves to a declared symbol, a conformance-test variable or observable, or another verdict (C116).",
-      "specAnchor": "MN 114 clause 11.3 (the verdict chain)",
-      "rules": ["C116"]
-    },
-    {
-      "id": "CON-08",
-      "area": "consumption",
-      "title": "The verdict chain is acyclic",
-      "statement": "An input naming another verdict makes the acceptance chain an explicit graph; the verdict→verdict derivation graph never cycles — a consumption system traverses the chain, and a cycle never terminates (C117).",
-      "specAnchor": "MN 114 clause 11.3 (the verdict chain)",
-      "rules": ["C117"]
-    },
-    {
-      "id": "CON-09",
-      "area": "consumption",
-      "title": "The instance-parameter schema",
-      "statement": "A requirement parameter's bind path names the aspect the value instantiates from and resolves against the subject's declared attribute, dimension, or behavior catalog (C118).",
-      "specAnchor": "MN 114 clause 11.1.3 (the instance-parameter schema)",
-      "rules": ["C118"]
-    }
-  ]
+  {
+   "id": "SYN-02",
+   "area": "syntax",
+   "title": "Identifiers",
+   "statement": "A construct keyword that takes an identifier consumes exactly one id token, bare or double-quoted; a quoted identifier may embed spaces and is referenced in the same quoted form. The id token is mandatory.",
+   "specAnchor": "identifiers",
+   "rules": []
+  },
+  {
+   "id": "SYN-03",
+   "area": "syntax",
+   "title": "The requirement entity",
+   "statement": "The requirement entity is declared as provision (narrative condition plus modality) or requirement (name, statement, modality, bindings); both spellings belong to the requirement kind. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "the requirement entity",
+   "rules": []
+  },
+  {
+   "id": "SYN-04",
+   "area": "syntax",
+   "title": "The conformance test entity",
+   "statement": "The conformance_test entity declares a name, an optional type, targets referencing declared requirements, a numbered procedure, and validation measurements. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "the conformance test entity",
+   "rules": []
+  },
+  {
+   "id": "SYN-05",
+   "area": "syntax",
+   "title": "The form entity",
+   "statement": "The form entity declares a name and a set of fields, each field optionally carrying label, hint, and a bind path. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "the form entity",
+   "rules": []
+  },
+  {
+   "id": "SYN-06",
+   "area": "syntax",
+   "title": "The calculation entity",
+   "statement": "The calculation entity declares a name and an expression over bracketed quantity references. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "the calculation entity",
+   "rules": []
+  },
+  {
+   "id": "SYN-07",
+   "area": "syntax",
+   "title": "The table entity",
+   "statement": "The table entity declares a name, a column list, and rows keyed by row id with one value per column. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "the table entity",
+   "rules": []
+  },
+  {
+   "id": "SER-01",
+   "area": "serialization",
+   "title": "Re-serialization fixed point",
+   "statement": "Serializing a parsed document and parsing the serialization again yields a model whose serialization is byte-identical: dump(parse(dump(parse(d)))) equals dump(parse(d)) for every valid document d. A document that fails to parse has no serialization.",
+   "specAnchor": "the codec round-trip rule",
+   "rules": []
+  },
+  {
+   "id": "SER-02",
+   "area": "serialization",
+   "title": "Canonical emission",
+   "statement": "The serializer emits one canonical form: the metadata block first, constructs in the language's declaration order, strings with embedded quotes and backslashes escaped. A document in canonical form serializes to itself byte-for-byte; a document in any other order does not serialize to its own input text.",
+   "specAnchor": "the canonical form",
+   "rules": []
+  },
+  {
+   "id": "CHK-01",
+   "area": "checks",
+   "title": "Attribute bind scope",
+   "statement": "A form field's bind path names a declared attribute definition whose scope matches the path's scope prefix.",
+   "specAnchor": "the bind-scope constraint",
+   "rules": [
+    "C1"
+   ]
+  },
+  {
+   "id": "CHK-02",
+   "area": "checks",
+   "title": "Reference targets resolve",
+   "statement": "Every cross-reference in the model (a conformance test's targets, a form's process link, a capability's satisfactions) resolves to a declared element.",
+   "specAnchor": "reference resolution",
+   "rules": [
+    "C2"
+   ]
+  },
+  {
+   "id": "CHK-03",
+   "area": "checks",
+   "title": "Store uniqueness",
+   "statement": "No two storable classes claim the same store.",
+   "specAnchor": "store uniqueness",
+   "rules": [
+    "C4"
+   ]
+  },
+  {
+   "id": "CHK-04",
+   "area": "checks",
+   "title": "Process flow integrity",
+   "statement": "An executable process carries exactly one start event, and every flow edge begins and ends at a declared step.",
+   "specAnchor": "process structure",
+   "rules": [
+    "C10",
+    "C11"
+   ]
+  },
+  {
+   "id": "CHK-05",
+   "area": "checks",
+   "title": "Duplicate identification",
+   "statement": "An identifier is declared at most once per id-keyed collection; a redeclaration is reported.",
+   "specAnchor": "identifier uniqueness",
+   "rules": [
+    "C96"
+   ]
+  },
+  {
+   "id": "CHK-06",
+   "area": "checks",
+   "title": "State machine initial",
+   "statement": "A state machine declares its initial state — the starting state for new entities is required, so a machine without one is flagged; the serializer never emits the keyword without its value.",
+   "specAnchor": "state machine syntax (initial is required)",
+   "rules": [
+    "C109"
+   ]
+  },
+  {
+   "id": "PKG-01",
+   "area": "packaging",
+   "title": "The package manifest",
+   "statement": "A package is a directory whose package.primmel manifest declares at least the package id; the enumerated manifest facets (kind, status) carry only their declared values.",
+   "specAnchor": "the package manifest",
+   "rules": []
+  },
+  {
+   "id": "PKG-02",
+   "area": "packaging",
+   "title": "The edition register",
+   "statement": "A package whose status is current or preview packages the edition register's newest entry.",
+   "specAnchor": "editions and status",
+   "rules": [
+    "C77"
+   ]
+  },
+  {
+   "id": "PKG-03",
+   "area": "packaging",
+   "title": "Definition version pins",
+   "statement": "An instance's definition_versions pins resolve against the package's edition register.",
+   "specAnchor": "version pinning",
+   "rules": [
+    "C80"
+   ]
+  },
+  {
+   "id": "PKG-04",
+   "area": "packaging",
+   "title": "Layered composition",
+   "statement": "A package's uses edges resolve against a package locator, never redefine an upstream identifier, and never form a cycle.",
+   "specAnchor": "composition (uses, layering)",
+   "rules": [
+    "C27",
+    "C28",
+    "C29"
+   ]
+  },
+  {
+   "id": "PKG-05",
+   "area": "packaging",
+   "title": "Abstract import pins",
+   "statement": "A uses edge to a product reference package carries a version pin (id@edition), and the pin resolves against the product package's edition register.",
+   "specAnchor": "abstract imports",
+   "rules": [
+    "C83"
+   ]
+  },
+  {
+   "id": "PKG-06",
+   "area": "packaging",
+   "title": "Requirement-namespace pins",
+   "statement": "A requirement scope (a requirement class identifier path) declared by a composed package is owned by that package; a downstream package may reference its provisions but never declares a requirement class or a requirement whose identifier sits at or under an owned namespace.",
+   "specAnchor": "composition (uses, layering)",
+   "rules": [
+    "C119"
+   ]
+  },
+  {
+   "id": "ERR-01",
+   "area": "errors",
+   "title": "Structural parse errors",
+   "statement": "A structurally malformed document is rejected with an error that names the construct, the identifier where one exists, and the expected token.",
+   "specAnchor": "parse error reporting",
+   "rules": []
+  },
+  {
+   "id": "ERR-02",
+   "area": "errors",
+   "title": "Enumerated facet values",
+   "statement": "A facet whose values are enumerated rejects an undeclared value with an error naming the valid set.",
+   "specAnchor": "enumerated facets",
+   "rules": []
+  },
+  {
+   "id": "ERR-03",
+   "area": "errors",
+   "title": "Duplicate identifier detection",
+   "statement": "A document that redeclares an identifier parses with a duplicate-id issue on the issues channel.",
+   "specAnchor": "the parse issues channel",
+   "rules": []
+  },
+  {
+   "id": "DAT-01",
+   "area": "dataspace",
+   "title": "The dataspace construct",
+   "statement": "A dataspace declares its participant classes, its artifact classes (each optionally naming its content element and per-class policy override), the policy register, the default policy, the trust anchors, the compatibility register, and the governance citations. The policy register, the default policy, the per-class overrides, the content elements, and the compatibility register resolve (C104); the governance citations are present (C106, a warning).",
+   "specAnchor": "MN 114 clause 19.1 (the dataspace construct)",
+   "rules": [
+    "C104",
+    "C106"
+   ]
+  },
+  {
+   "id": "DAT-02",
+   "area": "dataspace",
+   "title": "The policy construct",
+   "statement": "A policy declares rules of kind permission, obligation, or prohibition (a closed, parse-enforced vocabulary) over the dataspace's artifact classes and their actions, with constraints in the embedded expression dialect; default_posture is a closed parse-enforced boolean. A policy declares at least one rule, every rule carries its action, a rule's artifact stays inside the governs register, the governed classes resolve, and at most one default-posture policy governs a class (C107).",
+   "specAnchor": "MN 114 clause 19.2 (the policy construct)",
+   "rules": [
+    "C107"
+   ]
+  },
+  {
+   "id": "DAT-03",
+   "area": "dataspace",
+   "title": "Trust references",
+   "statement": "A trust_ref names an organization by its registry identifier, optionally with one published key by key id. The reference is opaque to the model: it carries addressing only, the consumer resolves it at runtime, and a conforming checker never resolves it — an organization no package declares is not a finding. The checker verifies the anchor's shape only (C105).",
+   "specAnchor": "MN 114 clause 19.3 (trust references)",
+   "rules": [
+    "C105"
+   ]
+  },
+  {
+   "id": "DAT-04",
+   "area": "dataspace",
+   "title": "Correspondence annotations",
+   "statement": "A corresponds facet declares an element's correspondence to an external concept (scheme token plus opaque concept identifier) with optional projection-steering blocks for the expression codecs; the facet is accepted on every construct (the multi-token skip discipline) and recorded on the projection-bearing kinds. One element carries at most one correspondence per scheme, an entry names its scheme and concept, and the irdi legacy spelling agrees with corresponds iec-cdd when both are present (C108).",
+   "specAnchor": "MN 114 clause 19.4 (correspondence annotations)",
+   "rules": [
+    "C108"
+   ]
+  },
+  {
+   "id": "SUR-01",
+   "area": "surface",
+   "title": "The browser runtime surface",
+   "statement": "The toolchain's browser-facing runtime module exposes the language's enumerated vocabularies as data — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes — so browser consumers read them from the toolchain and never re-declare them. A probe name the surface does not carry is reported absent, never rubber-stamped present.",
+   "specAnchor": "the browser runtime surface (the reference toolchain's distribution)",
+   "rules": []
+  },
+  {
+   "id": "CON-01",
+   "area": "consumption",
+   "title": "The term alias family",
+   "statement": "A term declares its everyday-words → defined-term bridge as the alias family (aliases, colloquial, abbreviations, deprecated, with spelling-tagged variant lists). Duplicate entries within one list of one term are errors (C110).",
+   "specAnchor": "MN 114 clause 13.10.1 (the term alias family)",
+   "rules": [
+    "C110"
+   ]
+  },
+  {
+   "id": "CON-02",
+   "area": "consumption",
+   "title": "The dimension declaration",
+   "statement": "A top-level dimension declares the applicability axis's value domain — values or values_of, never both; value identifiers are unique, every implies target resolves inside its own dimension, and the implication graph is acyclic (C111).",
+   "specAnchor": "MN 114 clause 10.6 (the dimension declaration)",
+   "rules": [
+    "C111"
+   ]
+  },
+  {
+   "id": "CON-03",
+   "area": "consumption",
+   "title": "The structured reference identity",
+   "statement": "A reference carries a resolvable identity: the urn facet, where present, is a well-formed IRI — a scheme followed by no whitespace or IRI delimiters (C112).",
+   "specAnchor": "MN 114 clause 14.7 (the structured reference)",
+   "rules": [
+    "C112"
+   ]
+  },
+  {
+   "id": "CON-04",
+   "area": "consumption",
+   "title": "Edition lineage coherence",
+   "statement": "A manifest's superseded_by forward edge, where declared, agrees with the successor's backward supersedes/replaces edges across the composed closure — opposite lineage edges between the same pair must agree; a missing forward edge is never an error (C113).",
+   "specAnchor": "MN 114 clause 9.3.1 (edition lineage)",
+   "rules": [
+    "C113"
+   ]
+  },
+  {
+   "id": "CON-05",
+   "area": "consumption",
+   "title": "Limit quantity coherence",
+   "statement": "A limit that declares its derived quantity's typing (quantity kind and unit) and binds a verdict agrees with the verdict's declared quantity, so a limit and its acceptance chain never drift apart in units (C114).",
+   "specAnchor": "MN 114 clause 11.1.2 (the limit quantity)",
+   "rules": [
+    "C114"
+   ]
+  },
+  {
+   "id": "CON-06",
+   "area": "consumption",
+   "title": "The calculation signature",
+   "statement": "A calculation's declared quantity_kind resolves to a registered kind of the merged quantity register and agrees in kind with the declared unit (C115).",
+   "specAnchor": "MN 114 clause 13.7.1 (the calculation signature)",
+   "rules": [
+    "C115"
+   ]
+  },
+  {
+   "id": "CON-07",
+   "area": "consumption",
+   "title": "Verdict inputs resolve",
+   "statement": "A verdict's inputs name the free identifiers of its derivation; every input resolves to a declared symbol, a conformance-test variable or observable, or another verdict (C116).",
+   "specAnchor": "MN 114 clause 11.3 (the verdict chain)",
+   "rules": [
+    "C116"
+   ]
+  },
+  {
+   "id": "CON-08",
+   "area": "consumption",
+   "title": "The verdict chain is acyclic",
+   "statement": "An input naming another verdict makes the acceptance chain an explicit graph; the verdict→verdict derivation graph never cycles — a consumption system traverses the chain, and a cycle never terminates (C117).",
+   "specAnchor": "MN 114 clause 11.3 (the verdict chain)",
+   "rules": [
+    "C117"
+   ]
+  },
+  {
+   "id": "CON-09",
+   "area": "consumption",
+   "title": "The instance-parameter schema",
+   "statement": "A requirement parameter's bind path names the aspect the value instantiates from and resolves against the subject's declared attribute, dimension, or behavior catalog (C118).",
+   "specAnchor": "MN 114 clause 11.1.3 (the instance-parameter schema)",
+   "rules": [
+    "C118"
+   ]
+  },
+  {
+   "id": "FWK-01",
+   "area": "framework",
+   "title": "The participant-kind register",
+   "statement": "A participant_kind declares one participant class of the certification framework: label, term number, governing clause, definition, membership class, the competence delegation block (delegates_to + clause + note), the approval block (decided_by, on_recommendation_of, procedure), the designating participant, the Declaration the participant signs, the admission procedure, and the subkinds with their data-flag and acceptance facets. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "MN 114 v3.3 (the participant-kind register)",
+   "rules": []
+  },
+  {
+   "id": "FWK-02",
+   "area": "framework",
+   "title": "The governance-organ register",
+   "statement": "A governance_organ declares one organ of the framework's governance: label, term number, governing clause, mandate, and the sub-committee and independence edges to other organs. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "MN 114 v3.3 (the governance-organ register)",
+   "rules": []
+  },
+  {
+   "id": "FWK-03",
+   "area": "framework",
+   "title": "The declaration constructs",
+   "statement": "A declaration_kind declares one Declaration class: its holder participant kind, procedure, scope model, the Scheme-A obligation, and its content slots. A declaration_status declares one lifecycle state of a Declaration. A declaration_gate declares a signing-gate invariant: the holder, the Declaration, the blocked abstract processes (a braced id list), and the scope aspects the gate checks. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "MN 114 v3.3 (the declaration constructs)",
+   "rules": []
+  },
+  {
+   "id": "FWK-04",
+   "area": "framework",
+   "title": "The scheme constructs",
+   "statement": "A scheme_definition declares one scheme level with its demonstration block (method, basis list, clause, note). A scheme_lifecycle declares the per-category state machine: the applied subject, the initial state, the entry block (action, automatic flag, conditions reference), the transitions in the `transition From -> To action X { ... }` surface, and the triggers (kind, action, window, deferrable flag). A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "MN 114 v3.3 (the scheme constructs)",
+   "rules": []
+  },
+  {
+   "id": "FWK-05",
+   "area": "framework",
+   "title": "The framework-document constructs",
+   "statement": "A framework_document declares one rank of the governing-document hierarchy: rank number, document citation, title, approving organ, and note. A document_precedence declares a conflict-resolution rule over the hierarchy. An auto_inclusion declares the automatic-inclusion conditions of the scheme, each condition with its clause and description. A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "MN 114 v3.3 (the framework-document constructs)",
+   "rules": []
+  },
+  {
+   "id": "FWK-06",
+   "area": "framework",
+   "title": "The decision-rule construct",
+   "statement": "A decision_rule declares one organ's governance rule: the organ, the rule kind, the governed decisions list, the recommendation edge, and the voting block (in-meeting and by-correspondence thresholds with their bases, the other-proposals fallback, the proxy maximum, the abstention treatment, the reason obligation); the advisory, appeal-ruling, registration, legacy-validity, and financing kinds carry their own facets (tasks, scope, principle, legacy_kind blocks, income, the fee-exemption list). A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "MN 114 v3.3 (the decision-rule construct)",
+   "rules": []
+  },
+  {
+   "id": "FWK-07",
+   "area": "framework",
+   "title": "Framework references resolve",
+   "statement": "Every reference the framework constructs carry — the participant kind's organs, designating participant, and Declaration; the declaration gate's holder, Declaration, and blocked processes; the lifecycle's conditions reference and transition organs; the framework document's approving organ; the decision rule's organ and exempted participant kinds — resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C120).",
+   "specAnchor": "MN 114 v3.3 (framework reference resolution)",
+   "rules": [
+    "C120"
+   ]
+  }
+ ]
 }

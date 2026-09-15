@@ -1,0 +1,51 @@
+# Conformance corpus: the framework-document constructs (v3.3) —
+# framework_document, document_precedence, auto_inclusion.
+# Clause: FWK-05 (positive).
+
+framework_document b18 {
+  rank 1
+  doc "OIML B 18"
+  title "Framework for the OIML Certification System (OIML-CS)"
+  approved_by ciml
+  clause "6 a)"
+  source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+}
+
+framework_document cid-01 {
+  rank 2
+  doc "OIML-CS CID-01"
+  title "Clarification and Interpretation Document"
+  approved_by management_committee
+  clause "6 b)"
+  note "Clarifications and interpretations of OIML-CS documents intended as guidance and additional information; they do not supersede the text of the current editions (CID-01, clause 2)."
+  source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+}
+
+document_precedence higher_position_prevails {
+  clause "6"
+  statement "In the event of a conflict, contradiction or inconsistency between the provisions of one of the governing documents and the provisions of another, the provisions of the document listed in a higher position take precedence over the provisions of the document listed in a lower position (clause 6)."
+  source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+}
+
+auto_inclusion auto_inclusion {
+  clause "4.2"
+  statement "Categories of measuring instruments (including families of instruments, modules, or families of modules) are automatically included in the OIML-CS when the relevant OIML Recommendation specifies all of the following (§4.2); the initial placement is Scheme B (§4.3, §15.1)."
+  condition metrological-technical-requirements {
+    clause "4.2 a)"
+    description "The Recommendation specifies the metrological and technical requirements for the category."
+  }
+  condition test-procedures {
+    clause "4.2 b)"
+    description "The Recommendation specifies the test procedures, including (where applicable) the selection of the instrument(s) or module(s) to be tested from the family (§4.4)."
+  }
+  condition test-report-format {
+    clause "4.2 c)"
+    description "The Recommendation specifies the OIML test report format."
+  }
+  condition evaluation-report-format {
+    clause "4.2 d)"
+    description "The Recommendation specifies the OIML type evaluation report format."
+  }
+  note "The two report formats (conditions c and d) may be specified in separate Parts of a Recommendation or combined in one Part (§4.2 Note). The BIML maintains the list of the categories in the OIML-CS on the OIML website (§4.5)."
+  source { doc "urn:oiml:pub:b:18:2025" clause "4.2" }
+}

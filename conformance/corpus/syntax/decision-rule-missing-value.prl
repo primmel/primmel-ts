@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: FWK-06 (negative).
+decision_rule broken {
+  kind participation
+  organ
+}

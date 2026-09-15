@@ -1,0 +1,4 @@
+package {
+  id toy-core-comments
+  kind core
+}

@@ -1,0 +1,66 @@
+# Conformance corpus: the participant_kind register (v3.3).
+# Clause: FWK-01 (positive).
+
+participant_kind issuing_authority {
+  label "OIML Issuing Authority"
+  term "3.28"
+  clause "5.2"
+  definition "Certification body or inspection body from an OIML Member State approved by the Management Committee to issue OIML certificates and associated OIML type evaluation reports in accordance with Scheme A or Scheme B."
+  member member_state
+  competence {
+    delegates_to iso-iec-17065
+    clause "5.2"
+    note "Compliance with ISO/IEC 17065 (B 18:2025, §5.2) — the competence model itself lives in the iso-iec-17065 package."
+  }
+  approval {
+    decided_by management_committee
+    on_recommendation_of review_committee
+    procedure "PD-03"
+    clause "11.5 f)"
+  }
+  declaration issuing_authority_declaration
+  source { doc "urn:oiml:pub:b:18:2025" clause "5.2" }
+}
+
+participant_kind test_laboratory {
+  label "Test Laboratory"
+  term "3.40"
+  clause "5.3"
+  definition "Laboratory that performs some or all of the tests of an OIML type evaluation, designated by an OIML Issuing Authority and approved by the Management Committee."
+  competence {
+    delegates_to iso-iec-17025
+    clause "5.3"
+  }
+  approval {
+    decided_by management_committee
+    on_recommendation_of review_committee
+    procedure "PD-04"
+    clause "11.5 f)"
+  }
+  designated_by issuing_authority
+  subkind internal {
+    label "Internal Test Laboratory"
+    term "3.15"
+    definition "Test Laboratory that is part of the same organization as the OIML Issuing Authority."
+  }
+  subkind manufacturer {
+    label "Manufacturer's Test Laboratory (MTL)"
+    term "3.21"
+    definition "Test Laboratory that is part of the manufacturer's organization, testing for its parent company under controlled supervision (PD-04, 7.1)."
+    data_flag "Test data originating from a Manufacturer's Test Laboratory shall be flagged as such on the OIML type evaluation report (PD-05)."
+    acceptance voluntary
+    acceptance_note "Acceptance of certificates/reports issued on the basis of MTL test reports is voluntary (B 18:2025, §5.6.3; PD-06)."
+  }
+  source { doc "urn:oiml:pub:b:18:2025" clause "5.3" }
+}
+
+participant_kind utilizer {
+  label "Utilizer"
+  term "3.45"
+  clause "5.6.1"
+  definition "National issuing authority or national responsible body from an OIML Member State that signs a Declaration indicating its scope of acceptance of OIML certificates and/or OIML type evaluation reports."
+  member member_state
+  declaration utilizer_declaration
+  admission "PD-09"
+  source { doc "urn:oiml:pub:b:18:2025" clause "5.6.1" }
+}

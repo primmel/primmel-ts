@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: FWK-03 (negative).
+declaration_gate broken {
+  holder issuing_authority
+  statement
+}

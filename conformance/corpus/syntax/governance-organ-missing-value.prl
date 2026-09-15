@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: FWK-02 (negative).
+governance_organ broken {
+  clause "11"
+  mandate
+}

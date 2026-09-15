@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: FWK-01 (negative).
+participant_kind broken {
+  clause "5.2"
+  label
+}

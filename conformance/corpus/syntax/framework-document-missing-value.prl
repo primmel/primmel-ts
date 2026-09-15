@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: FWK-05 (negative).
+framework_document broken {
+  rank 1
+  title
+}

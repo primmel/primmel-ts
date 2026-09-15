@@ -1,0 +1,10 @@
+process P1 {
+  name "The reviewed process"
+}
+
+comment C1 {
+  on P1
+  author "reviewer"
+  timestamp "2026-09-16T00:00:00Z"
+  text "the upstream review note"
+}

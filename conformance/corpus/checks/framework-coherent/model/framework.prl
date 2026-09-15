@@ -1,0 +1,115 @@
+// Conformance corpus: a small coherent certification framework — two
+// organs, two participant kinds, one declaration kind + the signing
+// gate, the scheme lifecycle, one hierarchy rank, one decision rule.
+// Every cross-register edge resolves (C119 stays silent).
+// Clause: FWK-07 (positive).
+
+governance_organ management_committee {
+  label "Management Committee (MC)"
+  clause "11"
+  mandate "The MC manages the OIML-CS."
+}
+
+governance_organ review_committee {
+  label "Review Committee (RC)"
+  clause "12"
+  mandate "The RC recommends participation decisions."
+  sub_committee_of management_committee
+}
+
+participant_kind issuing_authority {
+  label "OIML Issuing Authority"
+  clause "5.2"
+  definition "Certification body or inspection body approved by the Management Committee to issue OIML certificates."
+  approval {
+    decided_by management_committee
+    on_recommendation_of review_committee
+    procedure "PD-03"
+    clause "11.5 f)"
+  }
+  declaration issuing_authority_declaration
+}
+
+participant_kind test_laboratory {
+  label "Test Laboratory"
+  clause "5.3"
+  definition "Laboratory performing some or all of the tests of an OIML type evaluation."
+  designated_by issuing_authority
+}
+
+declaration_kind issuing_authority_declaration {
+  label "OIML Issuing Authority Declaration"
+  holder issuing_authority
+  clause "5.5.1"
+  procedure "PD-08"
+  definition "Declaration indicating the IA's scope for issuing OIML certificates."
+  scope_model categories_x_schemes
+}
+
+declaration_gate declaration-signed-before-issuance {
+  clause "PD-08 cl. 5"
+  statement "An IA shall not issue any OIML certificate before its Declaration is signed."
+  holder issuing_authority
+  declaration issuing_authority_declaration
+  blocks { issue }
+  scope_checked { category scheme }
+}
+
+process issue {
+  name "Certificate issuance"
+}
+
+process evaluation {
+  name "Type evaluation"
+}
+
+auto_inclusion auto_inclusion {
+  clause "4.2"
+  statement "Categories are automatically included when the Recommendation specifies the following."
+  condition requirements {
+    clause "4.2 a)"
+    description "The Recommendation specifies the requirements."
+  }
+}
+
+scheme_lifecycle category_scheme {
+  applies_to instrument_category
+  initial SCHEME_B
+  entry {
+    action category_included
+    automatic true
+    clause "15.1"
+    conditions_ref auto_inclusion
+  }
+  transition SCHEME_B -> SCHEME_A action transition_period_elapsed {
+    clause "15.2"
+  }
+  transition SCHEME_B -> SCHEME_A action transition_advanced {
+    clause "15.2"
+    decided_by management_committee
+    on_proposal_of review_committee
+  }
+  trigger two-year-transition {
+    kind timer
+    action transition_period_elapsed
+    window { years 2 }
+    clause "15.2"
+  }
+}
+
+framework_document b18 {
+  rank 1
+  doc "OIML B 18"
+  title "Framework for the OIML Certification System (OIML-CS)"
+  approved_by management_committee
+  clause "6 a)"
+}
+
+decision_rule scheme-financing {
+  organ management_committee
+  kind financing
+  clause "16.3"
+  income certificate_registration_fees
+  no_entrance_fees_for { issuing_authority test_laboratory }
+  description "No entrance fees are charged (§16.3)."
+}

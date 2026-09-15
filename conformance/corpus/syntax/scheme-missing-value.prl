@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: FWK-04 (negative).
+scheme_lifecycle broken {
+  initial SCHEME_B
+  applies_to
+}
