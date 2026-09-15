@@ -39,6 +39,8 @@ import type { FormulasUsed } from './FormulasUsed';
 import type ActivityArchetype from './ActivityArchetype';
 import type ParticipantKind from './ParticipantKind';
 import type GovernanceOrgan from './GovernanceOrgan';
+import type DeclarationKind from './Declaration';
+import type { DeclarationGate, DeclarationStatus } from './Declaration';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -159,6 +161,13 @@ export default interface Standard {
   // the governance organs the framework's decision facets reference.
   participantKinds: ParticipantKind[];
   governanceOrgans: GovernanceOrgan[];
+
+  // The framework's Declaration machinery (B 18:2025 §5.5–5.6; PD-08):
+  // the Declaration kinds with their scope models and content slots, the
+  // lifecycle states, and the signing-gate invariants.
+  declarationKinds: DeclarationKind[];
+  declarationStatuses: DeclarationStatus[];
+  declarationGates: DeclarationGate[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve

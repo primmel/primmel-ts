@@ -111,6 +111,9 @@ export default function parse(
     // Primmel v3 certification-framework model (smart TODO.roadmap/40)
     participantKinds: {},
     governanceOrgans: {},
+    declarationKinds: {},
+    declarationStatuses: {},
+    declarationGates: {},
     // Primmel v3 twin interface (TODO.roadmap/32)
     connectorProfiles: {},
     // Primmel v3 continuous compliance (TODO.roadmap/34)

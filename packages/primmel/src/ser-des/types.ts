@@ -41,6 +41,8 @@ import type TextContent from '../types/Text';
 import type ActivityArchetype from '../types/ActivityArchetype';
 import type ParticipantKind from '../types/ParticipantKind';
 import type GovernanceOrgan from '../types/GovernanceOrgan';
+import type DeclarationKind from '../types/Declaration';
+import type { DeclarationGate, DeclarationStatus } from '../types/Declaration';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
 import type Dataspace from '../types/Dataspace';
@@ -216,6 +218,9 @@ export interface ParseContext {
   // Primmel v3 certification-framework model (smart TODO.roadmap/40)
   participantKinds: Record<string, ParticipantKind>;
   governanceOrgans: Record<string, GovernanceOrgan>;
+  declarationKinds: Record<string, DeclarationKind>;
+  declarationStatuses: Record<string, DeclarationStatus>;
+  declarationGates: Record<string, DeclarationGate>;
 
   // Primmel v3 twin interface (TODO.roadmap/32): connector profiles.
   // Endpoints/serve bindings live on the subject (is.endpoints/has.serves).

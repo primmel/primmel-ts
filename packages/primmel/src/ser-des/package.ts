@@ -536,6 +536,9 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   // and organs compose into every scheme-side model through `uses`.
   'participantKinds',
   'governanceOrgans',
+  'declarationKinds',
+  'declarationStatuses',
+  'declarationGates',
 ];
 
 /** Parse one package's content files (manifest excluded) as a single

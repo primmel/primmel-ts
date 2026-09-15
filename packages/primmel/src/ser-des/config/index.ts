@@ -128,6 +128,14 @@ import {
 } from './activityArchetype';
 import { dumpParticipantKind, parseParticipantKind } from './participantKind';
 import { dumpGovernanceOrgan, parseGovernanceOrgan } from './governanceOrgan';
+import {
+  dumpDeclarationGate,
+  dumpDeclarationKind,
+  dumpDeclarationStatus,
+  parseDeclarationGate,
+  parseDeclarationKind,
+  parseDeclarationStatus,
+} from './declaration';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -483,6 +491,28 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseGovernanceOrgan,
     dump: dumpGovernanceOrgan as never,
+  }),
+  // The framework's Declaration machinery (B 18:2025 §5.5–5.6; PD-08).
+  defineConstruct({
+    keyword: 'declaration_kind',
+    field: 'declarationKinds',
+    takesID: true,
+    parse: parseDeclarationKind,
+    dump: dumpDeclarationKind as never,
+  }),
+  defineConstruct({
+    keyword: 'declaration_status',
+    field: 'declarationStatuses',
+    takesID: true,
+    parse: parseDeclarationStatus,
+    dump: dumpDeclarationStatus as never,
+  }),
+  defineConstruct({
+    keyword: 'declaration_gate',
+    field: 'declarationGates',
+    takesID: true,
+    parse: parseDeclarationGate,
+    dump: dumpDeclarationGate as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT
