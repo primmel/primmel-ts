@@ -405,6 +405,23 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 2 (the packages-as-SSOT epic)',
   ),
+  // C122 (smart TODO.roadmap/40 batch 2; the packages-as-SSOT epic): the
+  // ISO/IEC 17067 register is composable — a manifest's scheme_type
+  // token resolves against the composed scheme_type register when one is
+  // in scope, and a scheme_type's determination / attestation /
+  // surveillance.activities entries resolve against the composed
+  // scheme_activity_kind menus. Per-register gating (the C58 doctrine);
+  // the register-free fallback stays (the C89 spelling precedent), and
+  // C98's hard-coded no-surveillance set defers to the register's
+  // surveillance.required when the register is in scope.
+  R(
+    'C122',
+    'scheme-type-resolves',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 2 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

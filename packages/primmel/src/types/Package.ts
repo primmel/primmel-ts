@@ -114,9 +114,13 @@ export interface PackageManifest {
    * Certification program packages only (TODO.v2/01,
    * twin-certification-design Q4): the program's self-classification
    * against the ISO/IEC 17067 scheme-type register (`scheme_type
-   * type_5`) — a free token here (the register lives consumer-side; the
-   * kernel stays register-free, the C89 spelling precedent). C98 warns
-   * when a no-surveillance shape (type_1a/1b) is declared alongside
+   * type_5`) — a free token when no register is in scope (the kernel
+   * stays register-free for register-less packages, the C89 spelling
+   * precedent); when the ISO/IEC 17067 register composes in (smart
+   * TODO.roadmap/40 batch 2), the token must resolve against it (C122)
+   * and C98's no-surveillance judgment defers to the register's
+   * surveillance.required. Without the register, C98 warns when a
+   * no-surveillance shape (type_1a/1b) is declared alongside
    * surveillance machinery.
    */
   schemeType?: string;

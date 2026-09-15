@@ -103,6 +103,11 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   variables: 'foundations',
   figures: 'foundations',
   activityArchetypes: 'foundations',
+  // The ISO/IEC 17067 scheme-type register (smart TODO.roadmap/40 batch
+  // 2) is foundations beside the activity archetypes: a vocabulary other
+  // content classifies against.
+  schemeActivityKinds: 'foundations',
+  schemeTypes: 'foundations',
   connectorProfiles: 'foundations',
   subjects: 'primary',
   instruments: 'primary',

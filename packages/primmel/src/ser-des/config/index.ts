@@ -88,6 +88,12 @@ import {
   parseReferenceMaterial,
 } from './referenceMaterial';
 import { dumpCompetenceKind, parseCompetenceKind } from './competenceKind';
+import {
+  dumpSchemeActivityKind,
+  dumpSchemeType,
+  parseSchemeActivityKind,
+  parseSchemeType,
+} from './schemeType';
 import { dumpPredicate, parsePredicate } from './predicate';
 import { dumpConstraint, parseConstraint } from './constraint';
 import {
@@ -433,6 +439,22 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseCompetenceKind,
     dump: dumpCompetenceKind as never,
+  }),
+  // The ISO/IEC 17067 scheme-type register (smart TODO.roadmap/40 batch
+  // 2): the Table-1 activity menus + the scheme types.
+  defineConstruct({
+    keyword: 'scheme_activity_kind',
+    field: 'schemeActivityKinds',
+    takesID: true,
+    parse: parseSchemeActivityKind,
+    dump: dumpSchemeActivityKind as never,
+  }),
+  defineConstruct({
+    keyword: 'scheme_type',
+    field: 'schemeTypes',
+    takesID: true,
+    parse: parseSchemeType,
+    dump: dumpSchemeType as never,
   }),
   // The relation registry (docs/primmel/18): declared ref predicates.
   defineConstruct({

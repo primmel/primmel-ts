@@ -43,6 +43,7 @@ import type GovernanceOrgan from './GovernanceOrgan';
 import type DeclarationKind from './Declaration';
 import type { DeclarationGate, DeclarationStatus } from './Declaration';
 import type { SchemeDefinition, SchemeLifecycle } from './Scheme';
+import SchemeType, { SchemeActivityKind } from './SchemeType';
 import type FrameworkDocument from './FrameworkDocument';
 import type { AutoInclusion, DocumentPrecedence } from './FrameworkDocument';
 import type DecisionRule from './DecisionRule';
@@ -113,6 +114,12 @@ export default interface Standard {
    *  vocabulary of conformance-test required_competence and laboratory
    *  accreditation_scope entries. */
   competenceKinds: CompetenceKind[];
+  /** The ISO/IEC 17067 scheme-type register (smart TODO.roadmap/40 batch
+   *  2): the Table-1 activity menus (scheme_activity_kind) and the seven
+   *  scheme types a manifest's `scheme_type` token resolves against
+   *  (C122; C98's no-surveillance set defers to the register). */
+  schemeActivityKinds: SchemeActivityKind[];
+  schemeTypes: SchemeType[];
   /** The relation registry (docs/primmel/18): the declared `ref`
    *  predicates every typed reference resolves against. */
   predicates: import('./RefPredicate').RefPredicate[];

@@ -321,6 +321,14 @@
 //      the calendar windows' shape (kind vocabulary; exactly one of
 //      years/months), and the process_model's sequence + register
 //      maintainer edges. Per-register gating (the C58 doctrine)
+//   C122 scheme-type-resolves (smart TODO.roadmap/40 batch 2): the
+//      ISO/IEC 17067 register is composable — a manifest's scheme_type
+//      token resolves against the composed scheme_type register when one
+//      is in scope; a scheme_type's determination / attestation /
+//      surveillance.activities entries resolve against the composed
+//      scheme_activity_kind menus. C98's no-surveillance set defers to
+//      the register's surveillance.required (register-free fallback
+//      stays)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -3417,6 +3425,57 @@ export function checkPackage(
     }
   }
 
+  // ── C122: scheme-type-resolves (smart TODO.roadmap/40 batch 2; the ──
+  // packages-as-SSOT epic) ────────────────────────────────────────────
+  // The ISO/IEC 17067 register is composable: a manifest's `scheme_type`
+  // token resolves against the composed scheme_type register WHEN one is
+  // in scope (per-register gating, the C58 doctrine — a register-less
+  // package keeps the register-free fallback, the C89 spelling
+  // precedent); and a scheme_type's determination / attestation /
+  // surveillance.activities entries resolve against the composed
+  // scheme_activity_kind menus when THAT register is in scope. C98's
+  // hard-coded no-surveillance set defers to the register's
+  // surveillance.required (below, in the C97–C98 block).
+  {
+    const schemeTypeIds = new Set((standard.schemeTypes ?? []).map(t => t.id));
+    const menuIds = new Set(
+      (standard.schemeActivityKinds ?? []).map(k => k.id),
+    );
+    const manifestSchemeType = standard.packageManifest?.schemeType;
+    if (
+      schemeTypeIds.size > 0 &&
+      manifestSchemeType &&
+      !schemeTypeIds.has(manifestSchemeType)
+    ) {
+      err(
+        'C122',
+        `package "${standard.packageManifest!.id}": scheme_type "${manifestSchemeType}" is not a declared scheme type of the in-scope ISO/IEC 17067 register (scheme-type-resolves)`,
+      );
+    }
+    if (menuIds.size > 0) {
+      const resolveMenuEntry = (where: string, facet: string, id: string) => {
+        if (!menuIds.has(id)) {
+          err(
+            'C122',
+            `${where}: ${facet} "${id}" is not a declared scheme activity kind (scheme-type-resolves)`,
+          );
+        }
+      };
+      for (const t of standard.schemeTypes ?? []) {
+        const where = `scheme_type ${t.id}`;
+        for (const d of t.determination) {
+          resolveMenuEntry(where, 'determination', d);
+        }
+        for (const a of t.attestation) {
+          resolveMenuEntry(where, 'attestation', a);
+        }
+        for (const s of t.surveillance?.activities ?? []) {
+          resolveMenuEntry(where, 'surveillance.activities', s);
+        }
+      }
+    }
+  }
+
   // ── C97–C98: the certification program (TODO.v2/01;
   // analysis/twin-certification-design.md Q4) ──
   // A fourth publisher with the product_reference shape: the scheme
@@ -3465,11 +3524,18 @@ export function checkPackage(
     // surveillance machinery. A monitor IS a continuous claim ("without
     // triggers, 'continuous' has no clock" — types/Monitor.ts); an
     // activity_kind { surveillance } process is a surveillance claim.
+    // When the scheme-type register is in scope (smart TODO.roadmap/40
+    // batch 2 — composed via uses), the register's own
+    // surveillance.required adjudicates; the hard-coded type_1a/1b set
+    // is the register-free fallback (the C89 spelling precedent).
     const SCHEME_TYPES_WITHOUT_SURVEILLANCE = new Set(['type_1a', 'type_1b']);
-    if (
-      productManifest.schemeType &&
-      SCHEME_TYPES_WITHOUT_SURVEILLANCE.has(productManifest.schemeType)
-    ) {
+    const registerEntry = (standard.schemeTypes ?? []).find(
+      t => t.id === productManifest.schemeType,
+    );
+    const noSurveillance = registerEntry
+      ? !registerEntry.surveillance?.required
+      : SCHEME_TYPES_WITHOUT_SURVEILLANCE.has(productManifest.schemeType ?? '');
+    if (productManifest.schemeType && noSurveillance) {
       const claims: string[] = [];
       if ((standard.monitors ?? []).length > 0) {
         claims.push(

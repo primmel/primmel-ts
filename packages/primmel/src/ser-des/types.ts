@@ -45,6 +45,7 @@ import type GovernanceOrgan from '../types/GovernanceOrgan';
 import type DeclarationKind from '../types/Declaration';
 import type { DeclarationGate, DeclarationStatus } from '../types/Declaration';
 import type { SchemeDefinition, SchemeLifecycle } from '../types/Scheme';
+import SchemeType, { SchemeActivityKind } from '../types/SchemeType';
 import type FrameworkDocument from '../types/FrameworkDocument';
 import type {
   AutoInclusion,
@@ -189,6 +190,10 @@ export interface ParseContext {
   referenceMaterials: Record<string, ReferenceMaterial>;
   testPointSets: Record<string, TestPointSet>;
   competenceKinds: Record<string, CompetenceKind>;
+  /** The ISO/IEC 17067 scheme-type register (smart TODO.roadmap/40
+   *  batch 2). */
+  schemeActivityKinds: Record<string, SchemeActivityKind>;
+  schemeTypes: Record<string, SchemeType>;
   /** The relation registry (docs/primmel/18): declared ref predicates. */
   predicates: Record<string, import('../types/RefPredicate').RefPredicate>;
   constraints: Record<string, Constraint>;

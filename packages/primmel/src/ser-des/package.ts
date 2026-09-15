@@ -510,6 +510,11 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'referenceMaterials',
   'testPointSets',
   'competenceKinds',
+  // The ISO/IEC 17067 scheme-type register (smart TODO.roadmap/40 batch
+  // 2) composes like every register — the scheme-side packages resolve
+  // their manifest `scheme_type` against it through `uses` (C122).
+  'schemeActivityKinds',
+  'schemeTypes',
   'constraints',
   'discrepancyRecords',
   'stateMachines',
