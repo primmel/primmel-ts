@@ -37,6 +37,8 @@ import type { Invariant } from './Invariant';
 import type { TestSequence } from './TestSequence';
 import type { FormulasUsed } from './FormulasUsed';
 import type ActivityArchetype from './ActivityArchetype';
+import type ParticipantKind from './ParticipantKind';
+import type GovernanceOrgan from './GovernanceOrgan';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -150,6 +152,13 @@ export default interface Standard {
   // classifiable activity-kind register a process's `activity_kind`
   // classification facet resolves against (C58).
   activityArchetypes: ActivityArchetype[];
+
+  // Primmel v3 certification-framework model (smart TODO.roadmap/40; the
+  // packages-as-SSOT epic): the participant-kind register (who may act in
+  // the scheme, on what delegated competence basis, admitted by whom) and
+  // the governance organs the framework's decision facets reference.
+  participantKinds: ParticipantKind[];
+  governanceOrgans: GovernanceOrgan[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve

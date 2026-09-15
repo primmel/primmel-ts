@@ -531,6 +531,11 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   // protection.
   'formulasUsed',
   'texts',
+  // The certification-framework registers (smart TODO.roadmap/40; the
+  // packages-as-SSOT epic) — the framework package's participant kinds
+  // and organs compose into every scheme-side model through `uses`.
+  'participantKinds',
+  'governanceOrgans',
 ];
 
 /** Parse one package's content files (manifest excluded) as a single

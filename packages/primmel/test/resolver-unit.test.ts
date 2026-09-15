@@ -63,6 +63,8 @@ function emptyContext(): ParseContext {
     quantityRegisters: {},
     duals: {},
     activityArchetypes: {},
+    participantKinds: {},
+    governanceOrgans: {},
     connectorProfiles: {},
     monitors: {},
     passports: {},

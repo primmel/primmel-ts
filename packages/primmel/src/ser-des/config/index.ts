@@ -126,6 +126,8 @@ import {
   dumpActivityArchetype,
   parseActivityArchetype,
 } from './activityArchetype';
+import { dumpParticipantKind, parseParticipantKind } from './participantKind';
+import { dumpGovernanceOrgan, parseGovernanceOrgan } from './governanceOrgan';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -465,6 +467,22 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseActivityArchetype,
     dump: dumpActivityArchetype as never,
+  }),
+  // Primmel v3 certification-framework model (smart TODO.roadmap/40; the
+  // packages-as-SSOT epic): the participant-kind register + the organs.
+  defineConstruct({
+    keyword: 'participant_kind',
+    field: 'participantKinds',
+    takesID: true,
+    parse: parseParticipantKind,
+    dump: dumpParticipantKind as never,
+  }),
+  defineConstruct({
+    keyword: 'governance_organ',
+    field: 'governanceOrgans',
+    takesID: true,
+    parse: parseGovernanceOrgan,
+    dump: dumpGovernanceOrgan as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT

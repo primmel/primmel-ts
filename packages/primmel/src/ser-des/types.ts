@@ -39,6 +39,8 @@ import type { TestSequence } from '../types/TestSequence';
 import type { FormulasUsed } from '../types/FormulasUsed';
 import type TextContent from '../types/Text';
 import type ActivityArchetype from '../types/ActivityArchetype';
+import type ParticipantKind from '../types/ParticipantKind';
+import type GovernanceOrgan from '../types/GovernanceOrgan';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
 import type Dataspace from '../types/Dataspace';
@@ -210,6 +212,10 @@ export interface ParseContext {
 
   // Primmel v3 ISO/IEC 17000 activity taxonomy (TODO.roadmap/39)
   activityArchetypes: Record<string, ActivityArchetype>;
+
+  // Primmel v3 certification-framework model (smart TODO.roadmap/40)
+  participantKinds: Record<string, ParticipantKind>;
+  governanceOrgans: Record<string, GovernanceOrgan>;
 
   // Primmel v3 twin interface (TODO.roadmap/32): connector profiles.
   // Endpoints/serve bindings live on the subject (is.endpoints/has.serves).
