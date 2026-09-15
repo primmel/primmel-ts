@@ -80,6 +80,19 @@ before(() => {
 }`,
   );
 
+  // The certification-framework register (v3.3): framework/ is a
+  // convention dir of its own (participant kinds, organs, declarations,
+  // schemes, documents, decision rules).
+  mkdirSync(join(dir, 'framework'));
+  writeFileSync(
+    join(dir, 'framework', 'participants.prl'),
+    `participant_kind issuing_authority {
+  label "OIML Issuing Authority"
+  clause "5.2"
+  definition "Certification body approved by the Management Committee."
+}`,
+  );
+
   writeFileSync(
     join(dir, 'terminology.prl'),
     `term load-cell {
@@ -112,6 +125,10 @@ describe('W2 package convention + loader', () => {
     assert.deepEqual(content, [...content].sort());
     assert.ok(content.some(p => p.endsWith('model/instrument.prl')));
     assert.ok(
+      content.some(p => p.endsWith('framework/participants.prl')),
+      'the framework convention dir included',
+    );
+    assert.ok(
       content.some(p => p.endsWith('terminology.prl')),
       'root-level .prl included',
     );
@@ -139,6 +156,10 @@ describe('W2 package convention + loader', () => {
     assert.ok(m.requirements.some(r => r.id === '/req/metrological/mpe'));
     assert.ok(m.forms.some(f => f.id === 'F1'));
     assert.ok(m.terms.some(t => t.id === 'load-cell'));
+    assert.ok(
+      m.participantKinds.some(k => k.id === 'issuing_authority'),
+      'framework/participants.prl loads into the merged model',
+    );
   });
 
   it('detects duplicate ids ACROSS files', () => {

@@ -8,6 +8,9 @@
 //   <dir>/specification/**/*.prl — requirements/conformance/tables/symbols/calcs
 //   <dir>/execution/**/*.prl  — forms/subforms/test-report
 //   <dir>/evaluation/*.prl    — workflow/state-machines/processes/roles/etc.
+//   <dir>/framework/**/*.prl  — the certification-framework registers (v3.3:
+//                             participant kinds, organs, declarations, schemes,
+//                             documents, decision rules)
 //   <dir>/*.prl               — terminology/references/notes/etc. (root level)
 //
 // Merge semantics: files are preprocessed (includes resolved) and parsed
@@ -42,6 +45,7 @@ const CONVENTION_DIRS = [
   'specification',
   'execution',
   'evaluation',
+  'framework',
 ];
 
 function collectPrlFiles(dir: string): string[] {
