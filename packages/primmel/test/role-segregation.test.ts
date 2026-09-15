@@ -16,6 +16,9 @@
 //                       member of its own pair.
 //   ONE_MEMBER        — a disjoint constraint with a single pair member.
 //   BAD_KIND          — an undeclared segregation kind.
+//   DISJOINT_WITH_BAR — a disjoint constraint carrying the bar facets
+//                       (smart TODO.roadmap/40 batch 2, the XOR legs).
+//   BAR_WITHOUT_BARRED / BAR_WITH_PAIR — malformed consultancy bars.
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -153,6 +156,56 @@ process review {
 }
 `;
 
+const DISJOINT_WITH_BAR = `
+process evaluation {
+  name "Evaluation"
+}
+process review {
+  name "Review"
+  segregation {
+    constraint disjoint_with_period {
+      kind case_personnel_disjoint
+      clause "7.5.1"
+      pair { review evaluation }
+      period P2Y
+      statement "Seeded violation — a disjoint constraint carries no period."
+    }
+  }
+}
+`;
+
+const BAR_WITHOUT_BARRED = `
+process review {
+  name "Review"
+  segregation {
+    constraint empty_bar {
+      kind consultancy_bar
+      clause "4.2.10"
+      period P2Y
+      statement "Seeded violation — a bar that bars nothing."
+    }
+  }
+}
+`;
+
+const BAR_WITH_PAIR = `
+process evaluation {
+  name "Evaluation"
+}
+process review {
+  name "Review"
+  segregation {
+    constraint bar_with_pair {
+      kind consultancy_bar
+      clause "7.13.6"
+      pair { review evaluation }
+      barred { consultancy }
+      statement "Seeded violation — a bar carries no pair."
+    }
+  }
+}
+`;
+
 function makePackage(body: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'primmel-segr-'));
   writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
@@ -263,6 +316,33 @@ describe('C59 segregation-members-resolve', () => {
     );
     assert.equal(issues.length, 1);
     assert.ok(issues[0].message.includes('"role_disjoint"'));
+  });
+
+  it('flags a disjoint constraint carrying the bar facets (the XOR leg, batch 2)', () => {
+    const issues = checkPackage(makePackage(DISJOINT_WITH_BAR)).filter(
+      i => i.check === 'C59',
+    );
+    assert.equal(issues.length, 1);
+    assert.ok(issues[0].message.includes('disjoint_with_period'));
+    assert.ok(issues[0].message.includes('ONLY a pair'));
+  });
+
+  it('flags a consultancy bar that bars nothing (the XOR leg, batch 2)', () => {
+    const issues = checkPackage(makePackage(BAR_WITHOUT_BARRED)).filter(
+      i => i.check === 'C59',
+    );
+    assert.equal(issues.length, 1);
+    assert.ok(issues[0].message.includes('empty_bar'));
+    assert.ok(issues[0].message.includes('barred list is required'));
+  });
+
+  it('flags a consultancy bar declaring a pair (the XOR leg, batch 2)', () => {
+    const issues = checkPackage(makePackage(BAR_WITH_PAIR)).filter(
+      i => i.check === 'C59',
+    );
+    assert.equal(issues.length, 1);
+    assert.ok(issues[0].message.includes('bar_with_pair'));
+    assert.ok(issues[0].message.includes('declares a pair'));
   });
 
   it('is silent for processes declaring no segregation constraints', () => {

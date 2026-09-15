@@ -151,7 +151,10 @@
 //      (TODO.roadmap/39b — ISO/IEC 17065 role segregation) are
 //      well-formed: pair members resolve to declared processes (or the
 //      reserved case_personnel token), are distinct, and include the
-//      owning process
+//      owning process; the kind-conditional XOR (smart TODO.roadmap/40
+//      batch 2): a disjoint constraint is ONLY a pair, a consultancy
+//      bar carries barred relations (required) + an optional period and
+//      never a pair
 //   C74 process-io-type-coherence (TODO.roadmap/38): typed transition
 //      boundaries — one name (signature in/out, registers) carries ONE
 //      type; two declarations of the same name whose quantity
@@ -1729,6 +1732,11 @@ export function checkPackage(
   // never roles — a scheme may bind one role to evaluation, review AND
   // decision, so the norms quantify over process involvement. Per-
   // assignment runtime enforcement is the platform's business (task 44).
+  // The kind-conditional shape (smart TODO.roadmap/40 batch 2 — the YAML
+  // schema's allOf discipline, data/schemas/abstract-processes.yaml): a
+  // case_personnel_disjoint constraint is ONLY a pair (no period, no
+  // barred relations); a consultancy_bar is ONLY a barred-relations list
+  // with an optional period (never a pair).
   // Mirror of the OIML SMART linker's R24 abstract-process-segregation.
   {
     const SEGREGATION_CASE_PERSONNEL = 'case_personnel';
@@ -1755,6 +1763,14 @@ export function checkPackage(
             );
             continue;
           }
+          if (s.period !== '' || s.barred.length > 0) {
+            err(
+              'C59',
+              `process ${p.id}: segregation constraint "${s.id}" is case_personnel_disjoint but declares ${
+                s.period !== '' ? `period "${s.period}"` : 'barred relations'
+              } — a disjoint constraint is ONLY a pair; the period/barred facets belong to consultancy_bar (segregation-members-resolve)`,
+            );
+          }
           const [a, b] = s.pair;
           if (a === b) {
             err(
@@ -1777,6 +1793,23 @@ export function checkPackage(
             err(
               'C59',
               `process ${p.id}: segregation constraint "${s.id}" is declared on process "${p.id}" but neither pair member is "${p.id}" — the constrained process owns its segregation constraints (segregation-members-resolve)`,
+            );
+          }
+        } else {
+          // consultancy_bar — the barred client relations are REQUIRED
+          // (a bar that bars nothing is no bar); the pair is the disjoint
+          // kind's shape and never appears here; the period is optional
+          // (4.2.10 body-specified vs 7.13.6 fixed P2Y).
+          if (s.barred.length === 0) {
+            err(
+              'C59',
+              `process ${p.id}: segregation constraint "${s.id}" is consultancy_bar but bars no client relation — the barred list is required (segregation-members-resolve)`,
+            );
+          }
+          if (s.pair.length > 0) {
+            err(
+              'C59',
+              `process ${p.id}: segregation constraint "${s.id}" is consultancy_bar but declares a pair — the pair is the case_personnel_disjoint shape; a bar carries barred relations and an optional period only (segregation-members-resolve)`,
             );
           }
         }
