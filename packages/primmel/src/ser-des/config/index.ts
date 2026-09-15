@@ -158,6 +158,11 @@ import {
   parseFrameworkDocument,
 } from './frameworkDocument';
 import { dumpDecisionRule, parseDecisionRule } from './decisionRule';
+import { dumpDocumentModule, parseDocumentModule } from './documentModule';
+import {
+  dumpInformativeAnnex,
+  parseInformativeAnnex,
+} from './informativeAnnex';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -607,6 +612,23 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseDecisionRule,
     dump: dumpDecisionRule as never,
+  }),
+  // The per-document content modules + the informative annexes (smart
+  // TODO.roadmap/40 batch 2) — first-class what the directory convention
+  // carried; the declared namespace pin C119 prefers.
+  defineConstruct({
+    keyword: 'document_module',
+    field: 'documentModules',
+    takesID: true,
+    parse: parseDocumentModule,
+    dump: dumpDocumentModule as never,
+  }),
+  defineConstruct({
+    keyword: 'informative_annex',
+    field: 'informativeAnnexes',
+    takesID: true,
+    parse: parseInformativeAnnex,
+    dump: dumpInformativeAnnex as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT

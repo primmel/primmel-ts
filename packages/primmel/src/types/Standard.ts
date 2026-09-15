@@ -47,6 +47,8 @@ import SchemeType, { SchemeActivityKind } from './SchemeType';
 import type FrameworkDocument from './FrameworkDocument';
 import type { AutoInclusion, DocumentPrecedence } from './FrameworkDocument';
 import type DecisionRule from './DecisionRule';
+import type DocumentModule from './DocumentModule';
+import type InformativeAnnex from './InformativeAnnex';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -202,6 +204,15 @@ export default interface Standard {
   // decisions with their voting blocks, advisory tasks, appeal rulings,
   // registration principles, legacy validity, and financing.
   decisionRules: DecisionRule[];
+
+  // The per-document content modules (smart TODO.roadmap/40 batch 2) —
+  // first-class what today is a directory convention: the document's
+  // identity, its OWNED requirement namespace (the declared pin C119
+  // prefers over the requirement_class-id derivation), the module
+  // pipeline's sequence, and the participant/expert registers. The
+  // informative annexes bind the cited guidance documents.
+  documentModules: DocumentModule[];
+  informativeAnnexes: InformativeAnnex[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve

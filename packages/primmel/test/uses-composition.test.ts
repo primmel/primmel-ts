@@ -728,4 +728,92 @@ requirement_class /req/owned2 {
       [],
     );
   });
+
+  // ── The declared-namespace pin (smart TODO.roadmap/40 batch 2): a
+  // document_module `namespace` is the PREFERRED owned-scope declaration —
+  // harvested before the requirement_class-id derivation, so a package
+  // whose module declares a namespace but declares no requirement_class
+  // pins that scope identically.
+
+  const MODULE_LAYER_FILES = {
+    'evaluation/modules.prl': `document_module toy_doc {
+  document "Toy governing document"
+  title "The toy layer's owned module"
+  namespace /req/owned
+}`,
+  };
+
+  function makeModulePinComposition(recFiles: Record<string, string>): string {
+    makePackage(
+      'toy-module-layer',
+      'package { id toy-module-layer kind core provides { module-provisions } }',
+      MODULE_LAYER_FILES,
+    );
+    return makePackage(
+      'toy-module-pin-rec',
+      'package { id toy-module-pin-rec kind rec uses { toy-module-layer } requires { toy-module-layer module-provisions } }',
+      recFiles,
+    );
+  }
+
+  it('a document_module-declared namespace pins the scope even with no requirement_class upstream', () => {
+    const recDir = makeModulePinComposition({
+      'specification/requirements/overlay.prl': `requirement_class /req/owned/local {
+  name "A rec-local scope inside the module's declared namespace"
+  subject "ToyBase"
+  guidance "illegal"
+}`,
+    });
+    assert.throws(
+      () => loadPackage(recDir, { resolvePackage }),
+      (e: unknown) => {
+        assert.ok(e instanceof CompositionError);
+        assert.equal(e.rule, 'namespace-pin-violation');
+        assert.match(e.message, /toy-module-pin-rec/);
+        assert.match(e.message, /\/req\/owned/);
+        assert.match(e.message, /toy-module-layer/);
+        return true;
+      },
+    );
+  });
+
+  it('checkPackage reports the declared-namespace pin violation as C119', () => {
+    const recDir = makeModulePinComposition({
+      'specification/requirements/overlay.prl': `requirement_class /req/owned/local {
+  name "illegal"
+  subject "ToyBase"
+  guidance "illegal"
+}`,
+    });
+    const issues = checkPackage(recDir, { resolvePackage });
+    const c119 = issues.filter(i => i.check === 'C119');
+    assert.equal(c119.length, 1);
+    assert.equal(c119[0].severity, 'error');
+    assert.match(c119[0].message, /namespace-pin-violation/);
+  });
+
+  it('a sibling scope beside a document_module-declared namespace stays clean', () => {
+    const recDir = makeModulePinComposition({
+      'specification/requirements/rec.prl': `requirement_class /req/mine {
+  name "The rec's own scope"
+  subject "ToyBase"
+  guidance "beside the module's declared namespace, not under it"
+}
+
+requirement /req/mine/local {
+  name "Rec-local provision"
+  statement "The instrument shall comply."
+  verification { method testing }
+}`,
+    });
+    const { standard, composition } = loadPackageWithIssues(recDir, {
+      resolvePackage,
+    });
+    assert.deepEqual(composition?.order, [
+      'toy-module-layer',
+      'toy-module-pin-rec',
+    ]);
+    assert.ok(standard.requirementClasses.some(rc => rc.id === '/req/mine'));
+    assert.ok(standard.documentModules.some(m => m.id === 'toy_doc'));
+  });
 });

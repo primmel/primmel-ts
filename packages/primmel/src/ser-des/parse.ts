@@ -125,6 +125,9 @@ export default function parse(
     documentPrecedences: {},
     autoInclusions: {},
     decisionRules: {},
+    // The document modules + informative annexes (smart TODO.roadmap/40 batch 2)
+    documentModules: {},
+    informativeAnnexes: {},
     // Primmel v3 twin interface (TODO.roadmap/32)
     connectorProfiles: {},
     // Primmel v3 continuous compliance (TODO.roadmap/34)

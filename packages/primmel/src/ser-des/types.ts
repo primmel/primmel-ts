@@ -52,6 +52,8 @@ import type {
   DocumentPrecedence,
 } from '../types/FrameworkDocument';
 import type DecisionRule from '../types/DecisionRule';
+import type DocumentModule from '../types/DocumentModule';
+import type InformativeAnnex from '../types/InformativeAnnex';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
 import type Dataspace from '../types/Dataspace';
@@ -242,6 +244,11 @@ export interface ParseContext {
   documentPrecedences: Record<string, DocumentPrecedence>;
   autoInclusions: Record<string, AutoInclusion>;
   decisionRules: Record<string, DecisionRule>;
+
+  // The per-document content modules + the informative annexes (smart
+  // TODO.roadmap/40 batch 2).
+  documentModules: Record<string, DocumentModule>;
+  informativeAnnexes: Record<string, InformativeAnnex>;
 
   // Primmel v3 twin interface (TODO.roadmap/32): connector profiles.
   // Endpoints/serve bindings live on the subject (is.endpoints/has.serves).

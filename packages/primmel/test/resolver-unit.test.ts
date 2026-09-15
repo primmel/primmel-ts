@@ -77,6 +77,8 @@ function emptyContext(): ParseContext {
     documentPrecedences: {},
     autoInclusions: {},
     decisionRules: {},
+    documentModules: {},
+    informativeAnnexes: {},
     connectorProfiles: {},
     monitors: {},
     passports: {},

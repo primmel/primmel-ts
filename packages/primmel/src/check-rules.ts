@@ -422,6 +422,21 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 2 (the packages-as-SSOT epic)',
   ),
+  // C123 (smart TODO.roadmap/40 batch 2; the packages-as-SSOT epic): the
+  // document module's edges resolve — sequence members → process,
+  // register maintainers → governance_organ (per-register gated, the C58
+  // doctrine), the declared namespace is an absolute requirement-
+  // namespace path (the pin C119 now prefers over the requirement_class-
+  // id derivation), and the informative annex's applies_to names a known
+  // package (locator-gated, the C97-class resolution discipline).
+  R(
+    'C123',
+    'document-module-references-resolve',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 2 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

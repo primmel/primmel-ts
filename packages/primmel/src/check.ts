@@ -329,6 +329,13 @@
 //      scheme_activity_kind menus. C98's no-surveillance set defers to
 //      the register's surveillance.required (register-free fallback
 //      stays)
+//   C123 document-module-references-resolve (smart TODO.roadmap/40 batch
+//      2): the document module's edges resolve — sequence → process,
+//      register maintainer → governance_organ (per-register gated), the
+//      declared namespace is an absolute requirement-namespace path (the
+//      pin C119 prefers over the requirement_class-id derivation), and
+//      the informative annex's applies_to names a known package
+//      (locator-gated)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -3471,6 +3478,63 @@ export function checkPackage(
         }
         for (const s of t.surveillance?.activities ?? []) {
           resolveMenuEntry(where, 'surveillance.activities', s);
+        }
+      }
+    }
+  }
+
+  // ── C123: document-module-references-resolve (smart TODO.roadmap/40 ──
+  // batch 2; the packages-as-SSOT epic) ───────────────────────────────
+  // The document module's edges resolve: the sequence members against
+  // the composed processes, the register maintainers against the
+  // governance_organ register (per-register gating, the C58 doctrine),
+  // and the declared namespace is an absolute requirement-namespace path
+  // (the register-free shape leg). The informative annex's applies_to
+  // names a known package — checked through the dependency-manifest
+  // locator, so the leg is gated on a locator being supplied (the
+  // C97-class resolution discipline; without a locator the sibling scan
+  // cannot adjudicate non-sibling ids and the leg stays silent).
+  {
+    const dmOrganIds = new Set(
+      (standard.governanceOrgans ?? []).map(o => o.id),
+    );
+    const dmProcessIds = new Set((standard.processes ?? []).map(p => p.id));
+    for (const m of standard.documentModules ?? []) {
+      const where = `document_module ${m.id}`;
+      if (m.namespace !== '' && !m.namespace.startsWith('/')) {
+        err(
+          'C123',
+          `${where}: namespace "${m.namespace}" is not an absolute requirement-namespace path (e.g. /req/cs/${m.id}) — the declared pin C119 guards must be a path (document-module-references-resolve)`,
+        );
+      }
+      if (dmProcessIds.size > 0) {
+        for (const s of m.sequence ?? []) {
+          if (!dmProcessIds.has(s)) {
+            err(
+              'C123',
+              `${where}: sequence "${s}" is not a declared process (document-module-references-resolve)`,
+            );
+          }
+        }
+      }
+      if (dmOrganIds.size > 0) {
+        for (const r of m.registers ?? []) {
+          if (r.maintainer !== '' && !dmOrganIds.has(r.maintainer)) {
+            err(
+              'C123',
+              `${where} register ${r.id}: maintainer "${r.maintainer}" is not a declared governance organ (document-module-references-resolve)`,
+            );
+          }
+        }
+      }
+    }
+    if (options.resolvePackage) {
+      for (const a of standard.informativeAnnexes ?? []) {
+        if (a.appliesTo !== '' && !resolveDepManifest(a.appliesTo)) {
+          err(
+            'C123',
+            `informative_annex ${a.id}: applies_to "${a.appliesTo}" does not resolve to a known package — the CASCO layer the annex applies to must resolve (document-module-references-resolve)`,
+          );
         }
       }
     }

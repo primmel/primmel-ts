@@ -136,6 +136,9 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // processes: the pipeline sequence/registers are the abstract-process
   // model's file-level furniture.
   processModels: 'tertiary',
+  // Document modules (smart TODO.roadmap/40 batch 2) are tertiary beside
+  // processes: the module is the pipeline's document-level furniture.
+  documentModules: 'tertiary',
   pages: 'tertiary',
   dataclasses: 'tertiary',
   regs: 'tertiary',
@@ -152,6 +155,11 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   viewProfiles: 'tertiary',
   provisions: 'tertiary',
   notes: 'cross-cutting',
+  // Informative annexes (smart TODO.roadmap/40 batch 2) are
+  // cross-cutting beside notes: an annex binds cited guidance into the
+  // module — annotation about the document set, not machinery inside
+  // the model.
+  informativeAnnexes: 'cross-cutting',
   // Invariants (smart gap-close E9) are cross-cutting beside notes: the
   // typed replacement for the note-family encoding — doctrine about the
   // model, not machinery inside it (the enforcement claims point at the

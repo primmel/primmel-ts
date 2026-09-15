@@ -561,6 +561,10 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'documentPrecedences',
   'autoInclusions',
   'decisionRules',
+  // The document modules + informative annexes (smart TODO.roadmap/40
+  // batch 2) compose like the framework registers they sit beside.
+  'documentModules',
+  'informativeAnnexes',
   // The pre-existing drift closed (the packages-as-SSOT epic): these
   // collections existed as constructs but were never merged, so `uses`
   // composition silently dropped them — comments, predicates, the
@@ -684,16 +688,27 @@ function composePackage(
     }
   }
   // Requirement-namespace pins (the smart AGENTS.d/07 pin doctrine,
-  // TODO.editor/05 Q3 — linter rule C119): a requirement scope (a
-  // requirement_class id path, e.g. /req/cs) declared by an upstream
-  // package is OWNED by that package — a downstream package may reference
-  // its provisions but MUST NOT declare a requirement class or a
-  // requirement whose id sits at or under an owned namespace (the REC-WINS
-  // merge would otherwise silently redefine scheme provisions). The
-  // exact-id case is uses-no-redefine above; this guard is the
-  // strict-descendant leg.
+  // TODO.editor/05 Q3 — linter rule C119): a requirement scope declared
+  // by an upstream package is OWNED by that package — a downstream
+  // package may reference its provisions but MUST NOT declare a
+  // requirement class or a requirement whose id sits at or under an
+  // owned namespace (the REC-WINS merge would otherwise silently
+  // redefine scheme provisions). The exact-id case is uses-no-redefine
+  // above; this guard is the strict-descendant leg.
+  //
+  // The owned scope is PREFERABLY the document_module's declared
+  // `namespace` (smart TODO.roadmap/40 batch 2 — the explicit pin); the
+  // requirement_class id paths remain the derivation fallback for
+  // packages declaring no module. The declared pin is harvested FIRST,
+  // so a package whose module namespace differs from its requirement-
+  // class id path pins the DECLARED scope, not the derived one.
   const ownedScopes = new Map<string, string>(); // scope id → owning package
   const harvestScopes = (id: string, ctx: ParseContext) => {
+    for (const m of Object.values(ctx.documentModules)) {
+      if (m.namespace !== '' && !ownedScopes.has(m.namespace)) {
+        ownedScopes.set(m.namespace, id);
+      }
+    }
     for (const key of Object.keys(ctx.requirementClasses)) {
       if (!ownedScopes.has(key)) {
         ownedScopes.set(key, id);
