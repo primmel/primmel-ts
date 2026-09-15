@@ -1,0 +1,9 @@
+# Conformance corpus: an informative annex document role outside the
+# vocabulary — the role is parse-enforced (the fail-closed precedent).
+# Clause: FWK-11 (negative).
+informative_annex broken {
+  document {
+    id "D 32"
+    role normative
+  }
+}

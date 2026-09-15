@@ -1,0 +1,43 @@
+# Conformance corpus: the document-module constructs — a
+# document_module (document citation, title, edition, year, the owned
+# requirement namespace, the shared sequence/register sub-grammar, the
+# clause-URN provenance) and an informative_annex (the cited guidance
+# document with its parse-enforced role, the applies_to package edge,
+# and the highlights).
+# Clause: FWK-11 (positive).
+document_module pd_03 {
+  document "OIML-CS PD-03"
+  title "Application and approval of OIML Issuing Authorities"
+  edition "5"
+  year 2025
+  namespace /req/cs/pd-03
+  sequence { ia_application ia_assessment ia_rc_review }
+  register lme_register {
+    label "ILAC-IAF-OIML list of Legal Metrology Experts"
+    clause "PD-02, 9"
+    maintainer executive_secretary
+    published "The OIML-CS pages of the OIML website."
+    entries "Per Legal Metrology Expert: identity, contact, scope."
+  }
+  source { doc "urn:oiml:pub:cs:pd-03:2025" clause "" }
+}
+informative_annex d032 {
+  document {
+    id "D 32"
+    title "General requirements for software controlled measuring instruments"
+    edition 2018
+    year 2018
+    role informative
+    source "data/oiml-d032/document.presentation.xml"
+  }
+  applies_to iso-iec-17065
+  applied_by "PD-03, 4.3"
+  scope "Software requirements relevant to the approval of Issuing Authorities."
+  numbering_caution "The D 32 clause numbering differs across editions."
+  highlight design_evaluation_checklist {
+    clause "G.7.1.1-3"
+    title "Type evaluation includes design evaluation"
+    statement "The design of the instrument shall be evaluated against the applicable requirements."
+    discharged_by "The PD-03 application checklist."
+  }
+}

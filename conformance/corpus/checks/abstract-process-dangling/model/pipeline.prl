@@ -1,0 +1,112 @@
+// Conformance corpus: the coherent framework and abstract-process
+// pipeline with ONE seeded violation — the abstract process's organs
+// list names an organ no register declares (steering_committee). C121
+// must fire exactly once.
+// Clause: FWK-12 (negative).
+
+governance_organ management_committee {
+  label "Management Committee (MC)"
+  clause "11"
+  mandate "The MC manages the OIML-CS."
+}
+participant_kind issuing_authority {
+  label "OIML Issuing Authority"
+  clause "5.2"
+  definition "Certification body approved by the Management Committee to issue OIML certificates."
+}
+declaration_kind issuing_authority_declaration {
+  label "OIML Issuing Authority Declaration"
+  holder issuing_authority
+  clause "5.5.1"
+  procedure "PD-08"
+  definition "Declaration indicating the IA's scope for issuing OIML certificates."
+  scope_model categories_x_schemes
+}
+declaration_gate declaration-signed-before-issuance {
+  clause "PD-08 cl. 5"
+  statement "An IA shall not issue any OIML certificate before its Declaration is signed."
+  holder issuing_authority
+  declaration issuing_authority_declaration
+  blocks { issue_certificate }
+  scope_checked { category scheme }
+}
+decision_rule mc-participation-decision {
+  organ management_committee
+  kind participation
+  clause "11.5"
+  description "The MC decides on applications for participation."
+}
+role applicant {
+  name "Applicant"
+}
+approval ia_accept_application {
+  name "IA acceptance of the application"
+  modality scheme
+}
+
+process submit_application {
+  name "Submit application (the realizing concrete process)"
+}
+process issue_certificate {
+  name "Certificate issuance"
+}
+process ia_application {
+  name "IA application"
+  summary "The manufacturer or its authorized representative applies to an OIML Issuing Authority."
+  executor actor
+  roles { applicant }
+  organs { steering_committee }
+  participant_kinds { issuing_authority }
+  signature {
+    in { }
+    out { applications }
+  }
+  evidence {
+    application_record { description "The application record as received." required true }
+    correspondence_log { description "The correspondence log." }
+  }
+  decision { rule mc-participation-decision clause "PD-03, 5.3.2" }
+  declaration { kind issuing_authority_declaration action sign }
+  discharges_gate declaration-signed-before-issuance
+  realized_by { submit_application }
+  approved_by { ia_accept_application }
+  windows {
+    window lodging_window {
+      kind max_elapsed
+      clause "PD-01, 8.2/8.3"
+      anchor informed_at
+      applies_to lodged_at
+      window { months 1 }
+      breach rule_inadmissible
+      description "The written appeal reaches the Executive Secretary within one month."
+    }
+    window cooling_off {
+      kind min_elapsed
+      clause "PD-01, 9.1"
+      anchor decided_at
+      applies_to effective_at
+      window { years 1 }
+    }
+  }
+  activity_kind { selection }
+  source { doc "urn:oiml:pub:cs:pd-05:2024" clause "4.1" }
+}
+process ia_assessment {
+  name "IA assessment"
+  signature {
+    in { applications assessors }
+    out { assessment_reports }
+  }
+  realized_by { submit_application }
+}
+process_model evaluation {
+  sequence { ia_application ia_assessment }
+  register lme_register {
+    label "ILAC-IAF-OIML list of Legal Metrology Experts"
+    clause "PD-02, 9"
+    maintainer management_committee
+    published "The OIML-CS pages of the OIML website."
+    entries "Per Legal Metrology Expert: identity, contact, scope."
+  }
+  source { doc "urn:oiml:pub:cs:pd-05:2024" clause "4" }
+}

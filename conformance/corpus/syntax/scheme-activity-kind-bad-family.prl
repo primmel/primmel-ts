@@ -1,0 +1,9 @@
+# Conformance corpus: a scheme_activity_kind family outside the
+# ISO/IEC 17067 table vocabulary — the family is parse-enforced (the
+# fail-closed precedent).
+# Clause: FWK-10 (negative).
+scheme_activity_kind broken {
+  family alchemy
+  row "?"
+  label "broken"
+}

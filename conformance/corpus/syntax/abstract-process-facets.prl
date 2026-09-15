@@ -1,0 +1,53 @@
+# Conformance corpus: the abstract-process framework-binding facets —
+# summary, the roles/organs/participant_kinds lists, evidence with its
+# required flag, the decision and declaration bindings, discharges_gate,
+# realized_by/approved_by, and the calendar windows (max_elapsed and
+# min_elapsed, the scheme_lifecycle window sub-grammar).
+# Clause: FWK-08 (positive).
+process submit_application {
+  name "Submit application (the realizing concrete process)"
+}
+process issue_certificate {
+  name "Certificate issuance"
+}
+process ia_application {
+  name "IA application"
+  summary "The manufacturer or its authorized representative applies to an OIML Issuing Authority."
+  executor actor
+  roles { applicant }
+  organs { management_committee }
+  participant_kinds { issuing_authority }
+  signature {
+    in { }
+    out { applications }
+  }
+  evidence {
+    application_record { description "The application record as received." required true }
+    correspondence_log { description "The correspondence log." }
+  }
+  decision { rule mc-participation-decision clause "PD-03, 5.3.2" }
+  declaration { kind issuing_authority_declaration action sign }
+  discharges_gate declaration-signed-before-issuance
+  realized_by { submit_application }
+  approved_by { ia_accept_application }
+  windows {
+    window lodging_window {
+      kind max_elapsed
+      clause "PD-01, 8.2/8.3"
+      anchor informed_at
+      applies_to lodged_at
+      window { months 1 }
+      breach rule_inadmissible
+      description "The written appeal reaches the Executive Secretary within one month."
+    }
+    window cooling_off {
+      kind min_elapsed
+      clause "PD-01, 9.1"
+      anchor decided_at
+      applies_to effective_at
+      window { years 1 }
+    }
+  }
+  activity_kind { selection }
+  source { doc "urn:oiml:pub:cs:pd-05:2024" clause "4.1" }
+}

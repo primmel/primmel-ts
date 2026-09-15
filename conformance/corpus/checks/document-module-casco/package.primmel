@@ -1,0 +1,5 @@
+package {
+  id iso-iec-17065
+  kind core
+  title "The toy CASCO layer the informative annex applies to"
+}

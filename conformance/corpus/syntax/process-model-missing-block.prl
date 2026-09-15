@@ -1,0 +1,6 @@
+# Conformance corpus: a two-token register facet without its block.
+# Clause: FWK-09 (negative).
+process_model broken {
+  sequence { a b }
+  register lme_register
+}

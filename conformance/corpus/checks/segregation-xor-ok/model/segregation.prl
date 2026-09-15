@@ -1,0 +1,46 @@
+// Conformance corpus: the kind-conditional segregation shapes — a
+// disjoint constraint is ONLY a pair; a consultancy bar is ONLY a
+// barred-relations list with its optional period. C59 stays silent.
+// Clause: FWK-15 (positive).
+
+process evaluation {
+  name "Evaluation (ISO/IEC 17065 §7.4)"
+  activity_kind { selection determination }
+}
+process review {
+  name "Review (ISO/IEC 17065 §7.5)"
+  activity_kind { review }
+  segregation {
+    constraint review_not_evaluation {
+      kind case_personnel_disjoint
+      clause "7.5.1"
+      pair { review evaluation }
+      statement "The review shall be carried out by person(s) who have not been involved in the evaluation process."
+    }
+    constraint review_consultancy_bar {
+      kind consultancy_bar
+      clause "4.2.10"
+      barred { consultancy }
+      statement "Within a period specified by the certification body, personnel shall not be used to review a product for which they have provided consultancy."
+    }
+  }
+}
+process complaints {
+  name "Complaints and appeals (ISO/IEC 17065 §7.13)"
+  activity_kind { complaint appeal }
+  segregation {
+    constraint complaint_resolution_not_case {
+      kind case_personnel_disjoint
+      clause "7.13.5"
+      pair { complaints case_personnel }
+      statement "The decision resolving the complaint or appeal shall be made by, or reviewed and approved by, person(s) not involved in the certification activities related to the complaint or appeal."
+    }
+    constraint complaint_two_year_bar {
+      kind consultancy_bar
+      clause "7.13.6"
+      period P2Y
+      barred { consultancy employment }
+      statement "Personnel who have provided consultancy for a client, or been employed by a client, shall not be used to review or approve the resolution of a complaint or appeal for that client within two years following the end of the consultancy or employment."
+    }
+  }
+}

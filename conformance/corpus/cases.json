@@ -1631,6 +1631,230 @@
     "outputEqualsInput": true
    },
    "summary": "The framework constructs' canonical form serializes to itself byte-for-byte."
+  },
+  {
+   "id": "fwk-08-pos",
+   "clause": "FWK-08",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/abstract-process-facets.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The framework-binding facets — summary, the roles/organs/participant_kinds lists, evidence, decision, declaration, discharges_gate, realized_by/approved_by, and both calendar windows — parse."
+  },
+  {
+   "id": "fwk-08-neg",
+   "clause": "FWK-08",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/abstract-process-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for summary"
+   },
+   "summary": "A summary keyword without its value is rejected."
+  },
+  {
+   "id": "fwk-09-pos",
+   "clause": "FWK-09",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/process-model.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The process_model sequence and register block parse."
+  },
+  {
+   "id": "fwk-09-neg",
+   "clause": "FWK-09",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/process-model-missing-block.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "is missing its block"
+   },
+   "summary": "A register facet without its block is rejected."
+  },
+  {
+   "id": "fwk-10-pos",
+   "clause": "FWK-10",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/scheme-type-entities.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The scheme_activity_kind menus and the scheme_type definitions with their menu lists parse."
+  },
+  {
+   "id": "fwk-10-neg",
+   "clause": "FWK-10",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/scheme-activity-kind-bad-family.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown family"
+   },
+   "summary": "A family outside the ISO/IEC 17067 vocabulary is rejected at parse."
+  },
+  {
+   "id": "fwk-11-pos",
+   "clause": "FWK-11",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/document-module-entities.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The document_module with its namespace and register, and the informative_annex with its document block and highlight, parse."
+  },
+  {
+   "id": "fwk-11-neg",
+   "clause": "FWK-11",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/informative-annex-bad-role.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown document role"
+   },
+   "summary": "A document role outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "fwk-12-pos",
+   "clause": "FWK-12",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/abstract-process-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A coherent framework and abstract-process pipeline — every facet edge resolved — checks clean."
+  },
+  {
+   "id": "fwk-12-neg",
+   "clause": "FWK-12",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/abstract-process-dangling",
+   "expect": {
+    "rules": [
+     "C121"
+    ]
+   },
+   "summary": "An organs list naming an undeclared organ is flagged C121."
+  },
+  {
+   "id": "fwk-13-pos",
+   "clause": "FWK-13",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/scheme-type-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A scheme-type register with every menu entry resolved checks clean."
+  },
+  {
+   "id": "fwk-13-neg",
+   "clause": "FWK-13",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/scheme-type-dangling",
+   "expect": {
+    "rules": [
+     "C122"
+    ]
+   },
+   "summary": "A determination entry naming an undeclared activity kind is flagged C122."
+  },
+  {
+   "id": "fwk-14-pos",
+   "clause": "FWK-14",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/document-module-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A document module whose sequence, register maintainer, and namespace all resolve — and an annex whose applies_to resolves through the locator — checks clean.",
+   "with": {
+    "iso-iec-17065": "checks/document-module-casco"
+   }
+  },
+  {
+   "id": "fwk-14-neg",
+   "clause": "FWK-14",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/document-module-dangling",
+   "expect": {
+    "rules": [
+     "C123"
+    ]
+   },
+   "summary": "A sequence member naming an undeclared process is flagged C123.",
+   "with": {
+    "iso-iec-17065": "checks/document-module-casco"
+   }
+  },
+  {
+   "id": "fwk-15-pos",
+   "clause": "FWK-15",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/segregation-xor-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A disjoint pair and two consultancy bars, each in its kind-conditional shape, check clean."
+  },
+  {
+   "id": "fwk-15-neg",
+   "clause": "FWK-15",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/segregation-xor-violation",
+   "expect": {
+    "rules": [
+     "C59"
+    ]
+   },
+   "summary": "A disjoint constraint carrying a period is flagged C59."
+  },
+  {
+   "id": "pkg-07-pos",
+   "clause": "PKG-07",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/module-namespace-pin-ok/toy-rec",
+   "with": {
+    "toy-layer": "packaging/module-namespace-pin-ok/toy-layer"
+   },
+   "expect": {
+    "clean": true
+   },
+   "summary": "A rec whose scopes sit beside the module-declared namespace passes."
+  },
+  {
+   "id": "pkg-07-neg",
+   "clause": "PKG-07",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/module-namespace-pin-violation/toy-rec",
+   "with": {
+    "toy-layer": "packaging/module-namespace-pin-violation/toy-layer"
+   },
+   "expect": {
+    "rules": [
+     "C119"
+    ]
+   },
+   "summary": "A rec scope under the module-declared namespace is flagged C119."
   }
  ]
 }

@@ -1,0 +1,5 @@
+requirement_class /req/scheme/local {
+  name "A rec-local scope inside the layer's module-declared namespace"
+  subject "Thing"
+  guidance "illegal"
+}

@@ -419,6 +419,88 @@
    "rules": [
     "C120"
    ]
+  },
+  {
+   "id": "FWK-08",
+   "area": "framework",
+   "title": "The abstract-process facets",
+   "statement": "An abstract process carries its framework-binding facets: the summary; the roles, organs, and participant_kinds lists; the evidence block (each item with its description and required flag); the decision binding (rule and clause); the declaration binding (kind and sign|update action); the discharged declaration gate; the realized_by and approved_by lists; and the calendar windows (max_elapsed deadline or min_elapsed cooling-off, exactly one of years or months, with anchor, applies_to, and optional breach and description). A value-taking keyword inside the body must carry its value.",
+   "specAnchor": "MN 114 v3.3 (the abstract-process facets)",
+   "rules": []
+  },
+  {
+   "id": "FWK-09",
+   "area": "framework",
+   "title": "The process_model construct",
+   "statement": "A process_model binds a pipeline: the sequence block (process ids in step order) and the register blocks (id, label, clause, maintainer, published, entries), with clause-URN provenance. The register facet is two-token — the id, then its block; the block must follow.",
+   "specAnchor": "MN 114 v3.3 (the process_model construct)",
+   "rules": []
+  },
+  {
+   "id": "FWK-10",
+   "area": "framework",
+   "title": "The scheme-type register constructs",
+   "statement": "A scheme_activity_kind declares one row of the ISO/IEC 17067 activity menu: family (common, selection, determination, review, attestation, surveillance — parse-enforced), row designation, and label. A scheme_type declares one scheme type: label, clause, description, attestation_object (parse-enforced), the determination/attestation menu lists, the surveillance block (required flag and activities list), optional sampling and notes, and clause-URN provenance.",
+   "specAnchor": "MN 114 v3.3 (the scheme-type register constructs)",
+   "rules": []
+  },
+  {
+   "id": "FWK-11",
+   "area": "framework",
+   "title": "The document-module constructs",
+   "statement": "A document_module makes one governing document's content module first-class: the document citation, title, edition, year, the owned requirement namespace, and the shared sequence/register sub-grammar (the process_model grammar at a second placement), with clause-URN provenance. An informative_annex binds a guidance document into the module: the document block (id, title, edition, year, the parse-enforced role, source), the applies_to package edge, applied_by, scope, the optional numbering caution, and the highlight blocks.",
+   "specAnchor": "MN 114 v3.3 (the document-module constructs)",
+   "rules": []
+  },
+  {
+   "id": "FWK-12",
+   "area": "framework",
+   "title": "Abstract-process references resolve",
+   "statement": "Every reference the abstract-process facets carry — the roles, organs, and participant kinds; the decision rule; the declaration kind and its sign|update action; the discharged gate; the realized_by processes and approved_by approvals; the window kind vocabulary and its exactly-one-duration shape; and the process_model's sequence members and register maintainers — resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C121).",
+   "specAnchor": "MN 114 v3.3 (abstract-process reference resolution)",
+   "rules": [
+    "C121"
+   ]
+  },
+  {
+   "id": "FWK-13",
+   "area": "framework",
+   "title": "Scheme-type references resolve",
+   "statement": "A manifest's scheme_type token resolves against the composed scheme_type register when one is in scope, and a scheme_type's determination, attestation, and surveillance.activities entries resolve against the composed scheme_activity_kind menus when that register is in scope; a register-less package is not adjudicated (C122).",
+   "specAnchor": "MN 114 v3.3 (scheme-type resolution)",
+   "rules": [
+    "C122"
+   ]
+  },
+  {
+   "id": "FWK-14",
+   "area": "framework",
+   "title": "Document-module references resolve",
+   "statement": "A document_module's sequence members resolve against the composed processes and its register maintainers against the composed governance organs, each when that register is in scope; the declared namespace is an absolute requirement-namespace path. An informative_annex's applies_to names a known package, adjudicated only when a dependency locator is supplied (C123).",
+   "specAnchor": "MN 114 v3.3 (document-module reference resolution)",
+   "rules": [
+    "C123"
+   ]
+  },
+  {
+   "id": "FWK-15",
+   "area": "framework",
+   "title": "The segregation kind-conditional XOR",
+   "statement": "The segregation constraint's facets are kind-conditional: a case_personnel_disjoint constraint is ONLY a pair (exactly two distinct members; never a period, never barred relations), and a consultancy_bar is ONLY a barred-relations list with its optional period (never a pair) (C59).",
+   "specAnchor": "MN 114 v3.3 (the segregation kind-conditional XOR)",
+   "rules": [
+    "C59"
+   ]
+  },
+  {
+   "id": "PKG-07",
+   "area": "packaging",
+   "title": "The declared namespace pin",
+   "statement": "A document_module's namespace facet DECLARES the package's owned requirement namespace: the pin is preferred over the requirement_class-id derivation, so a downstream package declaring a requirement class or requirement at or under a module-declared namespace is rejected as a namespace-pin violation even when the owning package declares no requirement class at all; sibling scopes and the downstream package's own namespaces compose (C119).",
+   "specAnchor": "MN 114 v3.3 (composition rules: the declared requirement-namespace pin, C119)",
+   "rules": [
+    "C119"
+   ]
   }
  ]
 }

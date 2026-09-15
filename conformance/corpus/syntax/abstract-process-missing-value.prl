@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: FWK-08 (negative).
+process broken {
+  name "Broken"
+  summary
+}

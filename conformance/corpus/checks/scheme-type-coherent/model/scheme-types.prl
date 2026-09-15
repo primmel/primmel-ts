@@ -1,0 +1,59 @@
+// Conformance corpus: the ISO/IEC 17067 register with every menu list
+// resolved — the scheme_type determination / attestation /
+// surveillance.activities entries all name declared scheme activity
+// kinds. C122 stays silent.
+// Clause: FWK-13 (positive).
+scheme_activity_kind review {
+  family common
+  row "I"
+  label "review"
+  source { doc "urn:iso-iec:std:iso-iec:17067:2013" clause "5.2" }
+}
+scheme_activity_kind testing {
+  family determination
+  row "II a)"
+  label "testing (of product items)"
+}
+scheme_activity_kind inspection {
+  family determination
+  row "II b)"
+  label "inspection (of product items)"
+}
+scheme_activity_kind issue_statement {
+  family attestation
+  row "III a)"
+  label "issuing a statement of conformity"
+}
+scheme_activity_kind market_sampling {
+  family surveillance
+  row "IV a)"
+  label "sampling from the market"
+}
+scheme_type type_1a {
+  label "scheme type 1a"
+  clause "5.3.2"
+  description "Samples are tested against the requirements; the attestation covers the sample."
+  attestation_object batch
+  determination { testing inspection }
+  attestation { issue_statement }
+  surveillance {
+    required false
+  }
+  notes { "The conformity statement applies to the sample only." }
+  source { doc "urn:iso-iec:std:iso-iec:17067:2013" clause "5.3.2" }
+}
+scheme_type type_5 {
+  label "scheme type 5"
+  clause "5.3.7"
+  description "The surveillance part of this scheme allows periodic assessment."
+  sampling "Surveillance samples are taken periodically from the market or the factory."
+  attestation_object ongoing_production
+  determination { testing inspection }
+  attestation { issue_statement }
+  surveillance {
+    required true
+    activities { market_sampling }
+  }
+  notes { "If the surveillance includes audit of the management system, an initial audit is needed." }
+  source { doc "urn:iso-iec:std:iso-iec:17067:2013" clause "5.3.7" }
+}

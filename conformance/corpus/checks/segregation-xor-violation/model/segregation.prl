@@ -1,0 +1,20 @@
+// Conformance corpus: a disjoint constraint carrying the bar facets
+// (the period belongs to consultancy_bar) — ONE seeded violation of
+// the kind-conditional XOR. C59 must fire exactly once.
+// Clause: FWK-15 (negative).
+
+process evaluation {
+  name "Evaluation"
+}
+process review {
+  name "Review"
+  segregation {
+    constraint disjoint_with_period {
+      kind case_personnel_disjoint
+      clause "7.5.1"
+      pair { review evaluation }
+      period P2Y
+      statement "Seeded violation — a disjoint constraint carries no period."
+    }
+  }
+}
