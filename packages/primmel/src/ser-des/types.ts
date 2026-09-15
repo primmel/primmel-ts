@@ -49,6 +49,7 @@ import type {
   AutoInclusion,
   DocumentPrecedence,
 } from '../types/FrameworkDocument';
+import type DecisionRule from '../types/DecisionRule';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
 import type Dataspace from '../types/Dataspace';
@@ -232,6 +233,7 @@ export interface ParseContext {
   frameworkDocuments: Record<string, FrameworkDocument>;
   documentPrecedences: Record<string, DocumentPrecedence>;
   autoInclusions: Record<string, AutoInclusion>;
+  decisionRules: Record<string, DecisionRule>;
 
   // Primmel v3 twin interface (TODO.roadmap/32): connector profiles.
   // Endpoints/serve bindings live on the subject (is.endpoints/has.serves).

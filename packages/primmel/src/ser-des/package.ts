@@ -544,6 +544,7 @@ const MERGE_FIELDS: (keyof ParseContext)[] = [
   'frameworkDocuments',
   'documentPrecedences',
   'autoInclusions',
+  'decisionRules',
 ];
 
 /** Parse one package's content files (manifest excluded) as a single

@@ -150,6 +150,7 @@ import {
   parseDocumentPrecedence,
   parseFrameworkDocument,
 } from './frameworkDocument';
+import { dumpDecisionRule, parseDecisionRule } from './decisionRule';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -566,6 +567,14 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseAutoInclusion,
     dump: dumpAutoInclusion as never,
+  }),
+  // The organs' decision rules (clauses 9–16).
+  defineConstruct({
+    keyword: 'decision_rule',
+    field: 'decisionRules',
+    takesID: true,
+    parse: parseDecisionRule,
+    dump: dumpDecisionRule as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT

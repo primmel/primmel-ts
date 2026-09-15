@@ -44,6 +44,7 @@ import type { DeclarationGate, DeclarationStatus } from './Declaration';
 import type { SchemeDefinition, SchemeLifecycle } from './Scheme';
 import type FrameworkDocument from './FrameworkDocument';
 import type { AutoInclusion, DocumentPrecedence } from './FrameworkDocument';
+import type DecisionRule from './DecisionRule';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -184,6 +185,11 @@ export default interface Standard {
   frameworkDocuments: FrameworkDocument[];
   documentPrecedences: DocumentPrecedence[];
   autoInclusions: AutoInclusion[];
+
+  // The organs' decision rules (B 18:2025 clauses 9–16): participation
+  // decisions with their voting blocks, advisory tasks, appeal rulings,
+  // registration principles, legacy validity, and financing.
+  decisionRules: DecisionRule[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve
