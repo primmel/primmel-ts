@@ -130,6 +130,7 @@ export default function parse(
     // The document modules + informative annexes (smart TODO.roadmap/40 batch 2)
     documentModules: {},
     informativeAnnexes: {},
+    partAnnexes: {},
     // Primmel v3 twin interface (TODO.roadmap/32)
     connectorProfiles: {},
     // Primmel v3 continuous compliance (TODO.roadmap/34)

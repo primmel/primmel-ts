@@ -168,6 +168,7 @@ import {
   dumpInformativeAnnex,
   parseInformativeAnnex,
 } from './informativeAnnex';
+import { dumpPartAnnex, parsePartAnnex } from './partAnnex';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -654,6 +655,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseInformativeAnnex,
     dump: dumpInformativeAnnex as never,
+  }),
+  // The rec's own annex-volume index (smart TODO.roadmap/40 batch 4) —
+  // NOT the external-guidance informative_annex; the normative/
+  // informative obligation mark is the register's point.
+  defineConstruct({
+    keyword: 'part_annex',
+    field: 'partAnnexes',
+    takesID: true,
+    parse: parsePartAnnex,
+    dump: dumpPartAnnex as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT

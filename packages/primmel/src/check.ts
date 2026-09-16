@@ -353,6 +353,10 @@
 //      the common_test_condition register's declaration shape — the
 //      description is required; the title stays optional (the r91 map
 //      entries carry none) and the reference a free citation string
+//   C128 part-annex-shape (smart TODO.roadmap/40 batch 4): the
+//      part_annex register's declaration shape — letters unique per
+//      package, the source provenance required; the obligation
+//      vocabulary is parse-enforced upstream
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4588,6 +4592,36 @@ export function checkPackage(
         'C127',
         `common_test_condition ${c.id}: the description is required — a condition entry carries its normative text (common-test-condition-shape)`,
       );
+    }
+  }
+
+  // ── C128: part-annex-shape (smart TODO.roadmap/40 batch 4; the ─────
+  // packages-as-SSOT epic) ────────────────────────────────────────────
+  // The annex-volume register's declaration shape: letters are unique
+  // per package (the index keys on the printed letter) and every entry
+  // carries its clause-URN provenance. The obligation vocabulary is
+  // parse-enforced upstream (the fail-closed precedent), so it carries
+  // no check leg.
+  {
+    const seenLetters = new Map<string, string>();
+    for (const a of standard.partAnnexes ?? []) {
+      if (a.letter) {
+        const prior = seenLetters.get(a.letter);
+        if (prior !== undefined) {
+          err(
+            'C128',
+            `part_annex ${a.id}: letter "${a.letter}" is already declared by ${prior} — the annex-volume index keys on the printed letter (part-annex-shape)`,
+          );
+        } else {
+          seenLetters.set(a.letter, a.id);
+        }
+      }
+      if (!a.source?.doc) {
+        err(
+          'C128',
+          `part_annex ${a.id}: the source provenance is required — a documentary register entry cites its part (part-annex-shape)`,
+        );
+      }
     }
   }
 

@@ -493,6 +493,19 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
   ),
+  // C128 (smart TODO.roadmap/40 batch 4; the packages-as-SSOT epic): the
+  // part_annex register's declaration shape — letters unique per package
+  // (the index keys on the printed letter) and the source provenance
+  // required; the obligation vocabulary is parse-enforced upstream and
+  // carries no check leg.
+  R(
+    'C128',
+    'part-annex-shape',
+    'base',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

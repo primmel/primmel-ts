@@ -81,6 +81,7 @@ function emptyContext(): ParseContext {
     decisionRules: {},
     documentModules: {},
     informativeAnnexes: {},
+    partAnnexes: {},
     connectorProfiles: {},
     monitors: {},
     passports: {},

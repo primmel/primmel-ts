@@ -49,6 +49,7 @@ import type { AutoInclusion, DocumentPrecedence } from './FrameworkDocument';
 import type DecisionRule from './DecisionRule';
 import type DocumentModule from './DocumentModule';
 import type InformativeAnnex from './InformativeAnnex';
+import type PartAnnex from './PartAnnex';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -221,6 +222,10 @@ export default interface Standard {
   // informative annexes bind the cited guidance documents.
   documentModules: DocumentModule[];
   informativeAnnexes: InformativeAnnex[];
+  /** The rec's own annex-volume index (smart TODO.roadmap/40 batch 4) —
+   *  a verdict-neutral documentary register (the normative/informative
+   *  mark is the point); NOT the external-guidance informative_annex. */
+  partAnnexes: PartAnnex[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve

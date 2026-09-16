@@ -567,6 +567,7 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // batch 2) compose like the framework registers they sit beside.
   'documentModules',
   'informativeAnnexes',
+  'partAnnexes',
   // The pre-existing drift closed (the packages-as-SSOT epic): these
   // collections existed as constructs but were never merged, so `uses`
   // composition silently dropped them — comments, predicates, the
