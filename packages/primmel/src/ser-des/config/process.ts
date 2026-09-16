@@ -107,6 +107,16 @@
 // AND decision, so the norms quantify over process involvement. C59
 // (segregation-members-resolve) checks declaration well-formedness.
 //
+// The workflow fidelity facets (smart TODO.roadmap/40 batch 5; closes
+// the kernel half of smart's TODO.refactor/16): `phase <token>` (the
+// pipeline phase — retires the note "phase: …" hack), `guard "…"`
+// (repeatable, ordered workflow gate criteria — opaque, never resolved),
+// and `machine_steps { <id>+ }` (the engine-run steps — documentary
+// service names, no resolution leg). Provenance is spelled ONLY
+// `source { doc "…" clause "…" }` (free citation strings land in doc) —
+// no `reference` alias exists; the old emitter's `reference {…}` form
+// was silently skipped at load and dies with the fold.
+//
 // The abstract-process model (smart TODO.roadmap/40 batch 2; the
 // packages-as-SSOT epic — the OIML-CS / CASCO evaluation pipelines) adds
 // the framework-binding facets:
@@ -888,6 +898,10 @@ export const parseProcess: Parser = function (id, data) {
     id: id,
     name: '',
     modality: '',
+    // The workflow facets (smart TODO.roadmap/40 batch 5)
+    phase: '',
+    guards: [],
+    machineSteps: [],
     actor: null,
     output: [],
     input: [],
@@ -969,6 +983,20 @@ export const parseProcess: Parser = function (id, data) {
     (keyword, value, peek) => {
       if (keyword === 'modality') {
         result.modality = value();
+      } else if (keyword === 'phase') {
+        // phase <token> — the workflow pipeline phase (smart
+        // TODO.roadmap/40 batch 5); retires the note "phase: …" hack.
+        result.phase = stripWrapping(value());
+      } else if (keyword === 'guard') {
+        // guard "…" — repeatable, ordered (the workflow gate criteria).
+        result.guards.push(unwrapped(value));
+      } else if (keyword === 'machine_steps') {
+        // machine_steps { <id>+ } — the engine-run steps; documentary
+        // (service names, not model elements — no resolution leg).
+        result.machineSteps = tokenize(stripWrapping(value()))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0);
       } else if (keyword === 'name') {
         result.name = unwrapped(value);
       } else if (keyword === 'actor') {
@@ -1315,6 +1343,21 @@ export const dumpProcess: (
   }
   if (process.modality !== '') {
     out += '  modality ' + process.modality + '\n';
+  }
+  // ── The workflow facets (smart TODO.roadmap/40 batch 5) ──
+  if (process.phase) {
+    out += '  phase ' + dumpBareSafe(process.phase) + '\n';
+  }
+  if (process.guards && process.guards.length > 0) {
+    for (const g of process.guards) {
+      out += '  guard "' + escapeString(g) + '"\n';
+    }
+  }
+  if (process.machineSteps && process.machineSteps.length > 0) {
+    out +=
+      '  machine_steps { ' +
+      process.machineSteps.map(dumpBareSafe).join(' ') +
+      ' }\n';
   }
   if (process.input.length > 0) {
     out += '  reference_data_registry {\n';

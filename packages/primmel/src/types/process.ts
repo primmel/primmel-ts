@@ -271,6 +271,27 @@ export default interface Process {
   id: string;
   name: string;
   modality: string;
+  /**
+   * The workflow pipeline phase this process belongs to (smart
+   * TODO.roadmap/40 batch 5; the packages-as-SSOT epic) — a bare token
+   * (intake, dispatch, testing, evaluation, issuance). Retires the
+   * `note "phase: …"` encoding hack; '' = undeclared.
+   */
+  phase: string;
+  /**
+   * The workflow gate criteria guarding the process (smart
+   * TODO.roadmap/40 batch 5) — repeatable, ORDERED prose/OCL-ish
+   * predicates (`guard "…"`), emitted in declaration order. Opaque
+   * strings: never resolved (the R26 field-resolution precedent).
+   */
+  guards: string[];
+  /**
+   * The engine-run steps the process binds (smart TODO.roadmap/40 batch
+   * 5 — verdict_computation, evaluation_aggregation, …) — a documentary
+   * id list: the ids name services, not model elements, so no check leg
+   * resolves them (resolution is the runtime's business).
+   */
+  machineSteps: string[];
   actor: Role | null;
   output: Registry[];
   input: Registry[];
