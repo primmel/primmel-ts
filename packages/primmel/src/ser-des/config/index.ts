@@ -118,6 +118,8 @@ import {
   subjectConstruct,
 } from './subject';
 import { instanceConstruct } from './instance';
+import { dumpIdentitySlot, parseIdentitySlot } from './identitySlot';
+import { dumpAspect, parseAspect } from './aspect';
 import {
   artifactDefinitionConstruct,
   artifactInstanceConstruct,
@@ -544,6 +546,23 @@ const CONSTRUCTS: ConstructDefinition[] = [
   }),
   // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
   subjectConstruct as ConstructDefinition,
+  // The documentary identity slots + the qualitative aspect register
+  // (smart TODO.roadmap/40 batch 3; smart TODO.roadmap/47) — subject
+  // anatomy beside the subjects they enrich.
+  defineConstruct({
+    keyword: 'identity_slot',
+    field: 'identitySlots',
+    takesID: true,
+    parse: parseIdentitySlot,
+    dump: dumpIdentitySlot as never,
+  }),
+  defineConstruct({
+    keyword: 'aspect',
+    field: 'aspects',
+    takesID: true,
+    parse: parseAspect,
+    dump: dumpAspect as never,
+  }),
   // Primmel v3 instantiation (instance-of, INV-10 — TODO.roadmap/03)
   instanceConstruct as ConstructDefinition,
   // Primmel v3 artifacts (TODO.roadmap/09)

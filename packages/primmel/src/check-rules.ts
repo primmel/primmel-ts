@@ -521,6 +521,21 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
   ),
+  // C130 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // identity_slot / aspect registers — the ≥1-presentation shape leg, the
+  // aspect reference legs (term_ref → term, component → instrument
+  // component, attribute → attribute_definition, contains → identity path
+  // OR bare attribute/dimension id), and the R28 bind-path consumer leg
+  // (model.identity.<slot> / model.aspects.<id> in requirement/test
+  // binds_to), each leg gated on its target register (the C58 doctrine).
+  R(
+    'C130',
+    'identity-and-aspect-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

@@ -530,6 +530,11 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'behaviors',
   'conditionSets',
   'subjects',
+  // The documentary identity slots + the qualitative aspect register
+  // (smart TODO.roadmap/40 batch 3) compose like the subject anatomy
+  // they enrich, with uses-no-redefine semantics.
+  'identitySlots',
+  'aspects',
   'instances',
   'quantityRegisters',
   'duals',

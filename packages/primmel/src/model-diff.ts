@@ -110,6 +110,10 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   schemeTypes: 'foundations',
   connectorProfiles: 'foundations',
   subjects: 'primary',
+  // The identity slots + aspect register (smart TODO.roadmap/40 batch 3)
+  // are subject anatomy — primary beside the subjects they enrich.
+  identitySlots: 'primary',
+  aspects: 'primary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

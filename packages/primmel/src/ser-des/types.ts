@@ -32,6 +32,8 @@ import type {
   Subject,
 } from '../types/Subject';
 import type { ArtifactDefinition, ArtifactInstance } from '../types/Artifact';
+import type IdentitySlot from '../types/IdentitySlot';
+import type Aspect from '../types/Aspect';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
@@ -224,6 +226,13 @@ export interface ParseContext {
 
   // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
   subjects: Record<string, Subject>;
+
+  // The documentary identity slots + the qualitative aspect register
+  // (smart TODO.roadmap/40 batch 3; smart TODO.roadmap/47) — subject
+  // anatomy beside the subjects: requirements and tests bind
+  // `model.identity.<slot>` / `model.aspects.<id>` (C130).
+  identitySlots: Record<string, IdentitySlot>;
+  aspects: Record<string, Aspect>;
 
   // Primmel v3 instantiation (TODO.roadmap/03)
   instances: Record<string, Instance>;

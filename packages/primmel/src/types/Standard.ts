@@ -31,6 +31,8 @@ import type {
   Subject,
 } from './Subject';
 import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
+import type IdentitySlot from './IdentitySlot';
+import type Aspect from './Aspect';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -162,6 +164,13 @@ export default interface Standard {
 
   // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
   subjects: Subject[];
+
+  // The documentary identity slots + the qualitative aspect register
+  // (smart TODO.roadmap/40 batch 3; smart TODO.roadmap/47) — subject
+  // anatomy beside the subjects: requirements and tests bind
+  // `model.identity.<slot>` / `model.aspects.<id>` (C130).
+  identitySlots: IdentitySlot[];
+  aspects: Aspect[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

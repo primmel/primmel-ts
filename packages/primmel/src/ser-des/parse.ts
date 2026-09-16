@@ -105,6 +105,9 @@ export default function parse(
     conditionSets: {},
     // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
     subjects: {},
+    // The identity slots + aspect register (smart TODO.roadmap/40 batch 3)
+    identitySlots: {},
+    aspects: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)
