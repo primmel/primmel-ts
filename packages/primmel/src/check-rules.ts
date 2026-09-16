@@ -551,6 +551,18 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C132 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // application_declaration register — the declaration_form resolves
+  // against the form register (per-register gated) and the document ids
+  // are unique; the obligation vocabulary is parse-enforced upstream.
+  R(
+    'C132',
+    'application-declaration-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

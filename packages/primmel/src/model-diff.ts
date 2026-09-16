@@ -117,6 +117,10 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // The rec promise registers (smart TODO.roadmap/40 batch 3) are
   // subject anatomy — primary beside the subjects their sets bind.
   promiseSets: 'primary',
+  // The application declaration (smart TODO.roadmap/40 batch 3) is
+  // form-adjacent — secondary beside the forms its declaration_form
+  // binds.
+  applicationDeclarations: 'secondary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

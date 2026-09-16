@@ -35,6 +35,7 @@ import type { ArtifactDefinition, ArtifactInstance } from '../types/Artifact';
 import type IdentitySlot from '../types/IdentitySlot';
 import type Aspect from '../types/Aspect';
 import type PromiseSet from '../types/PromiseSet';
+import type ApplicationDeclaration from '../types/ApplicationDeclaration';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
@@ -237,6 +238,9 @@ export interface ParseContext {
   // The rec promise registers (smart TODO.roadmap/40 batch 3) — the
   // file-grade home of the subject-promise sub-grammar.
   promiseSets: Record<string, PromiseSet>;
+  // The applicant-facing documentation register (smart TODO.roadmap/40
+  // batch 3).
+  applicationDeclarations: Record<string, ApplicationDeclaration>;
 
   // Primmel v3 instantiation (TODO.roadmap/03)
   instances: Record<string, Instance>;

@@ -539,6 +539,9 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // like the subject anatomy they extend, with uses-no-redefine
   // semantics.
   'promiseSets',
+  // The applicant-facing documentation register (smart TODO.roadmap/40
+  // batch 3) composes with uses-no-redefine semantics.
+  'applicationDeclarations',
   'instances',
   'quantityRegisters',
   'duals',

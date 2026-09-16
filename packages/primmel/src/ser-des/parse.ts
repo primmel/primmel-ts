@@ -110,6 +110,8 @@ export default function parse(
     aspects: {},
     // The rec promise registers (smart TODO.roadmap/40 batch 3)
     promiseSets: {},
+    // The applicant-facing documentation register (batch 3)
+    applicationDeclarations: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)

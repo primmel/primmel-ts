@@ -5019,6 +5019,40 @@ export function checkPackage(
     }
   }
 
+  // ── C132: application-declaration-references (smart TODO.roadmap/40 ─
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The applicant-facing documentation register: the declaration_form
+  // names a declared form WHEN the form register is in composition scope
+  // (per-register gating, the C58 doctrine), and the document ids are
+  // unique within the declaration. The obligation vocabulary is
+  // parse-enforced upstream (no check leg).
+  {
+    const formIds = new Set((standard.forms ?? []).map(f => f.id));
+    for (const d of standard.applicationDeclarations ?? []) {
+      const where = `application_declaration ${d.id}`;
+      if (
+        d.declarationForm &&
+        formIds.size > 0 &&
+        !formIds.has(d.declarationForm)
+      ) {
+        err(
+          'C132',
+          `${where}: declaration_form "${d.declarationForm}" is not a declared form (application-declaration-references)`,
+        );
+      }
+      const seen = new Set<string>();
+      for (const doc of d.documents ?? []) {
+        if (seen.has(doc.id)) {
+          err(
+            'C132',
+            `${where}: document "${doc.id}" is declared twice (application-declaration-references)`,
+          );
+        }
+        seen.add(doc.id);
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {

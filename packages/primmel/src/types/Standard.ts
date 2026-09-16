@@ -34,6 +34,7 @@ import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
 import type IdentitySlot from './IdentitySlot';
 import type Aspect from './Aspect';
 import type PromiseSet from './PromiseSet';
+import type ApplicationDeclaration from './ApplicationDeclaration';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -177,6 +178,10 @@ export default interface Standard {
    *  binds the owning subject); a subject's is.promises cannot span
    *  files, so the rec registers get their own construct. */
   promiseSets: PromiseSet[];
+  /** The applicant-facing documentation register (smart TODO.roadmap/40
+   *  batch 3) — singleton per rec; NOT the Batch-1 CS participant-
+   *  declaration machinery. */
+  applicationDeclarations: ApplicationDeclaration[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

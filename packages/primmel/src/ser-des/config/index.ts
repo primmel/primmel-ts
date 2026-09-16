@@ -122,6 +122,10 @@ import { dumpIdentitySlot, parseIdentitySlot } from './identitySlot';
 import { dumpAspect, parseAspect } from './aspect';
 import { dumpPromiseSet, parsePromiseSet } from './promiseSet';
 import {
+  dumpApplicationDeclaration,
+  parseApplicationDeclaration,
+} from './applicationDeclaration';
+import {
   artifactDefinitionConstruct,
   artifactInstanceConstruct,
 } from './artifact';
@@ -573,6 +577,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parsePromiseSet,
     dump: dumpPromiseSet as never,
+  }),
+  // The applicant-facing documentation register (smart TODO.roadmap/40
+  // batch 3) — singleton per rec; form-adjacent (the declaration_form
+  // binds a form), NOT the Batch-1 CS participant-declaration machinery.
+  defineConstruct({
+    keyword: 'application_declaration',
+    field: 'applicationDeclarations',
+    takesID: true,
+    parse: parseApplicationDeclaration,
+    dump: dumpApplicationDeclaration as never,
   }),
   // Primmel v3 instantiation (instance-of, INV-10 — TODO.roadmap/03)
   instanceConstruct as ConstructDefinition,
