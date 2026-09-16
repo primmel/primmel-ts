@@ -1,0 +1,7 @@
+# Conformance corpus: a step phase outside the vocabulary.
+# Clause: EVL-08 (negative).
+workflow_config certification {
+  step x {
+    phase review
+  }
+}

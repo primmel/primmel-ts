@@ -2125,6 +2125,647 @@
     ]
    },
    "summary": "An id_prefix that is no lowercase slug is flagged C129."
+  },
+  {
+   "id": "evl-01-parse-pos",
+   "clause": "EVL-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/identity-slots-and-aspects.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Identity slots with their type/presentation facets and aspects with their kind/reference facets parse."
+  },
+  {
+   "id": "evl-01-parse-neg",
+   "clause": "EVL-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/identity-slot-bad-presentation.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown presentation channel"
+   },
+   "summary": "A presentation channel outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-01-check-pos",
+   "clause": "EVL-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/identity-slot-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Slots with presentation channels and aspects whose references all resolve check clean."
+  },
+  {
+   "id": "evl-01-check-neg",
+   "clause": "EVL-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/identity-slot-no-presentation",
+   "expect": {
+    "rules": [
+     "C130"
+    ]
+   },
+   "summary": "An identity_slot with no presentation channel is flagged C130."
+  },
+  {
+   "id": "evl-02-parse-pos",
+   "clause": "EVL-02",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/promise-set.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A promise_set with the certificate print projection parses."
+  },
+  {
+   "id": "evl-02-parse-neg",
+   "clause": "EVL-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/promise-set-bad-certificate-obligation.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown certificate obligation"
+   },
+   "summary": "A certificate obligation outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-02-check-pos",
+   "clause": "EVL-02",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/promise-set-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Set promises with resolvable targets and well-formed certificate blocks check clean."
+  },
+  {
+   "id": "evl-02-check-neg",
+   "clause": "EVL-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/promise-set-xor-violation",
+   "expect": {
+    "rules": [
+     "C131"
+    ]
+   },
+   "summary": "A certificate carrying two content bindings violates the XOR and is flagged C131."
+  },
+  {
+   "id": "evl-03-parse-pos",
+   "clause": "EVL-03",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/application-declaration.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "An application_declaration with its document list parses."
+  },
+  {
+   "id": "evl-03-parse-neg",
+   "clause": "EVL-03",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/application-declaration-bad-obligation.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown obligation"
+   },
+   "summary": "A document obligation outside the shall/should/may vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-03-check-pos",
+   "clause": "EVL-03",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/application-declaration-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A declaration whose declaration_form names a declared form and whose document ids are unique checks clean."
+  },
+  {
+   "id": "evl-03-check-neg",
+   "clause": "EVL-03",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/application-declaration-duplicate-document",
+   "expect": {
+    "rules": [
+     "C132"
+    ]
+   },
+   "summary": "A duplicated document id is flagged C132."
+  },
+  {
+   "id": "evl-04-parse-pos",
+   "clause": "EVL-04",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/calculation-context.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A calculation_context wiring fields to classification, parameters, and computed sources parses."
+  },
+  {
+   "id": "evl-04-parse-neg",
+   "clause": "EVL-04",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/calculation-context-missing-source-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for source"
+   },
+   "summary": "A source keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "evl-04-check-pos",
+   "clause": "EVL-04",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/calculation-context-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A context whose classification and parameters sources resolve checks clean (a runtime-bound expression identifier warns only)."
+  },
+  {
+   "id": "evl-04-check-neg",
+   "clause": "EVL-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/calculation-context-legacy-source",
+   "expect": {
+    "rules": [
+     "C133"
+    ]
+   },
+   "summary": "A legacy schema token (dimensions.<name>) is not a subject-chain source and is flagged C133."
+  },
+  {
+   "id": "evl-05-parse-pos",
+   "clause": "EVL-05",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/evaluation-dimensions.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Evaluation dimension fields with their enum/setting facets parse."
+  },
+  {
+   "id": "evl-05-parse-neg",
+   "clause": "EVL-05",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/evaluation-dimensions-bad-field-type.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown field type"
+   },
+   "summary": "A field type outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-05-check-pos",
+   "clause": "EVL-05",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/evaluation-dimensions-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Fields whose enum facets name declared dimensions check clean."
+  },
+  {
+   "id": "evl-05-check-neg",
+   "clause": "EVL-05",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/evaluation-dimensions-dangling-enum",
+   "expect": {
+    "rules": [
+     "C134"
+    ]
+   },
+   "summary": "An enum naming no declared classification dimension is flagged C134."
+  },
+  {
+   "id": "evl-06-parse-pos",
+   "clause": "EVL-06",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/evaluation-profiles.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Evaluation profiles with their open-keyed dimensions maps parse."
+  },
+  {
+   "id": "evl-06-parse-neg",
+   "clause": "EVL-06",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/evaluation-profile-missing-description.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for description"
+   },
+   "summary": "A description keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "evl-06-check-pos",
+   "clause": "EVL-06",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/evaluation-profile-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Profiles whose keys resolve and whose values sit in the declared sets check clean (an open dimension accepts any value)."
+  },
+  {
+   "id": "evl-06-check-neg",
+   "clause": "EVL-06",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/evaluation-profile-bad-value",
+   "expect": {
+    "rules": [
+     "C135"
+    ]
+   },
+   "summary": "A value outside the dimension's declared set is flagged C135."
+  },
+  {
+   "id": "evl-07-parse-pos",
+   "clause": "EVL-07",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/certificate-template.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A certificate_template with number_format, dimension_labels, characteristics, and the ANR section parses."
+  },
+  {
+   "id": "evl-07-parse-neg",
+   "clause": "EVL-07",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/certificate-template-bad-obligation.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown obligation"
+   },
+   "summary": "A characteristic obligation outside the mandatory/optional vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-07-check-pos",
+   "clause": "EVL-07",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/certificate-template-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A template whose placeholders and characteristic bindings resolve checks clean."
+  },
+  {
+   "id": "evl-07-check-neg",
+   "clause": "EVL-07",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/certificate-template-bad-type",
+   "expect": {
+    "rules": [
+     "C136"
+    ]
+   },
+   "summary": "A characteristic type outside the renderer vocabulary is flagged C136 at error."
+  },
+  {
+   "id": "evl-08-parse-pos",
+   "clause": "EVL-08",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/workflow-config.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A workflow_config with its steps, phases, actors, and gates parses."
+  },
+  {
+   "id": "evl-08-parse-neg",
+   "clause": "EVL-08",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/workflow-config-bad-phase.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown phase"
+   },
+   "summary": "A step phase outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-08-check-pos",
+   "clause": "EVL-08",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/workflow-config-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A workflow whose actors resolve against the role register and whose inputs/outputs resolve against the data classes checks clean."
+  },
+  {
+   "id": "evl-08-check-neg",
+   "clause": "EVL-08",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/workflow-config-dangling-actor",
+   "expect": {
+    "rules": [
+     "C137"
+    ]
+   },
+   "summary": "An actor naming no declared role is flagged C137."
+  },
+  {
+   "id": "evl-09-parse-pos",
+   "clause": "EVL-09",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/verification-pathway.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A full verification_pathway — tests, assessment, limits, marking, validity window and triggers — parses."
+  },
+  {
+   "id": "evl-09-parse-neg",
+   "clause": "EVL-09",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/verification-pathway-bad-kind.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown kind"
+   },
+   "summary": "A pathway kind outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-09-check-pos",
+   "clause": "EVL-09",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/verification-pathway-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A pathway whose tests/covers/trigger-action references resolve checks clean."
+  },
+  {
+   "id": "evl-09-check-neg",
+   "clause": "EVL-09",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/verification-pathway-signal-no-event",
+   "expect": {
+    "rules": [
+     "C138"
+    ]
+   },
+   "summary": "A signal trigger without the event facet is flagged C138."
+  },
+  {
+   "id": "evl-10-parse-pos",
+   "clause": "EVL-10",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/lab-selection-criteria.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Lab selection criteria with the in / not_null applies_when variants and the match blocks parse."
+  },
+  {
+   "id": "evl-10-parse-neg",
+   "clause": "EVL-10",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/lab-selection-bad-operator.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown match operator"
+   },
+   "summary": "A match operator outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-10-check-pos",
+   "clause": "EVL-10",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/lab-selection-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Criteria whose model_fields resolve and whose operator-conditional facets are complete check clean."
+  },
+  {
+   "id": "evl-10-check-neg",
+   "clause": "EVL-10",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/lab-selection-missing-capability",
+   "expect": {
+    "rules": [
+     "C139"
+    ]
+   },
+   "summary": "A has_capability match without the required_capability facet is flagged C139."
+  },
+  {
+   "id": "evl-11-parse-pos",
+   "clause": "EVL-11",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/selection-rules.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Sample selection rules (including a digit-leading id) and a specimen governance rule parse."
+  },
+  {
+   "id": "evl-11-parse-neg",
+   "clause": "EVL-11",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/sample-rule-bad-test-kind.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown test_kind"
+   },
+   "summary": "A test_kind outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-11-check-pos",
+   "clause": "EVL-11",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/selection-rules-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Rules carrying their rule/rationale/applicability facets check clean."
+  },
+  {
+   "id": "evl-11-check-neg",
+   "clause": "EVL-11",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/selection-rule-missing-applicability",
+   "expect": {
+    "rules": [
+     "C139"
+    ]
+   },
+   "summary": "A specimen_governance_rule without the applicability facet is flagged C139."
+  },
+  {
+   "id": "evl-12-parse-pos",
+   "clause": "EVL-12",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/test-report-skeleton.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A test_report_skeleton with sections, forms, a subsection, and applicability parses."
+  },
+  {
+   "id": "evl-12-parse-neg",
+   "clause": "EVL-12",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/test-report-skeleton-bad-required.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown required"
+   },
+   "summary": "A required facet outside the always/conditional vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-12-check-pos",
+   "clause": "EVL-12",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/test-report-skeleton-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A skeleton whose form ids, conformance tests, and requirements resolve checks clean."
+  },
+  {
+   "id": "evl-12-check-neg",
+   "clause": "EVL-12",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/test-report-skeleton-dangling-form",
+   "expect": {
+    "rules": [
+     "C140"
+    ]
+   },
+   "summary": "A form entry id naming no declared form is flagged C140."
+  },
+  {
+   "id": "evl-13-parse-pos",
+   "clause": "EVL-13",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/test-report-checklist.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A test_report_checklist with its entries parses."
+  },
+  {
+   "id": "evl-13-parse-neg",
+   "clause": "EVL-13",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/test-report-checklist-bad-obligation.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown obligation"
+   },
+   "summary": "An entry obligation outside the shall/may vocabulary is rejected at parse."
+  },
+  {
+   "id": "evl-13-check-pos",
+   "clause": "EVL-13",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/test-report-checklist-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A checklist with unique entry ids and in-vocabulary element letters checks clean."
+  },
+  {
+   "id": "evl-13-check-neg",
+   "clause": "EVL-13",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/test-report-checklist-duplicate-entry",
+   "expect": {
+    "rules": [
+     "C141"
+    ]
+   },
+   "summary": "A duplicated entry id is flagged C141."
+  },
+  {
+   "id": "pkg-08-pos",
+   "clause": "PKG-08",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/overlay-deep-merge-ok/ovl-rec",
+   "with": {
+    "ovl-core": "packaging/overlay-deep-merge-ok/ovl-core"
+   },
+   "expect": {
+    "clean": true
+   },
+   "summary": "A rec overlaying the core's workflow steps and checklist entries composes field-wise and checks clean."
+  },
+  {
+   "id": "pkg-08-neg",
+   "clause": "PKG-08",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/overlay-orphan-entry/ovl-rec",
+   "with": {
+    "ovl-core": "packaging/overlay-orphan-entry/ovl-core"
+   },
+   "expect": {
+    "rules": [
+     "C141"
+    ]
+   },
+   "summary": "A checklist overlay entry naming no upstream entry id is flagged C141."
   }
  ]
 }

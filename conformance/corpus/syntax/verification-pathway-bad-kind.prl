@@ -1,0 +1,5 @@
+# Conformance corpus: a pathway kind outside the vocabulary.
+# Clause: EVL-09 (negative).
+verification_pathway x {
+  kind renewal
+}

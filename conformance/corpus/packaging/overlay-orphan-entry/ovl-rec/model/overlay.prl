@@ -1,0 +1,6 @@
+test_report_checklist oiml-cs-trf {
+  overlay true
+  entry bogus_entry {
+    validation "x"
+  }
+}

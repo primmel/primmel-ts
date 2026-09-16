@@ -1,0 +1,27 @@
+# Conformance corpus: the certificate_template register — the certificate rendering contract.
+# Clause: EVL-07 (positive).
+certificate_template certificate {
+  number_format "{shortName}/{edition}-{scheme}-{authority}-{year2}.{seq}"
+  dimension_labels {
+    pattern "{measurand_components}-{measuring_principle}"
+    separator "+"
+  }
+  characteristic e_max {
+    type quantity
+    label "E_max values"
+    attribute e_max
+    obligation mandatory
+  }
+  characteristic traceability_limitation {
+    type statement
+    label "Declared traceability limitation"
+    obligation optional
+  }
+  anr_section {
+    title "Additional National Requirements"
+    covered_label "Evaluated"
+    not_evaluated_label "Not evaluated in this evaluation"
+    pending_label "Pending evaluation"
+    none_targeted_note "No additional national requirements were targeted by the application."
+  }
+}

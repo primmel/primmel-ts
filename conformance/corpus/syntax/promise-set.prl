@@ -1,0 +1,26 @@
+# Conformance corpus: the promise_set register with the certificate print projection.
+# Clause: EVL-02 (positive).
+promise_set LoadCell {
+  promise e_max_values {
+    target e_max
+    statement "Maximum capacity E_max per model."
+    certificate {
+      attribute e_max
+      type string
+      label "E_max values"
+      obligation mandatory
+    }
+    source { doc "urn:oiml:pub:r:60-1:2021" clause "3.5.5" }
+  }
+  promise accuracy_class_envelope {
+    target accuracy_class
+    level symbolic C6
+    conditions ocl{self.temperature >= rated.t_min and self.temperature <= rated.t_max}
+    statement "Holds class C6 across the rated range."
+    certificate {
+      type statement
+      label "Accuracy envelope"
+      obligation optional
+    }
+  }
+}

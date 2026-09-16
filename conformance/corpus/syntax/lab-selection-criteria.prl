@@ -1,0 +1,28 @@
+# Conformance corpus: the lab_selection_criterion register — all three applies_when variants.
+# Clause: EVL-10 (positive).
+lab_selection_criterion humidity-testing {
+  weight required
+  parameter_type dimension
+  label "Humidity testing capability"
+  description "CH and SH load cells require humidity testing."
+  applies_when { model_field humidity_symbol in { CH SH } }
+  match {
+    operator has_capability
+    required_capability "humidity-testing"
+  }
+}
+lab_selection_criterion emax-range {
+  weight required
+  parameter_type parameter
+  label "Emax range capability"
+  applies_when { model_field e_max not_null true }
+  match {
+    operator capability_covers_value
+    required_capability_prefix "emax-up-to-"
+    model_field e_max
+  }
+}
+lab_selection_criterion any-lab {
+  weight preferred
+  match { operator always_pass }
+}

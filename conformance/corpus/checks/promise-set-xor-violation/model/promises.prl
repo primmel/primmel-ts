@@ -1,0 +1,12 @@
+
+promise_set LoadCell {
+  promise broken {
+    target e_max
+    certificate {
+      attribute e_max
+      attributes { e_max }
+      type string
+      label "Broken"
+    }
+  }
+}

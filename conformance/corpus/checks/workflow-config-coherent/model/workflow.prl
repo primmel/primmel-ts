@@ -1,0 +1,35 @@
+
+role applicant {
+  name "Applicant"
+}
+role issuing_authority {
+  name "Issuing Authority"
+}
+class Application#data {
+  store { applications }
+  id: string { modality SHALL }
+}
+class TestRequest#data {
+  store { testRequests }
+  id: string { modality SHALL }
+}
+workflow_config certification {
+  step application {
+    phase intake
+    actor applicant
+    label "Type Evaluation Application"
+    description "Applicant submits the Application declaring the model family."
+    inputs { Application }
+    outputs { TestRequest }
+    gates { "Application.status = SUBMITTED" }
+  }
+  step test-request-dispatch {
+    phase dispatch
+    actor issuing_authority
+    label "Test request dispatch"
+    description "The IA issues a TestRequest to each selected laboratory."
+    inputs { Application }
+    outputs { TestRequest }
+    gates { "Each TestRequest references >= 1 MeasuringInstrumentSample" }
+  }
+}

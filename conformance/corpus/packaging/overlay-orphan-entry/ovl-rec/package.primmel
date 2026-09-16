@@ -1,0 +1,6 @@
+package {
+  id ovl-rec
+  kind rec
+  title "The rec overlaying the core workflow and checklist"
+  uses { ovl-core }
+}

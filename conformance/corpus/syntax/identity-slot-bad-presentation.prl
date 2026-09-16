@@ -1,0 +1,6 @@
+# Conformance corpus: a presentation channel outside the vocabulary.
+# Clause: EVL-01 (negative).
+identity_slot broken {
+  type string
+  presentation { marked-on-instrument shouted }
+}

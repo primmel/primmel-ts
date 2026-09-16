@@ -1,0 +1,7 @@
+# Conformance corpus: a source keyword with no value token.
+# Clause: EVL-04 (negative).
+calculation_context evaluation {
+  field v_min {
+    source
+  }
+}

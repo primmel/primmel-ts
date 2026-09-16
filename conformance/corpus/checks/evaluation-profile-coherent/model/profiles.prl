@@ -1,0 +1,26 @@
+
+dimension accuracy_class {
+  cardinality single
+  values {
+    A { label "Class A" }
+    B { label "Class B" }
+  }
+}
+dimension technology {
+  cardinality single
+  values {
+    digital { label "Digital" }
+    analogue-passive { label "Analogue passive" }
+  }
+}
+dimension humidity_class {
+  cardinality single
+}
+evaluation_profile class-a-digital-nh {
+  dimensions { accuracy_class A technology digital humidity_class NH }
+  description "Class A digital, no humidity test"
+}
+evaluation_profile class-b-digital-ch {
+  dimensions { accuracy_class B technology digital humidity_class CH }
+  description "Class B digital with cyclic humidity"
+}

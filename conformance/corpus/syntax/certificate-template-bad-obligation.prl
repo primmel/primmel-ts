@@ -1,0 +1,7 @@
+# Conformance corpus: a characteristic obligation outside the vocabulary.
+# Clause: EVL-07 (negative).
+certificate_template certificate {
+  characteristic x {
+    obligation shall
+  }
+}

@@ -1,0 +1,22 @@
+# Conformance corpus: the workflow_config register — the certification workflow steps.
+# Clause: EVL-08 (positive).
+workflow_config certification {
+  step application {
+    phase intake
+    actor applicant
+    label "Type Evaluation Application"
+    description "Applicant submits the Application declaring the model family."
+    inputs { applicant_info model_family_matrix documentation }
+    outputs { Application }
+    gates { "Application.status = SUBMITTED" }
+  }
+  step test-request-dispatch {
+    phase dispatch
+    actor issuing_authority
+    label "Test request dispatch"
+    description "The IA issues a TestRequest to each selected laboratory."
+    inputs { Application MeasuringInstrumentSample TestLaboratory }
+    outputs { TestRequest }
+    gates { "Each TestRequest references >= 1 MeasuringInstrumentSample" }
+  }
+}

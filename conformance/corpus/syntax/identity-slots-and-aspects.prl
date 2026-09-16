@@ -1,0 +1,30 @@
+# Conformance corpus: the identity_slot and aspect registers — the documentary identity slots
+# and the qualitative HAS inventory.
+# Clause: EVL-01 (positive).
+identity_slot manufacturer {
+  label "Manufacturer's name or trade mark"
+  type string
+  presentation { marked-on-instrument accompanying-document }
+  definition "Name or trade mark of the manufacturer (R 60-1, 6.2.1 item 1)."
+  metamodel_class identity-provenance.Manufacturer
+  source { doc "urn:oiml:pub:r:60-1:2021" clause "6.2.1" }
+}
+identity_slot type_approval_mark {
+  label "Type approval mark"
+  type mark
+  presentation { accompanying-document }
+  optional true
+}
+aspect markings {
+  label "Markings on the load cell"
+  kind marking
+  definition "The inscriptions marked clearly and indelibly on the load cell."
+  metamodel_class identity-provenance.Marking
+  term_ref marking
+  contains { model.identity.manufacturer e_max }
+  source { doc "urn:oiml:pub:r:60-1:2021" clause "6.2.1" }
+}
+aspect software {
+  kind other
+  attribute software_identification
+}

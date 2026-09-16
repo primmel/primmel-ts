@@ -1,0 +1,36 @@
+
+dimension accuracy_class {
+  cardinality single
+  values {
+    A { label "Class A" }
+    B { label "Class B" }
+  }
+}
+attribute_definition p_lc {
+  name "Relative resolution"
+  value_type number
+  is_dimension false
+}
+attribute_definition e_max {
+  name "Maximum capacity"
+  value_type QuantityValue
+  is_dimension false
+}
+attribute_definition e_min {
+  name "Minimum capacity"
+  value_type QuantityValue
+  is_dimension false
+}
+attribute_definition n_lc {
+  name "Number of verification intervals"
+  value_type integer
+  is_dimension false
+}
+calculation_context evaluation {
+  field accuracy_class { source classification.accuracy_class }
+  field p_lc { source parameters.p_lc }
+  field e_max { source parameters.e_max }
+  field e_min { source parameters.e_min }
+  field n_lc { source parameters.n_lc }
+  field v_min { source computed expression "(e_max - e_min) / (n_lc * f)" }
+}

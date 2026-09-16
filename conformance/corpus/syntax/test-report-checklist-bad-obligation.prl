@@ -1,0 +1,7 @@
+# Conformance corpus: an entry obligation outside the vocabulary.
+# Clause: EVL-13 (negative).
+test_report_checklist x {
+  entry e {
+    obligation should
+  }
+}

@@ -1,0 +1,60 @@
+
+requirement /req/metrological/mpe-stationary {
+  name "MPE stationary"
+  statement "The error shall not exceed the MPE."
+}
+requirement /req/technical/sealing-inscriptions {
+  name "Sealing"
+  statement "Sealing shall be provided."
+}
+conformance_test /conf/field/stationary-field-test {
+  name "Stationary field test"
+}
+conformance_test /conf/field/moving-field-test {
+  name "Moving field test"
+}
+state_machine sample_verification {
+  initial VALID
+  states { VALID ELAPSED INVALIDATED }
+  transition VALID -> ELAPSED action validity_elapsed {
+  }
+  transition VALID -> INVALIDATED action invalidating_signal_received {
+  }
+}
+verification_pathway initial-verification {
+  kind initial
+  label "Initial verification"
+  description "Initial verification establishes conformity of the speed meter to the approved type."
+  visual_inspection "Before testing, the speed meter is visually inspected."
+  tests { /conf/field/stationary-field-test /conf/field/moving-field-test }
+  assessment {
+    covers { /req/metrological/mpe-stationary /req/technical/sealing-inscriptions }
+    description "Assessment of conformity to the approved type."
+  }
+  limits {
+    mode same-as-type-evaluation
+    description "The MPEs apply unchanged."
+    source { doc "urn:oiml:pub:r:91-1:2025" clause "8.2.3" }
+  }
+  marking {
+    mark verification-mark { mark "verification mark" location "visible spot on the speed meter (7.14)" clause "8.2.4" }
+    securing { "sealing of adjustment means (7.13 a)" "securing of installation parameters (8.2.4)" }
+  }
+  validity {
+    window { years 1 }
+    trigger validity-elapsed {
+      kind timer
+      action validity_elapsed
+      description "The validity window elapsed — a subsequent verification is due."
+    }
+    trigger tyre-change {
+      kind signal
+      event tyre-change
+      action invalidating_signal_received
+      applicability { mode_of_use: [moving] }
+      description "After changing a tyre the verification might no longer be valid."
+      source { doc "urn:oiml:pub:r:91-1:2025" clause "6.15.3 Note 2" }
+    }
+  }
+  source { doc "urn:oiml:pub:r:91-1:2025" clause "8.2" }
+}

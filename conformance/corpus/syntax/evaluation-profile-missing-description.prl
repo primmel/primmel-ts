@@ -1,0 +1,6 @@
+# Conformance corpus: a description keyword with no value token.
+# Clause: EVL-06 (negative).
+evaluation_profile p {
+  dimensions { accuracy_class A }
+  description
+}

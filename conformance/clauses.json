@@ -561,6 +561,146 @@
    "rules": [
     "C129"
    ]
+  },
+  {
+   "id": "EVL-01",
+   "area": "evl",
+   "title": "The identity_slot and aspect registers",
+   "statement": "The identity_slot register: the subject's documentary identity slots with a parse-enforced type vocabulary (string, designation, serial, year, mark, map) and at least one presentation channel from the parse-enforced channel vocabulary (marked-on-instrument, accompanying-document); the aspect register: the qualitative HAS inventory with a parse-enforced kind vocabulary, its term_ref / component / attribute / contains references resolving against their registers when those registers are in scope (C130).",
+   "specAnchor": "MN 114 v3.3 (the identity_slot and aspect registers, C130)",
+   "rules": [
+    "C130"
+   ]
+  },
+  {
+   "id": "EVL-02",
+   "area": "evl",
+   "title": "The promise certificate projection and the promise_set register",
+   "statement": "The certificate print projection on a promise: the content binds by XOR (at most one of attribute / attributes / dimension), the type sits in the closed renderer vocabulary, and the label is required; the file-grade promise_set register reuses the subject-promise sub-grammar verbatim and the C42–C44 verifiability legs fire on set entries exactly as on subject promises (C131).",
+   "specAnchor": "MN 114 v3.3 (the promise certificate projection and the promise_set register, C131)",
+   "rules": [
+    "C131"
+   ]
+  },
+  {
+   "id": "EVL-03",
+   "area": "evl",
+   "title": "The application_declaration register",
+   "statement": "The application_declaration register: the declaration_form names a declared form when the form register is in scope, the document entries carry the parse-enforced obligation vocabulary (shall, should, may), and document ids are unique per declaration (C132).",
+   "specAnchor": "MN 114 v3.3 (the application_declaration register, C132)",
+   "rules": [
+    "C132"
+   ]
+  },
+  {
+   "id": "EVL-04",
+   "area": "evl",
+   "title": "The calculation_context register",
+   "statement": "The calculation_context register: every field source is a subject-chain token (classification.<dimension>, parameters.<attribute>, computed) — the classification and parameters resolutions gate on their registers, legacy schema tokens are rejected ungated — source computed requires the expression facet while a non-computed source carries none, and a free expression identifier that names no field warns unless it is a function call (C133).",
+   "specAnchor": "MN 114 v3.3 (the calculation_context register, C133)",
+   "rules": [
+    "C133"
+   ]
+  },
+  {
+   "id": "EVL-05",
+   "area": "evl",
+   "title": "The evaluation_dimensions register",
+   "statement": "The evaluation_dimensions register: the form-facing classification fields with the parse-enforced type and setting vocabularies; the enum facet names a declared classification dimension when the dimension register is in scope, and the field name resolves to an is_dimension attribute_definition or a dimension id, warning when neither (the legacy camelCase convention) (C134).",
+   "specAnchor": "MN 114 v3.3 (the evaluation_dimensions register, C134)",
+   "rules": [
+    "C134"
+   ]
+  },
+  {
+   "id": "EVL-06",
+   "area": "evl",
+   "title": "The evaluation_profile register",
+   "statement": "The evaluation_profile register: the open-keyed dimensions map keys resolve against the dimension register when it is in scope, and every value is a member of its dimension's declared value set — an open dimension (no declared values) accepts any value (C135).",
+   "specAnchor": "MN 114 v3.3 (the evaluation_profile register, C135)",
+   "rules": [
+    "C135"
+   ]
+  },
+  {
+   "id": "EVL-07",
+   "area": "evl",
+   "title": "The certificate_template register",
+   "statement": "The certificate_template register: the dimension_labels placeholders name declared classification dimensions (gated), the characteristic bindings (attribute | attributes | dimension | none, by XOR) resolve against their registers, the characteristic type sits within the closed renderer vocabulary (string, integer, number, quantity, statement) at error, and an unknown number_format placeholder warns (C136).",
+   "specAnchor": "MN 114 v3.3 (the certificate_template register, C136)",
+   "rules": [
+    "C136"
+   ]
+  },
+  {
+   "id": "EVL-08",
+   "area": "evl",
+   "title": "The workflow_config register",
+   "statement": "The workflow_config register: the certification workflow steps with the parse-enforced phase vocabulary (intake, dispatch, testing, evaluation, issuance); the actor names a declared role when the role register is in scope, clean inputs/outputs tokens name declared data classes when the class register is in scope, composite documentary strings are skipped, and gates are prose, never resolved (C137).",
+   "specAnchor": "MN 114 v3.3 (the workflow_config register, C137)",
+   "rules": [
+    "C137"
+   ]
+  },
+  {
+   "id": "EVL-09",
+   "area": "evl",
+   "title": "The verification_pathway register",
+   "statement": "The verification_pathway register: the parse-enforced kind, trigger-kind, and limits-mode vocabularies; the tests and covers references resolve per-register (gated); the trigger action names a lifecycle-machine transition action (gated); the event facet is present iff the trigger kind is signal; and the validity window carries at least one of years / months (C138).",
+   "specAnchor": "MN 114 v3.3 (the verification_pathway register, C138)",
+   "rules": [
+    "C138"
+   ]
+  },
+  {
+   "id": "EVL-10",
+   "area": "evl",
+   "title": "The lab_selection_criterion register",
+   "statement": "The lab_selection_criterion register: the parse-enforced weight, parameter_type, and match-operator vocabularies; the applies_when and match model_field references resolve against the attribute_definition / dimension registers (gated); and the match facets are operator-conditional — has_capability requires required_capability, the prefix operators require required_capability_prefix and model_field, always_pass carries no other match facet (C139).",
+   "specAnchor": "MN 114 v3.3 (the lab_selection_criterion register, C139)",
+   "rules": [
+    "C139"
+   ]
+  },
+  {
+   "id": "EVL-11",
+   "area": "evl",
+   "title": "The sample_selection_rule and specimen_governance_rule registers",
+   "statement": "The sample_selection_rule and specimen_governance_rule registers: the parse-enforced test_kind vocabulary on the sample rules; the rule, rationale, and applicability facets are required non-empty on both registers; the sample rules carry the step / selector / test_kind / additional_tests facets and the governance rules the constraint / post facets (C139).",
+   "specAnchor": "MN 114 v3.3 (the sample_selection_rule and specimen_governance_rule registers, C139)",
+   "rules": [
+    "C139"
+   ]
+  },
+  {
+   "id": "EVL-12",
+   "area": "evl",
+   "title": "The test_report_skeleton register",
+   "statement": "The test_report_skeleton register: the section / form / subsection tree with the parse-enforced required vocabulary (always, conditional); the form entry ids and the conformance_test / requirements references resolve per-register (gated); and a conditional form without applicability or notes warns — the inclusion rule is undocumented (C140).",
+   "specAnchor": "MN 114 v3.3 (the test_report_skeleton register, C140)",
+   "rules": [
+    "C140"
+   ]
+  },
+  {
+   "id": "EVL-13",
+   "area": "evl",
+   "title": "The test_report_checklist register",
+   "statement": "The test_report_checklist register: the parse-enforced obligation vocabulary (shall, may); entry ids are unique per checklist; the element letter sits within the PD-05 §4.4.3 vocabulary at warning (the vocabulary can grow); and an overlay entry names an upstream checklist entry id (C141).",
+   "specAnchor": "MN 114 v3.3 (the test_report_checklist register, C141)",
+   "rules": [
+    "C141"
+   ]
+  },
+  {
+   "id": "PKG-08",
+   "area": "packaging",
+   "title": "The register overlay deep merge",
+   "statement": "The overlay deep merge: a register in the overlay-capable set (workflowConfigs, testReportChecklists) marked `overlay true` merges field-wise across the uses chain — entries union by identity key preserving first-seen order, scalar arrays append as a union, scalars override, and a null incoming facet is the unstated marker (the base facet survives); an overlay entry naming no upstream entry id is an error (C141).",
+   "specAnchor": "MN 114 v3.3 (the overlay deep-merge composition rule, C141)",
+   "rules": [
+    "C141"
+   ]
   }
  ]
 }

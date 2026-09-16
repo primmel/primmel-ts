@@ -1,0 +1,12 @@
+
+form r60-3/sec-4.1 {
+  name "Issuing Authority"
+}
+test_report_skeleton x/test-report {
+  section 4 {
+    form r60-3/bogus {
+      file "bogus"
+      required always
+    }
+  }
+}

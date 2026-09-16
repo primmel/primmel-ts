@@ -1,0 +1,7 @@
+# Conformance corpus: a field type outside the vocabulary.
+# Clause: EVL-05 (negative).
+evaluation_dimensions evaluation {
+  field x {
+    type enum
+  }
+}

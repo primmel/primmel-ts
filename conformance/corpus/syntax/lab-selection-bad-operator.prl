@@ -1,0 +1,7 @@
+# Conformance corpus: a match operator outside the vocabulary.
+# Clause: EVL-10 (negative).
+lab_selection_criterion x {
+  match {
+    operator covers
+  }
+}

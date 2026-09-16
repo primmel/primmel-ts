@@ -1,0 +1,12 @@
+workflow_config certification {
+  overlay true
+  step test-request-dispatch {
+    gates { "Each TestRequest.required_forms subset of R 60-3 form identifiers" }
+  }
+}
+test_report_checklist oiml-cs-trf {
+  overlay true
+  entry sample_identification {
+    validation "form_contains('04-07-sample-selection')"
+  }
+}

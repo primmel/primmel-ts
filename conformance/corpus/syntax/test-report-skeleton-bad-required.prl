@@ -1,0 +1,9 @@
+# Conformance corpus: a required facet outside the vocabulary.
+# Clause: EVL-12 (negative).
+test_report_skeleton x {
+  section 4 {
+    form f {
+      required mandatory
+    }
+  }
+}

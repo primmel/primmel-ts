@@ -1,0 +1,31 @@
+# Conformance corpus: the test_report_skeleton register — sections, forms, and subsections.
+# Clause: EVL-12 (positive).
+test_report_skeleton r60-3/test-report {
+  title "OIML R 60 Type Evaluation Report"
+  description "The complete evaluation report for an OIML R 60 load cell type evaluation."
+  section 4 {
+    title "Evaluation Report"
+    description "Administrative and descriptive information."
+    form r60-3/sec-4.1 {
+      file "04-01-authority-info"
+      title "Issuing Authority"
+      required always
+    }
+    form r60-3/sec-4.3.2-b {
+      file "04-03-02-b-performance-digital"
+      title "Summary of Performance Test Results (Digital)"
+      required conditional
+      applicability { technology: [digital, digital-with-processing] }
+    }
+    subsection "Base Metrological Tests" {
+      description "The metrological core."
+      form r60-3/table-6.5 {
+        file "load-cell-errors"
+        title "Load Cell Errors"
+        conformance_test /conf/metrological-tests/measurement-error-repeatability-mdlo
+        requirements { /req/metrological/mpe }
+        required always
+      }
+    }
+  }
+}

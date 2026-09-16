@@ -1,0 +1,26 @@
+# Conformance corpus: the sample_selection_rule and specimen_governance_rule registers.
+# Clause: EVL-11 (positive).
+sample_selection_rule D.2.6-partial-evaluation-flags {
+  step "D.2.6"
+  rule "If a non-selected load cell of the same capacity has lower v_min or higher y than the selected one, flag for partial evaluation."
+  rationale "R 60-2 §2.4.6 — cross-group characteristic coverage"
+  applicability "selected.length > 0"
+  selector "WHERE same_e_max(non_selected, selected)"
+  test_kind partial_evaluation
+  additional_tests { temperature_mdlo "Triggered by lower v_min or higher y" creep_dr "Triggered by higher y only" }
+}
+sample_selection_rule 7.1.2-definitive-type-per-model {
+  step "7.1.2"
+  rule "The definitive type is tested per model."
+  rationale "R 129, 7.1.2"
+  applicability "always"
+  test_kind full_evaluation
+  single_sample true
+}
+specimen_governance_rule unit-continuity {
+  rule "A sample's identity is continuous across the test runs."
+  rationale "R 60-2, 2.4"
+  applicability "always"
+  constraint "test_runs.group_by(test_kind).all { |g| g.sample_id.unique() }"
+  post "Violations invalidate the affected runs."
+}

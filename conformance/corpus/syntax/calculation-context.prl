@@ -1,0 +1,10 @@
+# Conformance corpus: the calculation_context register — evaluation inputs wired to subject-chain sources.
+# Clause: EVL-04 (positive).
+calculation_context evaluation {
+  field accuracy_class { source classification.accuracy_class }
+  field p_lc { source parameters.p_lc }
+  field e_max { source parameters.e_max }
+  field e_min { source parameters.e_min }
+  field n_lc { source parameters.n_lc }
+  field v_min { source computed expression "(e_max - e_min) / (n_lc * f)" }
+}

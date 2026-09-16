@@ -1,0 +1,12 @@
+
+dimension accuracy_class {
+  cardinality single
+  values {
+    A { label "Class A" }
+    B { label "Class B" }
+  }
+}
+evaluation_profile p {
+  dimensions { accuracy_class X }
+  description "Bad class"
+}

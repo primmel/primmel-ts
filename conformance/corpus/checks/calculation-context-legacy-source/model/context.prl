@@ -1,0 +1,4 @@
+
+calculation_context evaluation {
+  field x { source dimensions.accuracy_class }
+}

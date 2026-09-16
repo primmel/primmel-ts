@@ -1,0 +1,5 @@
+
+application_declaration application {
+  document measurement-principle { name "One" }
+  document measurement-principle { name "Two" }
+}

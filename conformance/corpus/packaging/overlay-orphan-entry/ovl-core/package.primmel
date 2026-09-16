@@ -1,0 +1,5 @@
+package {
+  id ovl-core
+  kind core
+  title "The core layer owning the workflow skeleton and the review checklist"
+}

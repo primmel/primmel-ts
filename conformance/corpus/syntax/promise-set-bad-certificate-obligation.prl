@@ -1,0 +1,11 @@
+# Conformance corpus: a certificate obligation outside the vocabulary.
+# Clause: EVL-02 (negative).
+promise_set S {
+  promise p {
+    certificate {
+      type string
+      label "x"
+      obligation shall
+    }
+  }
+}

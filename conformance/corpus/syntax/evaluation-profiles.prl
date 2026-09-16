@@ -1,0 +1,10 @@
+# Conformance corpus: the evaluation_profile register — the named dimension-value presets.
+# Clause: EVL-06 (positive).
+evaluation_profile class-a-digital-nh {
+  dimensions { accuracy_class A technology digital humidity_class NH }
+  description "Class A digital, no humidity test"
+}
+evaluation_profile class-b-digital-ch {
+  dimensions { accuracy_class B technology digital humidity_class CH }
+  description "Class B digital with cyclic humidity"
+}

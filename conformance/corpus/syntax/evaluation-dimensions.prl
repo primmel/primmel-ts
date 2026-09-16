@@ -1,0 +1,28 @@
+# Conformance corpus: the evaluation_dimensions register — the form-facing classification fields.
+# Clause: EVL-05 (positive).
+evaluation_dimensions evaluation {
+  label "Type of Testing"
+  field technology {
+    label "Technology"
+    enum technology
+    required true
+    editable false
+    setting MUST
+  }
+  field accuracy_class {
+    label "Accuracy Class"
+    type string
+    enum accuracy_class
+    required true
+    editable false
+    setting MUST
+  }
+  field load_type {
+    label "Load Type"
+    enum load_type
+    required false
+    editable true
+    setting MAY
+    multiple true
+  }
+}

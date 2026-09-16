@@ -1,0 +1,5 @@
+# Conformance corpus: a test_kind outside the vocabulary.
+# Clause: EVL-11 (negative).
+sample_selection_rule x {
+  test_kind full
+}

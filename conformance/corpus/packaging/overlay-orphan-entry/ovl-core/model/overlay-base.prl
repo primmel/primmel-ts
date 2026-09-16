@@ -1,0 +1,12 @@
+test_report_checklist oiml-cs-trf {
+  entry title {
+    element "a"
+    description "Title: 'OIML test report'"
+    obligation shall
+  }
+  entry sample_identification {
+    element "h"
+    description "Specific samples tested, including their identification"
+    obligation shall
+  }
+}

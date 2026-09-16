@@ -1,0 +1,7 @@
+# Conformance corpus: a document obligation outside the vocabulary.
+# Clause: EVL-03 (negative).
+application_declaration application {
+  document x {
+    obligation must
+  }
+}
