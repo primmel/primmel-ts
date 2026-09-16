@@ -297,6 +297,19 @@ export default interface Process {
   input: Registry[];
   provision: Provision[];
   /**
+   * The raw `output { … }` / `reference_data_registry { … }` ids, exactly
+   * as authored. Unlike `output`/`input` (which hold only ids that
+   * resolved to declared `data_registry` constructs), these lists never
+   * lose a reference: OIML SMART packages point process I/O at
+   * entity-class STORE names (the dataclass `store { … }` declarations —
+   * smart TODO.roadmap/40 batch 5e), which the registry resolver cannot
+   * see. The dumper emits these lists, so an unresolvable reference
+   * survives the load → dump round-trip instead of being silently
+   * dropped (the `provisionRefs` doctrine, extended to process I/O).
+   */
+  outputRefs: string[];
+  inputRefs: string[];
+  /**
    * The raw `validate_provision { … }` ids, exactly as authored. Unlike
    * `provision` (which holds only ids that resolved to declared
    * `provision` constructs), this list never loses a reference: OIML

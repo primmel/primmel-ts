@@ -936,6 +936,8 @@ export const parseProcess: Parser = function (id, data) {
     windows: [],
     source: null,
     provisionRefs: [],
+    outputRefs: [],
+    inputRefs: [],
     _relations: {
       actor: '',
       output: [],
@@ -1010,9 +1012,17 @@ export const parseProcess: Parser = function (id, data) {
       } else if (keyword === 'validate_measurement') {
         result.measure = tokenizePackage(value()).map(x => unwrapBlock(x));
       } else if (keyword === 'output') {
-        result._relations.output = tokenizePackage(value());
+        // output { <id>+ } — entity-class store names in OIML SMART
+        // content; quoted entries (store labels with spaces) unwrap to
+        // their value, dumpBareSafe re-quotes at dump (the carrier is
+        // the VALUE, not the spelling).
+        result._relations.output = tokenizePackage(value()).map(x =>
+          stripWrapping(x),
+        );
       } else if (keyword === 'reference_data_registry') {
-        result._relations.input = tokenizePackage(value());
+        result._relations.input = tokenizePackage(value()).map(x =>
+          stripWrapping(x),
+        );
       } else if (keyword === 'signature') {
         // signature { in { … } out { … } }
         const sig: ProcessSignature = { inputs: [], outputs: [] };
@@ -1166,6 +1176,12 @@ export const resolveProcess: Resolver<Process, ResolvableProcess> = function (
     // name no declared `provision` construct (e.g. `/req/cs/*`
     // requirements) — the linter and the dumper read this list.
     provisionRefs: [..._relations.provision],
+    // The raw process-I/O ids survive the same way (smart
+    // TODO.roadmap/40 batch 5e): OIML SMART names entity-class STORE
+    // ids here, which the `regs` resolver cannot see — without the raw
+    // carriers the load → dump round-trip silently dropped them.
+    outputRefs: [..._relations.output],
+    inputRefs: [..._relations.input],
     actor: null,
     page: null,
   };
@@ -1359,10 +1375,20 @@ export const dumpProcess: (
       process.machineSteps.map(dumpBareSafe).join(' ') +
       ' }\n';
   }
-  if (process.input.length > 0) {
+  // reference_data_registry dumps from the RAW ids (inputRefs): OIML
+  // SMART names entity-class stores here, which never resolve to
+  // data_registry constructs — the resolved list alone would silently
+  // drop them (smart TODO.roadmap/40 batch 5e; the provisionRefs
+  // doctrine). Programmatically built processes without the raw
+  // carriers fall back to the resolved ids.
+  const inputIds =
+    process.inputRefs && process.inputRefs.length > 0
+      ? process.inputRefs
+      : process.input.map(r => r.id);
+  if (inputIds.length > 0) {
     out += '  reference_data_registry {\n';
-    for (const dr of process.input) {
-      out += '    ' + dr.id + '\n';
+    for (const id of inputIds) {
+      out += '    ' + dumpBareSafe(id) + '\n';
     }
     out += '  }\n';
   }
@@ -1380,10 +1406,16 @@ export const dumpProcess: (
     }
     out += '  }\n';
   }
-  if (process.output.length > 0) {
+  // output dumps from the RAW ids (outputRefs) — same store-name
+  // doctrine as reference_data_registry above.
+  const outputIds =
+    process.outputRefs && process.outputRefs.length > 0
+      ? process.outputRefs
+      : process.output.map(r => r.id);
+  if (outputIds.length > 0) {
     out += '  output {\n';
-    for (const c of process.output) {
-      out += '    ' + c.id + '\n';
+    for (const id of outputIds) {
+      out += '    ' + dumpBareSafe(id) + '\n';
     }
     out += '  }\n';
   }

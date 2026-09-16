@@ -211,6 +211,8 @@ describe('resolve (unit, minimal context)', () => {
       input: [],
       provision: [],
       provisionRefs: [],
+      outputRefs: [],
+      inputRefs: [],
       page: null,
       measure: [],
       parent: '',
