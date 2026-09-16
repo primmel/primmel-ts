@@ -217,3 +217,145 @@ ${GATEWAY}
     assert.deepEqual(issues, []);
   });
 });
+
+// The r60 approvals.yaml shape: id, label→name, actor, approve_by,
+// approval_record { <entity-store>+ }, and the citation string folded
+// into source { doc } (the kernel `reference {…}` facet stays the
+// Reference-construct id list it always was).
+const APPROVAL_ROLES_CLASSES = `
+role applicant {
+  name "Applicant"
+}
+role ia_checker {
+  name "IA checker"
+}
+class Application#data {
+  store { applications }
+  id: string { modality SHALL }
+}
+`;
+
+const APPROVAL = `
+approval ia_approve_application {
+  name "IA approves the application"
+  actor applicant
+  modality shall
+  approve_by ia_checker
+  approval_record {
+    applications
+  }
+  source { doc "PD-05 §4.2" clause "" }
+}
+`;
+
+describe('approval provenance + resolution (smart TODO.roadmap/40 batch 5, step 5c)', () => {
+  it('parses the facets; the raw reference ids survive resolution', () => {
+    const m = load(APPROVAL_ROLES_CLASSES + APPROVAL);
+    assert.equal(m.approvals.length, 1);
+    const a = m.approvals[0]!;
+    assert.equal(a.name, 'IA approves the application');
+    assert.equal(a.modality, 'shall');
+    assert.equal(a.actorRef, 'applicant');
+    assert.equal(a.approverRef, 'ia_checker');
+    assert.deepEqual(a.recordRefs, ['applications']);
+    // The resolved halves: actor/approver bind to the declared roles …
+    assert.equal(a.actor?.id, 'applicant');
+    assert.equal(a.approver?.id, 'ia_checker');
+    // … while approval_record names an entity-class STORE, not a
+    // data_registry — the legacy regs-resolution finds nothing, the raw
+    // list is the carrier (C143 checks it against the class stores).
+    assert.deepEqual(a.records, []);
+    assert.equal(a.source?.doc, 'PD-05 §4.2');
+    assert.equal(a.source?.clause, '');
+  });
+
+  it('round-trips byte-clean (the codec fixpoint)', () => {
+    const out = dump(load(APPROVAL_ROLES_CLASSES + APPROVAL));
+    assert.ok(
+      out.includes(
+        'approval ia_approve_application {\n' +
+          '  name "IA approves the application"\n' +
+          '  actor applicant\n' +
+          '  modality shall\n' +
+          '  approve_by ia_checker\n' +
+          '  approval_record {\n' +
+          '    applications\n' +
+          '  }\n' +
+          '  source {\n' +
+          '    doc "PD-05 §4.2"\n' +
+          '  }\n' +
+          '}\n',
+      ),
+    );
+    assert.equal(dump(load(out)), out);
+  });
+
+  it('an empty modality emits NO dangling `modality ` line (the dormant-codec bugfix)', () => {
+    const out = dump(
+      load('approval a { name "Plain" actor applicant approve_by ia_checker }'),
+    );
+    assert.ok(
+      out.includes('approval a {\n  name "Plain"\n  actor applicant\n'),
+    );
+    assert.ok(!out.includes('modality'));
+    assert.equal(dump(load(out)), out);
+  });
+
+  it('an UNRESOLVABLE reference still round-trips byte-clean (the raw-refs carrier)', () => {
+    const out = dump(
+      load(
+        'approval a { name "Ghost" actor ghost_role approve_by nobody approval_record { ghost_store } }',
+      ),
+    );
+    assert.ok(
+      out.includes(
+        '  actor ghost_role\n  approve_by nobody\n  approval_record {\n    ghost_store\n  }\n',
+      ),
+    );
+    assert.equal(dump(load(out)), out);
+  });
+
+  it('C143: a coherent approval (roles + store resolve) is clean', () => {
+    const issues = checkPackage(
+      makePackage(APPROVAL_ROLES_CLASSES + APPROVAL),
+    ).filter(i => i.check === 'C143');
+    assert.deepEqual(issues, []);
+  });
+
+  it('C143: dangling actor/approver/store are flagged (gated per register)', () => {
+    const body = `
+role applicant {
+  name "Applicant"
+}
+class Application#data {
+  store { applications }
+  id: string { modality SHALL }
+}
+approval ia_approve_application {
+  name "IA approves the application"
+  actor ghost_applicant
+  approve_by ghost_checker
+  approval_record {
+    ghost_store
+  }
+}
+`;
+    const issues = checkPackage(makePackage(body)).filter(
+      i => i.check === 'C143',
+    );
+    assert.equal(issues.length, 3);
+    assert.match(issues[0]!.message, /actor "ghost_applicant"/);
+    assert.match(issues[1]!.message, /approver "ghost_checker"/);
+    assert.match(issues[2]!.message, /approval_record "ghost_store"/);
+    assert.ok(issues.every(i => i.severity === 'error'));
+  });
+
+  it('C143: an empty register gates the leg off (the C58 doctrine)', () => {
+    // No roles, no classes → nothing is "dangling", the registers are
+    // simply not in scope.
+    const issues = checkPackage(makePackage(APPROVAL)).filter(
+      i => i.check === 'C143',
+    );
+    assert.deepEqual(issues, []);
+  });
+});

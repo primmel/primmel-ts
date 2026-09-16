@@ -1,7 +1,24 @@
+// ─────────────────────────────────────────────────────────────────────
+// `approval` construct — the workflow approval step (who asks, who
+// approves, which record store the decision lands in).
+//
+// The workflow fidelity facets (smart TODO.roadmap/40 batch 5; closes
+// the kernel half of smart's TODO.refactor/16): the raw reference ids
+// (actorRef / approverRef / recordRefs) survive resolution even when
+// they name no declared construct — the process.provisionRefs
+// precedent — so the dump stays byte-faithful and C143
+// (approval-references-resolve) can check them; and the clause-URN
+// provenance facet `source { doc "…" clause "…" }` (free citation
+// strings land in doc — the YAML `reference: "PD-05 §4.2"` citation
+// folds here; the kernel `reference { <id>+ }` facet stays the
+// Reference-construct id list it always was).
+// ─────────────────────────────────────────────────────────────────────
+
 import Approval, { ResolvableApproval } from '../../types/Approval';
 import { resolveFromContext } from '../resolve';
-import { escapeString, tokenizePackage } from '../tokenize';
+import { escapeString, tokenizePackage, unwrapBlock } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
+import { readSource } from './field-parser';
 import { Dumper, Parser, Resolver } from '../types';
 import type { Registry } from '../../types/data';
 import type Reference from '../../types/Reference';
@@ -12,10 +29,14 @@ export const parseApproval: Parser = function (id, data) {
     id: id,
     name: '',
     modality: '',
+    actorRef: '',
+    approverRef: '',
+    recordRefs: [],
     actor: null,
     approver: null,
     records: [],
     ref: [],
+    source: null,
     _relations: {
       actor: '',
       approver: '',
@@ -39,6 +60,9 @@ export const parseApproval: Parser = function (id, data) {
         result._relations.records = tokenizePackage(value());
       } else if (keyword === 'reference') {
         result._relations.ref = tokenizePackage(value());
+      } else if (keyword === 'source') {
+        // Clause-URN provenance — citation strings land in doc.
+        result.source = readSource(unwrapBlock(value()));
       } else {
         return false;
       }
@@ -56,7 +80,16 @@ export const parseApproval: Parser = function (id, data) {
 export const resolveApproval: Resolver<Approval, ResolvableApproval> =
   function (ctx, unresolved) {
     const { _relations, ...rest } = unresolved;
-    const p: Approval = { ...rest, records: [], ref: [] };
+    const p: Approval = {
+      ...rest,
+      // The raw reference ids survive resolution even when they name no
+      // declared construct — the linter (C143) and the dumper read these.
+      actorRef: _relations.actor,
+      approverRef: _relations.approver,
+      recordRefs: [..._relations.records],
+      records: [],
+      ref: [],
+    };
     if (_relations.actor !== '') {
       p.actor =
         resolveFromContext<Role>(ctx, 'roles', _relations.actor) ?? null;
@@ -83,17 +116,21 @@ export const resolveApproval: Resolver<Approval, ResolvableApproval> =
 export const dumpApproval: Dumper<Approval> = function (approval) {
   let out: string = 'approval ' + approval.id + ' {\n';
   out += '  name "' + escapeString(approval.name) + '"\n';
-  if (approval.actor !== null) {
-    out += '  actor ' + approval.actor.id + '\n';
+  // The reference facets dump from the RAW ids — an unresolved id still
+  // round-trips byte-clean (the provisionRefs precedent).
+  if (approval.actorRef) {
+    out += '  actor ' + approval.actorRef + '\n';
   }
-  out += '  modality ' + approval.modality + '\n';
-  if (approval.approver !== null) {
-    out += '  approve_by ' + approval.approver.id + '\n';
+  if (approval.modality !== '') {
+    out += '  modality ' + approval.modality + '\n';
   }
-  if (approval.records.length > 0) {
+  if (approval.approverRef) {
+    out += '  approve_by ' + approval.approverRef + '\n';
+  }
+  if (approval.recordRefs.length > 0) {
     out += '  approval_record {\n';
-    for (const dr of approval.records) {
-      out += '    ' + dr.id + '\n';
+    for (const id of approval.recordRefs) {
+      out += '    ' + id + '\n';
     }
     out += '  }\n';
   }
@@ -101,6 +138,16 @@ export const dumpApproval: Dumper<Approval> = function (approval) {
     out += '  reference {\n';
     for (const r of approval.ref) {
       out += '    ' + r.id + '\n';
+    }
+    out += '  }\n';
+  }
+  if (approval.source && (approval.source.doc || approval.source.clause)) {
+    out += '  source {\n';
+    if (approval.source.doc) {
+      out += '    doc "' + escapeString(approval.source.doc) + '"\n';
+    }
+    if (approval.source.clause) {
+      out += '    clause "' + escapeString(approval.source.clause) + '"\n';
     }
     out += '  }\n';
   }

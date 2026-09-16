@@ -5691,6 +5691,62 @@ export function checkPackage(
     }
   }
 
+  // ── C143: approval-references-resolve (smart TODO.roadmap/40 batch ──
+  // 5; the packages-as-SSOT epic) ─────────────────────────────────────
+  // The first approval rule ever (the codec was dormant — no package
+  // declared an approval before batch 5): actor / approve_by resolve to
+  // declared roles, the approval_record entries to declared entity-class
+  // stores (the dataclass `store { … }` names — the workflow values are
+  // store names like `applications`, not data_registry ids). Per-register
+  // gated (the C58 doctrine): an empty register means the register is
+  // not in scope, not that every reference dangles. The rule reads the
+  // RAW reference ids (actorRef / approverRef / recordRefs) — the
+  // resolved fields silently drop unresolvable ids.
+  {
+    const approvalRoleIds = new Set((standard.roles ?? []).map(r => r.id));
+    const approvalStores = new Set<string>();
+    for (const c of standard.dataclasses ?? []) {
+      if (c.store) {
+        for (const s of c.store.split(/\s+/)) {
+          if (s) {
+            approvalStores.add(s);
+          }
+        }
+      }
+    }
+    for (const a of standard.approvals ?? []) {
+      const where = `approval ${a.id}`;
+      if (
+        a.actorRef &&
+        approvalRoleIds.size > 0 &&
+        !approvalRoleIds.has(a.actorRef)
+      ) {
+        err(
+          'C143',
+          `${where}: actor "${a.actorRef}" is not a declared role (approval-references-resolve)`,
+        );
+      }
+      if (
+        a.approverRef &&
+        approvalRoleIds.size > 0 &&
+        !approvalRoleIds.has(a.approverRef)
+      ) {
+        err(
+          'C143',
+          `${where}: approver "${a.approverRef}" is not a declared role (approval-references-resolve)`,
+        );
+      }
+      for (const store of a.recordRefs ?? []) {
+        if (approvalStores.size > 0 && !approvalStores.has(store)) {
+          err(
+            'C143',
+            `${where}: approval_record "${store}" is not a declared entity-class store (approval-references-resolve)`,
+          );
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {

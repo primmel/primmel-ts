@@ -691,6 +691,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 5 (the packages-as-SSOT epic)',
   ),
+  // C143 (smart TODO.roadmap/40 batch 5; the packages-as-SSOT epic): the
+  // first approval rule — actor/approve_by resolve to declared roles,
+  // the approval_record entries to declared entity-class stores (the
+  // dataclass `store { … }` names), per-register gated (the C58
+  // doctrine). Reads the raw reference ids so unresolvable ids are still
+  // checked — and still round-trip.
+  R(
+    'C143',
+    'approval-references-resolve',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 5 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',
