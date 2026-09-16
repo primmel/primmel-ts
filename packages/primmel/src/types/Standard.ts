@@ -50,6 +50,8 @@ import type DecisionRule from './DecisionRule';
 import type DocumentModule from './DocumentModule';
 import type InformativeAnnex from './InformativeAnnex';
 import type PartAnnex from './PartAnnex';
+import type Storyline from './Storyline';
+import type { DemoWorld } from './Storyline';
 import type { Instance } from './Instance';
 import type { Dual, QuantityRegister } from './Quantity';
 import type Dataspace from './Dataspace';
@@ -226,6 +228,11 @@ export default interface Standard {
    *  a verdict-neutral documentary register (the normative/informative
    *  mark is the point); NOT the external-guidance informative_annex. */
   partAnnexes: PartAnnex[];
+  /** The demo seeds (smart TODO.roadmap/40 batch 4) — one demo_world per
+   *  package (the participant registry) and one storyline per flow;
+   *  documentary records (field-level checking stays app-side). */
+  demoWorlds: DemoWorld[];
+  storylines: Storyline[];
 
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the OCP-extensible connector-profile registry. Endpoints and serve

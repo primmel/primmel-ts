@@ -163,6 +163,8 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // the model.
   informativeAnnexes: 'cross-cutting',
   partAnnexes: 'cross-cutting',
+  demoWorlds: 'tertiary',
+  storylines: 'tertiary',
   // Invariants (smart gap-close E9) are cross-cutting beside notes: the
   // typed replacement for the note-family encoding — doctrine about the
   // model, not machinery inside it (the enforcement claims point at the

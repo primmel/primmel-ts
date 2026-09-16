@@ -55,6 +55,8 @@ import type DecisionRule from '../types/DecisionRule';
 import type DocumentModule from '../types/DocumentModule';
 import type InformativeAnnex from '../types/InformativeAnnex';
 import type PartAnnex from '../types/PartAnnex';
+import type Storyline from '../types/Storyline';
+import type { DemoWorld } from '../types/Storyline';
 import type { Instance } from '../types/Instance';
 import type { Dual, QuantityRegister } from '../types/Quantity';
 import type Dataspace from '../types/Dataspace';
@@ -255,6 +257,8 @@ export interface ParseContext {
   documentModules: Record<string, DocumentModule>;
   informativeAnnexes: Record<string, InformativeAnnex>;
   partAnnexes: Record<string, PartAnnex>;
+  demoWorlds: Record<string, DemoWorld>;
+  storylines: Record<string, Storyline>;
 
   // Primmel v3 twin interface (TODO.roadmap/32): connector profiles.
   // Endpoints/serve bindings live on the subject (is.endpoints/has.serves).

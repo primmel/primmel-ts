@@ -82,6 +82,8 @@ function emptyContext(): ParseContext {
     documentModules: {},
     informativeAnnexes: {},
     partAnnexes: {},
+    demoWorlds: {},
+    storylines: {},
     connectorProfiles: {},
     monitors: {},
     passports: {},

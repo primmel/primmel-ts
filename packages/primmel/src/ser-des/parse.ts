@@ -131,6 +131,8 @@ export default function parse(
     documentModules: {},
     informativeAnnexes: {},
     partAnnexes: {},
+    demoWorlds: {},
+    storylines: {},
     // Primmel v3 twin interface (TODO.roadmap/32)
     connectorProfiles: {},
     // Primmel v3 continuous compliance (TODO.roadmap/34)

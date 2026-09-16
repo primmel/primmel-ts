@@ -506,6 +506,21 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
   ),
+  // C129 (smart TODO.roadmap/40 batch 4; the packages-as-SSOT epic): the
+  // demo-seed shapes — the storyline's id_prefix pattern (register-free),
+  // the party laboratory/authority → the demo_world participant seeds
+  // (gated on that register), the record stores → the entity-class stores
+  // (gated), and the in-construct record cross-references (a record field
+  // keyed by a sibling record's store names a sibling of that store —
+  // ungated). Field-level discipline stays app-side.
+  R(
+    'C129',
+    'storyline-shape',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

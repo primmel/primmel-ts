@@ -568,6 +568,8 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'documentModules',
   'informativeAnnexes',
   'partAnnexes',
+  'demoWorlds',
+  'storylines',
   // The pre-existing drift closed (the packages-as-SSOT epic): these
   // collections existed as constructs but were never merged, so `uses`
   // composition silently dropped them — comments, predicates, the

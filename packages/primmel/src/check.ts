@@ -357,6 +357,11 @@
 //      part_annex register's declaration shape — letters unique per
 //      package, the source provenance required; the obligation
 //      vocabulary is parse-enforced upstream
+//   C129 storyline-shape (smart TODO.roadmap/40 batch 4): the demo-seed
+//      shapes — the id_prefix pattern (register-free), party →
+//      demo_world participant seeds (gated), record stores → entity-
+//      class stores (gated), in-construct record cross-references
+//      (ungated); field-level discipline stays app-side
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4621,6 +4626,85 @@ export function checkPackage(
           'C128',
           `part_annex ${a.id}: the source provenance is required — a documentary register entry cites its part (part-annex-shape)`,
         );
+      }
+    }
+  }
+
+  // ── C129: storyline-shape (smart TODO.roadmap/40 batch 4; the ──────
+  // packages-as-SSOT epic) ────────────────────────────────────────────
+  // The demo-seed shapes: the id_prefix pattern (the register-free shape
+  // leg); the party laboratory/authority resolve against the package's
+  // participant seeds WHEN a demo_world with participants is in scope
+  // (per-register gating, the C58 doctrine); the record stores resolve
+  // against the declared entity-class stores WHEN that register is in
+  // scope; and the in-construct cross-references resolve — a record
+  // field keyed by a sibling record's store names a sibling record of
+  // that store (in-construct, ungated). The field-level discipline (the
+  // schema's per-slot required fields) stays app-side.
+  {
+    const participantSeeds = new Set<string>();
+    for (const w of standard.demoWorlds ?? []) {
+      for (const section of w.participants ?? []) {
+        for (const e of section.entries ?? []) {
+          participantSeeds.add(e.id);
+        }
+      }
+    }
+    const entityStores = new Set(
+      (standard.dataclasses ?? [])
+        .map(c => c.store)
+        .filter((s): s is string => !!s),
+    );
+    for (const s of standard.storylines ?? []) {
+      const where = `storyline ${s.id}`;
+      if (s.idPrefix && !/^[a-z0-9-]+$/.test(s.idPrefix)) {
+        err(
+          'C129',
+          `${where}: id_prefix "${s.idPrefix}" does not match ^[a-z0-9-]+$ — the id-minting prefix is a lowercase slug (storyline-shape)`,
+        );
+      }
+      if (participantSeeds.size > 0) {
+        for (const [slot, ref] of [
+          ['laboratory', s.party.laboratory],
+          ['authority', s.party.authority],
+        ] as const) {
+          if (ref && !participantSeeds.has(ref)) {
+            err(
+              'C129',
+              `${where}: party ${slot} "${ref}" is not a declared participant seed (storyline-shape)`,
+            );
+          }
+        }
+      }
+      const siblingStores = new Map<string, Set<string>>();
+      for (const r of s.records ?? []) {
+        if (entityStores.size > 0 && !entityStores.has(r.store)) {
+          err(
+            'C129',
+            `${where}: record store "${r.store}" is not a declared entity-class store (storyline-shape)`,
+          );
+        }
+        let ids = siblingStores.get(r.store);
+        if (!ids) {
+          ids = new Set<string>();
+          siblingStores.set(r.store, ids);
+        }
+        ids.add(r.id);
+      }
+      for (const r of s.records ?? []) {
+        for (const [key, value] of Object.entries(r.fields)) {
+          const targets = siblingStores.get(key);
+          if (
+            targets !== undefined &&
+            !Array.isArray(value) &&
+            !targets.has(String(value))
+          ) {
+            err(
+              'C129',
+              `${where}: record ${r.store} ${r.id}: ${key} "${String(value)}" is not a sibling ${key} record of this storyline (storyline-shape)`,
+            );
+          }
+        }
       }
     }
   }

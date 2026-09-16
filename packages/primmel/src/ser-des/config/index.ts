@@ -169,6 +169,12 @@ import {
   parseInformativeAnnex,
 } from './informativeAnnex';
 import { dumpPartAnnex, parsePartAnnex } from './partAnnex';
+import {
+  dumpDemoWorld,
+  dumpStoryline,
+  parseDemoWorld,
+  parseStoryline,
+} from './storyline';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -665,6 +671,24 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parsePartAnnex,
     dump: dumpPartAnnex as never,
+  }),
+  // The demo seeds (smart TODO.roadmap/40 batch 4) — one demo_world per
+  // package (file-level metadata + the OPEN participants registry) and
+  // one storyline per flow; the record-value sub-grammar follows the
+  // quantity.ts dumpScalarToken conventions.
+  defineConstruct({
+    keyword: 'demo_world',
+    field: 'demoWorlds',
+    takesID: true,
+    parse: parseDemoWorld,
+    dump: dumpDemoWorld as never,
+  }),
+  defineConstruct({
+    keyword: 'storyline',
+    field: 'storylines',
+    takesID: true,
+    parse: parseStoryline,
+    dump: dumpStoryline as never,
   }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT
