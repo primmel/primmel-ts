@@ -40,6 +40,7 @@ import type CalculationContext from '../types/CalculationContext';
 import type EvaluationDimensions from '../types/EvaluationDimension';
 import type EvaluationProfile from '../types/EvaluationProfile';
 import type CertificateTemplate from '../types/CertificateTemplate';
+import type WorkflowConfig from '../types/WorkflowConfig';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
@@ -252,6 +253,9 @@ export interface ParseContext {
   evaluationProfiles: Record<string, EvaluationProfile>;
   // The certificate rendering contract (smart TODO.roadmap/40 batch 3).
   certificateTemplates: Record<string, CertificateTemplate>;
+  // The certification workflow step register (smart TODO.roadmap/40
+  // batch 3) — overlay-composable (OVERLAY_DEEP_MERGE_FIELDS).
+  workflowConfigs: Record<string, WorkflowConfig>;
 
   // Primmel v3 instantiation (TODO.roadmap/03)
   instances: Record<string, Instance>;

@@ -118,6 +118,8 @@ export default function parse(
     evaluationProfiles: {},
     // The certificate rendering contract (batch 3)
     certificateTemplates: {},
+    // The certification workflow step register (batch 3)
+    workflowConfigs: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)

@@ -130,6 +130,9 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // The certificate rendering contract (smart TODO.roadmap/40 batch 3)
   // — secondary beside the forms.
   certificateTemplates: 'secondary',
+  // The certification workflow step register (smart TODO.roadmap/40
+  // batch 3) — operational wiring, tertiary.
+  workflowConfigs: 'tertiary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

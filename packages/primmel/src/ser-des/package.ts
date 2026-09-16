@@ -550,6 +550,9 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // The certificate rendering contract (smart TODO.roadmap/40 batch 3)
   // composes with uses-no-redefine semantics.
   'certificateTemplates',
+  // The certification workflow step register (smart TODO.roadmap/40
+  // batch 3) — the rec-overlay deep merge (OVERLAY_DEEP_MERGE_FIELDS).
+  'workflowConfigs',
   'instances',
   'quantityRegisters',
   'duals',
@@ -622,11 +625,16 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
 // The marker stays opt-in per collection: everything else keeps
 // uses-no-redefine, and terms keep their whole-value replace.
 //
-// The set starts empty: entries land same-commit with their constructs
-// (workflowConfigs at B3.7, testReportChecklists at B3.10) — a field
-// name listed before its collection exists would be dead config.
+// The set grows per collection as its construct lands: workflowConfigs
+// (B3.7), testReportChecklists (B3.10) — a field name listed before its
+// collection exists would be dead config.
 // ─────────────────────────────────────────────────────────────────────
-export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([]);
+export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([
+  // The workflow step register (B3.7): a rec package's overlay-marked
+  // workflow_config merges field-wise into the core skeleton (steps
+  // union by id in first-seen order, gates append as a union).
+  'workflowConfigs',
+]);
 
 function isPlainRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -636,7 +644,10 @@ function isPlainRecord(v: unknown): v is Record<string, unknown> {
  *  first-seen order (an entry present in both sides recurses), scalar
  *  arrays append as a union, plain objects merge key-wise, and scalars
  *  override (last write wins). The `overlay` marker itself is consumed
- *  by composition and never survives into the merged value. */
+ *  by composition and never survives into the merged value. A NULL
+ *  incoming facet is the codec's unstated marker (the YAML overlay
+ *  simply does not name the key) — the base value survives: overlay
+ *  codecs MUST default unstated optional scalars to null, never ''. */
 export function deepMergeOverlay(base: unknown, incoming: unknown): unknown {
   if (Array.isArray(base) && Array.isArray(incoming)) {
     const keyed = (e: unknown): e is { id: string } =>
@@ -667,6 +678,11 @@ export function deepMergeOverlay(base: unknown, incoming: unknown): unknown {
     const out: Record<string, unknown> = { ...base };
     for (const [k, v] of Object.entries(incoming)) {
       if (k === 'overlay') {
+        continue;
+      }
+      // A null incoming facet is the codec's unstated marker (the YAML
+      // overlay simply does not name the key) — the base value survives.
+      if (v === null || v === undefined) {
         continue;
       }
       out[k] = k in out ? deepMergeOverlay(out[k], v) : v;

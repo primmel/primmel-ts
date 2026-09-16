@@ -56,6 +56,7 @@ import { dumpGateway, parseExclusiveGate } from './gateway';
 import { parseMetadata } from './metadata';
 import { dumpProcess, parseProcess, resolveProcess } from './process';
 import { dumpProcessModel, parseProcessModel } from './processModel';
+import { dumpWorkflowConfig, parseWorkflowConfig } from './workflowConfig';
 import { dumpProvision, parseProvision, resolveProvision } from './provision';
 import { dumpReference, parseReference } from './reference';
 import { dumpRole, parseRole } from './role';
@@ -256,6 +257,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseProcessModel,
     dump: dumpProcessModel as never,
+  }),
+  // The certification workflow step register (smart TODO.roadmap/40
+  // batch 3) — process-adjacent but NOT the abstract-process machinery;
+  // the rec-overlay deep merge (OVERLAY_DEEP_MERGE_FIELDS) lands here.
+  defineConstruct({
+    keyword: 'workflow_config',
+    field: 'workflowConfigs',
+    takesID: true,
+    parse: parseWorkflowConfig,
+    dump: dumpWorkflowConfig as never,
   }),
   defineConstruct({
     keyword: 'approval',

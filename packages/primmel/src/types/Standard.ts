@@ -39,6 +39,7 @@ import type CalculationContext from './CalculationContext';
 import type EvaluationDimensions from './EvaluationDimension';
 import type EvaluationProfile from './EvaluationProfile';
 import type CertificateTemplate from './CertificateTemplate';
+import type WorkflowConfig from './WorkflowConfig';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -197,6 +198,10 @@ export default interface Standard {
    *  — singleton per package; the number format, the dimension-label
    *  pattern, the explicit characteristic rows, the ANR section. */
   certificateTemplates: CertificateTemplate[];
+  /** The certification workflow step registers (smart TODO.roadmap/40
+   *  batch 3): the core layer carries the OIML-CS skeleton, the rec
+   *  packages overlay it (the B3.1 deep merge). */
+  workflowConfigs: WorkflowConfig[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

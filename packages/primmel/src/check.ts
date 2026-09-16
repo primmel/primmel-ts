@@ -5295,6 +5295,59 @@ export function checkPackage(
     }
   }
 
+  // ── C137: workflow-config-references (smart TODO.roadmap/40 ────────
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The certification workflow step register: the actor resolves against
+  // the composed role register (per-register gated; role ids are
+  // snake_case — the YAML hyphenation is the emitter's); the inputs/
+  // outputs entries resolve against the data-class register ONLY when
+  // the entry is a single clean token (composite strings like
+  // "TestReport containing FormInstance" stay documentary — skipped,
+  // never errored); the gates are prose predicates — never resolved
+  // (the R26 field-resolution precedent). The phase vocabulary is
+  // parse-enforced upstream (no check leg).
+  {
+    const roleIds = new Set((standard.roles ?? []).map(r => r.id));
+    // Class ids may carry a namespace suffix (`Application#data`) while
+    // the workflow's inputs/outputs spell the bare entity name — index
+    // both spellings (the semantic-status leg's precedent).
+    const dataclassIds = new Set<string>();
+    for (const c of standard.dataclasses ?? []) {
+      dataclassIds.add(c.id);
+      if (c.id.includes('#')) {
+        dataclassIds.add(c.id.slice(0, c.id.indexOf('#')));
+      }
+    }
+    const CLEAN_TOKEN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+    for (const w of standard.workflowConfigs ?? []) {
+      for (const s of w.steps ?? []) {
+        const where = `workflow_config ${w.id}: step ${s.id}`;
+        if (s.actor && roleIds.size > 0 && !roleIds.has(s.actor)) {
+          err(
+            'C137',
+            `${where}: actor "${s.actor}" is not a declared role (workflow-config-references)`,
+          );
+        }
+        for (const [facet, list] of [
+          ['inputs', s.inputs],
+          ['outputs', s.outputs],
+        ] as const) {
+          for (const entry of list) {
+            if (!CLEAN_TOKEN.test(entry)) {
+              continue; // a composite documentary string — never resolved
+            }
+            if (dataclassIds.size > 0 && !dataclassIds.has(entry)) {
+              err(
+                'C137',
+                `${where}: ${facet} entry "${entry}" is not a declared data class (workflow-config-references)`,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {

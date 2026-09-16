@@ -70,6 +70,7 @@ function emptyContext(): ParseContext {
     evaluationDimensions: {},
     evaluationProfiles: {},
     certificateTemplates: {},
+    workflowConfigs: {},
     instances: {},
     artifactDefinitions: {},
     artifactInstances: {},

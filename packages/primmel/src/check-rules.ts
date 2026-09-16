@@ -616,6 +616,19 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C137 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // workflow step register — the actor resolves against the role
+  // register (gated), the inputs/outputs clean tokens resolve against
+  // the data-class register (gated; composite strings stay documentary),
+  // the gates are prose and never resolve.
+  R(
+    'C137',
+    'workflow-config-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

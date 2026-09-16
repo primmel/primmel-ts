@@ -4,9 +4,9 @@
 // OVERLAY_DEEP_MERGE_FIELDS opt-in — field-wise merge (identity-keyed
 // entry union preserving first-seen order, scalar-array append, scalar
 // override) instead of the term-style whole-value replace. The opt-in
-// set starts empty: entries land same-commit with their constructs
-// (workflowConfigs, testReportChecklists); these specs pin the merge
-// helper's contract the construct codecs will ride on.
+// set grows as its constructs land (workflowConfigs at B3.7,
+// testReportChecklists at B3.10); these specs pin the merge helper's
+// contract the construct codecs ride on.
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -17,11 +17,11 @@ import {
 } from '../src/ser-des/package';
 
 describe('overlay deep-merge (smart TODO.roadmap/40 batch 3)', () => {
-  it('the opt-in set starts empty — entries land with their constructs', () => {
-    // A field name listed before its collection exists would be dead
-    // config; B3.7 (workflowConfigs) and B3.10 (testReportChecklists)
-    // add theirs same-commit.
-    assert.equal(OVERLAY_DEEP_MERGE_FIELDS.size, 0);
+  it('the opt-in set carries exactly the landed overlay collections', () => {
+    // workflowConfigs (B3.7); testReportChecklists lands at B3.10. A
+    // field name listed before its collection exists would be dead
+    // config.
+    assert.deepEqual([...OVERLAY_DEEP_MERGE_FIELDS], ['workflowConfigs']);
   });
 
   it('unions entry arrays by identity key preserving first-seen order', () => {
@@ -98,6 +98,21 @@ describe('overlay deep-merge (smart TODO.roadmap/40 batch 3)', () => {
     assert.deepEqual(deepMergeOverlay({ a: 1 }, { a: [1, 2] }), { a: [1, 2] });
     assert.deepEqual(deepMergeOverlay({ a: ['x'] }, { a: 'y' }), { a: 'y' });
     assert.deepEqual(deepMergeOverlay(1, 2), 2);
+  });
+
+  it('a null incoming facet is the codec’s unstated marker — the base survives', () => {
+    // Overlay codecs default unstated optional scalars to null (never
+    // '') — the YAML overlay simply does not name the key, so the merge
+    // must not let the default clobber the base.
+    const base = [{ id: 'step', phase: 'dispatch', label: 'base label' }];
+    const incoming = [{ id: 'step', phase: null, label: null, gates: ['g'] }];
+    const merged = deepMergeOverlay(base, incoming) as Record<
+      string,
+      unknown
+    >[];
+    assert.equal(merged[0]!.phase, 'dispatch');
+    assert.equal(merged[0]!.label, 'base label');
+    assert.deepEqual(merged[0]!.gates, ['g']);
   });
 
   it('appends entry arrays that carry no id without merging', () => {
