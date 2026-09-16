@@ -5053,6 +5053,151 @@ export function checkPackage(
     }
   }
 
+  // ── C133: calculation-context-references (smart TODO.roadmap/40 ─────
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The evaluation-side wiring: the source is `computed` (expression
+  // required) or a subject-chain source — classification.<dimension>
+  // (resolves, gated) or parameters.<attribute> (resolves, gated). The
+  // legacy schema tokens (dimensions, application, application.specs,
+  // lookup) and anything else ERROR — the modern subject-chain spelling
+  // is forced. The expression's free identifiers name the context's own
+  // fields — a WARNING leg: runtime-bound inputs (r60's `f`, r144's
+  // `measured_value`) are legitimate non-field references (function
+  // calls exempt — an identifier followed by `(` is a callee).
+  {
+    for (const cc of standard.calculationContexts ?? []) {
+      const fieldNames = new Set((cc.fields ?? []).map(f => f.id));
+      for (const f of cc.fields ?? []) {
+        const where = `calculation_context ${cc.id}: field ${f.id}`;
+        if (f.source === 'computed') {
+          if (!f.expression) {
+            err(
+              'C133',
+              `${where}: source computed requires the expression facet (calculation-context-references)`,
+            );
+          }
+        } else if (
+          f.source.startsWith('classification.') ||
+          f.source.startsWith('parameters.')
+        ) {
+          if (f.expression) {
+            err(
+              'C133',
+              `${where}: a non-computed source carries no expression (calculation-context-references)`,
+            );
+          }
+          if (f.source.startsWith('classification.')) {
+            const dim = f.source.slice('classification.'.length);
+            if (dimIds.size > 0 && !dimIds.has(dim)) {
+              err(
+                'C133',
+                `${where}: source "${f.source}" — "${dim}" is not a declared classification dimension (calculation-context-references)`,
+              );
+            }
+          } else {
+            const attr = f.source.slice('parameters.'.length);
+            if (attrIds.size > 0 && !attrIds.has(attr)) {
+              err(
+                'C133',
+                `${where}: source "${f.source}" — "${attr}" is not a declared attribute_definition (calculation-context-references)`,
+              );
+            }
+          }
+        } else {
+          err(
+            'C133',
+            `${where}: source "${f.source}" is not a subject-chain source (classification.<dimension>, parameters.<attribute>, computed) (calculation-context-references)`,
+          );
+        }
+        if (f.expression) {
+          const idents = new Set<string>();
+          const re = /[A-Za-z_][A-Za-z0-9_]*/g;
+          let m: RegExpExecArray | null;
+          while ((m = re.exec(f.expression)) !== null) {
+            if (!/^\s*\(/.test(f.expression.slice(re.lastIndex))) {
+              idents.add(m[0]);
+            }
+          }
+          for (const ident of idents) {
+            if (!fieldNames.has(ident)) {
+              warn(
+                'C133',
+                `${where}: expression identifier "${ident}" is not a field of this context — a runtime-bound input (declare it as a field or bind it at runtime) (calculation-context-references)`,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ── C134: evaluation-dimension-references (smart TODO.roadmap/40 ────
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The form-facing classification field schema: the enum facet resolves
+  // to a declared classification dimension (error, per-register gated),
+  // and the field NAME resolves to an is_dimension attribute_definition
+  // OR a dimension id — the two coexisting conventions (owner decision:
+  // r129's legacy camelCase names carry as-is), a WARNING when neither
+  // (gated on the registers composing). The type/setting vocabularies
+  // are parse-enforced upstream (no check legs).
+  {
+    const dimensionedAttrIds = new Set(
+      (standard.attributeDefinitions ?? [])
+        .filter(a => a.isDimension === true)
+        .map(a => a.id),
+    );
+    for (const ed of standard.evaluationDimensions ?? []) {
+      for (const f of ed.fields ?? []) {
+        const where = `evaluation_dimensions ${ed.id}: field ${f.id}`;
+        if (f.enumRef && dimIds.size > 0 && !dimIds.has(f.enumRef)) {
+          err(
+            'C134',
+            `${where}: enum "${f.enumRef}" is not a declared classification dimension (evaluation-dimension-references)`,
+          );
+        }
+        if (
+          (dimensionedAttrIds.size > 0 || dimIds.size > 0) &&
+          !dimensionedAttrIds.has(f.id) &&
+          !dimIds.has(f.id)
+        ) {
+          warn(
+            'C134',
+            `${where}: the field name "${f.id}" resolves to neither an is_dimension attribute_definition nor a classification dimension — the legacy camelCase convention (evaluation-dimension-references)`,
+          );
+        }
+      }
+    }
+  }
+
+  // ── C135: evaluation-profile-coherence (smart TODO.roadmap/40 ───────
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The named dimension-value presets: every dimensions key resolves to
+  // a declared classification dimension and every value to one of that
+  // dimension's declared values (per-register gated, the smart R4/R8
+  // applicability mirror; an OPEN dimension — no declared value set —
+  // accepts any value).
+  {
+    for (const p of standard.evaluationProfiles ?? []) {
+      const where = `evaluation_profile ${p.id}`;
+      for (const [dim, value] of Object.entries(p.dimensions ?? {})) {
+        if (dimIds.size > 0 && !dimIds.has(dim)) {
+          err(
+            'C135',
+            `${where}: dimensions key "${dim}" is not a declared classification dimension (evaluation-profile-coherence)`,
+          );
+          continue;
+        }
+        const values = dimIds.get(dim);
+        if (values && values.size > 0 && !values.has(value)) {
+          err(
+            'C135',
+            `${where}: dimensions entry "${dim}" names value "${value}", which the dimension does not declare (evaluation-profile-coherence)`,
+          );
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {

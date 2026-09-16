@@ -563,6 +563,45 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C133 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // calculation context's wiring — the subject-chain sources resolve
+  // (classification.<dimension>, parameters.<attribute>, per-register
+  // gated), computed ⇔ expression presence, the legacy source tokens
+  // error, and the expression's free identifiers name the context's
+  // fields (warning — runtime-bound inputs are legitimate).
+  R(
+    'C133',
+    'calculation-context-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
+  // C134 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // evaluation-dimension field schema — the enum facet resolves to a
+  // classification dimension (error, gated); the field name resolves to
+  // an is_dimension attribute OR a dimension id (warning when neither —
+  // the r129 camelCase convention carries as-is, the owner decision).
+  R(
+    'C134',
+    'evaluation-dimension-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
+  // C135 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // evaluation profile's dimension-value preset is coherent — keys name
+  // declared classification dimensions, values name their declared
+  // values (per-register gated; the smart R4/R8 mirror).
+  R(
+    'C135',
+    'evaluation-profile-coherence',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

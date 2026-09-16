@@ -35,6 +35,9 @@ import type IdentitySlot from './IdentitySlot';
 import type Aspect from './Aspect';
 import type PromiseSet from './PromiseSet';
 import type ApplicationDeclaration from './ApplicationDeclaration';
+import type CalculationContext from './CalculationContext';
+import type EvaluationDimensions from './EvaluationDimension';
+import type EvaluationProfile from './EvaluationProfile';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -182,6 +185,13 @@ export default interface Standard {
    *  batch 3) — singleton per rec; NOT the Batch-1 CS participant-
    *  declaration machinery. */
   applicationDeclarations: ApplicationDeclaration[];
+  /** The evaluation-side wiring + classification cluster (smart
+   *  TODO.roadmap/40 batch 3): the calculation context (variable →
+   *  subject-chain source), the form-facing classification field
+   *  schema, and the named dimension-value presets. */
+  calculationContexts: CalculationContext[];
+  evaluationDimensions: EvaluationDimensions[];
+  evaluationProfiles: EvaluationProfile[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

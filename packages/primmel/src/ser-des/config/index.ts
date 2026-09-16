@@ -126,6 +126,18 @@ import {
   parseApplicationDeclaration,
 } from './applicationDeclaration';
 import {
+  dumpCalculationContext,
+  parseCalculationContext,
+} from './calculationContext';
+import {
+  dumpEvaluationDimensions,
+  parseEvaluationDimensions,
+} from './evaluationDimension';
+import {
+  dumpEvaluationProfile,
+  parseEvaluationProfile,
+} from './evaluationProfile';
+import {
   artifactDefinitionConstruct,
   artifactInstanceConstruct,
 } from './artifact';
@@ -445,6 +457,32 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseCalculation,
     resolve: resolveCalculation as never,
     dump: dumpCalculation as never,
+  }),
+  // The evaluation-side wiring + classification cluster (smart
+  // TODO.roadmap/40 batch 3): the calculation context (variable →
+  // subject-chain source) rides beside the calculations it feeds; the
+  // evaluation dimensions (the form-facing field schema) and profiles
+  // (the named dimension-value presets) follow.
+  defineConstruct({
+    keyword: 'calculation_context',
+    field: 'calculationContexts',
+    takesID: true,
+    parse: parseCalculationContext,
+    dump: dumpCalculationContext as never,
+  }),
+  defineConstruct({
+    keyword: 'evaluation_dimensions',
+    field: 'evaluationDimensions',
+    takesID: true,
+    parse: parseEvaluationDimensions,
+    dump: dumpEvaluationDimensions as never,
+  }),
+  defineConstruct({
+    keyword: 'evaluation_profile',
+    field: 'evaluationProfiles',
+    takesID: true,
+    parse: parseEvaluationProfile,
+    dump: dumpEvaluationProfile as never,
   }),
   defineConstruct({
     keyword: 'verdict',

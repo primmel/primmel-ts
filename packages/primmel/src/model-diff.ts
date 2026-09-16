@@ -121,6 +121,12 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // form-adjacent — secondary beside the forms its declaration_form
   // binds.
   applicationDeclarations: 'secondary',
+  // The evaluation-side wiring + classification cluster (smart
+  // TODO.roadmap/40 batch 3) — secondary beside the calculations and
+  // dimensions they wire.
+  calculationContexts: 'secondary',
+  evaluationDimensions: 'secondary',
+  evaluationProfiles: 'secondary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

@@ -112,6 +112,10 @@ export default function parse(
     promiseSets: {},
     // The applicant-facing documentation register (batch 3)
     applicationDeclarations: {},
+    // The evaluation-side wiring + classification cluster (batch 3)
+    calculationContexts: {},
+    evaluationDimensions: {},
+    evaluationProfiles: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)

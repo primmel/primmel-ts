@@ -36,6 +36,9 @@ import type IdentitySlot from '../types/IdentitySlot';
 import type Aspect from '../types/Aspect';
 import type PromiseSet from '../types/PromiseSet';
 import type ApplicationDeclaration from '../types/ApplicationDeclaration';
+import type CalculationContext from '../types/CalculationContext';
+import type EvaluationDimensions from '../types/EvaluationDimension';
+import type EvaluationProfile from '../types/EvaluationProfile';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
@@ -241,6 +244,11 @@ export interface ParseContext {
   // The applicant-facing documentation register (smart TODO.roadmap/40
   // batch 3).
   applicationDeclarations: Record<string, ApplicationDeclaration>;
+  // The evaluation-side wiring + classification cluster (smart
+  // TODO.roadmap/40 batch 3).
+  calculationContexts: Record<string, CalculationContext>;
+  evaluationDimensions: Record<string, EvaluationDimensions>;
+  evaluationProfiles: Record<string, EvaluationProfile>;
 
   // Primmel v3 instantiation (TODO.roadmap/03)
   instances: Record<string, Instance>;

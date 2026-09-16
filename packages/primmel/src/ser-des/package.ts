@@ -542,6 +542,11 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // The applicant-facing documentation register (smart TODO.roadmap/40
   // batch 3) composes with uses-no-redefine semantics.
   'applicationDeclarations',
+  // The evaluation-side wiring + classification cluster (smart
+  // TODO.roadmap/40 batch 3) compose with uses-no-redefine semantics.
+  'calculationContexts',
+  'evaluationDimensions',
+  'evaluationProfiles',
   'instances',
   'quantityRegisters',
   'duals',
