@@ -149,6 +149,7 @@ import type {
   InstrumentComponent,
   InstrumentMeasurand,
   ModelGroupDef,
+  PairListDecl,
   PromiseLevel,
   SourceRef,
   StructureEntry,
@@ -957,6 +958,88 @@ const dumpInstrument = function (inst: Instrument): string {
 
 // ── attribute_definition ─────────────────────────────────────────────
 
+/**
+ * The `pair_list { … }` block (smart TODO.roadmap/40 batch 4): key /
+ * value / key_dimension scalar facets plus the repeatable two-token
+ * `component <id> { … }` entries (the segregation-block idiom — the
+ * block claims its sub-tokens manually).
+ */
+function parsePairList(block: string): PairListDecl {
+  const decl: PairListDecl = {
+    key: '',
+    value: '',
+    keyDimension: '',
+    components: [],
+  };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i > t.length) {
+      break;
+    }
+    if (cmd === 'key') {
+      decl.key = stripWrapping(t[i++]);
+    } else if (cmd === 'value') {
+      decl.value = stripWrapping(t[i++]);
+    } else if (cmd === 'key_dimension') {
+      decl.keyDimension = stripWrapping(t[i++]);
+    } else if (cmd === 'component') {
+      const cid = stripWrapping(t[i++]);
+      const component = { id: cid, name: '', source: null as SourceRef | null };
+      if (i < t.length && t[i].startsWith('{')) {
+        const et = tokenize(unwrapBlock(t[i++]));
+        let j = 0;
+        while (j < et.length) {
+          const ec = et[j++];
+          if (j >= et.length) {
+            break;
+          }
+          if (ec === 'name') {
+            component.name = stripWrapping(et[j++]);
+          } else if (ec === 'source') {
+            component.source = readSource(unwrapBlock(et[j++]));
+          } else {
+            unwrapBlock(et[j++]);
+          }
+        }
+      }
+      decl.components.push(component);
+    } else {
+      i = skipUnknownValue(t, i, cmd);
+    }
+  }
+  return decl;
+}
+
+function dumpPairList(decl: PairListDecl): string {
+  let out = '  pair_list {\n';
+  out += '    key ' + dumpBareSafe(decl.key) + '\n';
+  out += '    value ' + dumpBareSafe(decl.value) + '\n';
+  if (decl.keyDimension) {
+    out += '    key_dimension ' + dumpBareSafe(decl.keyDimension) + '\n';
+  }
+  for (const c of decl.components) {
+    out += '    component ' + dumpBareSafe(c.id) + ' {\n';
+    if (c.name) {
+      out += '      name "' + escapeString(c.name) + '"\n';
+    }
+    if (c.source && (c.source.doc || c.source.clause)) {
+      out += '      source {\n';
+      if (c.source.doc) {
+        out += '        doc "' + escapeString(c.source.doc) + '"\n';
+      }
+      if (c.source.clause) {
+        out += '        clause "' + escapeString(c.source.clause) + '"\n';
+      }
+      out += '      }\n';
+    }
+    out += '    }\n';
+  }
+  out += '  }\n';
+  return out;
+}
+
 const parseAttributeDefinition: ConstructDefinition['parse'] = function (
   id,
   data,
@@ -1007,6 +1090,9 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
       result.unit = stripWrapping(t[i++]);
     } else if (cmd === 'value_type') {
       result.valueType = stripWrapping(t[i++]);
+    } else if (cmd === 'pair_list') {
+      // The pair-list block (smart TODO.roadmap/40 batch 4).
+      result.pairList = parsePairList(unwrapBlock(t[i++]));
     } else if (cmd === 'origin') {
       result.origin = stripWrapping(t[i++]);
     } else if (cmd === 'scope') {
@@ -1091,6 +1177,9 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
   }
   if (a.valueType) {
     out += '  value_type ' + a.valueType + '\n';
+  }
+  if (a.pairList) {
+    out += dumpPairList(a.pairList);
   }
   if (a.origin) {
     out += '  origin ' + a.origin + '\n';

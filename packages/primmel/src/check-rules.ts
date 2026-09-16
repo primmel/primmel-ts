@@ -437,6 +437,21 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 2 (the packages-as-SSOT epic)',
   ),
+  // C124 (smart TODO.roadmap/40 batch 4; the packages-as-SSOT epic): the
+  // attribute_definition pair_list block's declaration shape — the key
+  // and value slots are required, component ids are unique within the
+  // block, and the key_dimension names a declared applicability
+  // dimension when the dimension register is in composition scope
+  // (per-register gating, the C58 doctrine). The closed-registry-over-
+  // values leg quantifies over app-side records and stays app-side.
+  R(
+    'C124',
+    'pair-list-shape',
+    'base',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

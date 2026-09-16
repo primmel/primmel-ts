@@ -336,6 +336,11 @@
 //      pin C119 prefers over the requirement_class-id derivation), and
 //      the informative annex's applies_to names a known package
 //      (locator-gated)
+//   C124 pair-list-shape (smart TODO.roadmap/40 batch 4): the
+//      attribute_definition pair_list block's declaration shape — key +
+//      value slots required, component ids unique, key_dimension →
+//      applicability dimension (per-register gated); the closed-registry-
+//      over-values leg stays app-side
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4452,6 +4457,46 @@ export function checkPackage(
           );
         }
       }
+    }
+  }
+
+  // ── C124: pair-list-shape (smart TODO.roadmap/40 batch 4; the ──────
+  // packages-as-SSOT epic) ────────────────────────────────────────────
+  // The pair_list block's declaration shape: the key and value slots are
+  // required, the component ids are unique within the block, and the
+  // key_dimension names a declared applicability dimension WHEN the
+  // dimension register is in composition scope (per-register gating, the
+  // C58 doctrine). The closed-registry-over-VALUES leg (pair keys drawn
+  // from the dimension's values ∪ the declared components) quantifies
+  // over app-side records, so it stays app-side — the kernel checks the
+  // declaration shape only.
+  for (const a of standard.attributeDefinitions ?? []) {
+    const pl = a.pairList;
+    if (!pl) {
+      continue;
+    }
+    const where = `attribute_definition ${a.id}: pair_list`;
+    if (!pl.key) {
+      err('C124', `${where}: the key slot is required (pair-list-shape)`);
+    }
+    if (!pl.value) {
+      err('C124', `${where}: the value slot is required (pair-list-shape)`);
+    }
+    const seen = new Set<string>();
+    for (const c of pl.components) {
+      if (seen.has(c.id)) {
+        err(
+          'C124',
+          `${where}: component "${c.id}" is declared twice (pair-list-shape)`,
+        );
+      }
+      seen.add(c.id);
+    }
+    if (pl.keyDimension && dimIds.size > 0 && !dimIds.has(pl.keyDimension)) {
+      err(
+        'C124',
+        `${where}: key_dimension "${pl.keyDimension}" is not a declared applicability dimension (pair-list-shape)`,
+      );
     }
   }
 

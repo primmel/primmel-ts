@@ -198,6 +198,39 @@ export interface Instrument {
   referenceIds: string[];
 }
 
+/**
+ * One declared component of a `pair_list` block (smart TODO.roadmap/40
+ * batch 4) — the key-domain entries an attribute's pair list quantifies
+ * over (e.g. the interfering components of R 144's
+ * `interfering_components`).
+ */
+export interface PairListComponent {
+  id: string;
+  /** The component's display name ('' = undeclared). */
+  name: string;
+  /** Clause-URN provenance (null = undeclared). */
+  source: SourceRef | null;
+}
+
+/**
+ * The `pair_list { … }` block of an attribute_definition whose
+ * value_type is pair-list (smart TODO.roadmap/40 batch 4): the key and
+ * value slots name the pair's two columns, the optional key_dimension
+ * names the applicability dimension whose values are the key domain
+ * (resolves at check time, C124 — per-register gated), and the
+ * component blocks declare the domain's entries.
+ */
+export interface PairListDecl {
+  /** The pair's key slot (an attribute-aspect id, e.g. component). */
+  key: string;
+  /** The pair's value slot (e.g. max_concentration). */
+  value: string;
+  /** The key-domain dimension id ('' = undeclared). */
+  keyDimension: string;
+  /** The declared key-domain entries. */
+  components: PairListComponent[];
+}
+
 /** attribute_definition <id> — define an attribute ONCE (INV-2). */
 export interface AttributeDefinition {
   id: string;
@@ -233,6 +266,8 @@ export interface AttributeDefinition {
   /** The correspondence annotations (MN 114 v3.1, clause 19.4) — the
    *  generalization of this element's `irdi` facet to every scheme. */
   correspondences?: import('./Correspondence').Correspondence[];
+  /** The pair-list block (value_type pair-list; null = absent). */
+  pairList?: PairListDecl | null;
 }
 
 /** capability <id> — mixin: what the instrument CAN do (OCP mechanism). */
