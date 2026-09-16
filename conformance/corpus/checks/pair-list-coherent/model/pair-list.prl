@@ -1,0 +1,40 @@
+// Conformance corpus: a pair_list attribute whose declaration shape is
+// fully coherent — key and value slots present, the key_dimension names
+// the declared applicability dimension, the component ids are unique.
+// C124 stays silent.
+// Clause: COD-01 (positive).
+dimension measurand_components {
+  label "Measurand components"
+  cardinality set
+  values {
+    co2 { label "Carbon dioxide" }
+    h2o { label "Water vapour" }
+  }
+}
+attribute_definition interfering_components {
+  symbol "I_c"
+  name "Interfering components"
+  definition "The maximum concentration of each interfering component."
+  value_type pair-list
+  pair_list {
+    key component
+    value max_concentration
+    key_dimension measurand_components
+    component co2 {
+      name "Carbon dioxide"
+    }
+    component h2o {
+      name "Water vapour"
+      source { doc "urn:oiml:pub:r:144-1:2013" clause "5.3" }
+    }
+    component so2 {
+      name "Sulfur dioxide"
+    }
+    component ch4 {
+      name "Methane"
+    }
+    component h2 {
+      name "Hydrogen"
+    }
+  }
+}

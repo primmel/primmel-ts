@@ -1,0 +1,29 @@
+// Conformance corpus: the part_annex register with ONE seeded
+// violation — annex_a_duplicate re-declares the letter "A" already
+// keyed by annex_a (the annex-volume index keys on the printed
+// letter). C128 must fire exactly once.
+// Clause: COD-05 (negative).
+part_annex annex_a {
+  letter "A"
+  title "Definitions from other applicable international publications"
+  obligation normative
+  summary "Definitions from other publications applicable to this Recommendation."
+  realization "The definitions are reproduced with their source citations."
+  source { doc "urn:oiml:pub:r:60-4:2021" clause "A" }
+}
+part_annex annex_b {
+  letter "B"
+  title "Additional notes"
+  obligation informative
+  summary "Informative notes on the application of the requirements."
+  realization "The notes accompany the test report format."
+  source { doc "urn:oiml:pub:r:60-4:2021" clause "B" }
+}
+part_annex annex_a_duplicate {
+  letter "A"
+  title "A second annex keyed on A"
+  obligation informative
+  summary "A duplicate-letter entry seeded for the conformance corpus."
+  realization "The index cannot key two entries on one printed letter."
+  source { doc "urn:oiml:pub:r:60-4:2021" clause "A" }
+}

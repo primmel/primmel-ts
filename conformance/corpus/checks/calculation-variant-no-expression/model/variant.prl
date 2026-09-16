@@ -1,0 +1,19 @@
+// Conformance corpus: the coherent calculation-variant shape with ONE
+// seeded violation — the expression-typed variant drops its expression
+// facet. C125 must fire exactly once.
+// Clause: COD-02 (negative).
+calculation loadCellError {
+  name "loadCellError"
+  description "Load cell error"
+  inputs {
+    avgIndicationAt75pct : number { unit "1" description "Average indication" }
+    referenceIndication : number { unit "1" description "Reference indication" }
+  }
+  output : number { unit "1" }
+  expression "E_L = (I - I_{ref}) / f"
+  variant engine {
+    type expression
+    label "Load Cell Error E_L"
+    params { avgIndication referenceIndication conversion_factor_f }
+  }
+}

@@ -1,0 +1,13 @@
+// Conformance corpus: a pair_list block with ONE seeded violation —
+// the key slot is absent (only the value slot is declared). C124 must
+// fire exactly once.
+// Clause: COD-01 (negative).
+attribute_definition interfering_components {
+  symbol "I_c"
+  name "Interfering components"
+  definition "The maximum concentration of each interfering component."
+  value_type pair-list
+  pair_list {
+    value max_concentration
+  }
+}

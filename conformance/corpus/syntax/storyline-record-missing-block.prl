@@ -1,0 +1,8 @@
+# Conformance corpus: a record facet missing its id and block.
+# Clause: COD-06 (negative).
+storyline broken {
+  name "Broken"
+  record applications {
+    status SUBMITTED
+  }
+}

@@ -501,6 +501,66 @@
    "rules": [
     "C119"
    ]
+  },
+  {
+   "id": "COD-01",
+   "area": "cod",
+   "title": "The pair_list attribute block",
+   "statement": "The pair_list block on an attribute_definition: the key and value slots are required, the component ids are unique within the block, and the key_dimension names a declared applicability dimension when the dimension register is in composition scope (C124); the closed-registry-over-values leg quantifies over app-side records and stays app-side.",
+   "specAnchor": "MN 114 v3.3 (the pair_list attribute block, C124)",
+   "rules": [
+    "C124"
+   ]
+  },
+  {
+   "id": "COD-02",
+   "area": "cod",
+   "title": "The calculation variant block",
+   "statement": "The variant block on a calculation: the type vocabulary (expression, table_lookup, profile_lookup, pass_fail) is parse-enforced, variant ids are unique within the owning calculation, and the type-conditional facets are present — an expression variant carries its expression, a table_lookup variant its lookup block, a profile_lookup variant its profile (C125); the params are engine call-site names and deliberately carry no resolution leg.",
+   "specAnchor": "MN 114 v3.3 (the calculation variant block, C125)",
+   "rules": [
+    "C125"
+   ]
+  },
+  {
+   "id": "COD-03",
+   "area": "cod",
+   "title": "The formula_note register",
+   "statement": "The formula_note register's reverse applicability: every applies_to entry names a declared symbol when the symbol register is in composition scope (C126).",
+   "specAnchor": "MN 114 v3.3 (the formula_note register, C126)",
+   "rules": [
+    "C126"
+   ]
+  },
+  {
+   "id": "COD-04",
+   "area": "cod",
+   "title": "The common_test_condition register",
+   "statement": "The common_test_condition register: every entry carries its description — the one facet both the array entries and the keyed-map entries carry (C127); the title stays optional (the keyed-map entries carry none) and the reference stays a free citation string.",
+   "specAnchor": "MN 114 v3.3 (the common_test_condition register, C127)",
+   "rules": [
+    "C127"
+   ]
+  },
+  {
+   "id": "COD-05",
+   "area": "cod",
+   "title": "The part_annex register",
+   "statement": "The part_annex register: the obligation vocabulary (normative, informative) is parse-enforced, letters are unique per package (the annex-volume index keys on the printed letter), and every entry carries its source provenance (C128).",
+   "specAnchor": "MN 114 v3.3 (the part_annex register, C128)",
+   "rules": [
+    "C128"
+   ]
+  },
+  {
+   "id": "COD-06",
+   "area": "cod",
+   "title": "The demo_world and storyline demo seeds",
+   "statement": "The demo seeds: the demo_world carries its file-level metadata and the open participants registry, and the storyline carries its open subject entries and the workflow records in the record-value sub-grammar; the id_prefix is a lowercase slug, the party laboratory/authority name declared participant seeds when a demo_world with participants is in scope, the record stores name declared entity-class stores when that register is in scope, and a record field keyed by a sibling record's store names a sibling record of that store (C129).",
+   "specAnchor": "MN 114 v3.3 (the demo_world and storyline demo seeds, C129)",
+   "rules": [
+    "C129"
+   ]
   }
  ]
 }

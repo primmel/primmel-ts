@@ -1855,6 +1855,276 @@
     ]
    },
    "summary": "A rec scope under the module-declared namespace is flagged C119."
+  },
+  {
+   "id": "cod-01-parse-pos",
+   "clause": "COD-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/pair-list-attribute.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A pair_list attribute with its slots, dimension edge, and component blocks parses."
+  },
+  {
+   "id": "cod-01-check-pos",
+   "clause": "COD-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/pair-list-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A pair_list attribute whose slots, dimension edge, and component ids are coherent checks clean."
+  },
+  {
+   "id": "cod-01-check-neg",
+   "clause": "COD-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/pair-list-missing-key",
+   "expect": {
+    "rules": [
+     "C124"
+    ]
+   },
+   "summary": "A pair_list block without its key slot is flagged C124."
+  },
+  {
+   "id": "cod-02-parse-pos",
+   "clause": "COD-02",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/calculation-variant.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A calculation variant block with its type-conditional facets parses."
+  },
+  {
+   "id": "cod-02-parse-neg",
+   "clause": "COD-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/calculation-variant-bad-type.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown variant type"
+   },
+   "summary": "A variant type outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "cod-02-check-pos",
+   "clause": "COD-02",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/calculation-variant-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "An expression variant carrying its expression facet checks clean."
+  },
+  {
+   "id": "cod-02-check-neg",
+   "clause": "COD-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/calculation-variant-no-expression",
+   "expect": {
+    "rules": [
+     "C125"
+    ]
+   },
+   "summary": "An expression variant without its expression facet is flagged C125."
+  },
+  {
+   "id": "cod-03-parse-pos",
+   "clause": "COD-03",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/formula-notes.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Formula notes with their reverse-applicability lists parse."
+  },
+  {
+   "id": "cod-03-parse-neg",
+   "clause": "COD-03",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/formula-note-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for text"
+   },
+   "summary": "A text keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "cod-03-check-pos",
+   "clause": "COD-03",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/formula-note-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Notes whose applies_to entries all name declared symbols check clean."
+  },
+  {
+   "id": "cod-03-check-neg",
+   "clause": "COD-03",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/formula-note-dangling",
+   "expect": {
+    "rules": [
+     "C126"
+    ]
+   },
+   "summary": "An applies_to entry naming an undeclared symbol is flagged C126."
+  },
+  {
+   "id": "cod-04-parse-pos",
+   "clause": "COD-04",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/common-test-conditions.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Common test conditions in both entry shapes parse."
+  },
+  {
+   "id": "cod-04-parse-neg",
+   "clause": "COD-04",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/common-test-condition-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for description"
+   },
+   "summary": "A description keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "cod-04-check-pos",
+   "clause": "COD-04",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/common-test-condition-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "Condition entries carrying their descriptions check clean."
+  },
+  {
+   "id": "cod-04-check-neg",
+   "clause": "COD-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/common-test-condition-bare",
+   "expect": {
+    "rules": [
+     "C127"
+    ]
+   },
+   "summary": "A condition entry without its description is flagged C127."
+  },
+  {
+   "id": "cod-05-parse-pos",
+   "clause": "COD-05",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/part-annexes.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "Part annexes with their letters, obligations, and provenance parse."
+  },
+  {
+   "id": "cod-05-parse-neg",
+   "clause": "COD-05",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/part-annex-bad-obligation.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Unknown obligation"
+   },
+   "summary": "An obligation outside the vocabulary is rejected at parse."
+  },
+  {
+   "id": "cod-05-check-pos",
+   "clause": "COD-05",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/part-annex-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "An annex register with unique letters and full provenance checks clean."
+  },
+  {
+   "id": "cod-05-check-neg",
+   "clause": "COD-05",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/part-annex-duplicate-letter",
+   "expect": {
+    "rules": [
+     "C128"
+    ]
+   },
+   "summary": "A second annex keyed on an already-declared letter is flagged C128."
+  },
+  {
+   "id": "cod-06-parse-pos",
+   "clause": "COD-06",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/demo-world-storyline.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A demo_world and a storyline with the record-value sub-grammar parse."
+  },
+  {
+   "id": "cod-06-parse-neg",
+   "clause": "COD-06",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/storyline-record-missing-block.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "record applications is missing its id and block"
+   },
+   "summary": "A record facet missing its id and block is rejected at parse."
+  },
+  {
+   "id": "cod-06-check-pos",
+   "clause": "COD-06",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/storyline-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A storyline whose prefix, party, stores, and cross-references resolve checks clean."
+  },
+  {
+   "id": "cod-06-check-neg",
+   "clause": "COD-06",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/storyline-bad-prefix",
+   "expect": {
+    "rules": [
+     "C129"
+    ]
+   },
+   "summary": "An id_prefix that is no lowercase slug is flagged C129."
   }
  ]
 }

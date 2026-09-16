@@ -1,0 +1,7 @@
+# Conformance corpus: an obligation outside the normative/informative
+# vocabulary — parse-enforced (the fail-closed precedent).
+# Clause: COD-05 (negative).
+part_annex broken {
+  letter "C"
+  obligation advisory
+}

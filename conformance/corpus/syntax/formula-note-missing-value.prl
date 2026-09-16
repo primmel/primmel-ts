@@ -1,0 +1,5 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: COD-03 (negative).
+formula_note broken {
+  text
+}

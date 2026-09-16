@@ -1,0 +1,6 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: COD-04 (negative).
+common_test_condition broken {
+  title "A title"
+  description
+}

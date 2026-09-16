@@ -1,0 +1,20 @@
+// Conformance corpus: the formula_note register with every applies_to
+// entry resolved — both notes name declared symbols only. C126 stays
+// silent.
+// Clause: COD-03 (positive).
+symbol c_c {
+  name "Creep coefficient"
+  type number
+}
+symbol conversion_factor_f {
+  name "Conversion factor f"
+  type number
+}
+formula_note note-1 {
+  text "Observe extreme caution by referring to calculation procedure for correct application of these formulae."
+  applies_to { c_c conversion_factor_f }
+}
+formula_note note-2 {
+  text "Use with initial 20 °C ascending load run only. Refer to R 60-2, 2.8.2."
+  applies_to { conversion_factor_f }
+}

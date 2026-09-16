@@ -1,0 +1,9 @@
+# Conformance corpus: a variant type outside the calculation `type`
+# vocabulary — parse-enforced (the fail-closed precedent).
+# Clause: COD-02 (negative).
+calculation broken {
+  output : number { unit "1" }
+  variant engine {
+    type alchemy
+  }
+}

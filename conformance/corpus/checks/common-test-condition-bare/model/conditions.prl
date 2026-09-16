@@ -1,0 +1,17 @@
+// Conformance corpus: the common_test_condition register with ONE
+// seeded violation — bare_entry carries a title but no description (a
+// carrier with no content). C127 must fire exactly once.
+// Clause: COD-04 (negative).
+common_test_condition test_equipment {
+  title "Test equipment"
+  reference "urn:oiml:pub:r:60-2:2021#clause-2.7.2"
+  description "Test equipment used for the tests shall be calibrated and traceable to national standards."
+}
+common_test_condition measurement_counts {
+  reference "urn:oiml:pub:r:91-1:1990#clause-8.3"
+  description "The number of measurements shall be sufficient to evaluate the drift."
+  source { doc "urn:oiml:pub:r:91:1990" clause "8.3" }
+}
+common_test_condition bare_entry {
+  title "A title with no condition text"
+}

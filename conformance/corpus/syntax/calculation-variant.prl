@@ -1,0 +1,21 @@
+# Conformance corpus: the calculation variant block — the executable
+# realization beside the typed spec (type, label, description, the
+# call-site params, the expression).
+# Clause: COD-02 (positive).
+calculation loadCellError {
+  name "loadCellError"
+  description "Load cell error"
+  inputs {
+    avgIndicationAt75pct : number { unit "1" description "Average indication" }
+    referenceIndication : number { unit "1" description "Reference indication" }
+  }
+  output : number { unit "1" }
+  expression "E_L = (I - I_{ref}) / f"
+  variant engine {
+    type expression
+    label "Load Cell Error E_L"
+    description "E_L = (I - I_ref) / f"
+    params { avgIndication referenceIndication conversion_factor_f }
+    expression "(p.avgIndication - p.referenceIndication) / p.conversion_factor_f"
+  }
+}

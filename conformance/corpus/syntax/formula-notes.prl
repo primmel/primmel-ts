@@ -1,0 +1,11 @@
+# Conformance corpus: the formula_note register — one note text
+# applying to MANY symbols (the reverse applicability).
+# Clause: COD-03 (positive).
+formula_note note-1 {
+  text "Observe extreme caution by referring to calculation procedure for correct application of these formulae."
+  applies_to { c_c c_c_30_20 c_dr conversion_factor_f r_i }
+}
+formula_note note-2 {
+  text "Use with initial 20 °C ascending load run only. Refer to R 60-2, 2.8.2."
+  applies_to { conversion_factor_f }
+}
