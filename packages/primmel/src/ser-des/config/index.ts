@@ -138,6 +138,10 @@ import {
   parseEvaluationProfile,
 } from './evaluationProfile';
 import {
+  dumpCertificateTemplate,
+  parseCertificateTemplate,
+} from './certificateTemplate';
+import {
   artifactDefinitionConstruct,
   artifactInstanceConstruct,
 } from './artifact';
@@ -424,6 +428,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseForm,
     dump: dumpForm as never,
+  }),
+  // The certificate rendering contract (smart TODO.roadmap/40 batch 3)
+  // — form-adjacent (the certificate is the issuing-side document);
+  // singleton per package.
+  defineConstruct({
+    keyword: 'certificate_template',
+    field: 'certificateTemplates',
+    takesID: true,
+    parse: parseCertificateTemplate,
+    dump: dumpCertificateTemplate as never,
   }),
   defineConstruct({
     keyword: 'subform',

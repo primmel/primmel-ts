@@ -127,6 +127,9 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   calculationContexts: 'secondary',
   evaluationDimensions: 'secondary',
   evaluationProfiles: 'secondary',
+  // The certificate rendering contract (smart TODO.roadmap/40 batch 3)
+  // — secondary beside the forms.
+  certificateTemplates: 'secondary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

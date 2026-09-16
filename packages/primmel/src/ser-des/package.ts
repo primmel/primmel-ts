@@ -547,6 +547,9 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'calculationContexts',
   'evaluationDimensions',
   'evaluationProfiles',
+  // The certificate rendering contract (smart TODO.roadmap/40 batch 3)
+  // composes with uses-no-redefine semantics.
+  'certificateTemplates',
   'instances',
   'quantityRegisters',
   'duals',

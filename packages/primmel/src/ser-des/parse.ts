@@ -116,6 +116,8 @@ export default function parse(
     calculationContexts: {},
     evaluationDimensions: {},
     evaluationProfiles: {},
+    // The certificate rendering contract (batch 3)
+    certificateTemplates: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)

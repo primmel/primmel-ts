@@ -5198,6 +5198,103 @@ export function checkPackage(
     }
   }
 
+  // ── C136: certificate-template-references (smart TODO.roadmap/40 ────
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The certificate rendering contract: the dimension_labels pattern
+  // placeholders ({dim} / {dim:sep}) resolve to declared classification
+  // dimensions (error, per-register gated); the characteristic bindings
+  // resolve (attribute/attributes → attribute_definitions, dimension →
+  // classification dimensions, per-register gated) with the XOR shape
+  // leg (≤ 1 of attribute | attributes | dimension — none is the
+  // statement row); the characteristic type carries the renderer-driven
+  // closed vocabulary (string | integer | number | quantity |
+  // statement) at ERROR (the owner-settled decision — parse stays
+  // total against renderer growth); the number_format placeholders
+  // check against the known token vocabulary at WARNING (open for
+  // program-specific prefixes like twin-cert's literal TW-1).
+  {
+    const CERTIFICATE_NUMBER_TOKENS = new Set([
+      'shortName',
+      'edition',
+      'scheme',
+      'authority',
+      'year2',
+      'seq',
+    ]);
+    const CERTIFICATE_CHARACTERISTIC_TYPES = new Set([
+      'string',
+      'integer',
+      'number',
+      'quantity',
+      'statement',
+    ]);
+    const placeholderRe = /\{([^{}:/]+)(?::[^{}]*)?\}/g;
+    for (const t of standard.certificateTemplates ?? []) {
+      const where = `certificate_template ${t.id}`;
+      if (t.numberFormat) {
+        let m: RegExpExecArray | null;
+        while ((m = placeholderRe.exec(t.numberFormat)) !== null) {
+          if (!CERTIFICATE_NUMBER_TOKENS.has(m[1]!)) {
+            warn(
+              'C136',
+              `${where}: number_format placeholder "{${m[1]}}" is not a known token (${[...CERTIFICATE_NUMBER_TOKENS].join(', ')}) — a program-specific spelling (certificate-template-references)`,
+            );
+          }
+        }
+      }
+      if (t.dimensionLabels && dimIds.size > 0) {
+        let m: RegExpExecArray | null;
+        while ((m = placeholderRe.exec(t.dimensionLabels.pattern)) !== null) {
+          if (!dimIds.has(m[1]!)) {
+            err(
+              'C136',
+              `${where}: dimension_labels placeholder "{${m[1]}}" is not a declared classification dimension (certificate-template-references)`,
+            );
+          }
+        }
+      }
+      for (const c of t.characteristics ?? []) {
+        const cwhere = `${where}: characteristic ${c.id}`;
+        if (c.type && !CERTIFICATE_CHARACTERISTIC_TYPES.has(c.type)) {
+          err(
+            'C136',
+            `${cwhere}: type "${c.type}" is outside the renderer vocabulary (string, integer, number, quantity, statement) (certificate-template-references)`,
+          );
+        }
+        const bindings =
+          (c.attribute ? 1 : 0) +
+          (c.attributes.length > 0 ? 1 : 0) +
+          (c.dimension ? 1 : 0);
+        if (bindings > 1) {
+          err(
+            'C136',
+            `${cwhere}: carries ${bindings} content bindings — the XOR is attribute | attributes | dimension | none (certificate-template-references)`,
+          );
+        }
+        if (c.attribute && attrIds.size > 0 && !attrIds.has(c.attribute)) {
+          err(
+            'C136',
+            `${cwhere}: attribute "${c.attribute}" is not a declared attribute_definition (certificate-template-references)`,
+          );
+        }
+        for (const a of c.attributes) {
+          if (attrIds.size > 0 && !attrIds.has(a)) {
+            err(
+              'C136',
+              `${cwhere}: attributes entry "${a}" is not a declared attribute_definition (certificate-template-references)`,
+            );
+          }
+        }
+        if (c.dimension && dimIds.size > 0 && !dimIds.has(c.dimension)) {
+          err(
+            'C136',
+            `${cwhere}: dimension "${c.dimension}" is not a declared classification dimension (certificate-template-references)`,
+          );
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {

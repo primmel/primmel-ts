@@ -69,6 +69,7 @@ function emptyContext(): ParseContext {
     calculationContexts: {},
     evaluationDimensions: {},
     evaluationProfiles: {},
+    certificateTemplates: {},
     instances: {},
     artifactDefinitions: {},
     artifactInstances: {},

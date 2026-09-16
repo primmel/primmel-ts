@@ -38,6 +38,7 @@ import type ApplicationDeclaration from './ApplicationDeclaration';
 import type CalculationContext from './CalculationContext';
 import type EvaluationDimensions from './EvaluationDimension';
 import type EvaluationProfile from './EvaluationProfile';
+import type CertificateTemplate from './CertificateTemplate';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -192,6 +193,10 @@ export default interface Standard {
   calculationContexts: CalculationContext[];
   evaluationDimensions: EvaluationDimensions[];
   evaluationProfiles: EvaluationProfile[];
+  /** The certificate rendering contract (smart TODO.roadmap/40 batch 3)
+   *  — singleton per package; the number format, the dimension-label
+   *  pattern, the explicit characteristic rows, the ANR section. */
+  certificateTemplates: CertificateTemplate[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

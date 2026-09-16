@@ -602,6 +602,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C136 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // certificate template — the dimension_labels placeholders resolve
+  // (gated), the characteristic bindings resolve with the XOR shape leg,
+  // the type carries the renderer vocabulary (error), and the
+  // number_format placeholders check against the known tokens (warning —
+  // program-specific prefixes are legitimate).
+  R(
+    'C136',
+    'certificate-template-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',
