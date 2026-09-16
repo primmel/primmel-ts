@@ -68,6 +68,7 @@ import type { FormulaNote } from '../types/Symbol';
 import type Table from '../types/Table';
 import type Term from '../types/Term';
 import type TestPointSet from '../types/TestPointSet';
+import type CommonTestCondition from '../types/CommonTestCondition';
 import type Verdict from '../types/Verdict';
 import type ViewProfile from '../types/ViewProfile';
 import type { ParseIssue } from '../validate';
@@ -193,6 +194,7 @@ export interface ParseContext {
   verdicts: Record<string, Verdict>;
   referenceMaterials: Record<string, ReferenceMaterial>;
   testPointSets: Record<string, TestPointSet>;
+  commonTestConditions: Record<string, CommonTestCondition>;
   competenceKinds: Record<string, CompetenceKind>;
   /** The ISO/IEC 17067 scheme-type register (smart TODO.roadmap/40
    *  batch 2). */

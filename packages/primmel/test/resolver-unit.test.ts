@@ -44,6 +44,7 @@ function emptyContext(): ParseContext {
     verdicts: {},
     referenceMaterials: {},
     testPointSets: {},
+    commonTestConditions: {},
     stateMachines: {},
     conformanceTests: {},
     conformanceClasses: {},

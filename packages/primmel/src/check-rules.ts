@@ -479,6 +479,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
   ),
+  // C127 (smart TODO.roadmap/40 batch 4; the packages-as-SSOT epic): the
+  // common_test_condition register's declaration shape — the description
+  // is required (the one facet both YAML shapes carry); the title stays
+  // optional (the r91 keyed-map entries carry none) and the reference a
+  // free citation string (no kernel leg — the linker owns the citation
+  // semantics).
+  R(
+    'C127',
+    'common-test-condition-shape',
+    'base',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

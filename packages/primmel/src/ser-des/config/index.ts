@@ -102,6 +102,10 @@ import {
   parseDiscrepancyRecord,
 } from './discrepancyRecord';
 import { dumpTestPointSet, parseTestPointSet } from './testPointSet';
+import {
+  dumpCommonTestCondition,
+  parseCommonTestCondition,
+} from './commonTestCondition';
 import { requirementConstruct, requirementClassConstruct } from './requirement';
 import { parsePackage } from './packageManifest';
 import { conformanceClassConstruct } from './conformanceClass';
@@ -448,6 +452,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseTestPointSet,
     dump: dumpTestPointSet as never,
+  }),
+  // The model-wide common test-conditions register (smart
+  // TODO.roadmap/40 batch 4) — one entry per condition; the citation
+  // string stays free (the linker owns the citation semantics).
+  defineConstruct({
+    keyword: 'common_test_condition',
+    field: 'commonTestConditions',
+    takesID: true,
+    parse: parseCommonTestCondition,
+    dump: dumpCommonTestCondition as never,
   }),
   defineConstruct({
     keyword: 'competence_kind',

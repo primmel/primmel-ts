@@ -63,6 +63,7 @@ import type { FormulaNote } from './Symbol';
 import type Table from './Table';
 import type Term from './Term';
 import type TestPointSet from './TestPointSet';
+import type CommonTestCondition from './CommonTestCondition';
 import type TextContent from './Text';
 import type Verdict from './Verdict';
 import type ViewProfile from './ViewProfile';
@@ -116,6 +117,9 @@ export default interface Standard {
   referenceMaterials: ReferenceMaterial[];
   /** Named shared test-point sets referenced by conformance tests. */
   testPointSets: TestPointSet[];
+  /** The model-wide common test-conditions register (smart
+   *  TODO.roadmap/40 batch 4) — one entry per condition. */
+  commonTestConditions: CommonTestCondition[];
   /** Laboratory testing-competence kind registry (TODO.roadmap/48) — the
    *  vocabulary of conformance-test required_competence and laboratory
    *  accreditation_scope entries. */

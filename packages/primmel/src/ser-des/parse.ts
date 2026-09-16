@@ -84,6 +84,7 @@ export default function parse(
     verdicts: {},
     referenceMaterials: {},
     testPointSets: {},
+    commonTestConditions: {},
     competenceKinds: {},
     // The ISO/IEC 17067 scheme-type register (smart TODO.roadmap/40 batch 2)
     schemeActivityKinds: {},

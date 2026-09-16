@@ -349,6 +349,10 @@
 //   C126 formula-note-targets-resolve (smart TODO.roadmap/40 batch 4):
 //      the formula_note register's reverse applicability resolves —
 //      applies_to → symbol (per-register gated)
+//   C127 common-test-condition-shape (smart TODO.roadmap/40 batch 4):
+//      the common_test_condition register's declaration shape — the
+//      description is required; the title stays optional (the r91 map
+//      entries carry none) and the reference a free citation string
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4566,6 +4570,24 @@ export function checkPackage(
           );
         }
       }
+    }
+  }
+
+  // ── C127: common-test-condition-shape (smart TODO.roadmap/40 ───────
+  // batch 4; the packages-as-SSOT epic) ────────────────────────────────
+  // The register's declaration shape: the description is the one facet
+  // BOTH YAML shapes carry (the r60/r144/r129 array entries and the r91
+  // keyed-map entries alike) — a condition without its text is a
+  // carrier with no content. The title stays OPTIONAL (the r91 map
+  // entries carry none; requiring it would force content invention at
+  // migration) and the reference stays a free citation string (the
+  // linker owns the citation semantics — no kernel leg).
+  for (const c of standard.commonTestConditions ?? []) {
+    if (!c.description) {
+      err(
+        'C127',
+        `common_test_condition ${c.id}: the description is required — a condition entry carries its normative text (common-test-condition-shape)`,
+      );
     }
   }
 

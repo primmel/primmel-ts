@@ -131,6 +131,7 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   verdicts: 'secondary',
   tables: 'secondary',
   testPointSets: 'secondary',
+  commonTestConditions: 'tertiary',
   referenceMaterials: 'secondary',
   processes: 'tertiary',
   // Process models (smart TODO.roadmap/40 batch 2) are tertiary beside
