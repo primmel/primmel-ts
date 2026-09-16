@@ -589,6 +589,73 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'dimensions',
 ];
 
+// ─────────────────────────────────────────────────────────────────────
+// The overlay deep-merge opt-in (smart TODO.roadmap/40 batch 3).
+//
+// The term-only `overlay true` escape (whole-value last-write-wins)
+// generalizes to a per-collection opt-in: a collection listed here
+// merges an overlay-marked entry FIELD-WISE instead of replacing it —
+// entry arrays union by identity key preserving FIRST-SEEN ORDER (the
+// smart layer-composer's contract: an overlay's scalars land in place,
+// never reorder the base entries to the tail), scalar arrays append
+// (union — first occurrence keeps its position), scalars override.
+// The marker stays opt-in per collection: everything else keeps
+// uses-no-redefine, and terms keep their whole-value replace.
+//
+// The set starts empty: entries land same-commit with their constructs
+// (workflowConfigs at B3.7, testReportChecklists at B3.10) — a field
+// name listed before its collection exists would be dead config.
+// ─────────────────────────────────────────────────────────────────────
+export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([]);
+
+function isPlainRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/** The field-wise overlay merge: entry arrays union by `id` preserving
+ *  first-seen order (an entry present in both sides recurses), scalar
+ *  arrays append as a union, plain objects merge key-wise, and scalars
+ *  override (last write wins). The `overlay` marker itself is consumed
+ *  by composition and never survives into the merged value. */
+export function deepMergeOverlay(base: unknown, incoming: unknown): unknown {
+  if (Array.isArray(base) && Array.isArray(incoming)) {
+    const keyed = (e: unknown): e is { id: string } =>
+      isPlainRecord(e) && typeof e.id === 'string';
+    const all = [...base, ...incoming];
+    if (all.length > 0 && all.every(keyed)) {
+      const order: string[] = [];
+      const merged = new Map<string, unknown>();
+      for (const e of all) {
+        if (!merged.has(e.id)) {
+          order.push(e.id);
+          merged.set(e.id, e);
+        } else {
+          merged.set(e.id, deepMergeOverlay(merged.get(e.id), e));
+        }
+      }
+      return order.map(id => merged.get(id));
+    }
+    const out = [...base];
+    for (const e of incoming) {
+      if (!out.includes(e)) {
+        out.push(e);
+      }
+    }
+    return out;
+  }
+  if (isPlainRecord(base) && isPlainRecord(incoming)) {
+    const out: Record<string, unknown> = { ...base };
+    for (const [k, v] of Object.entries(incoming)) {
+      if (k === 'overlay') {
+        continue;
+      }
+      out[k] = k in out ? deepMergeOverlay(out[k], v) : v;
+    }
+    return out;
+  }
+  return incoming;
+}
+
 /** Parse one package's content files (manifest excluded) as a single
  *  stream, keeping each file's joined-stream range for provenance. */
 function parsePackageContent(
@@ -751,22 +818,30 @@ function composePackage(
       )) {
         const prior = pm.get(key);
         if (prior !== undefined) {
-          // The overlay marker (Extension: explicit redefine for terms).
-          // Authors set `overlay true` inside a term body when their
-          // definition intentionally supersedes an upstream package's
-          // (e.g. ISO/IEC 17065:2012 `impartiality` overriding
-          // ISO/IEC 17000:2020's). Composition honours the marker;
-          // last-write-wins for overlay=true entries.
+          // The overlay marker (Extension: explicit redefine). Authors
+          // set `overlay true` inside a construct body when their
+          // entry intentionally supersedes an upstream package's.
+          // Terms keep the historical whole-value last-write-wins
+          // (e.g. ISO/IEC 17065:2012 `impartiality` overriding ISO/IEC
+          // 17000:2020's); the OVERLAY_DEEP_MERGE_FIELDS opt-ins merge
+          // field-wise (smart TODO.roadmap/40 batch 3).
           const isOverlay =
-            field === 'terms' &&
             typeof value === 'object' &&
             value !== null &&
-            (value as { overlay?: boolean }).overlay === true;
+            (value as { overlay?: boolean }).overlay === true &&
+            (field === 'terms' || OVERLAY_DEEP_MERGE_FIELDS.has(field));
           if (!isOverlay) {
             throw new CompositionError(
               'uses-no-redefine',
               `package "${id}" redefines ${String(field)} id "${key}" already declared by package "${prior}" — an overlay may reference upstream ids, never redefine them (uses-no-redefine)`,
             );
+          }
+          if (OVERLAY_DEEP_MERGE_FIELDS.has(field)) {
+            // Fall through with the field-wise merge; the marker is
+            // consumed (never survives into the merged entry).
+            target[key] = deepMergeOverlay(target[key], value);
+            pm.set(key, id);
+            continue;
           }
           // Fall through: overlay term replaces the prior entry.
         }
@@ -846,8 +921,9 @@ function composePackage(
   if (withProvenance) {
     // Fold in merge order with last-write-wins, mirroring the merge
     // exactly: illegal redefines threw above (uses-no-redefine), so the
-    // only overwrites possible here are the legal overlay=true terms,
-    // whose provenance must name the OVERLAYING package's file.
+    // only overwrites possible here are the legal overlay=true entries
+    // (terms and the OVERLAY_DEEP_MERGE_FIELDS opt-ins), whose
+    // provenance must name the OVERLAYING package's file.
     const constructs: Record<string, Record<string, ConstructSource>> = {};
     for (const id of order) {
       const perPackage = mapConstructs(
