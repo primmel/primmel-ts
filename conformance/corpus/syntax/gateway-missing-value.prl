@@ -1,0 +1,5 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: WF-02 (negative).
+exclusive_gateway broken {
+  label
+}

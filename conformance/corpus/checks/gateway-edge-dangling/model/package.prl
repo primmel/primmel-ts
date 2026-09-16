@@ -1,0 +1,12 @@
+// Conformance corpus: an edge target that names no declared process, with the process
+// register in scope (the default edge keeps the discipline leg
+// silent so only the dangling target fires).
+// Clause: WF-02 (negative).
+
+process skip_tests {
+  name "Skip"
+}
+exclusive_gateway g {
+  edge ghost { condition "ocl{true}" }
+  edge skip_tests { condition default }
+}

@@ -1,0 +1,14 @@
+// Conformance corpus: a coherent routing cascade — every edge target resolves to a
+// declared process, exactly one default edge, and the default is
+// last. C142 stays silent.
+// Clause: WF-02 (positive).
+
+process conduct_mdlo_tests { name "MDLO tests" }
+process conduct_mdlo_tests_5runs { name "MDLO tests, 5 runs" }
+process skip_tests { name "Skip" }
+exclusive_gateway test_runs_gateway {
+  label "Determine Required Test Runs"
+  edge conduct_mdlo_tests { condition "[accuracy_class] in ['C', 'D']" label "3 load applications" }
+  edge conduct_mdlo_tests_5runs { condition "[accuracy_class] in ['A', 'B']" label "5 load applications" }
+  edge skip_tests { condition default label "Not applicable" }
+}

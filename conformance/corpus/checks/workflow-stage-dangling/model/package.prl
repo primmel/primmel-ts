@@ -1,0 +1,19 @@
+// Conformance corpus: a stage naming an undeclared process, approval, and gateway with
+// all three registers in scope — three C142 errors, one per
+// dangling member.
+// Clause: WF-04 (negative).
+
+process receive_application {
+  name "Receive application"
+}
+approval ia_approve_application {
+  name "IA approves the application"
+}
+exclusive_gateway completeness_gateway {
+  label "Complete?"
+}
+workflow_stage s {
+  elements { receive_application ghost_process }
+  approvals { ia_approve_application ghost_approval }
+  gateways { completeness_gateway ghost_gateway }
+}

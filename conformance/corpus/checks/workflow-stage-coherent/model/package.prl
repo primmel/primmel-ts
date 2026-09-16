@@ -1,0 +1,27 @@
+// Conformance corpus: a coherent pipeline stage — the elements resolve to declared
+// processes, the approvals and gateways to their registers; the
+// events are documentary tokens, never resolved. C142 stays
+// silent.
+// Clause: WF-04 (positive).
+
+process receive_application {
+  name "Receive application"
+}
+process check_completeness {
+  name "Check completeness"
+}
+approval ia_approve_application {
+  name "IA approves the application"
+}
+exclusive_gateway completeness_gateway {
+  label "Complete?"
+}
+workflow_stage application_processing {
+  label "Application processing"
+  description "The IA intake pipeline — receipt to acceptance."
+  elements { receive_application check_completeness }
+  start_event application_received
+  end_events { application_accepted application_rejected }
+  approvals { ia_approve_application }
+  gateways { completeness_gateway }
+}

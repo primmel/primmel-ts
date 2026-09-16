@@ -1,0 +1,10 @@
+// Conformance corpus: two default-conditioned edges — the first-match-wins cascade
+// allows exactly one catch-all (no process register in scope, so
+// the target-resolution leg gates off and only the default
+// discipline fires).
+// Clause: WF-02 (negative).
+
+exclusive_gateway g {
+  edge a { condition default }
+  edge b { condition default }
+}

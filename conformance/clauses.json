@@ -701,6 +701,44 @@
    "rules": [
     "C141"
    ]
+  },
+  {
+   "id": "WF-01",
+   "area": "wf",
+   "title": "The workflow-process facets",
+   "statement": "The workflow-process facets: phase (the pipeline phase token), the ordered repeatable guard criteria, and machine_steps (the documentary engine-run steps) parse and re-serialize in declaration order; provenance is spelled ONLY source { doc clause } — free citation strings land in doc. The facet vocabularies are intentionally open (the codec stays total); a value-taking keyword with no value token is a parse error.",
+   "specAnchor": "MN 114 v3.3 (the workflow-process facets, smart TODO.roadmap/40 batch 5)",
+   "rules": []
+  },
+  {
+   "id": "WF-02",
+   "area": "wf",
+   "title": "The exclusive_gateway edge cascade",
+   "statement": "The exclusive_gateway edge cascade: the edge <target> { condition … label … } entries are repeatable and ordered, and the bare default token marks the catch-all; the edge targets resolve to declared processes (per-register gated), an edge-carrying gateway declares exactly one default edge (the edge-less label-only gateway carries no routing and is skipped), and the default is recommended last at warning (C142).",
+   "specAnchor": "MN 114 v3.3 (the exclusive_gateway edge cascade, C142)",
+   "rules": [
+    "C142"
+   ]
+  },
+  {
+   "id": "WF-03",
+   "area": "wf",
+   "title": "The approval provenance and references",
+   "statement": "The approval construct: the raw reference ids (actor, approve_by, approval_record) survive resolution so an unresolvable id still re-serializes byte-clean; the clause-URN provenance facet source { doc clause } carries the citation strings; actor / approve_by resolve to declared roles and the approval_record entries to declared entity-class stores, per-register gated (C143).",
+   "specAnchor": "MN 114 v3.3 (the approval provenance and references, C143)",
+   "rules": [
+    "C143"
+   ]
+  },
+  {
+   "id": "WF-04",
+   "area": "wf",
+   "title": "The workflow_stage register",
+   "statement": "The workflow_stage register: the named pipeline stage groups the member processes (elements), the bracketing documentary events (start_event / end_events — never resolved), and the approvals and gateways it routes through; the member references resolve per-register gated (C142, the members-resolve legs).",
+   "specAnchor": "MN 114 v3.3 (the workflow_stage register, C142)",
+   "rules": [
+    "C142"
+   ]
   }
  ]
 }

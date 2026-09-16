@@ -1,0 +1,10 @@
+# Conformance corpus: the exclusive_gateway edge cascade — the
+# ordered edge entries, the quoted conditions, the bare default
+# catch-all (last).
+# Clause: WF-02 (positive).
+exclusive_gateway test_runs_gateway {
+  label "Determine Required Test Runs"
+  edge conduct_mdlo_tests { condition "[accuracy_class] in ['C', 'D']" label "3 load applications" }
+  edge conduct_mdlo_tests_5runs { condition "[accuracy_class] in ['A', 'B']" label "5 load applications" }
+  edge skip_tests { condition default label "Not applicable" }
+}

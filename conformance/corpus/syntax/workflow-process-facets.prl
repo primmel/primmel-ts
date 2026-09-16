@@ -1,0 +1,23 @@
+# Conformance corpus: the workflow-process facets — phase (the
+# pipeline phase), the ordered repeatable guard criteria, the
+# machine_steps documentary engine-run list, and the clause-URN
+# provenance (free citation strings land in doc).
+# Clause: WF-01 (positive).
+data_registry testRequests {
+  name "Test requests"
+}
+process conduct_tests {
+  name "Conduct tests"
+  modality shall
+  phase testing
+  guard "Each TestRequest references >= 1 MeasuringInstrumentSample"
+  guard "TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes"
+  machine_steps { verdict_computation evaluation_aggregation certificate_characteristics_derivation }
+  reference_data_registry {
+    testRequests
+  }
+  validate_measurement {
+    "every([within_mpe]) = true"
+  }
+  source { doc "PD-05 §4.1" clause "" }
+}

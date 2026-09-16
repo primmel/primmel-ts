@@ -1,0 +1,24 @@
+# Conformance corpus: the approval construct — actor / approve_by
+# role references, the approval_record entity-store list, and the
+# clause-URN provenance (the free citation string lands in doc).
+# Clause: WF-03 (positive).
+role applicant {
+  name "Applicant"
+}
+role ia_checker {
+  name "IA checker"
+}
+class Application#data {
+  store { applications }
+  id: string { modality SHALL }
+}
+approval ia_approve_application {
+  name "IA approves the application"
+  actor applicant
+  modality shall
+  approve_by ia_checker
+  approval_record {
+    applications
+  }
+  source { doc "PD-05 §4.2" clause "" }
+}

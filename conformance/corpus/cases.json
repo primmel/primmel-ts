@@ -2766,6 +2766,198 @@
     ]
    },
    "summary": "A checklist overlay entry naming no upstream entry id is flagged C141."
+  },
+  {
+   "id": "wf-01-parse-pos",
+   "clause": "WF-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/workflow-process-facets.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A process carrying phase, the ordered guards, machine_steps, and the source provenance parses."
+  },
+  {
+   "id": "wf-01-parse-neg",
+   "clause": "WF-01",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/workflow-process-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for phase"
+   },
+   "summary": "A phase keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "wf-01-check-pos",
+   "clause": "WF-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/workflow-process-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A workflow process with the batch-5 facets and a resolving registry input checks clean."
+  },
+  {
+   "id": "wf-02-parse-pos",
+   "clause": "WF-02",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/gateway-edges.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "An exclusive_gateway with the ordered edge cascade (quoted conditions, the bare default catch-all last) parses."
+  },
+  {
+   "id": "wf-02-parse-neg",
+   "clause": "WF-02",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/gateway-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for label"
+   },
+   "summary": "A label keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "wf-02-check-pos",
+   "clause": "WF-02",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/gateway-edges-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A coherent cascade — targets resolve, exactly one default, default last — checks clean."
+  },
+  {
+   "id": "wf-02-check-neg-defaults",
+   "clause": "WF-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/gateway-two-defaults",
+   "expect": {
+    "rules": [
+     "C142"
+    ]
+   },
+   "summary": "Two default-conditioned edges are flagged C142 (exactly one catch-all is allowed)."
+  },
+  {
+   "id": "wf-02-check-neg-dangling",
+   "clause": "WF-02",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/gateway-edge-dangling",
+   "expect": {
+    "rules": [
+     "C142"
+    ]
+   },
+   "summary": "An edge target naming no declared process is flagged C142 (the process register in scope)."
+  },
+  {
+   "id": "wf-03-parse-pos",
+   "clause": "WF-03",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/approval.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "An approval with the role references, the record store, and the citation source parses."
+  },
+  {
+   "id": "wf-03-parse-neg",
+   "clause": "WF-03",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/approval-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for actor"
+   },
+   "summary": "An actor keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "wf-03-check-pos",
+   "clause": "WF-03",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/approval-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "An approval whose actor, approver, and record store all resolve checks clean."
+  },
+  {
+   "id": "wf-03-check-neg",
+   "clause": "WF-03",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/approval-dangling",
+   "expect": {
+    "rules": [
+     "C143",
+     "C143",
+     "C143"
+    ]
+   },
+   "summary": "Dangling actor, approver, and record-store references are flagged C143, one error each."
+  },
+  {
+   "id": "wf-04-parse-pos",
+   "clause": "WF-04",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/workflow-stage.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "A workflow_stage with all six facets (the events documentary) parses."
+  },
+  {
+   "id": "wf-04-parse-neg",
+   "clause": "WF-04",
+   "polarity": "negative",
+   "kind": "parse",
+   "path": "syntax/workflow-stage-missing-value.prl",
+   "expect": {
+    "parse": "error",
+    "errorMatch": "Expecting value for elements"
+   },
+   "summary": "An elements keyword with no value token is rejected at parse."
+  },
+  {
+   "id": "wf-04-check-pos",
+   "clause": "WF-04",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/workflow-stage-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A stage whose elements, approvals, and gateways all resolve checks clean."
+  },
+  {
+   "id": "wf-04-check-neg",
+   "clause": "WF-04",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/workflow-stage-dangling",
+   "expect": {
+    "rules": [
+     "C142",
+     "C142",
+     "C142"
+    ]
+   },
+   "summary": "Dangling element, approval, and gateway members are flagged C142, one error each."
   }
  ]
 }

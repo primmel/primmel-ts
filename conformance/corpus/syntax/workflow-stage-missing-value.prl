@@ -1,0 +1,5 @@
+# Conformance corpus: a value-taking keyword with no value token.
+# Clause: WF-04 (negative).
+workflow_stage broken {
+  elements
+}

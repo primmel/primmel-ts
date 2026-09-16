@@ -1,0 +1,20 @@
+// Conformance corpus: an approval whose actor, approver, and record store name no
+// declared role / entity-class store, with both registers in
+// scope — three C143 errors, one per dangling reference.
+// Clause: WF-03 (negative).
+
+role applicant {
+  name "Applicant"
+}
+class Application#data {
+  store { applications }
+  id: string { modality SHALL }
+}
+approval a {
+  name "Broken references"
+  actor ghost_applicant
+  approve_by ghost_checker
+  approval_record {
+    ghost_store
+  }
+}

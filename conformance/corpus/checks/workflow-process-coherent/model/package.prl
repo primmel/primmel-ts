@@ -1,0 +1,24 @@
+// Conformance corpus: a workflow process carrying the batch-5 facets (phase, the
+// ordered guards, machine_steps, the registry input, the
+// validate_measurement criterion, the source provenance) — every
+// reference resolves, no rule fires.
+// Clause: WF-01 (positive).
+
+data_registry testRequests {
+  name "Test requests"
+}
+process conduct_tests {
+  name "Conduct tests"
+  modality shall
+  phase testing
+  guard "Each TestRequest references >= 1 MeasuringInstrumentSample"
+  guard "TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes"
+  machine_steps { verdict_computation evaluation_aggregation certificate_characteristics_derivation }
+  reference_data_registry {
+    testRequests
+  }
+  validate_measurement {
+    "every([within_mpe]) = true"
+  }
+  source { doc "PD-05 §4.1" clause "" }
+}

@@ -1,0 +1,26 @@
+# Conformance corpus: the workflow_stage register — the named
+# pipeline stage grouping the member processes (elements), the
+# bracketing documentary events (start_event / end_events), and
+# the approvals and gateways it routes through.
+# Clause: WF-04 (positive).
+process receive_application {
+  name "Receive application"
+}
+process check_completeness {
+  name "Check completeness"
+}
+approval ia_approve_application {
+  name "IA approves the application"
+}
+exclusive_gateway completeness_gateway {
+  label "Complete?"
+}
+workflow_stage application_processing {
+  label "Application processing"
+  description "The IA intake pipeline — receipt to acceptance."
+  elements { receive_application check_completeness }
+  start_event application_received
+  end_events { application_accepted application_rejected }
+  approvals { ia_approve_application }
+  gateways { completeness_gateway }
+}

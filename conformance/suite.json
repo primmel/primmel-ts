@@ -1,12 +1,12 @@
 {
  "name": "primmel-conformance-suite",
  "title": "The Primmel conformance test suite",
- "version": "3.7.0",
+ "version": "3.8.0",
  "date": "2026-09-16",
  "language": {
   "name": "Primmel",
-  "referenceBaseline": "@primmel/primmel 1.14.0",
-  "specification": "MN 114, the Primmel Language Specification (v3.3 draft); the v3.1 clauses (DAT-01 to DAT-04) anchor to its clause 19, the v3.2 clauses (CON-01 to CON-09) anchor to the v3.2 construct clauses, PKG-06 anchors to the 2026-09-08 revision's composition rules (the requirement-namespace pin, C119), PKG-07 anchors to the v3.3 revision's declared namespace pin (the document_module namespace facet, C119), the v3.3 clauses (FWK-01 to FWK-15) anchor to the v3.3 certification-framework clauses, the v3.3 codec-closure clauses (COD-01 to COD-06) anchor to the batch-4 codec-closure clauses (C124–C129), the v3.3 evaluation/execution clauses (EVL-01 to EVL-13) anchor to the batch-3 evaluation/execution clauses (C130–C141), PKG-08 anchors to the v3.3 overlay deep-merge composition rule (C141), and all identifiers re-key to the specification's conformance clauses when it publishes."
+  "referenceBaseline": "@primmel/primmel 1.15.0",
+  "specification": "MN 114, the Primmel Language Specification (v3.3 draft); the v3.1 clauses (DAT-01 to DAT-04) anchor to its clause 19, the v3.2 clauses (CON-01 to CON-09) anchor to the v3.2 construct clauses, PKG-06 anchors to the 2026-09-08 revision's composition rules (the requirement-namespace pin, C119), PKG-07 anchors to the v3.3 revision's declared namespace pin (the document_module namespace facet, C119), the v3.3 clauses (FWK-01 to FWK-15) anchor to the v3.3 certification-framework clauses, the v3.3 codec-closure clauses (COD-01 to COD-06) anchor to the batch-4 codec-closure clauses (C124–C129), the v3.3 evaluation/execution clauses (EVL-01 to EVL-13) anchor to the batch-3 evaluation/execution clauses (C130–C141), PKG-08 anchors to the v3.3 overlay deep-merge composition rule (C141), the v3.3 workflow-fidelity clauses (WF-01 to WF-04) anchor to the batch-5 workflow clauses (C142–C143), and all identifiers re-key to the specification's conformance clauses when it publishes."
  },
  "areas": {
   "syntax": "The document grammar: structure, identifiers, and the five entity kinds (requirement, conformance test, form, calculation, table).",
@@ -19,7 +19,8 @@
   "surface": "The runtime surface: the enumerated vocabularies the toolchain's browser-facing module exposes as data.",
   "framework": "The v3.3 certification-framework set (MN 114 v3.3): the participant-kind and governance-organ registers, the declaration constructs, the scheme architecture, the framework documents, the decision rules, the framework reference resolution (C120), the abstract-process facets and the process_model construct, the ISO/IEC 17067 scheme-type register, the document-module constructs, and the batch-2 reference resolutions (C121–C123) with the segregation kind-conditional XOR (C59).",
   "cod": "The v3.3 codec-exclusion closures (smart TODO.roadmap/40 batch 4): the pair_list attribute block, the calculation variant, the formula_note register, the common-test-conditions register, the part-annex register, and the demo_world/storyline demo seeds (C124–C129).",
-  "evl": "The v3.3 evaluation/execution set (smart TODO.roadmap/40 batch 3): the identity_slot and aspect registers, the promise certificate projection and the promise_set register, the application_declaration, the calculation_context, the evaluation_dimensions and evaluation_profile registers, the certificate_template, the workflow_config, the verification_pathway, the selection rules (lab_selection_criterion, sample_selection_rule, specimen_governance_rule), and the test_report_skeleton / test_report_checklist registers (C130–C141)."
+  "evl": "The v3.3 evaluation/execution set (smart TODO.roadmap/40 batch 3): the identity_slot and aspect registers, the promise certificate projection and the promise_set register, the application_declaration, the calculation_context, the evaluation_dimensions and evaluation_profile registers, the certificate_template, the workflow_config, the verification_pathway, the selection rules (lab_selection_criterion, sample_selection_rule, specimen_governance_rule), and the test_report_skeleton / test_report_checklist registers (C130–C141).",
+  "wf": "The v3.3 workflow-fidelity set (smart TODO.roadmap/40 batch 5): the workflow-process facets (phase, the ordered guards, machine_steps, the clause-URN source), the exclusive_gateway edge cascade with the default-edge discipline and the workflow_stage register with its members-resolve legs (C142), and the approval provenance and reference resolution (C143)."
  },
  "layout": {
   "clauses.json": "the clause map: one conformance rule per clause, with its area and check-rule identifiers",
