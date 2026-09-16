@@ -5637,6 +5637,60 @@ export function checkPackage(
     }
   }
 
+  // ── C142: gateway-edges-resolve (smart TODO.roadmap/40 batch 5; ────
+  // the packages-as-SSOT epic) ─────────────────────────────────────────
+  // The workflow routing cascade: every edge target resolves to a
+  // declared process (per-register gated — the smart R-rule mirrors);
+  // a gateway carrying edges declares exactly ONE default-conditioned
+  // edge (the first-match-wins cascade needs its catch-all), and the
+  // default edge is RECOMMENDED last (a mid-list default shadows the
+  // edges after it — WARNING, not error: the YAML lineage carries
+  // mid-list defaults). The conditions stay opaque strings — never
+  // resolved (the R26 field-resolution precedent). The edge-less
+  // gateway (a label-only declaration) carries no routing, so the
+  // default discipline skips it. The workflow_stage members-resolve
+  // legs ride this rule (batch 5 step 5d).
+  {
+    const gwProcessIds = new Set((standard.processes ?? []).map(p => p.id));
+    for (const g of standard.gateways ?? []) {
+      if (g.gatewayType !== 'exclusive_gateway') {
+        continue;
+      }
+      const edges =
+        (g as { edges?: { target: string; condition: string }[] }).edges ?? [];
+      const where = `exclusive_gateway ${g.id}`;
+      edges.forEach((e, i) => {
+        if (gwProcessIds.size > 0 && !gwProcessIds.has(e.target)) {
+          err(
+            'C142',
+            `${where}: edge ${i + 1} targets "${e.target}", which is not a declared process (gateway-edges-resolve)`,
+          );
+        }
+      });
+      if (edges.length > 0) {
+        const defaults = edges
+          .map((e, i) => ({ e, i }))
+          .filter(x => x.e.condition === 'default');
+        if (defaults.length === 0) {
+          err(
+            'C142',
+            `${where}: no default edge — the first-match-wins cascade needs its catch-all (gateway-edges-resolve)`,
+          );
+        } else if (defaults.length > 1) {
+          err(
+            'C142',
+            `${where}: ${defaults.length} default edges — exactly one catch-all is allowed (gateway-edges-resolve)`,
+          );
+        } else if (defaults[0]!.i !== edges.length - 1) {
+          warn(
+            'C142',
+            `${where}: the default edge is not last — it shadows the edges after it in the first-match-wins cascade (gateway-edges-resolve)`,
+          );
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {
