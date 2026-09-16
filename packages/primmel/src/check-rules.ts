@@ -452,6 +452,21 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
   ),
+  // C125 (smart TODO.roadmap/40 batch 4; the packages-as-SSOT epic): the
+  // calculation variant block's declaration shape — variant ids unique
+  // within the owning calculation, and the type-conditional facets
+  // present (expression ⇒ expression, table_lookup ⇒ lookup,
+  // profile_lookup ⇒ profile; the top-level shape discipline mirrored
+  // onto the realization). The variant's params are engine call-site
+  // names and deliberately carry NO params-resolve leg.
+  R(
+    'C125',
+    'formula-variant-shape',
+    'base',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

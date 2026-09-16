@@ -81,6 +81,42 @@ interface Calculation {
   /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
   correspondences?: import('./Correspondence').Correspondence[];
   ref: Reference[];
+  /** The executable realizations (smart TODO.roadmap/40 batch 4) —
+   *  repeatable named `variant <id> { … }` blocks; `engine` is the
+   *  documented first id, unknown ids tolerated for forward compat. */
+  variants?: CalculationVariant[];
+}
+
+/**
+ * A calculation variant (smart TODO.roadmap/40 batch 4): the executable
+ * realization of a calculation whose typed signature stays on the
+ * calculation itself — one concept, two realizations (the formulas.yaml
+ * engine rules duplicating a calculation id). The variant's `params`
+ * are the engine's CALL-SITE names: they deliberately do NOT resolve
+ * against the calculation's inputs (no params-resolve rule — the block
+ * stays documentary/engine-facing).
+ */
+export interface CalculationVariant {
+  /** The variant id (`engine` reserved as the documented first). */
+  id: string;
+  /** The engine rule kind — the same vocabulary as the calculation's
+   *  `type` (expression | table_lookup | profile_lookup | pass_fail),
+   *  parse-enforced (the fail-closed precedent). */
+  type: string;
+  /** Display label ('' = undeclared). */
+  label: string;
+  /** Prose description ('' = undeclared). */
+  description: string;
+  /** The engine call-site parameter names. */
+  params: string[];
+  /** The executable expression ('' = undeclared; required when type is
+   *  expression — C125). */
+  expression: string;
+  /** Table-lookup declaration (required when type is table_lookup —
+   *  C125). */
+  lookup?: CalculationLookup | null;
+  /** Profile path (required when type is profile_lookup — C125). */
+  profile?: string;
 }
 
 export default Calculation;

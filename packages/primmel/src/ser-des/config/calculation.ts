@@ -14,6 +14,7 @@ import type {
   CalculationInput,
   CalculationLookup,
   CalculationOutput,
+  CalculationVariant,
   ResolvableCalculation,
 } from '../../types/Calculation';
 import type Reference from '../../types/Reference';
@@ -121,6 +122,18 @@ export const parseCalculation: Parser = function (id, data) {
           result.lookup = parseLookup(unwrapBlock(t[i++]));
         } else if (command === 'profile') {
           result.profile = stripWrapping(t[i++]);
+        } else if (command === 'variant') {
+          // The executable realization (smart TODO.roadmap/40 batch 4) —
+          // a two-token facet: the variant id, then its block.
+          const vid = stripWrapping(t[i++]);
+          if (i >= t.length || !t[i].startsWith('{')) {
+            throw new Error(
+              `Parsing error: calculation. ID ${id}: variant ${vid} is missing its block`,
+            );
+          }
+          (result.variants ??= []).push(
+            parseVariant(vid, unwrapBlock(t[i++]), id),
+          );
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -366,6 +379,128 @@ function parseLookup(block: string): CalculationLookup {
   return lookup;
 }
 
+/**
+ * The variant type vocabulary (smart TODO.roadmap/40 batch 4) — the
+ * calculation `type` facet's own vocabulary, parse-enforced on the
+ * variant (the fail-closed precedent).
+ */
+const VARIANT_TYPES = [
+  'expression',
+  'table_lookup',
+  'profile_lookup',
+  'pass_fail',
+] as const;
+
+/**
+ * A `variant <id> { … }` block (smart TODO.roadmap/40 batch 4): the
+ * executable realization of the owning calculation — type (parse-
+ * enforced), label, description, the call-site params, the expression,
+ * and the lookup/profile facets of the lookup kinds. The params are
+ * call-site names and deliberately do NOT resolve against the
+ * calculation's inputs (no params-resolve rule — the block stays
+ * documentary/engine-facing).
+ */
+function parseVariant(
+  vid: string,
+  block: string,
+  calcId: string,
+): CalculationVariant {
+  const variant: CalculationVariant = {
+    id: vid,
+    type: '',
+    label: '',
+    description: '',
+    params: [],
+    expression: '',
+    lookup: null,
+    profile: '',
+  };
+  const t = tokenizePackage(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'type') {
+      const type = stripWrapping(t[i++]);
+      if (!(VARIANT_TYPES as readonly string[]).includes(type)) {
+        throw new Error(
+          `Parsing error: calculation. ID ${calcId}: variant ${vid}: Unknown variant type "${type}" (valid: ${VARIANT_TYPES.join(', ')})`,
+        );
+      }
+      variant.type = type;
+    } else if (cmd === 'label') {
+      variant.label = stripWrapping(t[i++]);
+    } else if (cmd === 'description') {
+      variant.description = stripWrapping(t[i++]);
+    } else if (cmd === 'params') {
+      variant.params = tokenize(stripWrapping(t[i++]))
+        .map(stripWrapping)
+        .filter(s => s.length > 0);
+    } else if (cmd === 'expression') {
+      variant.expression = stripWrapping(t[i++]);
+    } else if (cmd === 'lookup') {
+      variant.lookup = parseLookup(unwrapBlock(t[i++]));
+    } else if (cmd === 'profile') {
+      variant.profile = stripWrapping(t[i++]);
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return variant;
+}
+
+/** The lookup facet set as inline content (shared by the calculation's
+ *  own lookup facet and a variant's). */
+function dumpLookupFields(l: CalculationLookup): string {
+  let out = '';
+  if (l.key) {
+    out += 'key ' + l.key + ' ';
+  }
+  if (l.variable) {
+    out += 'variable ' + l.variable + ' ';
+  }
+  if (l.multiplier) {
+    out += 'multiplier ' + l.multiplier + ' ';
+  }
+  if (l.defaultTier) {
+    out += 'default_tier { factor ' + l.defaultTier.factor;
+    if (l.defaultTier.mode) {
+      out += ' mode ' + l.defaultTier.mode;
+    }
+    out += ' } ';
+  }
+  return out;
+}
+
+function dumpVariant(v: CalculationVariant): string {
+  let out = '  variant ' + dumpBareSafe(v.id) + ' {\n';
+  if (v.type) {
+    out += '    type ' + v.type + '\n';
+  }
+  if (v.label) {
+    out += '    label "' + escapeString(v.label) + '"\n';
+  }
+  if (v.description) {
+    out += '    description "' + escapeString(v.description) + '"\n';
+  }
+  if (v.params.length > 0) {
+    out += '    params { ' + v.params.map(dumpBareSafe).join(' ') + ' }\n';
+  }
+  if (v.expression) {
+    out += '    expression "' + escapeString(v.expression) + '"\n';
+  }
+  if (v.lookup) {
+    out += '    lookup { ' + dumpLookupFields(v.lookup) + '}\n';
+  }
+  if (v.profile) {
+    out += '    profile ' + dumpBareSafe(v.profile) + '\n';
+  }
+  out += '  }\n';
+  return out;
+}
+
 export const resolveCalculation: Resolver<Calculation, ResolvableCalculation> =
   function (ctx, unresolved) {
     const ref: Reference[] = [];
@@ -464,27 +599,15 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     out += '  params { ' + c.params.join(' ') + ' }\n';
   }
   if (c.lookup) {
-    out += '  lookup { ';
-    if (c.lookup.key) {
-      out += 'key ' + c.lookup.key + ' ';
-    }
-    if (c.lookup.variable) {
-      out += 'variable ' + c.lookup.variable + ' ';
-    }
-    if (c.lookup.multiplier) {
-      out += 'multiplier ' + c.lookup.multiplier + ' ';
-    }
-    if (c.lookup.defaultTier) {
-      out += 'default_tier { factor ' + c.lookup.defaultTier.factor;
-      if (c.lookup.defaultTier.mode) {
-        out += ' mode ' + c.lookup.defaultTier.mode;
-      }
-      out += ' } ';
-    }
-    out += '}\n';
+    out += '  lookup { ' + dumpLookupFields(c.lookup) + '}\n';
   }
   if (c.profile) {
     out += '  profile ' + c.profile + '\n';
+  }
+  for (const v of c.variants ?? []) {
+    // The executable realizations ride after the spec facets (smart
+    // TODO.roadmap/40 batch 4).
+    out += dumpVariant(v);
   }
   for (const src of c.sourceRefs ??
     (c.sourceRef && (c.sourceRef.doc || c.sourceRef.clause)

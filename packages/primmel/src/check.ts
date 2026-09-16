@@ -341,6 +341,11 @@
 //      value slots required, component ids unique, key_dimension →
 //      applicability dimension (per-register gated); the closed-registry-
 //      over-values leg stays app-side
+//   C125 formula-variant-shape (smart TODO.roadmap/40 batch 4): the
+//      calculation variant block's declaration shape — variant ids
+//      unique, the type-conditional facets present (expression /
+//      table_lookup / profile_lookup); the params are engine call-site
+//      names and carry no resolution leg
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4497,6 +4502,49 @@ export function checkPackage(
         'C124',
         `${where}: key_dimension "${pl.keyDimension}" is not a declared applicability dimension (pair-list-shape)`,
       );
+    }
+  }
+
+  // ── C125: formula-variant-shape (smart TODO.roadmap/40 batch 4; the ─
+  // packages-as-SSOT epic) ────────────────────────────────────────────
+  // The variant block's declaration shape (the top-level calculation
+  // shape discipline mirrored onto the realization): variant ids are
+  // unique within the owning calculation, and the type-conditional
+  // facets are present — an expression variant carries its expression,
+  // a table_lookup variant its lookup block, a profile_lookup variant
+  // its profile path. The variant's params are engine call-site names
+  // and deliberately do NOT resolve against the calculation's inputs —
+  // there is no params-resolve leg (the block stays documentary/
+  // engine-facing).
+  for (const c of standard.calculations ?? []) {
+    const seen = new Set<string>();
+    for (const v of c.variants ?? []) {
+      const where = `calculation ${c.id}: variant ${v.id}`;
+      if (seen.has(v.id)) {
+        err(
+          'C125',
+          `${where}: the variant id is declared twice (formula-variant-shape)`,
+        );
+      }
+      seen.add(v.id);
+      if (v.type === 'expression' && !v.expression) {
+        err(
+          'C125',
+          `${where}: type expression requires the expression facet (formula-variant-shape)`,
+        );
+      }
+      if (v.type === 'table_lookup' && !v.lookup) {
+        err(
+          'C125',
+          `${where}: type table_lookup requires the lookup block (formula-variant-shape)`,
+        );
+      }
+      if (v.type === 'profile_lookup' && !v.profile) {
+        err(
+          'C125',
+          `${where}: type profile_lookup requires the profile facet (formula-variant-shape)`,
+        );
+      }
     }
   }
 
