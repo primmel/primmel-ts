@@ -556,6 +556,11 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // The verification pathways (smart TODO.roadmap/40 batch 3) compose
   // with uses-no-redefine semantics.
   'verificationPathways',
+  // The selection rules (smart TODO.roadmap/40 batch 3) compose with
+  // uses-no-redefine semantics.
+  'labSelectionCriteria',
+  'sampleSelectionRules',
+  'specimenGovernanceRules',
   'instances',
   'quantityRegisters',
   'duals',

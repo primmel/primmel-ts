@@ -42,6 +42,11 @@ import type EvaluationProfile from '../types/EvaluationProfile';
 import type CertificateTemplate from '../types/CertificateTemplate';
 import type WorkflowConfig from '../types/WorkflowConfig';
 import type VerificationPathway from '../types/VerificationPathway';
+import type {
+  LabSelectionCriterion,
+  SampleSelectionRule,
+  SpecimenGovernanceRule,
+} from '../types/SelectionRules';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
@@ -260,6 +265,10 @@ export interface ParseContext {
   // The verification pathways beyond type evaluation (smart
   // TODO.roadmap/40 batch 3).
   verificationPathways: Record<string, VerificationPathway>;
+  // The selection rules (smart TODO.roadmap/40 batch 3).
+  labSelectionCriteria: Record<string, LabSelectionCriterion>;
+  sampleSelectionRules: Record<string, SampleSelectionRule>;
+  specimenGovernanceRules: Record<string, SpecimenGovernanceRule>;
 
   // Primmel v3 instantiation (TODO.roadmap/03)
   instances: Record<string, Instance>;

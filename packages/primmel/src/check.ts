@@ -5423,6 +5423,110 @@ export function checkPackage(
     }
   }
 
+  // ── C139: selection-rule-references (smart TODO.roadmap/40 ─────────
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The selection rules: the lab criterion's applies_when/match
+  // model_field resolve against the attribute OR dimension registers
+  // (the two coexisting conventions — gated on either register
+  // composing); the match operator's conditional facets hold
+  // (has_capability ⇒ required_capability; capability_from_field /
+  // capability_covers_value / capability_prefix_match ⇒
+  // required_capability_prefix + model_field; always_pass ⇒ nothing
+  // else); the capability strings are free-form lab-side labels —
+  // never resolved. The sample/governance entries carry shape legs
+  // only (rule / rationale / applicability non-empty). The vocabularies
+  // are parse-enforced upstream (no check legs).
+  {
+    const fieldResolvable = (f: string): boolean =>
+      attrIds.has(f) || dimIds.has(f);
+    const fieldRegistersCompose = attrIds.size > 0 || dimIds.size > 0;
+    for (const c of standard.labSelectionCriteria ?? []) {
+      const where = `lab_selection_criterion ${c.id}`;
+      if (
+        c.appliesWhen?.modelField &&
+        fieldRegistersCompose &&
+        !fieldResolvable(c.appliesWhen.modelField)
+      ) {
+        err(
+          'C139',
+          `${where}: applies_when model_field "${c.appliesWhen.modelField}" resolves to neither an attribute_definition nor a classification dimension (selection-rule-references)`,
+        );
+      }
+      const m = c.match;
+      if (m) {
+        if (
+          m.modelField &&
+          fieldRegistersCompose &&
+          !fieldResolvable(m.modelField)
+        ) {
+          err(
+            'C139',
+            `${where}: match model_field "${m.modelField}" resolves to neither an attribute_definition nor a classification dimension (selection-rule-references)`,
+          );
+        }
+        if (m.operator === 'has_capability' && !m.requiredCapability) {
+          err(
+            'C139',
+            `${where}: operator has_capability requires the required_capability facet (selection-rule-references)`,
+          );
+        }
+        if (
+          (m.operator === 'capability_from_field' ||
+            m.operator === 'capability_covers_value' ||
+            m.operator === 'capability_prefix_match') &&
+          (!m.requiredCapabilityPrefix || !m.modelField)
+        ) {
+          err(
+            'C139',
+            `${where}: operator ${m.operator} requires required_capability_prefix and model_field (selection-rule-references)`,
+          );
+        }
+        if (
+          m.operator === 'always_pass' &&
+          (m.requiredCapability ||
+            m.requiredCapabilityPrefix ||
+            m.modelField ||
+            m.labCapabilityPrefix)
+        ) {
+          err(
+            'C139',
+            `${where}: operator always_pass carries no other match facet (selection-rule-references)`,
+          );
+        }
+      }
+    }
+    for (const r of standard.sampleSelectionRules ?? []) {
+      const where = `sample_selection_rule ${r.id}`;
+      for (const [facet, v] of [
+        ['rule', r.rule],
+        ['rationale', r.rationale],
+        ['applicability', r.applicability],
+      ] as const) {
+        if (!v) {
+          err(
+            'C139',
+            `${where}: the ${facet} facet is required (selection-rule-references)`,
+          );
+        }
+      }
+    }
+    for (const r of standard.specimenGovernanceRules ?? []) {
+      const where = `specimen_governance_rule ${r.id}`;
+      for (const [facet, v] of [
+        ['rule', r.rule],
+        ['rationale', r.rationale],
+        ['applicability', r.applicability],
+      ] as const) {
+        if (!v) {
+          err(
+            'C139',
+            `${where}: the ${facet} facet is required (selection-rule-references)`,
+          );
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {

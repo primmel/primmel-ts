@@ -641,6 +641,19 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C139 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // selection rules — the lab criterion's model_field resolutions
+  // (attribute OR dimension, gated) and the operator-conditional match
+  // facets; the sample/governance shape legs (rule / rationale /
+  // applicability non-empty).
+  R(
+    'C139',
+    'selection-rule-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

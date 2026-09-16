@@ -136,6 +136,11 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // The verification pathways (smart TODO.roadmap/40 batch 3) —
   // operational wiring, tertiary.
   verificationPathways: 'tertiary',
+  // The selection rules (smart TODO.roadmap/40 batch 3) — operational
+  // wiring, tertiary.
+  labSelectionCriteria: 'tertiary',
+  sampleSelectionRules: 'tertiary',
+  specimenGovernanceRules: 'tertiary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

@@ -61,6 +61,14 @@ import {
   dumpVerificationPathway,
   parseVerificationPathway,
 } from './verificationPathway';
+import {
+  dumpLabSelectionCriterion,
+  dumpSampleSelectionRule,
+  dumpSpecimenGovernanceRule,
+  parseLabSelectionCriterion,
+  parseSampleSelectionRule,
+  parseSpecimenGovernanceRule,
+} from './selectionRules';
 import { dumpProvision, parseProvision, resolveProvision } from './provision';
 import { dumpReference, parseReference } from './reference';
 import { dumpRole, parseRole } from './role';
@@ -625,6 +633,31 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseVerificationPathway,
     dump: dumpVerificationPathway as never,
+  }),
+  // The selection rules (smart TODO.roadmap/40 batch 3) — the
+  // laboratory-selection criteria, the sample-selection rules, and the
+  // specimen-governance rules; one config file, three constructs (the
+  // schemeType precedent).
+  defineConstruct({
+    keyword: 'lab_selection_criterion',
+    field: 'labSelectionCriteria',
+    takesID: true,
+    parse: parseLabSelectionCriterion,
+    dump: dumpLabSelectionCriterion as never,
+  }),
+  defineConstruct({
+    keyword: 'sample_selection_rule',
+    field: 'sampleSelectionRules',
+    takesID: true,
+    parse: parseSampleSelectionRule,
+    dump: dumpSampleSelectionRule as never,
+  }),
+  defineConstruct({
+    keyword: 'specimen_governance_rule',
+    field: 'specimenGovernanceRules',
+    takesID: true,
+    parse: parseSpecimenGovernanceRule,
+    dump: dumpSpecimenGovernanceRule as never,
   }),
   // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
   subjectConstruct as ConstructDefinition,

@@ -122,6 +122,10 @@ export default function parse(
     workflowConfigs: {},
     // The verification pathways (batch 3)
     verificationPathways: {},
+    // The selection rules (batch 3)
+    labSelectionCriteria: {},
+    sampleSelectionRules: {},
+    specimenGovernanceRules: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)

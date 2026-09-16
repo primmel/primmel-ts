@@ -41,6 +41,11 @@ import type EvaluationProfile from './EvaluationProfile';
 import type CertificateTemplate from './CertificateTemplate';
 import type WorkflowConfig from './WorkflowConfig';
 import type VerificationPathway from './VerificationPathway';
+import type {
+  LabSelectionCriterion,
+  SampleSelectionRule,
+  SpecimenGovernanceRule,
+} from './SelectionRules';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -206,6 +211,12 @@ export default interface Standard {
   /** The verification pathways beyond type evaluation (smart
    *  TODO.roadmap/40 batch 3) — VIML 2.09/2.12–2.14. */
   verificationPathways: VerificationPathway[];
+  /** The selection rules (smart TODO.roadmap/40 batch 3): the
+   *  laboratory-selection criteria, the sample-selection rules, and
+   *  the specimen-governance rules. */
+  labSelectionCriteria: LabSelectionCriterion[];
+  sampleSelectionRules: SampleSelectionRule[];
+  specimenGovernanceRules: SpecimenGovernanceRule[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →
