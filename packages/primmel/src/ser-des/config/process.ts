@@ -938,6 +938,7 @@ export const parseProcess: Parser = function (id, data) {
     provisionRefs: [],
     outputRefs: [],
     inputRefs: [],
+    actorRef: '',
     _relations: {
       actor: '',
       output: [],
@@ -1182,6 +1183,10 @@ export const resolveProcess: Resolver<Process, ResolvableProcess> = function (
     // carriers the load → dump round-trip silently dropped them.
     outputRefs: [..._relations.output],
     inputRefs: [..._relations.input],
+    // The raw actor token survives the same way: the workflow steps'
+    // documentary actor spellings resolve to no declared role and would
+    // otherwise drop at the dump.
+    actorRef: _relations.actor,
     actor: null,
     page: null,
   };
@@ -1354,8 +1359,13 @@ export const dumpProcess: (
   if (process.summary) {
     out += '  summary "' + escapeString(process.summary) + '"\n';
   }
-  if (process.actor !== null) {
-    out += '  actor ' + process.actor.id + '\n';
+  // The actor line dumps from the RAW token (actorRef): documentary actor
+  // spellings that resolve to no declared role must round-trip verbatim
+  // (the outputRefs/inputRefs doctrine). Programmatically built processes
+  // without the carrier fall back to the resolved role id.
+  const actorId = process.actorRef || process.actor?.id || '';
+  if (actorId !== '') {
+    out += '  actor ' + dumpBareSafe(actorId) + '\n';
   }
   if (process.modality !== '') {
     out += '  modality ' + process.modality + '\n';

@@ -107,4 +107,68 @@ process p {
     assert.ok(dumped.includes('RefData'), 'the id re-emitted');
     assert.equal(dump(load(dumped)), dumped, 'fixed point');
   });
+
+  it('an unresolvable actor token survives load→dump→load (batch 5e)', () => {
+    // The workflow steps' documentary actor spellings (kebab-case) name no
+    // declared role — the resolver leniently nulls them, and without the
+    // actorRef carrier the dump silently dropped the line.
+    const src = `root Root
+
+version "v1.0.0"
+
+metadata {
+  title "Test"
+  schema "Primmel 0.1"
+}
+
+process test-request-dispatch {
+  name "Test request dispatch"
+  actor issuing-authority
+}
+`;
+    const model = load(src);
+    const proc = model.processes.find(p => p.id === 'test-request-dispatch');
+    assert.equal(proc?.actor, null, 'no role resolves');
+    assert.equal(proc?.actorRef, 'issuing-authority', 'the raw token carried');
+    const dumped = dump(model);
+    assert.ok(
+      dumped.includes('actor issuing-authority'),
+      'the actor line re-emitted verbatim',
+    );
+    const reloaded = load(dumped);
+    assert.equal(
+      reloaded.processes.find(p => p.id === 'test-request-dispatch')?.actorRef,
+      'issuing-authority',
+      'the token survives the full cycle',
+    );
+    assert.equal(dump(reloaded), dumped, 'fixed point');
+  });
+
+  it('a resolved actor still dumps its role id (the pre-5e path)', () => {
+    const src = `root Root
+
+version "v1.0.0"
+
+metadata {
+  title "Test"
+  schema "Primmel 0.1"
+}
+
+role lab {
+  name "Laboratory"
+}
+
+process p {
+  name "P"
+  actor lab
+}
+`;
+    const model = load(src);
+    const proc = model.processes.find(p => p.id === 'p');
+    assert.equal(proc?.actor?.id, 'lab', 'the role resolves');
+    assert.equal(proc?.actorRef, 'lab', 'the raw token carried');
+    const dumped = dump(model);
+    assert.ok(dumped.includes('actor lab'), 'the actor line re-emitted');
+    assert.equal(dump(load(dumped)), dumped, 'fixed point');
+  });
 });

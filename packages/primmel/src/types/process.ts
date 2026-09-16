@@ -293,6 +293,17 @@ export default interface Process {
    */
   machineSteps: string[];
   actor: Role | null;
+  /**
+   * The raw `actor` token, exactly as authored. Unlike `actor` (null when
+   * the id resolves to no declared `role`), this carrier never loses the
+   * reference: OIML SMART's workflow steps name actor tokens that spell
+   * differently from the role register (the documentary kebab-case step
+   * actors vs the snake_case role ids) — unresolvable BY DESIGN, and the
+   * load → dump round-trip must not silently drop them (the approval
+   * codec's actorRef/approverRef doctrine, extended to processes — smart
+   * TODO.roadmap/40 batch 5e follow-up).
+   */
+  actorRef: string;
   output: Registry[];
   input: Registry[];
   provision: Provision[];

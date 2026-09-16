@@ -213,6 +213,7 @@ describe('resolve (unit, minimal context)', () => {
       provisionRefs: [],
       outputRefs: [],
       inputRefs: [],
+      actorRef: '',
       page: null,
       measure: [],
       parent: '',
