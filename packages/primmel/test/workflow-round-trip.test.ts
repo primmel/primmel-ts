@@ -359,3 +359,123 @@ approval ia_approve_application {
     assert.deepEqual(issues, []);
   });
 });
+
+// The r60 processes.yaml subprocess shape: the named pipeline stage
+// grouping member processes, the bracketing (documentary) events, the
+// approvals and gateways it routes through.
+const STAGE = `
+workflow_stage application_processing {
+  label "Application processing"
+  description "The IA intake pipeline — receipt to acceptance."
+  elements { receive_application check_completeness }
+  start_event application_received
+  end_events { application_accepted application_rejected }
+  approvals { ia_approve_application }
+  gateways { completeness_gateway }
+}
+`;
+
+const STAGE_MEMBERS = `
+process receive_application {
+  name "Receive application"
+}
+process check_completeness {
+  name "Check completeness"
+}
+approval ia_approve_application {
+  name "IA approves the application"
+}
+exclusive_gateway completeness_gateway {
+  label "Complete?"
+}
+`;
+
+describe('workflow_stage register (smart TODO.roadmap/40 batch 5, step 5d)', () => {
+  it('parses all six facets (the events stay documentary tokens)', () => {
+    const m = load(STAGE);
+    assert.equal(m.workflowStages.length, 1);
+    const s = m.workflowStages[0]!;
+    assert.equal(s.label, 'Application processing');
+    assert.equal(
+      s.description,
+      'The IA intake pipeline — receipt to acceptance.',
+    );
+    assert.deepEqual(s.elements, ['receive_application', 'check_completeness']);
+    assert.equal(s.startEvent, 'application_received');
+    assert.deepEqual(s.endEvents, [
+      'application_accepted',
+      'application_rejected',
+    ]);
+    assert.deepEqual(s.approvals, ['ia_approve_application']);
+    assert.deepEqual(s.gateways, ['completeness_gateway']);
+  });
+
+  it('round-trips byte-clean (the codec fixpoint)', () => {
+    const out = dump(load(STAGE));
+    assert.ok(
+      out.includes(
+        'workflow_stage application_processing {\n' +
+          '  label "Application processing"\n' +
+          '  description "The IA intake pipeline — receipt to acceptance."\n' +
+          '  elements { receive_application check_completeness }\n' +
+          '  start_event application_received\n' +
+          '  end_events { application_accepted application_rejected }\n' +
+          '  approvals { ia_approve_application }\n' +
+          '  gateways { completeness_gateway }\n' +
+          '}\n',
+      ),
+    );
+    assert.equal(dump(load(out)), out);
+  });
+
+  it('parses file-grade beside the other model files (the register lands)', () => {
+    // The composition guard itself is test/merge-fields.test.ts (the
+    // runtime ParseContext ≡ MERGE_FIELDS equivalence); this leg proves
+    // the construct parses from its own model file in a real package.
+    const dir = makePackage(STAGE_MEMBERS);
+    writeFileSync(join(dir, 'model', 'stages.prl'), STAGE);
+    const issues = checkPackage(dir).filter(i => i.check === 'C142');
+    assert.deepEqual(issues, []);
+  });
+
+  it('C142: a coherent stage (members resolve) is clean', () => {
+    const issues = checkPackage(makePackage(STAGE_MEMBERS + STAGE)).filter(
+      i => i.check === 'C142',
+    );
+    assert.deepEqual(issues, []);
+  });
+
+  it('C142: dangling members are flagged (per register, gated)', () => {
+    const body = `
+process receive_application {
+  name "Receive application"
+}
+approval ia_approve_application {
+  name "IA approves the application"
+}
+exclusive_gateway completeness_gateway {
+  label "Complete?"
+}
+workflow_stage s {
+  elements { receive_application ghost_process }
+  approvals { ia_approve_application ghost_approval }
+  gateways { completeness_gateway ghost_gateway }
+}
+`;
+    const issues = checkPackage(makePackage(body)).filter(
+      i => i.check === 'C142',
+    );
+    assert.equal(issues.length, 3);
+    assert.match(issues[0]!.message, /element "ghost_process"/);
+    assert.match(issues[1]!.message, /approval "ghost_approval"/);
+    assert.match(issues[2]!.message, /gateway "ghost_gateway"/);
+    assert.ok(issues.every(i => i.severity === 'error'));
+  });
+
+  it('C142: empty registers gate the stage legs off', () => {
+    const issues = checkPackage(makePackage(STAGE)).filter(
+      i => i.check === 'C142',
+    );
+    assert.deepEqual(issues, []);
+  });
+});

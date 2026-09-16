@@ -41,6 +41,7 @@ import type EvaluationDimensions from '../types/EvaluationDimension';
 import type EvaluationProfile from '../types/EvaluationProfile';
 import type CertificateTemplate from '../types/CertificateTemplate';
 import type WorkflowConfig from '../types/WorkflowConfig';
+import type WorkflowStage from '../types/WorkflowStage';
 import type VerificationPathway from '../types/VerificationPathway';
 import type {
   LabSelectionCriterion,
@@ -266,6 +267,8 @@ export interface ParseContext {
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — overlay-composable (OVERLAY_DEEP_MERGE_FIELDS).
   workflowConfigs: Record<string, WorkflowConfig>;
+  // The named pipeline stages (smart TODO.roadmap/40 batch 5).
+  workflowStages: Record<string, WorkflowStage>;
   // The verification pathways beyond type evaluation (smart
   // TODO.roadmap/40 batch 3).
   verificationPathways: Record<string, VerificationPathway>;

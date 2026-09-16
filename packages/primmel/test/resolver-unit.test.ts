@@ -71,6 +71,7 @@ function emptyContext(): ParseContext {
     evaluationProfiles: {},
     certificateTemplates: {},
     workflowConfigs: {},
+    workflowStages: {},
     verificationPathways: {},
     labSelectionCriteria: {},
     sampleSelectionRules: {},

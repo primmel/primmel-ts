@@ -120,6 +120,8 @@ export default function parse(
     certificateTemplates: {},
     // The certification workflow step register (batch 3)
     workflowConfigs: {},
+    // The named pipeline stages (batch 5)
+    workflowStages: {},
     // The verification pathways (batch 3)
     verificationPathways: {},
     // The selection rules (batch 3)

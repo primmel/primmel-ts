@@ -57,6 +57,7 @@ import { parseMetadata } from './metadata';
 import { dumpProcess, parseProcess, resolveProcess } from './process';
 import { dumpProcessModel, parseProcessModel } from './processModel';
 import { dumpWorkflowConfig, parseWorkflowConfig } from './workflowConfig';
+import { dumpWorkflowStage, parseWorkflowStage } from './workflowStage';
 import {
   dumpVerificationPathway,
   parseVerificationPathway,
@@ -285,6 +286,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseWorkflowConfig,
     dump: dumpWorkflowConfig as never,
+  }),
+  // The named pipeline stage (smart TODO.roadmap/40 batch 5) — groups
+  // the workflow constructs per stage; the members-resolve discipline
+  // is C142's.
+  defineConstruct({
+    keyword: 'workflow_stage',
+    field: 'workflowStages',
+    takesID: true,
+    parse: parseWorkflowStage,
+    dump: dumpWorkflowStage as never,
   }),
   defineConstruct({
     keyword: 'approval',

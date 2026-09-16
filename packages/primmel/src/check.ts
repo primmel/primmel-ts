@@ -5648,8 +5648,14 @@ export function checkPackage(
   // mid-list defaults). The conditions stay opaque strings — never
   // resolved (the R26 field-resolution precedent). The edge-less
   // gateway (a label-only declaration) carries no routing, so the
-  // default discipline skips it. The workflow_stage members-resolve
-  // legs ride this rule (batch 5 step 5d).
+  // default discipline skips it.
+  //
+  // The workflow_stage members-resolve legs ride this rule (step 5d):
+  // elements → the process register, approvals → the approval register,
+  // gateways → the gateway register — per-register gated. The stage's
+  // start_event / end_events are DOCUMENTARY tokens (dossier hazard 3,
+  // decision (b)) — the kernel's event register is the canvas start/end
+  // construct, a different sense — so they are never resolved.
   {
     const gwProcessIds = new Set((standard.processes ?? []).map(p => p.id));
     for (const g of standard.gateways ?? []) {
@@ -5685,6 +5691,37 @@ export function checkPackage(
           warn(
             'C142',
             `${where}: the default edge is not last — it shadows the edges after it in the first-match-wins cascade (gateway-edges-resolve)`,
+          );
+        }
+      }
+    }
+    // The workflow_stage members-resolve legs (step 5d) — the events
+    // stay documentary, never resolved.
+    const stageApprovalIds = new Set((standard.approvals ?? []).map(a => a.id));
+    const stageGatewayIds = new Set((standard.gateways ?? []).map(g => g.id));
+    for (const s of standard.workflowStages ?? []) {
+      const where = `workflow_stage ${s.id}`;
+      for (const el of s.elements ?? []) {
+        if (gwProcessIds.size > 0 && !gwProcessIds.has(el)) {
+          err(
+            'C142',
+            `${where}: element "${el}" is not a declared process (gateway-edges-resolve)`,
+          );
+        }
+      }
+      for (const a of s.approvals ?? []) {
+        if (stageApprovalIds.size > 0 && !stageApprovalIds.has(a)) {
+          err(
+            'C142',
+            `${where}: approval "${a}" is not a declared approval (gateway-edges-resolve)`,
+          );
+        }
+      }
+      for (const g of s.gateways ?? []) {
+        if (stageGatewayIds.size > 0 && !stageGatewayIds.has(g)) {
+          err(
+            'C142',
+            `${where}: gateway "${g}" is not a declared gateway (gateway-edges-resolve)`,
           );
         }
       }

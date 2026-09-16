@@ -40,6 +40,7 @@ import type EvaluationDimensions from './EvaluationDimension';
 import type EvaluationProfile from './EvaluationProfile';
 import type CertificateTemplate from './CertificateTemplate';
 import type WorkflowConfig from './WorkflowConfig';
+import type WorkflowStage from './WorkflowStage';
 import type VerificationPathway from './VerificationPathway';
 import type {
   LabSelectionCriterion,
@@ -209,6 +210,10 @@ export default interface Standard {
    *  batch 3): the core layer carries the OIML-CS skeleton, the rec
    *  packages overlay it (the B3.1 deep merge). */
   workflowConfigs: WorkflowConfig[];
+  /** The named pipeline stages (smart TODO.roadmap/40 batch 5) — the
+   *  workflow constructs grouped per stage: member processes, the
+   *  bracketing (documentary) events, the approvals and gateways. */
+  workflowStages: WorkflowStage[];
   /** The verification pathways beyond type evaluation (smart
    *  TODO.roadmap/40 batch 3) — VIML 2.09/2.12–2.14. */
   verificationPathways: VerificationPathway[];
