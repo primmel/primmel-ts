@@ -39,6 +39,7 @@ function emptyContext(): ParseContext {
     forms: {},
     subforms: {},
     symbols: {},
+    formulaNotes: {},
     calculations: {},
     verdicts: {},
     referenceMaterials: {},

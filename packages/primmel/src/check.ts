@@ -346,6 +346,9 @@
 //      unique, the type-conditional facets present (expression /
 //      table_lookup / profile_lookup); the params are engine call-site
 //      names and carry no resolution leg
+//   C126 formula-note-targets-resolve (smart TODO.roadmap/40 batch 4):
+//      the formula_note register's reverse applicability resolves —
+//      applies_to → symbol (per-register gated)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4544,6 +4547,24 @@ export function checkPackage(
           'C125',
           `${where}: type profile_lookup requires the profile facet (formula-variant-shape)`,
         );
+      }
+    }
+  }
+
+  // ── C126: formula-note-targets-resolve (smart TODO.roadmap/40 ──────
+  // batch 4; the packages-as-SSOT epic) ────────────────────────────────
+  // The formula_note register's reverse applicability resolves: every
+  // applies_to entry names a declared symbol WHEN the symbol register
+  // is in composition scope (per-register gating, the C58 doctrine).
+  if (symbolIds.size > 0) {
+    for (const n of standard.formulaNotes ?? []) {
+      for (const s of n.appliesTo ?? []) {
+        if (!symbolIds.has(s)) {
+          err(
+            'C126',
+            `formula_note ${n.id}: applies_to "${s}" is not a declared symbol (formula-note-targets-resolve)`,
+          );
+        }
       }
     }
   }

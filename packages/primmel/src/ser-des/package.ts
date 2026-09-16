@@ -505,6 +505,7 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'forms',
   'subforms',
   'symbols',
+  'formulaNotes',
   'calculations',
   'verdicts',
   'referenceMaterials',

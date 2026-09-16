@@ -74,6 +74,7 @@ import { dumpViewProfile, parseViewProfile } from './viewProfile';
 import { dumpForm, parseForm } from './form';
 import { dumpSubformType as dumpSubform, parseSubform } from './subform';
 import { dumpSymbol, parseSymbol, resolveSymbol } from './symbol';
+import { dumpFormulaNote, parseFormulaNote } from './formulaNote';
 import {
   dumpCalculation,
   parseCalculation,
@@ -408,6 +409,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseSymbol,
     resolve: resolveSymbol as never,
     dump: dumpSymbol as never,
+  }),
+  // The symbol-annotation register (smart TODO.roadmap/40 batch 4) —
+  // one note text applying to many symbols; rides right after the
+  // symbols in the dump order.
+  defineConstruct({
+    keyword: 'formula_note',
+    field: 'formulaNotes',
+    takesID: true,
+    parse: parseFormulaNote,
+    dump: dumpFormulaNote as never,
   }),
   defineConstruct({
     keyword: 'calculation',

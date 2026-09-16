@@ -126,6 +126,7 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   forms: 'secondary',
   subforms: 'secondary',
   symbols: 'secondary',
+  formulaNotes: 'tertiary',
   calculations: 'secondary',
   verdicts: 'secondary',
   tables: 'secondary',

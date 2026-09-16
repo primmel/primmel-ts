@@ -54,4 +54,22 @@ interface Symbol {
 
 export default Symbol;
 
+/**
+ * formula_note <id> (smart TODO.roadmap/40 batch 4; the packages-as-
+ * SSOT epic) — a symbol-annotation register entry: ONE note text
+ * applying to MANY symbols (the reverse applicability of r60's
+ * formula_notes register). The per-symbol `note` facet cannot express
+ * it without duplicating the text per target and losing the note's
+ * identity (its id). Lives in specification/symbols.prl beside the
+ * symbols it annotates.
+ */
+export interface FormulaNote {
+  id: string;
+  /** The note text. */
+  text: string;
+  /** The symbols the note applies to (resolve at check time, C126 —
+   *  per-register gated, the C58 doctrine). */
+  appliesTo: string[];
+}
+
 export type ResolvableSymbol = Resolvable<Symbol, 'ref'>;

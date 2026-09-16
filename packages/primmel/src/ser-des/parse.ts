@@ -79,6 +79,7 @@ export default function parse(
     forms: {},
     subforms: {},
     symbols: {},
+    formulaNotes: {},
     calculations: {},
     verdicts: {},
     referenceMaterials: {},

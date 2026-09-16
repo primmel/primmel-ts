@@ -467,6 +467,18 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
   ),
+  // C126 (smart TODO.roadmap/40 batch 4; the packages-as-SSOT epic): the
+  // formula_note register's reverse applicability resolves — every
+  // applies_to entry names a declared symbol when the symbol register is
+  // in composition scope (per-register gating, the C58 doctrine).
+  R(
+    'C126',
+    'formula-note-targets-resolve',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

@@ -64,6 +64,7 @@ import type { PackageManifest } from '../types/Package';
 import type ReferenceMaterial from '../types/ReferenceMaterial';
 import type Subform from '../types/Subform';
 import type Symbol from '../types/Symbol';
+import type { FormulaNote } from '../types/Symbol';
 import type Table from '../types/Table';
 import type Term from '../types/Term';
 import type TestPointSet from '../types/TestPointSet';
@@ -187,6 +188,7 @@ export interface ParseContext {
   forms: Record<string, Form>;
   subforms: Record<string, Subform>;
   symbols: Record<string, Symbol>;
+  formulaNotes: Record<string, FormulaNote>;
   calculations: Record<string, Calculation>;
   verdicts: Record<string, Verdict>;
   referenceMaterials: Record<string, ReferenceMaterial>;

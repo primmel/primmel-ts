@@ -59,6 +59,7 @@ import type { ConformanceClass } from './ConformanceClass';
 import type { PackageManifest } from './Package';
 import type Subform from './Subform';
 import type Symbol from './Symbol';
+import type { FormulaNote } from './Symbol';
 import type Table from './Table';
 import type Term from './Term';
 import type TestPointSet from './TestPointSet';
@@ -105,6 +106,9 @@ export default interface Standard {
   forms: Form[];
   subforms: Subform[];
   symbols: Symbol[];
+  /** The symbol-annotation register (smart TODO.roadmap/40 batch 4) —
+   *  one note text applying to many symbols. */
+  formulaNotes: FormulaNote[];
   calculations: Calculation[];
   /** Canonical verdict quantities (derive once, reference everywhere). */
   verdicts: Verdict[];
