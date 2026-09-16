@@ -141,6 +141,10 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   labSelectionCriteria: 'tertiary',
   sampleSelectionRules: 'tertiary',
   specimenGovernanceRules: 'tertiary',
+  // The test-report skeleton + checklist (smart TODO.roadmap/40
+  // batch 3) — operational wiring, tertiary.
+  testReportSkeletons: 'tertiary',
+  testReportChecklists: 'tertiary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

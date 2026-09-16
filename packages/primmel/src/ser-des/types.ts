@@ -47,6 +47,10 @@ import type {
   SampleSelectionRule,
   SpecimenGovernanceRule,
 } from '../types/SelectionRules';
+import type {
+  TestReportChecklist,
+  TestReportSkeleton,
+} from '../types/TestReport';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
@@ -269,6 +273,11 @@ export interface ParseContext {
   labSelectionCriteria: Record<string, LabSelectionCriterion>;
   sampleSelectionRules: Record<string, SampleSelectionRule>;
   specimenGovernanceRules: Record<string, SpecimenGovernanceRule>;
+  // The test-report skeleton + the OIML-CS checklist (smart
+  // TODO.roadmap/40 batch 3) — the checklist is overlay-composable
+  // (OVERLAY_DEEP_MERGE_FIELDS).
+  testReportSkeletons: Record<string, TestReportSkeleton>;
+  testReportChecklists: Record<string, TestReportChecklist>;
 
   // Primmel v3 instantiation (TODO.roadmap/03)
   instances: Record<string, Instance>;

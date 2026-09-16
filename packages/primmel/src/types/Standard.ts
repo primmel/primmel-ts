@@ -46,6 +46,7 @@ import type {
   SampleSelectionRule,
   SpecimenGovernanceRule,
 } from './SelectionRules';
+import type { TestReportChecklist, TestReportSkeleton } from './TestReport';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -217,6 +218,12 @@ export default interface Standard {
   labSelectionCriteria: LabSelectionCriterion[];
   sampleSelectionRules: SampleSelectionRule[];
   specimenGovernanceRules: SpecimenGovernanceRule[];
+  /** The test-report skeletons + the OIML-CS checklist (smart
+   *  TODO.roadmap/40 batch 3): the rec's evaluation-report structure,
+   *  and PD-05 §4.4.3's required-content register with the rec-overlay
+   *  composition points. */
+  testReportSkeletons: TestReportSkeleton[];
+  testReportChecklists: TestReportChecklist[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

@@ -69,6 +69,12 @@ import {
   parseSampleSelectionRule,
   parseSpecimenGovernanceRule,
 } from './selectionRules';
+import {
+  dumpTestReportChecklist,
+  dumpTestReportSkeleton,
+  parseTestReportChecklist,
+  parseTestReportSkeleton,
+} from './testReport';
 import { dumpProvision, parseProvision, resolveProvision } from './provision';
 import { dumpReference, parseReference } from './reference';
 import { dumpRole, parseRole } from './role';
@@ -468,6 +474,24 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseSubform,
     dump: dumpSubform as never,
+  }),
+  // The test-report skeleton + the OIML-CS checklist (smart
+  // TODO.roadmap/40 batch 3) — form-adjacent (the skeleton's form
+  // entries bind the form constructs); the checklist rides the rec
+  // overlay deep merge.
+  defineConstruct({
+    keyword: 'test_report_skeleton',
+    field: 'testReportSkeletons',
+    takesID: true,
+    parse: parseTestReportSkeleton,
+    dump: dumpTestReportSkeleton as never,
+  }),
+  defineConstruct({
+    keyword: 'test_report_checklist',
+    field: 'testReportChecklists',
+    takesID: true,
+    parse: parseTestReportChecklist,
+    dump: dumpTestReportChecklist as never,
   }),
   defineConstruct({
     keyword: 'symbol',

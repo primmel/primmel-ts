@@ -589,6 +589,10 @@ export function checkPackage(
         warn('C27', i.message);
       } else if (i.code === 'duplicate-id') {
         err('C96', `${i.message} (duplicate-id)`);
+      } else if (i.code === 'orphan-overlay-entry') {
+        // The checklist overlay's orphan-entry guard (C141's
+        // composition leg — smart TODO.roadmap/40 batch 3).
+        err('C141', i.message);
       }
     }
   } catch (e) {
@@ -5521,6 +5525,112 @@ export function checkPackage(
           err(
             'C139',
             `${where}: the ${facet} facet is required (selection-rule-references)`,
+          );
+        }
+      }
+    }
+  }
+
+  // ── C140: test-report-skeleton-references (smart TODO.roadmap/40 ───
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The evaluation-report structure: the form entry id resolves to a
+  // declared form, the conformance_test facet to a conformance_test, the
+  // requirements to requirements (all per-register gated — the smart
+  // R29/R35 mirrors); a conditional form carries its inclusion rule
+  // (applicability) or a documentary note (warning). The required
+  // vocabulary is parse-enforced upstream (no check leg).
+  {
+    const formIds = new Set((standard.forms ?? []).map(f => f.id));
+    const checkFormEntries = (
+      where: string,
+      entries: {
+        id: string;
+        conformanceTest: string;
+        requirements: string[];
+        required: string;
+        applicability: unknown[];
+        notes: string;
+      }[],
+    ) => {
+      for (const f of entries) {
+        const fwhere = `${where}: form ${f.id}`;
+        if (formIds.size > 0 && !formIds.has(f.id)) {
+          err(
+            'C140',
+            `${fwhere}: the entry id is not a declared form (test-report-skeleton-references)`,
+          );
+        }
+        if (
+          f.conformanceTest &&
+          testIds.size > 0 &&
+          !testIds.has(f.conformanceTest)
+        ) {
+          err(
+            'C140',
+            `${fwhere}: conformance_test "${f.conformanceTest}" is not a declared conformance_test (test-report-skeleton-references)`,
+          );
+        }
+        for (const r of f.requirements) {
+          if (reqIds.size > 0 && !reqIds.has(r)) {
+            err(
+              'C140',
+              `${fwhere}: requirements entry "${r}" is not a declared requirement (test-report-skeleton-references)`,
+            );
+          }
+        }
+        if (
+          f.required === 'conditional' &&
+          f.applicability.length === 0 &&
+          !f.notes
+        ) {
+          warn(
+            'C140',
+            `${fwhere}: required conditional carries neither applicability nor notes — the inclusion rule is undocumented (test-report-skeleton-references)`,
+          );
+        }
+      }
+    };
+    for (const s of standard.testReportSkeletons ?? []) {
+      for (const section of s.sections ?? []) {
+        const where = `test_report_skeleton ${s.id}: section ${section.id}`;
+        checkFormEntries(where, section.forms ?? []);
+        for (const sub of section.subsections ?? []) {
+          checkFormEntries(
+            `${where}: subsection "${sub.title}"`,
+            sub.forms ?? [],
+          );
+        }
+      }
+    }
+  }
+
+  // ── C141: checklist-entry-shape (smart TODO.roadmap/40 batch 3; ────
+  // the packages-as-SSOT epic) ─────────────────────────────────────────
+  // The OIML-CS test-report checklist (PD-05 §4.4.3): the element
+  // letter rides the a–r vocabulary at WARNING (check-time, never
+  // parse-enforced — the element count can grow); the entry ids are
+  // unique per checklist; the overlay orphan-entry leg fires at
+  // COMPOSITION (the package.ts merge loop reports
+  // orphan-overlay-entry, surfaced under this rule above). The
+  // obligation vocabulary is parse-enforced upstream; the
+  // source/validation strings are engine expressions — documentary,
+  // never resolved.
+  {
+    for (const c of standard.testReportChecklists ?? []) {
+      const where = `test_report_checklist ${c.id}`;
+      const seen = new Set<string>();
+      for (const e of c.entries ?? []) {
+        if (seen.has(e.id)) {
+          err(
+            'C141',
+            `${where}: entry "${e.id}" is declared twice (checklist-entry-shape)`,
+          );
+        }
+        seen.add(e.id);
+        if (e.element !== null && !/^[a-r]$/.test(e.element)) {
+          warn(
+            'C141',
+            `${where}: entry "${e.id}" element "${e.element}" is outside the PD-05 §4.4.3 vocabulary (a–r) — the element count can grow, confirm the extension (checklist-entry-shape)`,
           );
         }
       }

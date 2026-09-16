@@ -561,6 +561,11 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'labSelectionCriteria',
   'sampleSelectionRules',
   'specimenGovernanceRules',
+  // The test-report skeleton composes with uses-no-redefine; the
+  // OIML-CS checklist rides the rec-overlay deep merge
+  // (OVERLAY_DEEP_MERGE_FIELDS).
+  'testReportSkeletons',
+  'testReportChecklists',
   'instances',
   'quantityRegisters',
   'duals',
@@ -642,6 +647,12 @@ export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([
   // workflow_config merges field-wise into the core skeleton (steps
   // union by id in first-seen order, gates append as a union).
   'workflowConfigs',
+  // The OIML-CS test-report checklist (B3.10): a rec package's
+  // overlay-marked test_report_checklist merges field-wise into the
+  // oiml-cs base — entry scalars land IN PLACE (the base order
+  // survives; append-at-end would reorder the composition-point
+  // entries to the tail).
+  'testReportChecklists',
 ]);
 
 function isPlainRecord(v: unknown): v is Record<string, unknown> {
@@ -881,6 +892,30 @@ function composePackage(
             );
           }
           if (OVERLAY_DEEP_MERGE_FIELDS.has(field)) {
+            // The checklist's orphan-overlay guard (C141's composition
+            // leg, smart TODO.roadmap/40 batch 3): an overlay entry
+            // must name an UPSTREAM entry id — a fresh id is the
+            // census's R2 residue failure mode (a rec-bound string
+            // landing on an entry the base never declared).
+            if (field === 'testReportChecklists') {
+              const baseIds = new Set(
+                (
+                  (target[key] as { entries?: { id: string }[] }).entries ?? []
+                ).map(e => e.id),
+              );
+              for (const e of (value as { entries?: { id: string }[] })
+                .entries ?? []) {
+                if (!baseIds.has(e.id)) {
+                  acc.issues.push({
+                    severity: 'error',
+                    code: 'orphan-overlay-entry',
+                    construct: 'test_report_checklist',
+                    id: key,
+                    message: `package "${id}" overlay test_report_checklist "${key}" declares entry "${e.id}", which no upstream package's checklist carries — an overlay adds rec-bound strings to an upstream entry, never a fresh entry (orphan-overlay-entry)`,
+                  });
+                }
+              }
+            }
             // Fall through with the field-wise merge; the marker is
             // consumed (never survives into the merged entry).
             target[key] = deepMergeOverlay(target[key], value);

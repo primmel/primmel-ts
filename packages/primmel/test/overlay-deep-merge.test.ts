@@ -18,10 +18,12 @@ import {
 
 describe('overlay deep-merge (smart TODO.roadmap/40 batch 3)', () => {
   it('the opt-in set carries exactly the landed overlay collections', () => {
-    // workflowConfigs (B3.7); testReportChecklists lands at B3.10. A
-    // field name listed before its collection exists would be dead
-    // config.
-    assert.deepEqual([...OVERLAY_DEEP_MERGE_FIELDS], ['workflowConfigs']);
+    // workflowConfigs (B3.7) + testReportChecklists (B3.10). A field
+    // name listed before its collection exists would be dead config.
+    assert.deepEqual([...OVERLAY_DEEP_MERGE_FIELDS].sort(), [
+      'testReportChecklists',
+      'workflowConfigs',
+    ]);
   });
 
   it('unions entry arrays by identity key preserving first-seen order', () => {

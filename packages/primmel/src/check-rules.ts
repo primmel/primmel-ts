@@ -654,6 +654,30 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C140 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // test-report skeleton — the form/conformance_test/requirements
+  // resolutions (per-register gated) and the conditional-inclusion leg
+  // (applicability or notes, warning).
+  R(
+    'C140',
+    'test-report-skeleton-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
+  // C141 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // OIML-CS checklist — the element letter's a–r vocabulary (warning;
+  // can grow), the per-checklist id uniqueness, and the overlay
+  // orphan-entry leg (composition-side, the R2 residue failure mode).
+  R(
+    'C141',
+    'checklist-entry-shape',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

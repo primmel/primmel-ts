@@ -126,6 +126,9 @@ export default function parse(
     labSelectionCriteria: {},
     sampleSelectionRules: {},
     specimenGovernanceRules: {},
+    // The test-report skeleton + checklist (batch 3)
+    testReportSkeletons: {},
+    testReportChecklists: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)

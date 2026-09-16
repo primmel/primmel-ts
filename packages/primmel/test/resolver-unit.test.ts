@@ -75,6 +75,8 @@ function emptyContext(): ParseContext {
     labSelectionCriteria: {},
     sampleSelectionRules: {},
     specimenGovernanceRules: {},
+    testReportSkeletons: {},
+    testReportChecklists: {},
     instances: {},
     artifactDefinitions: {},
     artifactInstances: {},
