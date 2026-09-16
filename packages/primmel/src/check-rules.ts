@@ -536,6 +536,21 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C131 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // promise certificate print projection — the content-binding XOR
+  // (attribute | attributes | dimension | none = statement row), the
+  // bindings resolving per-register gated, the renderer's closed type
+  // vocabulary as a check-time error (parse-total against renderer
+  // growth), and the required label. Fires on subject promises and
+  // promise_set entries alike.
+  R(
+    'C131',
+    'promise-certificate-projection',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

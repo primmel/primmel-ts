@@ -410,11 +410,39 @@ export interface PromiseLevel {
 }
 
 /**
+ * The certificate print projection of a promise (smart TODO.roadmap/40
+ * batch 3; the packages-as-SSOT epic) — how the promise-as-verified
+ * prints on the certificate (doctrine ch. 15 §15.2). The row binds its
+ * content by XOR: `attribute` (one attribute_definition) | `attributes`
+ * (a list) | `dimension` (a classification dimension) | NONE (a
+ * statement row — text only). The `type` is the renderer's closed
+ * vocabulary (string | integer | number | quantity | statement) —
+ * check-time enforced (C131), kept parse-total against renderer growth.
+ */
+export interface PromiseCertificateProjection {
+  /** → attribute_definition (XOR with attributes/dimension; '' =
+   *  undeclared). */
+  attribute: string;
+  /** → attribute_definitions, plural (XOR). */
+  attributes: string[];
+  /** → classification dimension (XOR; '' = undeclared). */
+  dimension: string;
+  /** string | integer | number | quantity | statement (C131, error). */
+  type: string;
+  /** The printed row's label (default spelling inline; alternates ride
+   *  l10n `text` blocks — the term/form precedent). */
+  label: string;
+  /** mandatory | optional (parse-enforced; '' = undeclared). */
+  obligation: string;
+}
+
+/**
  * is.promises entry (TODO.roadmap/08) — one manufacturer claim on a
  * characteristic or a behavior (doctrine ch. 02 §2.3): possibly
  * envelope-shaped, possibly conditional; the manufacturer binds itself and
  * evaluation verifies. The certificate prints promises-as-verified
- * (ch. 15 §15.2).
+ * (ch. 15 §15.2) — the `certificate` block is the print projection
+ * (smart TODO.roadmap/40 batch 3).
  *
  * A promise is NOT a declared attribute value: a claim stated as one bare
  * parameter value ("t_min = −10 °C") stays an `origin: declared` attribute
@@ -447,6 +475,9 @@ export interface SubjectPromise {
   verifiedBy: string[];
   /** Clause provenance of the claim. */
   source?: SourceRef | null;
+  /** The certificate print projection (smart TODO.roadmap/40 batch 3);
+   *  null when the promise does not print. */
+  certificate?: PromiseCertificateProjection | null;
 }
 
 /** is { … } — identity/design aspects. */

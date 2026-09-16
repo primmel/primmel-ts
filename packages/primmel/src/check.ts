@@ -410,6 +410,7 @@ import type {
   AttributeDefinition,
   Behavior,
   ClassificationDimension,
+  PromiseCertificateProjection,
   Subject,
 } from './types/Subject';
 import type { DataClass } from './types/data';
@@ -1250,6 +1251,114 @@ export function checkPackage(
         warn(
           'C43',
           `subject ${s.id}: promise "${label}" declares no verified_by and no requirement/test binds its target "${p.target}" — declare the verifying requirement or test (promise-verifiable)`,
+        );
+      }
+    }
+  }
+
+  // C42–C44 generalized to the promise_set register (smart
+  // TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the rec promise
+  // registers carry the SAME sub-grammar as is.promises, so the same
+  // discipline fires. The set id binds the owning subject: when that
+  // subject composes, its characteristics resolve exactly as above; when
+  // it does not, the characteristic leg is gated off (per-register
+  // gating, the C58 doctrine) and attribute/behavior resolution stands.
+  for (const ps of standard.promiseSets ?? []) {
+    const owner = (standard.subjects ?? []).find(s => s.id === ps.id);
+    const characteristicSymbols = new Map<string, string>();
+    for (const [k, c] of Object.entries(owner?.has.characteristics ?? {})) {
+      characteristicSymbols.set(k, c.symbol ?? '');
+    }
+    const bareValueTargets = new Set<string>([
+      ...attrIds,
+      ...Object.keys(owner?.is.designParameters ?? {}),
+      ...Object.keys(owner?.has.attributes ?? {}),
+    ]);
+    for (const p of ps.promises ?? []) {
+      const label =
+        p.id ||
+        (p.statement.length > 40
+          ? p.statement.slice(0, 37) + '…'
+          : p.statement);
+      const where = `promise_set ${ps.id}: promise "${label}"`;
+      // C2 — declared verified_by ids must resolve (same discipline as
+      // the subject promises).
+      for (const v of p.verifiedBy ?? []) {
+        if (!reqIds.has(v) && !testIds.has(v)) {
+          err(
+            'C2',
+            `${where} verified_by "${v}" is not a declared requirement or conformance test`,
+          );
+        }
+      }
+      if (!p.target) {
+        if ((p.verifiedBy ?? []).length === 0) {
+          warn(
+            'C43',
+            `${where} has no target and no verified_by — it is unverifiable; give it a characteristic/behavior target or declare the verifying requirement/test (promise-verifiable)`,
+          );
+        }
+        continue;
+      }
+      const isCharacteristic = characteristicSymbols.has(p.target);
+      const isBehavior = behaviorIds.has(p.target);
+      if (!isCharacteristic && !isBehavior) {
+        if (bareValueTargets.has(p.target)) {
+          // C44 (narrowed) — same restatement leg as subject promises.
+          const restatesBareValue =
+            p.level?.kind === 'quantity' &&
+            p.conditions === '' &&
+            (p.verifiedBy ?? []).length === 0;
+          if (restatesBareValue) {
+            err(
+              'C44',
+              `${where} only restates the declared attribute value "${p.target}" — a promise claims a characteristic or behavior (optionally conditioned); bare values stay origin: declared attributes (promise-not-bare-value)`,
+            );
+          }
+        } else if (owner) {
+          // C42 — gated on the owning subject composing: without it the
+          // characteristic register is out of scope and the target's
+          // characteristic-ness is unknowable.
+          err(
+            'C42',
+            `${where} target "${p.target}" is not a declared characteristic or behavior (promise-target-resolves)`,
+          );
+        }
+        continue;
+      }
+      if ((p.verifiedBy ?? []).length > 0) {
+        continue; // verification declared — C43 silent
+      }
+      // C43 — derive the verifying requirements/tests from the target.
+      const names = new Set<string>([p.target]);
+      if (isCharacteristic) {
+        const sym = characteristicSymbols.get(p.target);
+        if (sym) {
+          names.add(sym);
+        }
+      }
+      const boundReqs = new Set<string>();
+      for (const r of standard.requirements ?? []) {
+        if (requirementBindsPromiseTarget(r, names)) {
+          boundReqs.add(r.id);
+        }
+      }
+      const boundTests = new Set<string>();
+      for (const t of standard.conformanceTests ?? []) {
+        if (testBindsPromiseTarget(t, names, boundReqs)) {
+          boundTests.add(t.id);
+        }
+      }
+      if (isBehavior) {
+        const b = (standard.behaviors ?? []).find(x => x.id === p.target);
+        for (const tid of b?.verifiedBy ?? []) {
+          boundTests.add(tid);
+        }
+      }
+      if (boundReqs.size === 0 && boundTests.size === 0) {
+        warn(
+          'C43',
+          `${where} declares no verified_by and no requirement/test binds its target "${p.target}" — declare the verifying requirement or test (promise-verifiable)`,
         );
       }
     }
@@ -4818,6 +4927,94 @@ export function checkPackage(
             );
           }
         }
+      }
+    }
+  }
+
+  // ── C131: promise-certificate-projection (smart TODO.roadmap/40 ─────
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The certificate print projection's shape, fired on subject promises
+  // AND promise_set entries alike: the content-binding XOR (at most one
+  // of attribute / attributes / dimension; none = a statement row); the
+  // bindings resolve (per-register gated, the C58 doctrine); the type is
+  // the renderer's closed vocabulary (string | integer | number |
+  // quantity | statement) — a check-time ERROR (the owner-settled
+  // renderer contract), kept parse-total against renderer growth; the
+  // label is required (the printed row carries its header). The
+  // obligation vocabulary is parse-enforced upstream (no check leg).
+  {
+    const CERTIFICATE_TYPES = [
+      'string',
+      'integer',
+      'number',
+      'quantity',
+      'statement',
+    ];
+    const certs: [string, PromiseCertificateProjection][] = [];
+    for (const s of standard.subjects ?? []) {
+      for (const p of s.is.promises ?? []) {
+        if (p.certificate) {
+          certs.push([`subject ${s.id}: promise "${p.id}"`, p.certificate]);
+        }
+      }
+    }
+    for (const ps of standard.promiseSets ?? []) {
+      for (const p of ps.promises ?? []) {
+        if (p.certificate) {
+          certs.push([
+            `promise_set ${ps.id}: promise "${p.id}"`,
+            p.certificate,
+          ]);
+        }
+      }
+    }
+    for (const [where, cert] of certs) {
+      const bindings =
+        (cert.attribute ? 1 : 0) +
+        (cert.attributes.length > 0 ? 1 : 0) +
+        (cert.dimension ? 1 : 0);
+      if (bindings > 1) {
+        err(
+          'C131',
+          `${where}: the certificate content binds by XOR — at most one of attribute / attributes / dimension (promise-certificate-projection)`,
+        );
+      }
+      if (cert.attribute && attrIds.size > 0 && !attrIds.has(cert.attribute)) {
+        err(
+          'C131',
+          `${where}: certificate attribute "${cert.attribute}" is not a declared attribute_definition (promise-certificate-projection)`,
+        );
+      }
+      for (const a of cert.attributes ?? []) {
+        if (attrIds.size > 0 && !attrIds.has(a)) {
+          err(
+            'C131',
+            `${where}: certificate attributes entry "${a}" is not a declared attribute_definition (promise-certificate-projection)`,
+          );
+        }
+      }
+      if (cert.dimension && dimIds.size > 0 && !dimIds.has(cert.dimension)) {
+        err(
+          'C131',
+          `${where}: certificate dimension "${cert.dimension}" is not a declared classification dimension (promise-certificate-projection)`,
+        );
+      }
+      if (!cert.type) {
+        err(
+          'C131',
+          `${where}: the certificate type is required — the renderer's row kind (promise-certificate-projection)`,
+        );
+      } else if (!CERTIFICATE_TYPES.includes(cert.type)) {
+        err(
+          'C131',
+          `${where}: certificate type "${cert.type}" is outside the renderer's closed vocabulary (valid: ${CERTIFICATE_TYPES.join(', ')}) (promise-certificate-projection)`,
+        );
+      }
+      if (!cert.label) {
+        err(
+          'C131',
+          `${where}: the certificate label is required — the printed row carries its header (promise-certificate-projection)`,
+        );
       }
     }
   }

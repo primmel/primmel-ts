@@ -64,6 +64,7 @@ function emptyContext(): ParseContext {
     subjects: {},
     identitySlots: {},
     aspects: {},
+    promiseSets: {},
     instances: {},
     artifactDefinitions: {},
     artifactInstances: {},

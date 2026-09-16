@@ -81,6 +81,7 @@ describe('v3 subject anatomy (is/has/does)', () => {
         statement: 'holds class C over the rated range',
         verifiedBy: [],
         source: null,
+        certificate: null,
       },
     ]);
     assert.deepEqual(s.is.structure, []);

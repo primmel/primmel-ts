@@ -33,6 +33,7 @@ import type {
 import type { ArtifactDefinition, ArtifactInstance } from './Artifact';
 import type IdentitySlot from './IdentitySlot';
 import type Aspect from './Aspect';
+import type PromiseSet from './PromiseSet';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -171,6 +172,11 @@ export default interface Standard {
   // `model.identity.<slot>` / `model.aspects.<id>` (C130).
   identitySlots: IdentitySlot[];
   aspects: Aspect[];
+  /** The rec promise registers (smart TODO.roadmap/40 batch 3) — the
+   *  file-grade home of the subject-promise sub-grammar (the set id
+   *  binds the owning subject); a subject's is.promises cannot span
+   *  files, so the rec registers get their own construct. */
+  promiseSets: PromiseSet[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

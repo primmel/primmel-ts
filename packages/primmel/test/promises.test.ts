@@ -100,6 +100,7 @@ describe('is.promises — rich promise entries (TODO.roadmap/08)', () => {
         '/conf/metrological-tests/mpe-test',
       ],
       source: { doc: 'urn:oiml:pub:r:60-1:2021', clause: '5.1' },
+      certificate: null,
     });
     assert.deepEqual(creep, {
       id: 'creep-limit',
@@ -109,6 +110,7 @@ describe('is.promises — rich promise entries (TODO.roadmap/08)', () => {
       statement: 'Creep stays within 0.7 v over the 30-minute test.',
       verifiedBy: [],
       source: null,
+      certificate: null,
     });
     assert.deepEqual(env, {
       id: 'temp-envelope',
@@ -118,6 +120,7 @@ describe('is.promises — rich promise entries (TODO.roadmap/08)', () => {
       statement: 'The rated envelope spans −10…+40 °C.',
       verifiedBy: [],
       source: null,
+      certificate: null,
     });
     // The statement-only shorthand (legacy string-list form).
     assert.deepEqual(prose, {
@@ -128,6 +131,7 @@ describe('is.promises — rich promise entries (TODO.roadmap/08)', () => {
       statement: 'a statement-only claim',
       verifiedBy: [],
       source: null,
+      certificate: null,
     });
   });
 
@@ -489,6 +493,147 @@ subject S {
     // A declared (resolving-or-not) verified_by satisfies C43.
     assert.deepEqual(
       checkPackage(dir).filter(i => i.check === 'C43'),
+      [],
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// The certificate print projection (smart TODO.roadmap/40 batch 3) —
+// is.promises entries carry a `certificate { … }` block (the XOR
+// content binding, the renderer's closed type vocabulary, the label);
+// C131 checks the projection's shape on subject promises and
+// promise_set entries alike.
+// ─────────────────────────────────────────────────────────────────────
+
+const CERT_PACKAGE = `
+attribute_definition e_max {
+  symbol "E_max"
+  name "Maximum capacity"
+  definition "The maximum load the cell measures."
+  value_type quantity
+}
+subject LoadCell {
+  is {
+    promises {
+      e_max_values {
+        target e_max
+        statement "Maximum capacity E_max per model."
+        verified_by { /req/metrological/mpe }
+        certificate {
+          attribute e_max
+          type string
+          label "E_max values"
+          obligation mandatory
+        }
+      }
+      accuracy_note {
+        target creep
+        statement "A statement-only print row."
+        certificate {
+          type statement
+          label "Accuracy envelope"
+          obligation optional
+        }
+      }
+    }
+  }
+}
+`;
+
+describe('the certificate print projection (smart TODO.roadmap/40 batch 3)', () => {
+  it('parses the certificate block (XOR binding + type + label + obligation)', () => {
+    const m = load(CERT_PACKAGE);
+    const [a, b] = m.subjects[0]!.is.promises;
+    assert.deepEqual(a!.certificate, {
+      attribute: 'e_max',
+      attributes: [],
+      dimension: '',
+      type: 'string',
+      label: 'E_max values',
+      obligation: 'mandatory',
+    });
+    // The statement row: no content binding.
+    assert.deepEqual(b!.certificate, {
+      attribute: '',
+      attributes: [],
+      dimension: '',
+      type: 'statement',
+      label: 'Accuracy envelope',
+      obligation: 'optional',
+    });
+  });
+
+  it('round-trips the certificate block losslessly (fixpoint)', () => {
+    const dumped = dump(load(CERT_PACKAGE));
+    assert.ok(dumped.includes('      certificate {\n'));
+    assert.ok(dumped.includes('        attribute e_max\n'));
+    assert.equal(dump(load(dumped)), dumped);
+  });
+
+  it('rejects an unknown certificate obligation at parse', () => {
+    assert.throws(
+      () =>
+        load(`subject S {
+  is { promises { p { target x certificate { type string label "L" obligation shall } } } }
+}
+`),
+      /Unknown certificate obligation "shall"/,
+    );
+  });
+
+  it('C131 fires on the XOR violation, the bad type, and the missing label', () => {
+    const dir = makeTmpPackage(`
+subject LoadCell {
+  is {
+    promises {
+      broken {
+        target e_max
+        certificate {
+          attribute e_max
+          dimension accuracy_class
+          type blob
+        }
+      }
+    }
+  }
+}
+`);
+    const issues = checkPackage(dir).filter(i => i.check === 'C131');
+    assert.equal(issues.length, 3);
+    assert.match(issues[0]!.message, /XOR/);
+    assert.match(issues[1]!.message, /type "blob"/);
+    assert.match(issues[2]!.message, /label is required/);
+  });
+
+  it('C131 flags a dangling certificate binding (per-register gated)', () => {
+    const dir = makeTmpPackage(`
+attribute_definition e_max {
+  symbol "E_max"
+  name "Maximum capacity"
+  definition "The maximum load the cell measures."
+  value_type quantity
+}
+subject LoadCell {
+  is {
+    promises {
+      broken {
+        target e_max
+        certificate { attribute ghost_attr type string label "L" }
+      }
+    }
+  }
+}
+`);
+    const issues = checkPackage(dir).filter(i => i.check === 'C131');
+    assert.equal(issues.length, 1);
+    assert.match(issues[0]!.message, /ghost_attr/);
+  });
+
+  it('C131 stays silent on the clean projections', () => {
+    const dir = makeTmpPackage(CERT_PACKAGE);
+    assert.deepEqual(
+      checkPackage(dir).filter(i => i.check === 'C131'),
       [],
     );
   });

@@ -114,6 +114,9 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // are subject anatomy — primary beside the subjects they enrich.
   identitySlots: 'primary',
   aspects: 'primary',
+  // The rec promise registers (smart TODO.roadmap/40 batch 3) are
+  // subject anatomy — primary beside the subjects their sets bind.
+  promiseSets: 'primary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

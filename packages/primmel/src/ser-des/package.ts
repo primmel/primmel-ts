@@ -535,6 +535,10 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // they enrich, with uses-no-redefine semantics.
   'identitySlots',
   'aspects',
+  // The rec promise registers (smart TODO.roadmap/40 batch 3) compose
+  // like the subject anatomy they extend, with uses-no-redefine
+  // semantics.
+  'promiseSets',
   'instances',
   'quantityRegisters',
   'duals',

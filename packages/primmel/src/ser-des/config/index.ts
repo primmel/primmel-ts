@@ -120,6 +120,7 @@ import {
 import { instanceConstruct } from './instance';
 import { dumpIdentitySlot, parseIdentitySlot } from './identitySlot';
 import { dumpAspect, parseAspect } from './aspect';
+import { dumpPromiseSet, parsePromiseSet } from './promiseSet';
 import {
   artifactDefinitionConstruct,
   artifactInstanceConstruct,
@@ -562,6 +563,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseAspect,
     dump: dumpAspect as never,
+  }),
+  // The rec promise register (smart TODO.roadmap/40 batch 3) — the
+  // file-grade home of the subject-promise sub-grammar (a subject's
+  // is.promises cannot span files); the set id binds the owning subject.
+  defineConstruct({
+    keyword: 'promise_set',
+    field: 'promiseSets',
+    takesID: true,
+    parse: parsePromiseSet,
+    dump: dumpPromiseSet as never,
   }),
   // Primmel v3 instantiation (instance-of, INV-10 — TODO.roadmap/03)
   instanceConstruct as ConstructDefinition,

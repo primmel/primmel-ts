@@ -150,6 +150,7 @@ import type {
   InstrumentMeasurand,
   ModelGroupDef,
   PairListDecl,
+  PromiseCertificateProjection,
   PromiseLevel,
   SourceRef,
   StructureEntry,
@@ -1860,7 +1861,7 @@ function readPromiseLevel(
 /**
  * Read is.promises entries (TODO.roadmap/08). Two entry forms:
  *   - rich:  `<id> { target … level … conditions … statement …
- *              verified_by { … } source { … } }`
+ *              verified_by { … } source { … } certificate { … } }`
  *   - shorthand: a quoted phrase or a bare token NOT followed by a block —
  *     the legacy string-list form, parsed as a statement-only promise
  *     (empty id/target/conditions; the linter's C43 flags it as
@@ -1884,49 +1885,116 @@ function readPromises(block: string): SubjectPromise[] {
         statement: stripWrapping(tok),
         verifiedBy: [],
         source: null,
+        certificate: null,
       });
       continue;
     }
-    const p: SubjectPromise = {
-      id: stripColon(tok),
-      target: '',
-      level: null,
-      conditions: '',
-      statement: '',
-      verifiedBy: [],
-      source: null,
-    };
-    const inner = tokenize(unwrapBlock(t[i++]));
-    let j = 0;
-    while (j < inner.length) {
-      const cmd = inner[j++];
-      if (j >= inner.length) {
-        break;
-      }
-      if (cmd === 'target') {
-        p.target = stripWrapping(inner[j++]);
-      } else if (cmd === 'level') {
-        const read = readPromiseLevel(inner, j);
-        p.level = read.level;
-        j = read.next;
-      } else if (cmd === 'conditions') {
-        // ocl{…} expressions reassemble across whitespace (readValueToken).
-        const read = readValueToken(inner, j);
-        p.conditions = stripWrapping(read.text);
-        j = read.next;
-      } else if (cmd === 'statement') {
-        p.statement = stripWrapping(inner[j++]);
-      } else if (cmd === 'verified_by') {
-        p.verifiedBy = readIdList(inner[j++]);
-      } else if (cmd === 'source') {
-        p.source = readSource(unwrapBlock(inner[j++]));
-      } else {
-        unwrapBlock(inner[j++]);
-      }
-    }
-    out.push(p);
+    out.push(readPromiseEntry(stripColon(tok), unwrapBlock(t[i++])));
   }
   return out;
+}
+
+/** The certificate print-projection obligation vocabulary (mandatory |
+ *  optional) — parse-enforced, the fail-closed precedent. */
+const PROMISE_CERTIFICATE_OBLIGATIONS = ['mandatory', 'optional'] as const;
+
+/** Read a promise's `certificate { … }` block (smart TODO.roadmap/40
+ *  batch 3): the content-binding XOR (attribute | attributes | dimension
+ *  | none — the statement row) is check-enforced (C131); the obligation
+ *  vocabulary is parse-enforced. */
+function readPromiseCertificate(
+  promiseId: string,
+  block: string,
+): PromiseCertificateProjection {
+  const cert: PromiseCertificateProjection = {
+    attribute: '',
+    attributes: [],
+    dimension: '',
+    type: '',
+    label: '',
+    obligation: '',
+  };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i > t.length) {
+      break;
+    }
+    if (cmd === 'attribute') {
+      cert.attribute = stripWrapping(t[i++]);
+    } else if (cmd === 'attributes') {
+      cert.attributes = readIdList(t[i++]);
+    } else if (cmd === 'dimension') {
+      cert.dimension = stripWrapping(t[i++]);
+    } else if (cmd === 'type') {
+      cert.type = stripWrapping(t[i++]);
+    } else if (cmd === 'label') {
+      cert.label = stripWrapping(t[i++]);
+    } else if (cmd === 'obligation') {
+      const o = stripWrapping(t[i++]);
+      if (!(PROMISE_CERTIFICATE_OBLIGATIONS as readonly string[]).includes(o)) {
+        throw new Error(
+          `Parsing error: promise. ID ${promiseId}: Unknown certificate obligation "${o}" (valid: ${PROMISE_CERTIFICATE_OBLIGATIONS.join(', ')})`,
+        );
+      }
+      cert.obligation = o;
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return cert;
+}
+
+/**
+ * Read ONE rich promise entry body (`target … level … conditions …
+ * statement … verified_by { … } source { … } certificate { … }`).
+ * Exported for the promise_set register (config/promiseSet.ts, smart
+ * TODO.roadmap/40 batch 3), which reuses the promise sub-grammar
+ * verbatim.
+ */
+export function readPromiseEntry(id: string, block: string): SubjectPromise {
+  const p: SubjectPromise = {
+    id,
+    target: '',
+    level: null,
+    conditions: '',
+    statement: '',
+    verifiedBy: [],
+    source: null,
+    certificate: null,
+  };
+  const inner = tokenize(block);
+  let j = 0;
+  while (j < inner.length) {
+    const cmd = inner[j++];
+    if (j >= inner.length) {
+      break;
+    }
+    if (cmd === 'target') {
+      p.target = stripWrapping(inner[j++]);
+    } else if (cmd === 'level') {
+      const read = readPromiseLevel(inner, j);
+      p.level = read.level;
+      j = read.next;
+    } else if (cmd === 'conditions') {
+      // ocl{…} expressions reassemble across whitespace (readValueToken).
+      const read = readValueToken(inner, j);
+      p.conditions = stripWrapping(read.text);
+      j = read.next;
+    } else if (cmd === 'statement') {
+      p.statement = stripWrapping(inner[j++]);
+    } else if (cmd === 'verified_by') {
+      p.verifiedBy = readIdList(inner[j++]);
+    } else if (cmd === 'source') {
+      p.source = readSource(unwrapBlock(inner[j++]));
+    } else if (cmd === 'certificate') {
+      p.certificate = readPromiseCertificate(p.id, unwrapBlock(inner[j++]));
+    } else {
+      unwrapBlock(inner[j++]);
+    }
+  }
+  return p;
 }
 
 /** A promise carrying nothing but its prose statement (the shorthand form). */
@@ -1937,7 +2005,8 @@ function isStatementOnlyPromise(p: SubjectPromise): boolean {
     !p.level &&
     !p.conditions &&
     p.verifiedBy.length === 0 &&
-    !p.source
+    !p.source &&
+    !p.certificate
   );
 }
 
@@ -2264,6 +2333,77 @@ function dumpPromiseLevel(level: PromiseLevel): string {
   return dumpQuantityBlock(level.quantity ?? { value: '' });
 }
 
+/** Dump a promise's certificate print projection (smart TODO.roadmap/40
+ *  batch 3) — facet order is the byte contract: attribute | attributes |
+ *  dimension, then type, label, obligation. */
+function dumpPromiseCertificate(
+  cert: PromiseCertificateProjection,
+  indent: string,
+): string {
+  const facet = indent + '  ';
+  let out = indent + 'certificate {\n';
+  if (cert.attribute) {
+    out += facet + 'attribute ' + dumpBareSafe(cert.attribute) + '\n';
+  }
+  if (cert.attributes.length > 0) {
+    out +=
+      facet +
+      'attributes { ' +
+      cert.attributes.map(dumpBareSafe).join(' ') +
+      ' }\n';
+  }
+  if (cert.dimension) {
+    out += facet + 'dimension ' + dumpBareSafe(cert.dimension) + '\n';
+  }
+  if (cert.type) {
+    out += facet + 'type ' + dumpBareSafe(cert.type) + '\n';
+  }
+  if (cert.label) {
+    out += facet + 'label "' + escapeString(cert.label) + '"\n';
+  }
+  if (cert.obligation) {
+    out += facet + 'obligation ' + dumpBareSafe(cert.obligation) + '\n';
+  }
+  out += indent + '}\n';
+  return out;
+}
+
+/**
+ * Dump ONE rich promise entry at the given indent — shared by
+ * dumpSubjectPromises (is.promises) and the promise_set register
+ * (config/promiseSet.ts, smart TODO.roadmap/40 batch 3), which prefixes
+ * its entries with the `promise` keyword. Facet order is the byte
+ * contract: target, level, conditions, statement, verified_by, source,
+ * certificate.
+ */
+export function dumpPromiseEntry(
+  p: SubjectPromise,
+  indent: string,
+  keyword = '',
+): string {
+  const facet = indent + '  ';
+  let out = indent + keyword + dumpBareSafe(p.id) + ' {\n';
+  if (p.target) {
+    out += facet + 'target ' + dumpBareSafe(p.target) + '\n';
+  }
+  if (p.level) {
+    out += facet + 'level ' + dumpPromiseLevel(p.level) + '\n';
+  }
+  if (p.conditions) {
+    out += facet + 'conditions ' + dumpSubjectDerivation(p.conditions) + '\n';
+  }
+  if (p.statement) {
+    out += facet + 'statement "' + escapeString(p.statement) + '"\n';
+  }
+  out += dumpIdList('verified_by', p.verifiedBy, facet);
+  out += dumpSource('source', p.source ?? null, facet);
+  if (p.certificate) {
+    out += dumpPromiseCertificate(p.certificate, facet);
+  }
+  out += indent + '}\n';
+  return out;
+}
+
 /**
  * Dump is.promises (TODO.roadmap/08). Byte-compat with the legacy string
  * list: a block of statement-only entries keeps the single-line form
@@ -2288,22 +2428,7 @@ function dumpSubjectPromises(promises: SubjectPromise[]): string {
       out += '      ' + dumpBareSafe(p.statement) + '\n';
       continue;
     }
-    out += '      ' + dumpBareSafe(p.id) + ' {\n';
-    if (p.target) {
-      out += '        target ' + dumpBareSafe(p.target) + '\n';
-    }
-    if (p.level) {
-      out += '        level ' + dumpPromiseLevel(p.level) + '\n';
-    }
-    if (p.conditions) {
-      out += '        conditions ' + dumpSubjectDerivation(p.conditions) + '\n';
-    }
-    if (p.statement) {
-      out += '        statement "' + escapeString(p.statement) + '"\n';
-    }
-    out += dumpIdList('verified_by', p.verifiedBy, '        ');
-    out += dumpSource('source', p.source ?? null, '        ');
-    out += '      }\n';
+    out += dumpPromiseEntry(p, '      ');
   }
   out += '    }\n';
   return out;
