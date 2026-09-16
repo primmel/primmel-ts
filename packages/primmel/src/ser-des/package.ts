@@ -553,6 +553,9 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — the rec-overlay deep merge (OVERLAY_DEEP_MERGE_FIELDS).
   'workflowConfigs',
+  // The verification pathways (smart TODO.roadmap/40 batch 3) compose
+  // with uses-no-redefine semantics.
+  'verificationPathways',
   'instances',
   'quantityRegisters',
   'duals',

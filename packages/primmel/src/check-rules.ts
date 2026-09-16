@@ -629,6 +629,18 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
   ),
+  // C138 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
+  // verification pathways — the tests/covers resolutions (gated), the
+  // trigger action against the lifecycle machines' transition actions
+  // (gated), event iff kind signal, the window's ≥1-of years/months.
+  R(
+    'C138',
+    'verification-pathway-references',
+    'composition',
+    'error',
+    'normal',
+    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+  ),
   // ── quantities / time / duality (TODO.roadmap/06) ─────────────────
   R(
     'C32',

@@ -120,6 +120,8 @@ export default function parse(
     certificateTemplates: {},
     // The certification workflow step register (batch 3)
     workflowConfigs: {},
+    // The verification pathways (batch 3)
+    verificationPathways: {},
     // Primmel v3 instantiation (TODO.roadmap/03)
     instances: {},
     // Primmel v3 artifacts (TODO.roadmap/09)

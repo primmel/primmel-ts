@@ -57,6 +57,10 @@ import { parseMetadata } from './metadata';
 import { dumpProcess, parseProcess, resolveProcess } from './process';
 import { dumpProcessModel, parseProcessModel } from './processModel';
 import { dumpWorkflowConfig, parseWorkflowConfig } from './workflowConfig';
+import {
+  dumpVerificationPathway,
+  parseVerificationPathway,
+} from './verificationPathway';
 import { dumpProvision, parseProvision, resolveProvision } from './provision';
 import { dumpReference, parseReference } from './reference';
 import { dumpRole, parseRole } from './role';
@@ -611,6 +615,16 @@ const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseConformanceTest,
     dump: dumpConformanceTest as never,
+  }),
+  // The verification pathways beyond type evaluation (smart
+  // TODO.roadmap/40 batch 3) — the per-kind test set REUSES the
+  // conformance machinery, so the register rides beside it.
+  defineConstruct({
+    keyword: 'verification_pathway',
+    field: 'verificationPathways',
+    takesID: true,
+    parse: parseVerificationPathway,
+    dump: dumpVerificationPathway as never,
   }),
   // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
   subjectConstruct as ConstructDefinition,

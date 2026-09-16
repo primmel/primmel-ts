@@ -40,6 +40,7 @@ import type EvaluationDimensions from './EvaluationDimension';
 import type EvaluationProfile from './EvaluationProfile';
 import type CertificateTemplate from './CertificateTemplate';
 import type WorkflowConfig from './WorkflowConfig';
+import type VerificationPathway from './VerificationPathway';
 import type { ConnectorProfile } from './Twin';
 import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
@@ -202,6 +203,9 @@ export default interface Standard {
    *  batch 3): the core layer carries the OIML-CS skeleton, the rec
    *  packages overlay it (the B3.1 deep merge). */
   workflowConfigs: WorkflowConfig[];
+  /** The verification pathways beyond type evaluation (smart
+   *  TODO.roadmap/40 batch 3) — VIML 2.09/2.12–2.14. */
+  verificationPathways: VerificationPathway[];
 
   // Primmel v3 instantiation (TODO.roadmap/03): the instance plane —
   // instances of subject definitions, chained family → group → model →

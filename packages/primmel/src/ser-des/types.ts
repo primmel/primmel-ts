@@ -41,6 +41,7 @@ import type EvaluationDimensions from '../types/EvaluationDimension';
 import type EvaluationProfile from '../types/EvaluationProfile';
 import type CertificateTemplate from '../types/CertificateTemplate';
 import type WorkflowConfig from '../types/WorkflowConfig';
+import type VerificationPathway from '../types/VerificationPathway';
 import type { ConnectorProfile } from '../types/Twin';
 import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
@@ -256,6 +257,9 @@ export interface ParseContext {
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — overlay-composable (OVERLAY_DEEP_MERGE_FIELDS).
   workflowConfigs: Record<string, WorkflowConfig>;
+  // The verification pathways beyond type evaluation (smart
+  // TODO.roadmap/40 batch 3).
+  verificationPathways: Record<string, VerificationPathway>;
 
   // Primmel v3 instantiation (TODO.roadmap/03)
   instances: Record<string, Instance>;

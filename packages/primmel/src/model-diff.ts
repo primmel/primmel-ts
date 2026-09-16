@@ -133,6 +133,9 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — operational wiring, tertiary.
   workflowConfigs: 'tertiary',
+  // The verification pathways (smart TODO.roadmap/40 batch 3) —
+  // operational wiring, tertiary.
+  verificationPathways: 'tertiary',
   instruments: 'primary',
   attributeDefinitions: 'primary',
   capabilities: 'primary',

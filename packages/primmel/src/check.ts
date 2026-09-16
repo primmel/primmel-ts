@@ -5348,6 +5348,81 @@ export function checkPackage(
     }
   }
 
+  // ── C138: verification-pathway-references (smart TODO.roadmap/40 ───
+  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
+  // The verification pathways beyond type evaluation: the tests resolve
+  // to conformance_tests and the assessment covers to requirements
+  // (per-register gated — the smart R22 mirror); the trigger action
+  // resolves to a transition action of an in-scope LIFECYCLE
+  // state_machine (gated); the trigger event is required iff kind
+  // signal; the validity window carries ≥ 1 of years/months. The kind /
+  // trigger-kind / limits-mode vocabularies are parse-enforced upstream
+  // (no check legs).
+  {
+    const lifecycleActions = new Set<string>();
+    for (const sm of standard.stateMachines ?? []) {
+      if (sm.kind !== 'lifecycle') {
+        continue;
+      }
+      for (const t of sm.transitions ?? []) {
+        if (t.actionName) {
+          lifecycleActions.add(t.actionName);
+        }
+      }
+    }
+    for (const p of standard.verificationPathways ?? []) {
+      const where = `verification_pathway ${p.id}`;
+      for (const t of p.tests ?? []) {
+        if (testIds.size > 0 && !testIds.has(t)) {
+          err(
+            'C138',
+            `${where}: tests entry "${t}" is not a declared conformance_test (verification-pathway-references)`,
+          );
+        }
+      }
+      for (const r of p.assessment?.covers ?? []) {
+        if (reqIds.size > 0 && !reqIds.has(r)) {
+          err(
+            'C138',
+            `${where}: assessment covers entry "${r}" is not a declared requirement (verification-pathway-references)`,
+          );
+        }
+      }
+      const window = p.validity?.window;
+      if (window && window.years <= 0 && window.months <= 0) {
+        err(
+          'C138',
+          `${where}: the validity window carries neither years nor months (verification-pathway-references)`,
+        );
+      }
+      for (const t of p.validity?.triggers ?? []) {
+        const twhere = `${where}: trigger ${t.id}`;
+        if (t.kind === 'signal' && !t.event) {
+          err(
+            'C138',
+            `${twhere}: kind signal requires the event facet (verification-pathway-references)`,
+          );
+        }
+        if (t.kind === 'timer' && t.event) {
+          err(
+            'C138',
+            `${twhere}: kind timer carries no event facet — the period is the window's (verification-pathway-references)`,
+          );
+        }
+        if (
+          t.action &&
+          lifecycleActions.size > 0 &&
+          !lifecycleActions.has(t.action)
+        ) {
+          err(
+            'C138',
+            `${twhere}: action "${t.action}" is not a transition action of an in-scope lifecycle state_machine (verification-pathway-references)`,
+          );
+        }
+      }
+    }
+  }
+
   // C34 — duality-coherence: one value structure, two roles.
   for (const d of standard.duals ?? []) {
     if (d.attribute && !attrIds.has(d.attribute)) {
