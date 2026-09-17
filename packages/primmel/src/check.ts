@@ -5191,7 +5191,8 @@ export function checkPackage(
   // a declared classification dimension and every value to one of that
   // dimension's declared values (per-register gated, the smart R4/R8
   // applicability mirror; an OPEN dimension — no declared value set —
-  // accepts any value).
+  // accepts any value). A set-cardinality dimension's preset is a value
+  // LIST (r144's measurand_components) — each entry resolves.
   {
     for (const p of standard.evaluationProfiles ?? []) {
       const where = `evaluation_profile ${p.id}`;
@@ -5204,11 +5205,13 @@ export function checkPackage(
           continue;
         }
         const values = dimIds.get(dim);
-        if (values && values.size > 0 && !values.has(value)) {
-          err(
-            'C135',
-            `${where}: dimensions entry "${dim}" names value "${value}", which the dimension does not declare (evaluation-profile-coherence)`,
-          );
+        for (const v of Array.isArray(value) ? value : [value]) {
+          if (values && values.size > 0 && !values.has(v)) {
+            err(
+              'C135',
+              `${where}: dimensions entry "${dim}" names value "${v}", which the dimension does not declare (evaluation-profile-coherence)`,
+            );
+          }
         }
       }
     }

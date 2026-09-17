@@ -9,24 +9,36 @@
 //     description "Class A digital, no humidity test"
 //   }
 //
+// A SET-cardinality dimension presets to a value LIST (r144's
+// measurand_components — the extractive-co-nox preset selects several
+// channels at once):
+//
+//   evaluation_profile extractive-co-nox-ndir-cld {
+//     dimensions { measurand_components { co no } measuring_principle combined }
+//     description "Extractive CEMS: NDIR for CO + chemiluminescence for NOx"
+//   }
+//
 // The dimensions map keys on DIMENSION ids (profiles select over
 // dimensions) — NOT the evaluation-dimension FIELD names (r60: profile
 // key humidity_class vs field name humidity_symbol); the two namespaces
-// never mix. Optional per package: r91/r144 declare none, and no
+// never mix. Optional per package: r91 declares none, and no
 // empty-register requirement exists.
 //
 // C135 evaluation-profile-coherence: every dimensions key resolves to a
-// declared classification dimension and every value to one of that
-// dimension's declared values (per-register gated; an OPEN dimension
-// accepts any value) — the smart R4/R8 applicability mirror.
+// declared classification dimension and every value (each list entry)
+// to one of that dimension's declared values (per-register gated; an
+// OPEN dimension accepts any value) — the smart R4/R8 applicability
+// mirror.
 // ─────────────────────────────────────────────────────────────────────
 
 export default interface EvaluationProfile {
   /** Kebab-case profile id (class-a-digital-nh). */
   id: string;
-  /** The dimension-value preset: dimension id → value id, in declared
-   *  order (the byte contract keys dimension ids before description). */
-  dimensions: Record<string, string>;
+  /** The dimension-value preset: dimension id → value id, or value-id
+   *  list for a set-cardinality dimension (r144's measurand_components),
+   *  in declared order (the byte contract keys dimension ids before
+   *  description). */
+  dimensions: Record<string, string | string[]>;
   /** What the profile selects. */
   description: string;
 }

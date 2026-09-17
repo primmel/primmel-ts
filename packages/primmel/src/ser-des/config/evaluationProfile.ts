@@ -24,11 +24,17 @@ export const parseEvaluationProfile: Parser = (id: string, data: string) => {
     data,
     (keyword, value) => {
       if (keyword === 'dimensions') {
-        // The open dimension-keyed map: alternating key/value tokens.
+        // The open dimension-keyed map: alternating key/value tokens. A
+        // set-cardinality dimension presets to a value LIST — the value
+        // arrives as one balanced `{ … }` token (the tokenizer's block
+        // rule); a scalar stays a single token.
         const t = tokenize(unwrapBlock(value()));
         for (let i = 0; i + 1 < t.length; i += 2) {
           const k = stripWrapping(stripColon(t[i]!));
-          const v = stripWrapping(t[i + 1]!);
+          const raw = t[i + 1]!;
+          const v = raw.startsWith('{')
+            ? tokenize(unwrapBlock(raw)).map(tok => stripWrapping(tok))
+            : stripWrapping(raw);
           if (k) {
             profile.dimensions[k] = v;
           }
@@ -56,7 +62,13 @@ export const dumpEvaluationProfile: Dumper<EvaluationProfile> = function (p) {
     out +=
       '  dimensions { ' +
       keys
-        .map(k => dumpBareSafe(k) + ' ' + dumpBareSafe(p.dimensions[k]!))
+        .map(k => {
+          const v = p.dimensions[k]!;
+          // Set-cardinality presets dump as a value list (`{ co no }`).
+          return Array.isArray(v)
+            ? dumpBareSafe(k) + ' { ' + v.map(dumpBareSafe).join(' ') + ' }'
+            : dumpBareSafe(k) + ' ' + dumpBareSafe(v);
+        })
         .join(' ') +
       ' }\n';
   }

@@ -131,4 +131,69 @@ evaluation_profile p {
       /dimensions entry "accuracy_class" names value "X", which the dimension does not declare/,
     );
   });
+
+  // ── Set-cardinality presets (smart TODO.roadmap/40 wave 3.3 family D ──
+  // — r144's measurand_components selects several channels at once): the
+  // value list rides a balanced `{ … }` token.
+  const SET_DIMENSION = `
+dimension measurand_components {
+  cardinality set
+  values {
+    co { label "CO" }
+    no { label "NO" }
+    no2 { label "NO2" }
+  }
+}
+dimension measuring_principle {
+  cardinality single
+}
+`;
+
+  const LIST_PROFILE = `
+evaluation_profile extractive-co-nox-ndir-cld {
+  dimensions { measurand_components { co no } measuring_principle combined }
+  description "Extractive CEMS: NDIR for CO + chemiluminescence for NOx"
+}
+`;
+
+  it('parses a set-cardinality preset (the value list)', () => {
+    const m = load(LIST_PROFILE);
+    const p = m.evaluationProfiles[0]!;
+    assert.deepEqual(p.dimensions, {
+      measurand_components: ['co', 'no'],
+      measuring_principle: 'combined',
+    });
+  });
+
+  it('round-trips the value list byte-clean', () => {
+    const out = dump(load(LIST_PROFILE));
+    assert.ok(
+      out.includes(
+        'dimensions { measurand_components { co no } measuring_principle combined }',
+      ),
+    );
+    assert.equal(dump(load(out)), out);
+  });
+
+  it('C135: every list entry resolves against the dimension’s value set', () => {
+    const issues = checkPackage(
+      makePackage(SET_DIMENSION + LIST_PROFILE),
+    ).filter(i => i.check === 'C135');
+    assert.deepEqual(issues, []);
+    const bad = checkPackage(
+      makePackage(
+        SET_DIMENSION +
+          `
+evaluation_profile p {
+  dimensions { measurand_components { co h2o } }
+}
+`,
+      ),
+    ).filter(i => i.check === 'C135');
+    assert.equal(bad.length, 1);
+    assert.match(
+      bad[0]!.message,
+      /dimensions entry "measurand_components" names value "h2o", which the dimension does not declare/,
+    );
+  });
 });
