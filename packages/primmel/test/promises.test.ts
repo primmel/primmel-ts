@@ -299,6 +299,34 @@ describe('promise lint rules (C42/C43/C44 + C2 verified_by)', () => {
     assert.ok(c42[0].message.includes('(promise-target-resolves)'));
   });
 
+  it('C42 stays silent on dimension and symbol targets (smart R15)', () => {
+    // The same widening as the promise_set register leg (smart's linker
+    // R15 resolution set: attribute, dimension, characteristic (symbol
+    // id), or behavior).
+    const dir = makeTmpPackage(`instrument Meter {
+  dimension mode_of_use { values { stationary mobile } }
+}
+symbol v { name "Speed" }
+subject S {
+  is {
+    promises {
+      mode-row { target mode_of_use statement "Holds its declared mode of use." }
+      speed-interval { target v statement "The measuring speed interval." }
+      bogus { target no-such-thing statement "claims the impossible" }
+    }
+  }
+}
+`);
+    const c42 = checkPackage(dir).filter(i => i.check === 'C42');
+    assert.equal(c42.length, 1);
+    assert.ok(c42[0].message.includes('"bogus"'));
+    assert.ok(
+      c42[0].message.includes(
+        'not a declared characteristic, behavior, attribute, dimension, or symbol',
+      ),
+    );
+  });
+
   it('C44 rejects a promise that merely restates a declared attribute value', () => {
     const dir = makeTmpPackage(`attribute_definition t_min {
   symbol "T_min"

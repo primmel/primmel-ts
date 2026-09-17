@@ -107,7 +107,9 @@
 //      warns, naming the doctrine: a violated run-validity precondition
 //      voids the run, it never fails the instrument
 //   C42 promise-target-resolves: a promise's target is a declared
-//      characteristic (of the owning subject) or behavior
+//      characteristic (of the owning subject), behavior, attribute (the
+//      C44 path), classification dimension, or symbol-registry id (the
+//      register doctrine — smart R15's resolution set)
 //   C43 promise-verifiable: no verified_by declared AND no verifying
 //      requirement/test derivable (requirements/tests binding the same
 //      target) — a warning at authoring (TODO.roadmap/08)
@@ -1213,11 +1215,18 @@ export function checkPackage(
               `subject ${s.id}: promise "${label}" only restates the declared attribute value "${p.target}" — a promise claims a characteristic or behavior (optionally conditioned); bare values stay origin: declared attributes (promise-not-bare-value)`,
             );
           }
+        } else if (dimIds.has(p.target) || symbolIds.has(p.target)) {
+          // A claim ABOUT a classification dimension or a symbol-named
+          // quantity is a legal target (the register doctrine — smart's
+          // linker R15 resolves a promise target to a declared attribute,
+          // dimension, characteristic (symbol id), or behavior). Like the
+          // attribute path, no C43 derivation runs: dimensions/symbols
+          // carry no requirement-binding channel here.
         } else {
           // C42 — the target resolves to nothing the subject can claim.
           err(
             'C42',
-            `subject ${s.id}: promise "${label}" target "${p.target}" is not a declared characteristic or behavior (promise-target-resolves)`,
+            `subject ${s.id}: promise "${label}" target "${p.target}" is not a declared characteristic, behavior, attribute, dimension, or symbol (promise-target-resolves)`,
           );
         }
         continue;
@@ -1319,13 +1328,16 @@ export function checkPackage(
               `${where} only restates the declared attribute value "${p.target}" — a promise claims a characteristic or behavior (optionally conditioned); bare values stay origin: declared attributes (promise-not-bare-value)`,
             );
           }
+        } else if (dimIds.has(p.target) || symbolIds.has(p.target)) {
+          // Dimension/symbol targets — the same widening as the subject
+          // leg above (smart R15's resolution set).
         } else if (owner) {
           // C42 — gated on the owning subject composing: without it the
           // characteristic register is out of scope and the target's
           // characteristic-ness is unknowable.
           err(
             'C42',
-            `${where} target "${p.target}" is not a declared characteristic or behavior (promise-target-resolves)`,
+            `${where} target "${p.target}" is not a declared characteristic, behavior, attribute, dimension, or symbol (promise-target-resolves)`,
           );
         }
         continue;

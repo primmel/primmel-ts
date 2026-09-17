@@ -162,6 +162,46 @@ promise_set LoadCell {
     assert.deepEqual(issues, []);
   });
 
+  it('C42 stays silent on dimension and symbol targets (smart R15)', () => {
+    // The register doctrine (smart's linker R15) resolves a promise target
+    // to a declared attribute, dimension, characteristic (symbol id), or
+    // behavior — a claim ABOUT a classification dimension or a
+    // symbol-registry id is legal (the R 91 register's shape:
+    // data/r91/model/promises.yaml targets the metrological_class /
+    // mode_of_use dimensions and the v / d / alpha symbols).
+    const issues = checkPackage(
+      makePackage(
+        SUBJECT_AND_REGISTERS +
+          `
+instrument Meter {
+  dimension mode_of_use { values { stationary mobile } }
+}
+symbol v { name "Speed" }
+promise_set LoadCell {
+  promise mode_row {
+    target mode_of_use
+    statement "The type holds its declared mode of use."
+  }
+  promise speed_interval {
+    target v
+    statement "The measuring speed interval."
+  }
+  promise ghost_target {
+    target ghost_characteristic
+    statement "A claim on nothing."
+  }
+}
+`,
+      ),
+    ).filter(i => i.check === 'C42');
+    assert.equal(issues.length, 1);
+    assert.match(issues[0]!.message, /"ghost_target"/);
+    assert.match(
+      issues[0]!.message,
+      /not a declared characteristic, behavior, attribute, dimension, or symbol/,
+    );
+  });
+
   it('C131 fires on the set certificate blocks', () => {
     const body =
       SUBJECT_AND_REGISTERS +
