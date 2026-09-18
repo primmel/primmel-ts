@@ -273,7 +273,7 @@ describe('primmel export retrieval CLI (primmel-ts#65)', () => {
     const { status, stdout, stderr } = run(['export', 'retrieval', dir]);
     assert.equal(status, 0, stderr);
     const doc = JSON.parse(stdout);
-    assert.equal(doc.projection, 'primmel-retrieval/1');
+    assert.equal(doc.projection, 'primmel-retrieval/2');
     assert.equal(doc.package.edition, '2021');
     assert.equal(doc.package.model_version, '2');
     assert.match(doc.source_hash, /^[0-9a-f]{64}$/);
@@ -298,12 +298,12 @@ describe('primmel export retrieval CLI (primmel-ts#65)', () => {
       ]);
       assert.equal(status, 0, stderr);
       assert.match(stdout, /^wrote /);
-      assert.match(stdout, /20 units/);
+      assert.match(stdout, /23 units/);
       assert.match(stdout, /clause-cited/);
       // The ask-1 debt surfaces in the summary, never silently.
       assert.match(stdout, /anchor-only provenance/);
       const doc = JSON.parse(readFileSync(out, 'utf8'));
-      assert.equal(doc.units.length, 20);
+      assert.equal(doc.units.length, 23);
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }

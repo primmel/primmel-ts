@@ -33,6 +33,16 @@
 //     field path) — authored content, digest-participating; blocks
 //     addressed at unprojected elements are counted, never dropped
 //     silently.
+//   ask 8 (primmel/primmel-ts#84) — the structured acceptance: the
+//     requirement's raw acceptance_criteria YAML block is read
+//     structured by the subset reader (tiers/limit/items, numbers and
+//     quoted scalars; a block off the subset stays the raw string),
+//     the accepts triple and the acceptance decision are objects (the
+//     /1 `acceptance` strings are gone), the conformance test's typed
+//     criteria assemble onto the cc.yaml shape with their OCL, and the
+//     violation semantics (constraint check / violation_meaning /
+//     on_violation, test preconditions) surface out of `payload`.
+//     The passport keeps its compact summary string, byte-identical.
 //
 // Plus the bundle-level contract: the projection version, byte
 // determinism, and the source_hash algorithm (the deployed consumer's
@@ -455,7 +465,10 @@ describe('retrieval export — stable ids + content digests (ask 4)', () => {
     const { units, stats } = fixtureUnits();
     const expected: [string, string][] = [
       ['/req/scope/alpha', 'requirement'],
+      ['/req/scope/epsilon', 'requirement'],
+      ['/req/scope/zeta', 'requirement'],
       ['/conf/scope/alpha-frob', 'conformance_test'],
+      ['/conf/scope/beta-composite', 'conformance_test'],
       ['/term/frobnicator', 'term'],
       ['/attribute/widget_mass', 'attribute'],
       ['/behavior/beep-response', 'behavior'],
@@ -476,7 +489,7 @@ describe('retrieval export — stable ids + content digests (ask 4)', () => {
       assert.equal(unit.kind, kind);
     }
     assert.equal(stats.units, units.size);
-    assert.equal(stats.byKind.requirement, 5);
+    assert.equal(stats.byKind.requirement, 7);
     assert.equal(stats.byKind.formula, 1);
   });
 
@@ -649,6 +662,186 @@ describe('retrieval export — the unit payloads', () => {
       (dimension.payload!.values as { id: string }[]).map(v => v.id),
       ['analogue', 'digital'],
     );
+  });
+});
+
+describe('retrieval export — the structured acceptance (ask 8, #84)', () => {
+  it('versions the shape change as primmel-retrieval/2', () => {
+    const { doc } = fixtureUnits();
+    // The /2 re-type: acceptance_criteria (string → structured),
+    // acceptance (summary string → the decision object) — a re-index
+    // signal for every consumer, per the versioning doctrine.
+    assert.equal(doc.projection, 'primmel-retrieval/2');
+    assert.equal(RETRIEVAL_PROJECTION, 'primmel-retrieval/2');
+  });
+
+  it('reads the requirement acceptance_criteria block structured', () => {
+    const { units } = fixtureUnits();
+    const alpha = units.get('/req/scope/alpha')!;
+    // The /1 projection shipped this as a raw YAML string inside the
+    // JSON — the consumer-side re-parse the structured form eliminates.
+    assert.deepEqual(alpha.acceptance_criteria, {
+      type: 'threshold',
+      description: 'The frobnication error shall not exceed the MPE',
+      limit: {
+        expression: '|error|',
+        operator: 'lte',
+        threshold_expression: 'mpe',
+        unit: 'v',
+      },
+    });
+    assert.ok(typeof alpha.acceptance_criteria === 'object');
+  });
+
+  it('resolves tier sequences and unquoted numbers (the tiered block)', () => {
+    const { units } = fixtureUnits();
+    const epsilon = units.get('/req/scope/epsilon')!;
+    assert.deepEqual(epsilon.acceptance_criteria, {
+      type: 'tiered',
+      description: 'MPE tiers by load range',
+      variable: 'load',
+      variable_unit: 'v',
+      limit_expression: 'factor × p_LC',
+      tiers: [
+        {
+          range: { min: 0 },
+          limit: { factor: 0.5, expression: '0.5 × p_LC' },
+        },
+        {
+          range: { min: 50000 },
+          limit: { factor: 1, expression: '1 × p_LC' },
+        },
+      ],
+    });
+  });
+
+  it('keeps a free-text block the raw string — honest prose, never a failed parse', () => {
+    const { units } = fixtureUnits();
+    const zeta = units.get('/req/scope/zeta')!;
+    assert.equal(
+      zeta.acceptance_criteria,
+      'Judged by inspection against the reference checklist',
+    );
+  });
+
+  it('carries the accepts triple structured, the limit predicate as an OCL field', () => {
+    const { units } = fixtureUnits();
+    const alpha = units.get('/req/scope/alpha')!;
+    // The /1 projection flattened this into the `acceptance` string
+    // "beep_level lte ocl{mpe}" — a mini-format a consumer had to split.
+    assert.deepEqual(alpha.accepts, {
+      verdict: 'beep_level',
+      op: 'lte',
+      limit: 'ocl{mpe}',
+    });
+    assert.equal(alpha.acceptance, undefined);
+  });
+
+  it('composes the passport acceptance summary to the /1 bytes', () => {
+    const { units } = fixtureUnits();
+    // accepts triple (requirement) — the /1 string form.
+    assert.equal(
+      units.get('/req/scope/alpha')!.passport.acceptance,
+      'beep_level lte ocl{mpe}',
+    );
+    // criteria pass_if (test) — the /1 string form.
+    assert.equal(
+      units.get('/conf/scope/beta-composite')!.passport.acceptance,
+      'ocl{all_passed}',
+    );
+    // decision rule (characteristic) — the /1 string form.
+    assert.equal(
+      units.get('/characteristic/beep_level')!.passport.acceptance,
+      'guarded',
+    );
+  });
+
+  it('assembles the conformance test criteria onto the cc.yaml shape', () => {
+    const { units } = fixtureUnits();
+    const test = units.get('/conf/scope/beta-composite')!;
+    assert.deepEqual(test.acceptance_criteria, {
+      type: 'composite',
+      description: 'Composite of partial checks',
+      pass_if: 'ocl{all_passed}',
+      items: [
+        {
+          name: 'partial_check',
+          target: '/req/scope/beta',
+          criterion: 'I/MPE',
+          pass_if: 'ocl{abs(x) <= mpe}',
+          optional: true,
+          description: 'Partial check',
+          reference: 'urn:test:r:9-2:2021#clause-7.2',
+        },
+        {
+          name: 'verdict_check',
+          accepts: { verdict: 'beep_level', op: 'lte', limit: 'ocl{mpe}' },
+        },
+      ],
+    });
+    // The /1 projection's prose-only `acceptance` string is gone; the
+    // kernel-typed decision (test-level) rides its own field.
+    assert.equal(test.acceptance, undefined);
+  });
+
+  it('surfaces the preconditions out of the payload', () => {
+    const { units } = fixtureUnits();
+    const test = units.get('/conf/scope/beta-composite')!;
+    assert.deepEqual(test.preconditions, [
+      {
+        id: 'run-valid',
+        check: 'ocl{run.count >= 3}',
+        description: 'Enough valid runs',
+        on_violation: 'invalid',
+      },
+    ]);
+    assert.equal(test.payload?.preconditions, undefined);
+    // A test without preconditions carries neither form.
+    assert.equal(units.get('/conf/scope/alpha-frob')!.preconditions, undefined);
+  });
+
+  it('surfaces the constraint violation semantics out of the payload', () => {
+    const { units } = fixtureUnits();
+    const constraint = units.get('/constraint/widget_geometry')!;
+    assert.equal(
+      constraint.check,
+      'ocl{model.parameters.x <= model.parameters.x_max}',
+    );
+    assert.equal(constraint.expression, constraint.check);
+    assert.equal(
+      constraint.violation_meaning,
+      'The widget exceeds its geometry envelope; the measurement is void.',
+    );
+    assert.equal(constraint.statement, constraint.violation_meaning);
+    assert.equal(constraint.on_violation, 'invalid');
+    assert.deepEqual(constraint.payload, { stereotype: 'inv' });
+  });
+
+  it('carries the acceptance decision as the structured object', () => {
+    const { units } = fixtureUnits();
+    const characteristic = units.get('/characteristic/beep_level')!;
+    // The /1 projection emitted only the rule token; the guard band and
+    // the criterion taxonomy were dropped outright.
+    assert.deepEqual(characteristic.acceptance, {
+      rule: 'guarded',
+      guard_band: { kind: 'NSFa', value: 0.5 },
+      criterion: 'D/NSFa',
+    });
+  });
+
+  it('the structured acceptance is authored content: a block change moves the digest', () => {
+    const dir = buildRetrievalFixturePackage();
+    const before = exportPackageRetrieval(dir);
+    const path = join(dir, 'specification', 'requirements.prl');
+    writeFileSync(
+      path,
+      readFileSync(path, 'utf8').replace('factor: 0.5', 'factor: 0.6'),
+    );
+    const after = exportPackageRetrieval(dir);
+    const b = before.document.units.find(u => u.id === '/req/scope/epsilon')!;
+    const a = after.document.units.find(u => u.id === '/req/scope/epsilon')!;
+    assert.equal(a.id, b.id);
+    assert.notEqual(a.content_hash, b.content_hash);
   });
 });
 

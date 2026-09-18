@@ -8,7 +8,12 @@
 // orphan, a match-all applicability entry (the facet's
 // `app_<dim>_match` case), and ISO 24229 text blocks (ask 7: authored +
 // via-converted alternates, kernel-id term addressing, and a block
-// addressed at the unprojected instrument). The manifest deliberately
+// addressed at the unprojected instrument). Ask 8 (#84) adds the
+// acceptance structures: a requirement limit.accepts triple + a
+// threshold acceptance_criteria block with a nested limit map, a tiered
+// block (sequences + unquoted numbers), a free-text block (the raw
+// string fallback), a composite test (typed criteria + preconditions),
+// and a verdict acceptance decision. The manifest deliberately
 // declares version "2" against editions { 2021 2017 } — the
 // edition-vs-model_version drift case the issue's ask 2 pins.
 // ─────────────────────────────────────────────────────────────────────
@@ -55,11 +60,50 @@ requirement /req/scope/alpha {
   limit {
     expression "ocl{family.parameters.x > 0}"
     uses { family.parameters.x }
+    accepts { verdict beep_level op lte limit "ocl{mpe}" }
+  }
+  acceptance_criteria {
+    type: "threshold"
+    description: "The frobnication error shall not exceed the MPE"
+    limit:
+      expression: "|error|"
+      operator: "lte"
+      threshold_expression: "mpe"
+      unit: "v"
   }
   dependencies { /req/scope/beta }
   verification { method examination description "By inspection." }
   ref derives-from "urn:test:r:9-1:2021#clause-5.2"
   ref derives-from "urn:test:r:9-1:2021#clause-5.2.1"
+}
+
+requirement /req/scope/epsilon {
+  name "Epsilon"
+  statement "The widget's frobnication shall tier by load."
+  acceptance_criteria {
+    type: "tiered"
+    description: "MPE tiers by load range"
+    variable: "load"
+    variable_unit: "v"
+    limit_expression: "factor × p_LC"
+    tiers:
+      - range:
+          min: 0
+        limit:
+          factor: 0.5
+          expression: "0.5 × p_LC"
+      - range:
+          min: 50000
+        limit:
+          factor: 1
+          expression: "1 × p_LC"
+  }
+}
+
+requirement /req/scope/zeta {
+  name "Zeta"
+  statement "The widget shall be judged by inspection."
+  acceptance_criteria { Judged by inspection against the reference checklist }
 }
 
 requirement /req/scope/beta {
@@ -99,6 +143,35 @@ requirement /req/orphan {
   method "Apply the frobnication procedure of the reference document."
   targets { /req/scope/alpha }
   reference { doc "urn:test:r:9-2:2021" clause "7.1" fragment "s3" }
+}
+
+conformance_test /conf/scope/beta-composite {
+  name "Beta composite test"
+  purpose "Verifies the widget's composite acceptance."
+  targets { /req/scope/beta }
+  preconditions {
+    precondition run-valid {
+      check "ocl{run.count >= 3}"
+      description "Enough valid runs"
+      on_violation invalid
+    }
+  }
+  acceptance_criteria {
+    type composite
+    description "Composite of partial checks"
+    pass_if "ocl{all_passed}"
+    criterion partial_check {
+      pass_if "ocl{abs(x) <= mpe}"
+      target /req/scope/beta
+      criterion I/MPE
+      optional true
+      description "Partial check"
+      reference "urn:test:r:9-2:2021#clause-7.2"
+    }
+    criterion verdict_check {
+      accepts { verdict beep_level op lte limit "ocl{mpe}" }
+    }
+  }
 }`,
   );
 
@@ -156,6 +229,11 @@ term orphan-term {
   quantity { kind sound_pressure unit "dB" }
   derive "ocl{abs(b_l)}"
   inputs { b_l }
+  acceptance {
+    rule guarded
+    guard_band { kind NSFa value 0.5 }
+    criterion D/NSFa
+  }
   ref derives-from "urn:test:r:9-3:2021#clause-2.1"
 }`,
   );

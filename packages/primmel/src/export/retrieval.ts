@@ -11,7 +11,7 @@
 // consumer re-derives that projection and the re-derivation is where
 // the mapping bugs live. This module is the UPSTREAM canonical form of
 // that projection: one export, one contract, versioned as
-// `primmel-retrieval/1`.
+// `primmel-retrieval/2`.
 //
 // The contract (the guarantees the issue asks for):
 //
@@ -73,6 +73,24 @@
 //      participate in the content_hash; a text block addressed at an
 //      element the projection does not ship is counted
 //      (droppedTextBlocks), never silently lost.
+//   8. THE STRUCTURED ACCEPTANCE (primmel/primmel-ts#84 — the
+//      normalize_unit retirement). The acceptance facet carries its
+//      structure as JSON, never as a string a consumer re-parses:
+//      `acceptance_criteria` is the authored block STRUCTURED (the
+//      requirement's raw YAML read by the subset parser in
+//      yaml-lite.ts; the conformance test's kernel-typed criteria
+//      assembled onto the cc.yaml shape — the items' `pass_if` /
+//      `accepts` OCL first-class), `accepts` is the verdict triple
+//      `{ verdict, op, limit }` (the limit predicate an OCL field, no
+//      longer a `"verdict op limit"` string to split), and `acceptance`
+//      is the acceptance DECISION object (rule, guard band, uncertainty
+//      budget, criterion taxonomy, statistics). The violation semantics
+//      surface top-level too: a constraint's `check` OCL,
+//      `violation_meaning`, and `on_violation`; a test's
+//      `preconditions` with their run-validity `check` OCL and
+//      `on_violation` — out of the `payload` grab bag. The passport
+//      keeps its compact acceptance SUMMARY string (v1 shape
+//      unchanged), composed from the structured fields.
 //
 // Congruence with the deployed consumer (oimlsmart/smart
 // derive-model-plane.ts → oimlsmart/rag model_plane.py): the unit ids,
@@ -116,12 +134,14 @@ import type { TestSequence } from '../types/TestSequence';
 import type StateMachine from '../types/StateMachine';
 import type { ApplicabilityEntry } from '../types/Form';
 import type { SpellingEntry } from '../types/Text';
+import type AcceptanceDecision from '../types/Acceptance';
 import type {
   AttributeDefinition,
   Behavior,
   ClassificationDimension,
 } from '../types/Subject';
 import { loadPackageWithIssues } from '../ser-des/package';
+import { parseYamlBlock } from './yaml-lite';
 
 /**
  * The projection shape version (semver'd by the document, not the
@@ -130,7 +150,7 @@ import { loadPackageWithIssues } from '../ser-des/package';
  * additive fields within a version are legal (consumers ignore what
  * they do not read).
  */
-export const RETRIEVAL_PROJECTION = 'primmel-retrieval/1';
+export const RETRIEVAL_PROJECTION = 'primmel-retrieval/2';
 
 /**
  * The facet shape version (ask 3 — the pre-flattened retrieval facet):
@@ -218,6 +238,97 @@ export interface UnitPassport {
 }
 
 /**
+ * The structured acceptance binding (the verdict triple, TODO.refactor/04's
+ * derive-once discipline): a requirement's `limit.accepts`, and the same
+ * shape per conformance-test criterion item. The limit predicate is an
+ * OCL FIELD — never the `"verdict op limit"` string a consumer had to
+ * split (the string the /1 projection emitted as `acceptance`).
+ */
+export interface RetrievalAccepts {
+  /** The verdict-registry id whose derived value the decision reads. */
+  verdict: string;
+  /** The comparison applied between the derived value and the limit. */
+  op: string;
+  /** The limit predicate (OCL) the comparison runs against. */
+  limit: string;
+}
+
+/**
+ * The structured acceptance decision rule (the shared AcceptanceDecision
+ * block — data/schemas/{rc,cc,verdicts}.yaml $defs/acceptanceDecision,
+ * OIML G 1-106 / R 91-2): how a limit comparison decides conformity.
+ * The /1 projection emitted only the rule token as a string; the full
+ * authored rule was dropped. Field names follow the wire schema.
+ */
+export interface RetrievalAcceptanceDecision {
+  /** shared_risk | guarded — absent when the package declares no rule
+   *  (the consumer's schema defaults it to shared_risk). */
+  rule?: string;
+  /** The guard band narrowing the effective limit (guarded rule). */
+  guard_band?: { kind: string; value: number };
+  /** The reference-uncertainty budget (U:MPE ratio cap). */
+  uncertainty?: { max_ratio_to_mpe: number };
+  /** The verdict criterion taxonomy (R 91-2, 6.1). */
+  criterion?: string;
+  /** The statistical-justification variant (R 91-2, 4.4). */
+  statistics?: { method: string; on_basis_of: string; permits: string };
+}
+
+/**
+ * One criterion item of a conformance test's structured acceptance
+ * block (the cc.yaml testCriterion shape, kernel-typed — these never
+ * ride a raw string). `pass_if` and `accepts.limit` are the item's OCL,
+ * first-class; a criterion carries EITHER, never both.
+ */
+export interface RetrievalAcceptanceCriteriaItem {
+  /** The criterion's authored name. */
+  name: string;
+  /** The requirement id this criterion traces to. */
+  target?: string;
+  /** The verdict criterion taxonomy (I/MPE | D/NSFa | D/NSFd | n/a). */
+  criterion?: string;
+  /** The OCL boolean expression the item passes on. */
+  pass_if?: string;
+  /** The canonical verdict-registry binding (instead of pass_if). */
+  accepts?: RetrievalAccepts;
+  /** True for an optional criterion (never blocks the verdict). */
+  optional?: boolean;
+  description?: string;
+  /** The item's source-reference URN. */
+  reference?: string;
+}
+
+/**
+ * The structured acceptance block. For a REQUIREMENT it is the authored
+ * `acceptance_criteria { … }` block read structured (the raw content is
+ * YAML, migrated 1:1 — parsed by the subset reader in yaml-lite.ts onto
+ * the rc.yaml acceptanceCriteria shape: `type`, `description`, `limit`
+ * `{ expression, operator, threshold_expression, unit }`, `tiers`, …).
+ * For a CONFORMANCE TEST it is the kernel-typed criteria assembled onto
+ * the cc.yaml shape. A requirement block that walks off the subset
+ * (free text, a keyword-form block) stays the RAW STRING — honest prose,
+ * never a failed parse dressed as structure.
+ */
+export type RetrievalAcceptanceCriteria = Record<string, unknown> | string;
+
+/**
+ * One run-validity precondition (cc.yaml): evaluated BEFORE the
+ * acceptance limit — a violation VOIDS the run (`invalid`), never a
+ * fail. First-class (primmel-ts#84): out of the `payload` grab bag,
+ * the `check` OCL and the violation outcome as fields.
+ */
+export interface RetrievalPrecondition {
+  id: string;
+  /** The OCL run-validity check expression. */
+  check: string;
+  description?: string;
+  /** The verdict outcome when the check is violated (`invalid`). */
+  on_violation?: string;
+  /** Escalation when the check's inputs are unresolvable. */
+  on_unresolvable?: string;
+}
+
+/**
  * One typed retrieval unit — the atom a RAG consumer indexes. Fields
  * are omitted when the unit declares nothing for them (the canonical
  * JSON stays tight); `id`, `kind`, `content_hash`, `passport`, and
@@ -252,16 +363,59 @@ export interface RetrievalUnit {
   binds_to?: string[];
   /** Requirement ids a conformance test verifies. */
   targets?: string[];
-  /** The acceptance chain, compact (accepts triple / pass_if / criteria). */
-  acceptance?: string;
-  /** The raw acceptance-criteria block (requirements) when authored. */
-  acceptance_criteria?: string;
   /** The verification method + description (requirements). */
   verification?: { method: string; description: string };
   /** The channel dimension a requirement is verified per value of. */
   channel?: string;
   /** Requirement/test ids this unit depends on. */
   dependencies?: string[];
+  /**
+   * The structured acceptance decision rule (ask 8 — primmel-ts#84):
+   * the shared AcceptanceDecision block as authored, on a requirement
+   * (limit.acceptance), a conformance test, or a characteristic. The
+   * /1 projection's `acceptance` STRING carried only the rule token
+   * (or, for requirements, the accepts triple flattened — now
+   * `accepts`); the compact summary still rides the passport.
+   */
+  acceptance?: RetrievalAcceptanceDecision;
+  /**
+   * The structured verdict-registry binding `{ verdict, op, limit }`
+   * (ask 8) — a requirement's limit.accepts. The limit predicate is an
+   * OCL field; the /1 projection flattened the triple into the
+   * `acceptance` string a consumer had to split.
+   */
+  accepts?: RetrievalAccepts;
+  /**
+   * The structured acceptance criteria (ask 8): the requirement's raw
+   * `acceptance_criteria` block read structured (the YAML-subset
+   * reader; the raw string itself when the block walks off the
+   * subset), the conformance test's kernel-typed criteria assembled.
+   * The /1 projection emitted the requirement's block as a raw YAML
+   * string inside the JSON — the consumer-side re-parse this field
+   * exists to eliminate.
+   */
+  acceptance_criteria?: RetrievalAcceptanceCriteria;
+  /**
+   * The constraint's OCL invariant (the construct's own `check`
+   * keyword, first-class per ask 8). Also carried as `expression` —
+   * the generic machine-expression slot the passport and the
+   * consumer's grounding text read.
+   */
+  check?: string;
+  /** The constraint's violation meaning — the construct's own words
+   *  for what a violation IS. Also carried as `statement` (the generic
+   *  prose slot). */
+  violation_meaning?: string;
+  /**
+   * The declared violation outcome (ask 8, first-class — out of
+   * `payload`): the constraint's `invalid | indeterminate`.
+   */
+  on_violation?: string;
+  /**
+   * The run-validity preconditions (ask 8, first-class — out of
+   * `payload`), each with its OCL `check` and violation outcome.
+   */
+  preconditions?: RetrievalPrecondition[];
   /**
    * The base prose value's spelling — the package's `default_spelling`
    * (ISO 24229; ask 7). The default spelling's values live inline (the
@@ -660,10 +814,133 @@ function passportOf(unit: Omit<RetrievalUnit, 'passport'>): UnitPassport {
     expression: unit.expression ?? '',
     units: unit.units ?? [],
     applicability: applicabilitySummary(unit.applicability),
-    acceptance: unit.acceptance ?? '',
+    acceptance: acceptanceSummary(unit),
     provenance: (unit.clauses ?? []).map(c => c.urn),
     content_hash: unit.content_hash,
   };
+}
+
+// ── the structured acceptance (ask 8, primmel-ts#84) ─────────────────
+
+/** The authored decision block → the structured decision object. */
+export function acceptanceDecisionOf(
+  a: AcceptanceDecision | null | undefined,
+): RetrievalAcceptanceDecision | undefined {
+  if (!a) {
+    return undefined;
+  }
+  const out: RetrievalAcceptanceDecision = {
+    ...(present(a.rule) ? { rule: a.rule } : {}),
+  };
+  if (a.guardBand) {
+    out.guard_band = { kind: a.guardBand.kind, value: a.guardBand.value };
+  }
+  if (a.uncertainty) {
+    out.uncertainty = { max_ratio_to_mpe: a.uncertainty.maxRatioToMpe };
+  }
+  if (present(a.criterion)) {
+    out.criterion = a.criterion;
+  }
+  if (a.statistics) {
+    out.statistics = {
+      method: a.statistics.method,
+      on_basis_of: a.statistics.onBasisOf,
+      permits: a.statistics.permits,
+    };
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** The typed criterion of a conformance test → the wire-shape item. */
+function criteriaItemOf(
+  c: ConformanceTest['acceptanceCriteria'][number],
+): RetrievalAcceptanceCriteriaItem {
+  const item: RetrievalAcceptanceCriteriaItem = { name: c.item };
+  if (present(c.requirementId)) {
+    item.target = c.requirementId;
+  }
+  if (present(c.criterion)) {
+    item.criterion = c.criterion;
+  }
+  if (present(c.passIf)) {
+    item.pass_if = c.passIf;
+  }
+  if (c.accepts) {
+    item.accepts = {
+      verdict: c.accepts.verdict,
+      op: c.accepts.op,
+      limit: c.accepts.limit,
+    };
+  }
+  if (c.optional) {
+    item.optional = true;
+  }
+  if (present(c.description)) {
+    item.description = c.description;
+  }
+  if (present(c.reference)) {
+    item.reference = c.reference;
+  }
+  return item;
+}
+
+/**
+ * The conformance test's typed criteria → the structured block (the
+ * cc.yaml shape): block-level `type` / `description` / `pass_if`, the
+ * criteria as `items`. Undefined when the test declares none of it.
+ */
+function testAcceptanceCriteriaOf(t: ConformanceTest):
+  | {
+      type?: string;
+      description?: string;
+      pass_if?: string;
+      items?: RetrievalAcceptanceCriteriaItem[];
+    }
+  | undefined {
+  const out: {
+    type?: string;
+    description?: string;
+    pass_if?: string;
+    items?: RetrievalAcceptanceCriteriaItem[];
+  } = {
+    ...(present(t.acceptanceCriteriaType)
+      ? { type: t.acceptanceCriteriaType }
+      : {}),
+    ...(present(t.acceptanceCriteriaDescription)
+      ? { description: t.acceptanceCriteriaDescription }
+      : {}),
+    ...(present(t.acceptancePassIf) ? { pass_if: t.acceptancePassIf } : {}),
+    ...(presentList(t.acceptanceCriteria)
+      ? { items: t.acceptanceCriteria.map(criteriaItemOf) }
+      : {}),
+  };
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
+ * The passport's acceptance summary — the compact string form of the
+ * structured fields, composed to the same bytes the /1 projection
+ * emitted (the passport v1 shape and its strings never move).
+ */
+function acceptanceSummary(unit: Omit<RetrievalUnit, 'passport'>): string {
+  if (unit.accepts) {
+    return `${unit.accepts.verdict} ${unit.accepts.op} ${unit.accepts.limit}`;
+  }
+  const criteria = unit.acceptance_criteria;
+  if (criteria && typeof criteria === 'object') {
+    const passIf = criteria['pass_if'];
+    if (present(passIf as string)) {
+      return passIf as string;
+    }
+    const description = criteria['description'];
+    if (present(description as string)) {
+      return description as string;
+    }
+  }
+  if (unit.acceptance?.rule) {
+    return unit.acceptance.rule;
+  }
+  return '';
 }
 
 // ── the flat retrieval facet (ask 3) ─────────────────────────────────
@@ -962,6 +1239,10 @@ const presentList = <T>(xs: T[] | undefined | null): T[] | undefined =>
   xs && xs.length > 0 ? xs : undefined;
 
 function requirementUnit(r: Requirement): UnitContent {
+  const decision = acceptanceDecisionOf(r.limit?.acceptance);
+  const criteria = present(r.acceptanceCriteria)
+    ? (parseYamlBlock(r.acceptanceCriteria) ?? r.acceptanceCriteria)
+    : undefined;
   return assemble(
     {
       id: r.id,
@@ -986,12 +1267,15 @@ function requirementUnit(r: Requirement): UnitContent {
       ...(presentList(r.bindsTo) ? { binds_to: r.bindsTo } : {}),
       ...(r.limit?.accepts
         ? {
-            acceptance: `${r.limit.accepts.verdict} ${r.limit.accepts.op} ${r.limit.accepts.limit}`,
+            accepts: {
+              verdict: r.limit.accepts.verdict,
+              op: r.limit.accepts.op,
+              limit: r.limit.accepts.limit,
+            },
           }
         : {}),
-      ...(present(r.acceptanceCriteria)
-        ? { acceptance_criteria: r.acceptanceCriteria }
-        : {}),
+      ...(decision ? { acceptance: decision } : {}),
+      ...(criteria !== undefined ? { acceptance_criteria: criteria } : {}),
       ...(present(r.verificationMethod)
         ? {
             verification: {
@@ -1011,17 +1295,9 @@ function conformanceTestUnit(t: ConformanceTest): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(t.kind) ? { test_kind: t.kind } : {}),
     ...(present(t.methodRef) ? { method_ref: t.methodRef } : {}),
-    ...(presentList(t.preconditions)
-      ? {
-          preconditions: t.preconditions.map(p => ({
-            id: p.id,
-            check: p.check,
-            description: p.description,
-            on_violation: p.onViolation,
-          })),
-        }
-      : {}),
   };
+  const decision = acceptanceDecisionOf(t.acceptance);
+  const criteria = testAcceptanceCriteriaOf(t);
   return assemble(
     {
       id: t.id,
@@ -1037,11 +1313,23 @@ function conformanceTestUnit(t: ConformanceTest): UnitContent {
         : {}),
       ...(presentList(t.targets) ? { targets: t.targets } : {}),
       ...(presentList(t.bindsTo) ? { binds_to: t.bindsTo } : {}),
-      ...(present(t.acceptancePassIf)
-        ? { acceptance: t.acceptancePassIf }
-        : present(t.acceptanceCriteriaDescription)
-          ? { acceptance: t.acceptanceCriteriaDescription }
-          : {}),
+      ...(decision ? { acceptance: decision } : {}),
+      ...(criteria ? { acceptance_criteria: criteria } : {}),
+      ...(presentList(t.preconditions)
+        ? {
+            preconditions: t.preconditions.map(p => ({
+              id: p.id,
+              check: p.check,
+              ...(present(p.description) ? { description: p.description } : {}),
+              ...(present(p.onViolation)
+                ? { on_violation: p.onViolation }
+                : {}),
+              ...(present(p.onUnresolvable)
+                ? { on_unresolvable: p.onUnresolvable }
+                : {}),
+            })),
+          }
+        : {}),
       ...(presentList(t.dependencies) ? { dependencies: t.dependencies } : {}),
       ...(Object.keys(payload).length > 0 ? { payload } : {}),
     },
@@ -1222,9 +1510,17 @@ function constraintUnit(c: Constraint): UnitContent {
       ...(present(c.name) ? { name: c.name } : {}),
       ...(present(c.violationMeaning) ? { statement: c.violationMeaning } : {}),
       ...(present(c.check) ? { expression: c.check } : {}),
+      // The violation semantics first-class (ask 8) — the construct's
+      // own keyword vocabulary, out of the payload grab bag. `statement`
+      // and `expression` stay: the generic prose/expression slots the
+      // passport and the consumer's grounding text read.
+      ...(present(c.check) ? { check: c.check } : {}),
+      ...(present(c.violationMeaning)
+        ? { violation_meaning: c.violationMeaning }
+        : {}),
+      ...(present(c.onViolation) ? { on_violation: c.onViolation } : {}),
       payload: {
         ...(present(c.stereotype) ? { stereotype: c.stereotype } : {}),
-        ...(present(c.onViolation) ? { on_violation: c.onViolation } : {}),
       },
     },
     collectClauses(c),
@@ -1252,8 +1548,8 @@ function characteristicUnit(v: Verdict): UnitContent {
           }
         : {}),
       ...(units ? { units } : {}),
-      ...(v.acceptance && present(v.acceptance.rule)
-        ? { acceptance: v.acceptance.rule }
+      ...(acceptanceDecisionOf(v.acceptance)
+        ? { acceptance: acceptanceDecisionOf(v.acceptance) }
         : {}),
       ...(Object.keys(payload).length > 0 ? { payload } : {}),
     },

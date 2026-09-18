@@ -1,8 +1,9 @@
-# The retrieval export (`primmel-retrieval/1`)
+# The retrieval export (`primmel-retrieval/2`)
 
 `primmel export retrieval <package-dir> [--out <file>]` — the canonical,
 versioned serialization of a package's typed units for RAG and agent
-consumers (primmel/primmel-ts#65). The module is
+consumers (primmel/primmel-ts#65; the structured acceptance of
+primmel/primmel-ts#84). The module is
 `packages/primmel/src/export/retrieval.ts`; this document is the
 contract its header summarizes. One-way projection, never the kernel's
 truth — the same doctrine as the ReqIF and RDF surfaces: the `.prl`
@@ -13,7 +14,7 @@ never authored, never re-imported.
 
 ```jsonc
 {
-  "projection": "primmel-retrieval/1",
+  "projection": "primmel-retrieval/2",
   "facet_version": "retrieval-facet/1",  // the per-unit facet shape version
   "package": {
     "id": "oiml-r60",
@@ -36,7 +37,7 @@ never authored, never re-imported.
 The JSON serialization is byte-deterministic per package state: object
 keys sorted recursively, two-space indent, trailing newline.
 
-## The seven guarantees, and where each lives
+## The guarantees, and where each lives
 
 ### 1. Clause URNs first-class, always
 
@@ -267,6 +268,53 @@ does not ship as a unit (a form, a subject, an instrument) is counted
 in `stats.droppedTextBlocks` — never silently lost, and never
 misattached to a shorter-prefix element that happens to be projected.
 
+### 8. The structured acceptance (primmel-ts#84)
+
+The acceptance facet carries its structure as JSON, never as a string a
+consumer re-parses. `/1` emitted three string forms — the requirement's
+raw YAML `acceptance_criteria` block, the `"verdict op limit"` triple,
+and the decision's bare rule token — and dropped the test criteria and
+the guard bands outright. `/2` replaces them with fields:
+
+- **`acceptance_criteria`** — the block, structured. For a requirement,
+  the authored YAML read by the purpose-built subset reader
+  (`src/export/yaml-lite.ts`: block mappings, block sequences, quoted
+  and plain scalars — the subset the migrated packages use, fidelity
+  pinned against `yaml.safe_load` on the real corpus blocks). For a
+  conformance test, the kernel-typed criteria assembled onto the
+  cc.yaml shape: `{ type, description, pass_if, items: [{ name, target,
+  criterion, pass_if | accepts, optional, description, reference }] }` —
+  the criteria OCL first-class, where `/1` shipped nothing at all. A
+  requirement block that walks off the subset (free text, a
+  keyword-form block) stays the RAW STRING: honest prose, never a
+  failed parse dressed as structure.
+- **`accepts`** — the verdict-registry binding as an object
+  `{ verdict, op, limit }`; the limit predicate is an OCL field. `/1`
+  flattened it into the `acceptance` string a consumer had to split.
+- **`acceptance`** — the acceptance DECISION object (the shared
+  AcceptanceDecision block): `{ rule, guard_band: { kind, value },
+  uncertainty: { max_ratio_to_mpe }, criterion, statistics:
+  { method, on_basis_of, permits } }`, on a requirement
+  (limit.acceptance), a conformance test, or a characteristic. `/1`
+  carried only the rule token; the guard band and the statistics were
+  dropped.
+- **The violation semantics, top-level** — a constraint carries
+  `check` (its OCL invariant), `violation_meaning`, and `on_violation`
+  as fields; a conformance test carries `preconditions:
+  [{ id, check, description, on_violation, on_unresolvable }]` — all
+  out of the `payload` grab bag. The generic slots stay: a constraint's
+  `expression` mirrors `check` and its `statement` mirrors
+  `violation_meaning` (the passport and grounding-text readers), and
+  `payload` keeps the kind-specific labels (`stereotype`, `test_kind`,
+  `method_ref`).
+
+The passport keeps its compact acceptance SUMMARY string — composed
+from the structured fields to the same bytes `/1` emitted — so the
+passport v1 shape never moves. This re-typing is the `/2` bump (the
+versioning doctrine below); it retires the consumer-side
+`normalize_unit` bridge (the YAML re-parse, the `check` surfacing, the
+`on_violation` hoist) the /1 export forced.
+
 ## The bundle freshness signal
 
 `source_hash` is sha256 over every file of the package directory —
@@ -281,10 +329,11 @@ but no unit's `content_hash`; that split is the point.
 
 ## Versioning
 
-- **`projection`** (`primmel-retrieval/1`) versions the document shape.
+- **`projection`** (`primmel-retrieval/2`) versions the document shape.
   A field renamed, removed, or re-typed bumps the version and is a
   re-index signal for every consumer; additive fields within a version
-  are legal (consumers ignore what they do not read).
+  are legal (consumers ignore what they do not read). The `/1` → `/2`
+  bump is the acceptance re-typing (guarantee 8).
 - **`facet_version`** (`retrieval-facet/1`) versions the per-unit facet
   key set on the same rule (the facet is the derived projection —
   excluded from the content_hash input; its shape versions separately).
