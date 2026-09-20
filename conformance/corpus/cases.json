@@ -485,6 +485,18 @@
    "summary": "The view_profile list facets are canonical braced — `roles { qms-manager }` and `visible { … }` serialize to themselves byte-for-byte; the serializer never emits the value-less bare form."
   },
   {
+   "id": "ser-02-pos-note-source",
+   "clause": "SER-02",
+   "polarity": "positive",
+   "kind": "roundtrip",
+   "path": "serialization/note-source.prl",
+   "expect": {
+    "roundtrip": "ok",
+    "outputEqualsInput": true
+   },
+   "summary": "A note carrying clause-site provenance serializes canonically: the `source { doc clause }` facet folds to `ref derives-from \"urn:…#clause-N\"` and back byte-for-byte."
+  },
+  {
    "id": "chk-01-pos",
    "clause": "CHK-01",
    "polarity": "positive",
