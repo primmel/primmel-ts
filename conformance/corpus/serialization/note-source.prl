@@ -1,0 +1,13 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+}
+
+note note_mpe_hysteresis {
+  type NOTE
+  message "MPE is applicable after increasing as well as decreasing the force applied (includes hysteresis)."
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2"
+}
