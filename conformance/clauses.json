@@ -739,6 +739,18 @@
    "rules": [
     "C142"
    ]
+  },
+  {
+   "id": "PKG-09",
+   "area": "packaging",
+   "title": "The license facets",
+   "statement": "A package declares at most one license_key — the entitlement catalog key, shaped ^std:[a-z0-9-]+$ — and declares its license_holder (the copyright owner) alongside it; a package without a license key is public content and carries no entitlement.",
+   "specAnchor": "the package manifest (the entitlement facet, smart TODO.external-refs/04)",
+   "rules": [
+    "C144",
+    "C145",
+    "C146"
+   ]
   }
  ]
 }
