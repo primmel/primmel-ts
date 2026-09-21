@@ -1,0 +1,10 @@
+package {
+  id corpus-pkg-license-duplicate
+  kind core
+  title "Licensed standard, duplicate key"
+  version "2005"
+  baseUrn "urn:example:corpus:licensed-duplicate:2005"
+  license_key "std:iec-60068-2-6"
+  license_key "std:iec-60068-2-30"
+  license_holder "IEC"
+}

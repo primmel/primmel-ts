@@ -1,0 +1,8 @@
+package {
+  id corpus-pkg-license-no-holder
+  kind core
+  title "Licensed standard, holder missing"
+  version "2005"
+  baseUrn "urn:example:corpus:licensed-no-holder:2005"
+  license_key "std:iec-60068-2-30"
+}

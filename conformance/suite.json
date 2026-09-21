@@ -1,18 +1,18 @@
 {
  "name": "primmel-conformance-suite",
  "title": "The Primmel conformance test suite",
- "version": "3.8.0",
- "date": "2026-09-16",
+ "version": "3.9.0",
+ "date": "2026-09-21",
  "language": {
   "name": "Primmel",
   "referenceBaseline": "@primmel/primmel 1.15.0",
-  "specification": "MN 114, the Primmel Language Specification (v3.3 draft); the v3.1 clauses (DAT-01 to DAT-04) anchor to its clause 19, the v3.2 clauses (CON-01 to CON-09) anchor to the v3.2 construct clauses, PKG-06 anchors to the 2026-09-08 revision's composition rules (the requirement-namespace pin, C119), PKG-07 anchors to the v3.3 revision's declared namespace pin (the document_module namespace facet, C119), the v3.3 clauses (FWK-01 to FWK-15) anchor to the v3.3 certification-framework clauses, the v3.3 codec-closure clauses (COD-01 to COD-06) anchor to the batch-4 codec-closure clauses (C124–C129), the v3.3 evaluation/execution clauses (EVL-01 to EVL-13) anchor to the batch-3 evaluation/execution clauses (C130–C141), PKG-08 anchors to the v3.3 overlay deep-merge composition rule (C141), the v3.3 workflow-fidelity clauses (WF-01 to WF-04) anchor to the batch-5 workflow clauses (C142–C143), and all identifiers re-key to the specification's conformance clauses when it publishes."
+  "specification": "MN 114, the Primmel Language Specification (v3.3 draft); the v3.1 clauses (DAT-01 to DAT-04) anchor to its clause 19, the v3.2 clauses (CON-01 to CON-09) anchor to the v3.2 construct clauses, PKG-06 anchors to the 2026-09-08 revision's composition rules (the requirement-namespace pin, C119), PKG-07 anchors to the v3.3 revision's declared namespace pin (the document_module namespace facet, C119), the v3.3 clauses (FWK-01 to FWK-15) anchor to the v3.3 certification-framework clauses, the v3.3 codec-closure clauses (COD-01 to COD-06) anchor to the batch-4 codec-closure clauses (C124–C129), the v3.3 evaluation/execution clauses (EVL-01 to EVL-13) anchor to the batch-3 evaluation/execution clauses (C130–C141), PKG-08 anchors to the v3.3 overlay deep-merge composition rule (C141), the v3.3 workflow-fidelity clauses (WF-01 to WF-04) anchor to the batch-5 workflow clauses (C142–C143), PKG-09 anchors to the license-facet clauses (the entitlement facet, smart TODO.external-refs/04), and all identifiers re-key to the specification's conformance clauses when it publishes."
  },
  "areas": {
   "syntax": "The document grammar: structure, identifiers, and the five entity kinds (requirement, conformance test, form, calculation, table).",
   "serialization": "The codec rules: the re-serialization fixed point and the canonical emission form.",
   "checks": "The constraint machinery: the rule-identified checks a conforming checker applies to a package.",
-  "packaging": "The package layer: the manifest, editions, version pins, layered composition, abstract imports, and requirement-namespace pins (derived and document_module-declared), and the register overlay deep merge.",
+  "packaging": "The package layer: the manifest, editions, version pins, layered composition, abstract imports, and requirement-namespace pins (derived and document_module-declared), the register overlay deep merge, and the license facets (the entitlement catalog key + the copyright holder, C144–C146).",
   "errors": "The named error cases: structural parse errors, enumerated facet rejection, and the duplicate-identifier issue.",
   "dataspace": "The v3.1 extension set (MN 114 clause 19): the dataspace construct, the policy construct, the trust reference, and the correspondence annotations.",
   "consumption": "The v3.2 consumption set (MN 114 v3.2): the term alias family, the applicability dimension, the structured reference identity + edition lineage, units-typed quantities, and the verdict chain + instance-parameter schema.",

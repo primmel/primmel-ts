@@ -1,0 +1,9 @@
+package {
+  id corpus-pkg-license-bad-key
+  kind core
+  title "Licensed standard, malformed key"
+  version "2005"
+  baseUrn "urn:example:corpus:licensed-bad-key:2005"
+  license_key "std:IEC-60068-2-30"
+  license_holder "IEC"
+}
