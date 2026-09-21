@@ -1,5 +1,10 @@
 import type { Dumper, Parser, Resolver } from '../types';
-import { escapeString, stripWrapping, tokenizePackage, unwrapBlock } from '../tokenize';
+import {
+  escapeString,
+  stripWrapping,
+  tokenizePackage,
+  unwrapBlock,
+} from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import {
   parseSourceDiscrepancy,
