@@ -1100,6 +1100,40 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/36, doctrine ch. 15 §15.3/§15.9',
   ),
+  // ── the license facets (smart TODO.external-refs/04; the entitlement
+  // facet + catalog) ── The manifest declares the package's licensed
+  // nature: one `license_key` (the entitlement catalog key the
+  // platform's license gate reads) and its `license_holder` (the
+  // copyright owner). A package without a key is public content — the
+  // OIML models stay license-free — so every leg keys on the key's
+  // presence. C144: the catalog-key shape. C145: at most one
+  // license_key per package (the parser records the overwritten earlier
+  // declarations). C146: the holder required with the key (a bare
+  // holder stays legal — attribution without an entitlement claim).
+  R(
+    'C144',
+    'license-key-shape',
+    'supply-chain',
+    'error',
+    'normal',
+    'smart TODO.external-refs/04 (the entitlement facet + catalog)',
+  ),
+  R(
+    'C145',
+    'license-key-unique',
+    'supply-chain',
+    'error',
+    'normal',
+    'smart TODO.external-refs/04 (the entitlement facet + catalog)',
+  ),
+  R(
+    'C146',
+    'license-holder-required',
+    'supply-chain',
+    'error',
+    'normal',
+    'smart TODO.external-refs/04 (the entitlement facet + catalog)',
+  ),
   // ── subject-intrinsic constraints (TODO.roadmap/51, BUG.R60-SSOT gap 7)
   // The constraint construct's declaration shape — the kernel mirror of
   // the OIML SMART constraints.yaml schema (stereotype «inv», one ocl{…}
