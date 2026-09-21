@@ -364,6 +364,12 @@
 //      demo_world participant seeds (gated), record stores → entity-
 //      class stores (gated), in-construct record cross-references
 //      (ungated); field-level discipline stays app-side
+//   C144–C146 the license facets (smart TODO.external-refs/04; the
+//      entitlement facet + catalog): the catalog-key shape
+//      (^std:[a-z0-9-]+$), at most one license_key per package (the
+//      parser's earlier declarations surface here), and the
+//      license_holder required with the key — a package without a key
+//      is public content and every leg keys on the key's presence
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -3578,6 +3584,40 @@ export function checkPackage(
         err(
           'C83',
           `package "${productManifest.id}" pins "${dep}" at "${pin}", which does not resolve against the product package's edition register { ${[...register].join(' ')} } — the pin names a declared edition (abstract-import-pinned)`,
+        );
+      }
+    }
+  }
+
+  // ── C144–C146: the license facets (smart TODO.external-refs/04; the ──
+  // entitlement facet + catalog) ──────────────────────────────────────
+  // The manifest declares the package's licensed nature: one
+  // `license_key` (the entitlement catalog key the platform's license
+  // gate reads) and its `license_holder` (the copyright owner). A
+  // package without a key is public content — the OIML models stay
+  // license-free — so every leg keys on the key's presence, and a bare
+  // holder stays legal (attribution without an entitlement claim). The
+  // parse is permissive (the scheme_type precedent); the linter owns the
+  // shape. Manifest-level like C77–C85: runs without composing content.
+  {
+    const m = standard.packageManifest;
+    if (m && m.licenseKey !== undefined) {
+      if (!/^std:[a-z0-9-]+$/.test(m.licenseKey)) {
+        err(
+          'C144',
+          `package "${m.id}": license_key "${m.licenseKey}" is not a catalog key — the key shape is std: followed by a lowercase kebab id, ^std:[a-z0-9-]+$ (license-key-shape)`,
+        );
+      }
+      for (const dup of m.licenseKeyDuplicates ?? []) {
+        err(
+          'C145',
+          `package "${m.id}": license_key declared again ("${dup}" before "${m.licenseKey}") — a package declares at most one license key; the last declaration wins (license-key-unique)`,
+        );
+      }
+      if (!m.licenseHolder) {
+        err(
+          'C146',
+          `package "${m.id}": license_key "${m.licenseKey}" without a license_holder — a licensed package declares its copyright owner (license-holder-required)`,
         );
       }
     }

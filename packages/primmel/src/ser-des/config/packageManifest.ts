@@ -41,6 +41,19 @@
 //     uses { acme-lc500@2021 }
 //     ...
 //   }
+//
+// Licensed external-standard packages (smart TODO.external-refs/04, the
+// entitlement facet) declare the facet pair the entitlement catalog
+// projects — the key the platform's license gate reads and the content's
+// copyright owner. A package without them is public content:
+//
+//   package {
+//     id iec-60068-2-30
+//     kind core
+//     license_key "std:iec-60068-2-30"
+//     license_holder "IEC"
+//     ...
+//   }
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
@@ -179,6 +192,22 @@ export const parsePackage: Parser = function (data) {
       // 17067 scheme-type register (TODO.v2/01) — a free token (the
       // kernel stays register-free); C98 reads it.
       manifest.schemeType = stripWrapping(t[i++]);
+    } else if (cmd === 'license_key' || cmd === 'licenseKey') {
+      // The entitlement catalog key (smart TODO.external-refs/04) — the
+      // key the generated standards-license catalog projects and the
+      // platform's license gate reads. The shape, the one-per-package
+      // rule, and the holder coupling are the linter's (C144–C146); the
+      // parse stays permissive (the scheme_type precedent) and records
+      // the overwritten earlier declarations for C145.
+      if (manifest.licenseKey !== undefined) {
+        (manifest.licenseKeyDuplicates ??= []).push(manifest.licenseKey);
+      }
+      manifest.licenseKey = stripWrapping(t[i++]);
+    } else if (cmd === 'license_holder' || cmd === 'licenseHolder') {
+      // The copyright owner of the licensed content (smart
+      // TODO.external-refs/04) — required with license_key (C146),
+      // allowed alone (attribution without an entitlement claim).
+      manifest.licenseHolder = stripWrapping(t[i++]);
     } else if (cmd === 'provides') {
       manifest.provides = readList(t[i++]);
     } else if (cmd === 'requires') {
@@ -303,6 +332,18 @@ export function dumpPackage(m: PackageManifest): string {
   );
   if (m.schemeType) {
     out += '  scheme_type ' + m.schemeType + '\n';
+  }
+  if (m.licenseKey) {
+    out +=
+      '  license_key "' +
+      m.licenseKey.replace(/\\/g, '\\\\').replace(/"/g, '\\"') +
+      '"\n';
+  }
+  if (m.licenseHolder) {
+    out +=
+      '  license_holder "' +
+      m.licenseHolder.replace(/\\/g, '\\\\').replace(/"/g, '\\"') +
+      '"\n';
   }
   if (m.title) {
     out +=

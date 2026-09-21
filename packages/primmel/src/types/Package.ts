@@ -125,6 +125,31 @@ export interface PackageManifest {
    */
   schemeType?: string;
   /**
+   * The package's entitlement catalog key (smart TODO.external-refs/04):
+   * `license_key "std:iec-60068-2-30"` — the key the generated
+   * standards-license catalog projects and the platform's license gate
+   * reads. A package WITHOUT one is public content (the OIML models stay
+   * license-free), so the field is optional; when present the linter
+   * requires the catalog-key shape `^std:[a-z0-9-]+$` (C144), at most
+   * one declaration per package (C145), and a `license_holder` alongside
+   * (C146). The parse itself stays permissive (the scheme_type
+   * precedent).
+   */
+  licenseKey?: string;
+  /**
+   * The copyright owner of the licensed content (`license_holder
+   * "IEC"`), declared whenever `licenseKey` is (C146). Allowed alone: a
+   * holder without a key is attribution, not an entitlement claim.
+   */
+  licenseHolder?: string;
+  /**
+   * The earlier `license_key` declarations the parser overwrote (the
+   * last one wins, the parser's overwrite semantics). Never dumped; the
+   * one-per-package leg of the linter (C145) reads them to flag the
+   * duplicate.
+   */
+  licenseKeyDuplicates?: string[];
+  /**
    * Capability ids this package contributes for downstream consumers
    * (module manifests). Every provides entry must be consumed by a
    * downstream package's `requires` or explicitly waived — linter rule
