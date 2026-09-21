@@ -1,0 +1,9 @@
+package {
+  id corpus-pkg-license
+  kind core
+  title "Licensed standard example"
+  version "2005"
+  baseUrn "urn:example:corpus:licensed:2005"
+  license_key "std:iec-60068-2-30"
+  license_holder "IEC"
+}

@@ -2970,6 +2970,56 @@
     ]
    },
    "summary": "Dangling element, approval, and gateway members are flagged C142, one error each."
+  },
+  {
+   "id": "pkg-09-pos",
+   "clause": "PKG-09",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "packaging/license-facet-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A licensed package declaring license_key and license_holder loads and checks clean."
+  },
+  {
+   "id": "pkg-09-neg-bad-key",
+   "clause": "PKG-09",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/license-facet-bad-key",
+   "expect": {
+    "rules": [
+     "C144"
+    ]
+   },
+   "summary": "A license key breaking the ^std:[a-z0-9-]+$ shape (uppercase) is flagged C144."
+  },
+  {
+   "id": "pkg-09-neg-duplicate",
+   "clause": "PKG-09",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/license-facet-duplicate",
+   "expect": {
+    "rules": [
+     "C145"
+    ]
+   },
+   "summary": "A second license_key declaration is flagged C145 (the last declaration wins)."
+  },
+  {
+   "id": "pkg-09-neg-holder-required",
+   "clause": "PKG-09",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "packaging/license-facet-holder-required",
+   "expect": {
+    "rules": [
+     "C146"
+    ]
+   },
+   "summary": "A license_key without a license_holder is flagged C146."
   }
  ]
 }
