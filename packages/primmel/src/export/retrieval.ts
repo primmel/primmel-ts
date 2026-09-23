@@ -132,6 +132,7 @@ import type Note from '../types/Note';
 import type Verdict from '../types/Verdict';
 import type { TestSequence } from '../types/TestSequence';
 import type StateMachine from '../types/StateMachine';
+import type { ConditionSet } from '../types/Subject';
 import type { ApplicabilityEntry } from '../types/Form';
 import type { SpellingEntry } from '../types/Text';
 import type AcceptanceDecision from '../types/Acceptance';
@@ -184,7 +185,8 @@ export type RetrievalUnitKind =
   | 'sequence'
   | 'note'
   | 'state_machine'
-  | 'dimension';
+  | 'dimension'
+  | 'condition_set';
 
 /**
  * One provenance edge of a unit, normalized onto the DOCUMENT's own
@@ -1619,6 +1621,39 @@ function sequenceUnit(s: TestSequence): UnitContent {
   );
 }
 
+function conditionSetUnit(cs: ConditionSet): UnitContent {
+  // One operating-condition tier (reference/rated/limiting — the IEC
+  // procedure packages' severity menus): the entries ride the payload
+  // as typed quantity values (value + unit inseparable, tolerance the
+  // SPECIFIED band per the quantity doctrine), so a consumer can
+  // evaluate membership and band checks without re-parsing prose.
+  const payload: Record<string, unknown> = {
+    role: cs.role,
+    ...(cs.subject ? { subject: cs.subject } : {}),
+    entries: cs.entries.map((e) => ({
+      quantity_kind: e.quantityKind,
+      value: e.value,
+      unit: e.unit,
+      tolerance: e.tolerance,
+      ...(e.note ? { note: e.note } : {}),
+    })),
+  };
+  return assemble(
+    {
+      id: `/condition/${cs.id}`,
+      kind: 'condition_set',
+      name: cs.id,
+      statement: [
+        `${cs.role} condition set`,
+        ...(cs.description ? [cs.description] : []),
+        ...cs.entries.map((e) => `${e.quantityKind.replace(/_/g, ' ')}: ${e.value} ${e.unit} ±${e.tolerance}`),
+      ].join(' — '),
+      payload,
+    },
+    collectClauses({ sourceRefs: cs.sources, refs: cs.refs, source: cs.source }),
+  );
+}
+
 function noteUnit(n: Note): UnitContent {
   return assemble(
     {
@@ -1801,6 +1836,9 @@ export function exportStandardRetrieval(
   }
   for (const s of standard.testSequences ?? []) {
     push(sequenceUnit(s), s.id);
+  }
+  for (const cs of standard.conditionSets ?? []) {
+    push(conditionSetUnit(cs), cs.id);
   }
   for (const n of standard.notes ?? []) {
     push(noteUnit(n), n.id);
