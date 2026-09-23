@@ -134,6 +134,7 @@ import type { TestSequence } from '../types/TestSequence';
 import type StateMachine from '../types/StateMachine';
 import type { ConditionSet } from '../types/Subject';
 import type { QuantityRegister } from '../types/Quantity';
+import { loadUnitsDb, unitsDbEntryFor, type UnitsDb } from './unitsdb';
 import type { ApplicabilityEntry } from '../types/Form';
 import type { SpellingEntry } from '../types/Text';
 import type AcceptanceDecision from '../types/Acceptance';
@@ -1625,6 +1626,7 @@ function sequenceUnit(s: TestSequence): UnitContent {
 function conditionSetUnit(
   cs: ConditionSet,
   registers?: QuantityRegister[],
+  db: UnitsDb | null = null,
 ): UnitContent {
   // One operating-condition tier (reference/rated/limiting — the IEC
   // procedure packages' severity menus): the entries ride the payload
@@ -1669,12 +1671,21 @@ function conditionSetUnit(
     ...(cs.subject ? { subject: cs.subject } : {}),
     entries: cs.entries.map(e => {
       const si = siOf(e.value, e.unit);
+      const ud = unitsDbEntryFor(db, e.unit);
       return {
         quantity_kind: e.quantityKind,
         value: e.value,
         unit: e.unit,
         tolerance: e.tolerance,
         ...(si ? { si } : {}),
+        ...(ud
+          ? {
+              unitsdb: {
+                unitsml: ud.unitsml,
+                ...(ud.scale ? { scale: ud.scale } : {}),
+              },
+            }
+          : {}),
         ...(e.note ? { note: e.note } : {}),
       };
     }),
@@ -1842,6 +1853,10 @@ export function exportStandardRetrieval(
   standard: Standard,
   options: RetrievalExportOptions = {},
 ): RetrievalExport {
+  // The UnitsDB binding is environmental: UNITSDB_DIR names a unitsdb
+  // checkout (units.json), and condition-set entries enrich with the
+  // DB's identifiers and measurement scales. Absent, no enrichment.
+  const unitsDb = loadUnitsDb(process.env.UNITSDB_DIR);
   const pkg = packageBlock(standard);
   // Build the unit contents paired with the KERNEL element id — the
   // address a `text` block targets (a term's variants address
@@ -1886,7 +1901,7 @@ export function exportStandardRetrieval(
     push(sequenceUnit(s), s.id);
   }
   for (const cs of standard.conditionSets ?? []) {
-    push(conditionSetUnit(cs, standard.quantityRegisters), cs.id);
+    push(conditionSetUnit(cs, standard.quantityRegisters, unitsDb), cs.id);
   }
   for (const n of standard.notes ?? []) {
     push(noteUnit(n), n.id);
