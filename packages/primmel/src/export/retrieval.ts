@@ -133,6 +133,7 @@ import type Verdict from '../types/Verdict';
 import type { TestSequence } from '../types/TestSequence';
 import type StateMachine from '../types/StateMachine';
 import type { ConditionSet } from '../types/Subject';
+import type { QuantityRegister } from '../types/Quantity';
 import type { ApplicabilityEntry } from '../types/Form';
 import type { SpellingEntry } from '../types/Text';
 import type AcceptanceDecision from '../types/Acceptance';
@@ -1621,22 +1622,62 @@ function sequenceUnit(s: TestSequence): UnitContent {
   );
 }
 
-function conditionSetUnit(cs: ConditionSet): UnitContent {
+function conditionSetUnit(
+  cs: ConditionSet,
+  registers?: QuantityRegister[],
+): UnitContent {
   // One operating-condition tier (reference/rated/limiting — the IEC
   // procedure packages' severity menus): the entries ride the payload
   // as typed quantity values (value + unit inseparable, tolerance the
-  // SPECIFIED band per the quantity doctrine), so a consumer can
-  // evaluate membership and band checks without re-parsing prose.
+  // SPECIFIED band per the quantity doctrine), resolved to SI through
+  // the package's own quantity register, so a consumer can evaluate
+  // membership and band checks without re-parsing prose.
+  const unitsBySymbol = new Map<
+    string,
+    { kind: string; factorToSI: number; offsetToSI: number; siUnit: string }
+  >();
+  for (const reg of registers ?? []) {
+    const siUnitByKind = new Map(reg.kinds.map(k => [k.id, k.siUnit]));
+    for (const u of reg.units ?? []) {
+      const siUnit = siUnitByKind.get(u.kind);
+      if (siUnit) {
+        unitsBySymbol.set(u.symbol, {
+          kind: u.kind,
+          factorToSI: u.factorToSI,
+          offsetToSI: u.offsetToSI,
+          siUnit,
+        });
+      }
+    }
+  }
+  const siOf = (
+    value: string | number,
+    unit: string,
+  ): { value: number; unit: string } | undefined => {
+    const def = unitsBySymbol.get(unit);
+    if (!def) {
+      return undefined;
+    }
+    const n = Number(String(value).replace(',', '.'));
+    if (!Number.isFinite(n)) {
+      return undefined;
+    }
+    return { value: n * def.factorToSI + def.offsetToSI, unit: def.siUnit };
+  };
   const payload: Record<string, unknown> = {
     role: cs.role,
     ...(cs.subject ? { subject: cs.subject } : {}),
-    entries: cs.entries.map(e => ({
-      quantity_kind: e.quantityKind,
-      value: e.value,
-      unit: e.unit,
-      tolerance: e.tolerance,
-      ...(e.note ? { note: e.note } : {}),
-    })),
+    entries: cs.entries.map(e => {
+      const si = siOf(e.value, e.unit);
+      return {
+        quantity_kind: e.quantityKind,
+        value: e.value,
+        unit: e.unit,
+        tolerance: e.tolerance,
+        ...(si ? { si } : {}),
+        ...(e.note ? { note: e.note } : {}),
+      };
+    }),
   };
   return assemble(
     {
@@ -1845,7 +1886,7 @@ export function exportStandardRetrieval(
     push(sequenceUnit(s), s.id);
   }
   for (const cs of standard.conditionSets ?? []) {
-    push(conditionSetUnit(cs), cs.id);
+    push(conditionSetUnit(cs, standard.quantityRegisters), cs.id);
   }
   for (const n of standard.notes ?? []) {
     push(noteUnit(n), n.id);
