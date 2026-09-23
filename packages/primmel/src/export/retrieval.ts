@@ -1630,7 +1630,7 @@ function conditionSetUnit(cs: ConditionSet): UnitContent {
   const payload: Record<string, unknown> = {
     role: cs.role,
     ...(cs.subject ? { subject: cs.subject } : {}),
-    entries: cs.entries.map((e) => ({
+    entries: cs.entries.map(e => ({
       quantity_kind: e.quantityKind,
       value: e.value,
       unit: e.unit,
@@ -1646,11 +1646,18 @@ function conditionSetUnit(cs: ConditionSet): UnitContent {
       statement: [
         `${cs.role} condition set`,
         ...(cs.description ? [cs.description] : []),
-        ...cs.entries.map((e) => `${e.quantityKind.replace(/_/g, ' ')}: ${e.value} ${e.unit} ±${e.tolerance}`),
+        ...cs.entries.map(
+          e =>
+            `${e.quantityKind.replace(/_/g, ' ')}: ${e.value} ${e.unit} ±${e.tolerance}`,
+        ),
       ].join(' — '),
       payload,
     },
-    collectClauses({ sourceRefs: cs.sources, refs: cs.refs, source: cs.source }),
+    collectClauses({
+      sourceRefs: cs.sources,
+      refs: cs.refs,
+      source: cs.source,
+    }),
   );
 }
 
