@@ -1283,6 +1283,37 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart architecture-gaps-2026-07.md E10, data/schemas/test-sequences.yaml',
   ),
+  // ── the executable test programs (smart TODO.twin-demo/03 — the
+  // model-drive bindings) ──
+  // The conformance test's preparation/stimulus facets are the
+  // machine-executable half of the test declaration. C147 is the
+  // program shape: entry orders are positive integers unique in the
+  // program; a preparation step carries action AND/OR drive; a verify
+  // block carries read AND tolerance; a stimulus point carries a drive
+  // and an acceptance reference. C148 is the duration discipline: hold
+  // and fresh_within parse as duration windows (the serve contract's
+  // vocabulary), and a stimulus point declares fresh_within (§14.12's
+  // no-stale-semantics doctrine). Reference RESOLUTION (the drive
+  // operation names against the twin kind's declared vocabulary, the
+  // acceptance/tolerance refs against requirement nodes) is the
+  // consumer-side conformance leg's job — the kernel checks
+  // syntax/shape only (the C92/C93 vs R39 split).
+  R(
+    'C147',
+    'test-program-shape',
+    'base',
+    'error',
+    'normal',
+    'smart TODO.twin-demo/03 (the model-drive bindings)',
+  ),
+  R(
+    'C148',
+    'test-program-duration',
+    'base',
+    'error',
+    'normal',
+    'smart TODO.twin-demo/03 (the model-drive bindings)',
+  ),
   // ── the per-test evaluation-formula traces (smart gap-close E11,
   // analysis/architecture-gaps-2026-07.md; the smart contract
   // data/schemas/formulas-used.yaml) ──
