@@ -370,6 +370,11 @@
 //      parser's earlier declarations surface here), and the
 //      license_holder required with the key — a package without a key
 //      is public content and every leg keys on the key's presence
+//   C147–C148 the executable test programs (smart TODO.twin-demo/03;
+//      the model-drive bindings): the preparation/stimulus entry-order
+//      and step/point shape, and the hold/fresh_within duration
+//      discipline (a stimulus point declares fresh_within — §14.12's
+//      no-stale-semantics doctrine)
 //
 // Levels (TODO.roadmap/17): the DEFAULT level runs the normal-level
 // rules at their catalog severities. --audit additionally runs the
@@ -4202,6 +4207,139 @@ export function checkPackage(
             'C93',
             `test_sequence ${seq.id}: ${at} depends_on ${step.dependsOn} names a LATER step — a forward reference; depends_on names an EARLIER step (test-sequence-integrity)`,
           );
+        }
+      }
+    }
+  }
+
+  // ── C147–C148: the executable test programs (smart TODO.twin-demo/03 —
+  // the model-drive bindings) ──
+  // The conformance test's `preparation { … }` / `stimulus { … }` facets
+  // are the machine-executable half of the test declaration: the
+  // preparation program (warm-up, preload discipline, zero check) and the
+  // ordered measurement program (drive, argument expressions over the
+  // subject's declared parameters, hold, the read's freshness bound, the
+  // per-point acceptance reference). C147 test-program-shape: every
+  // program entry's order is a positive integer unique in the program; a
+  // preparation step carries a prose action AND/OR a drive reference; a
+  // step's verify block carries read AND tolerance; a stimulus point
+  // carries a drive and an acceptance reference. C148
+  // test-program-duration: a hold / fresh_within value parses as a
+  // duration window (the serve contract's vocabulary — shorthand 30min or
+  // ISO 8601 fixed-length PT30M), and a stimulus point declares
+  // fresh_within (§14.12's no-stale-semantics doctrine: a measurement
+  // point's read carries its freshness bound, like C63's live bindings).
+  // Drive/acceptance/tolerance REFERENCE RESOLUTION (the world-vocabulary
+  // operation names, the requirement nodes) is the consumer-side
+  // conformance leg's job — the kernel checks syntax/shape only (the
+  // C92/C93 vs R39 split). Packages without test programs are untouched —
+  // the loops are empty.
+  {
+    for (const ct of standard.conformanceTests ?? []) {
+      const prep = ct.preparation;
+      if (prep) {
+        const orders = new Set<number>();
+        for (const step of prep.entries) {
+          const at =
+            step.order !== null
+              ? `preparation step ${step.order}`
+              : 'a preparation step';
+          if (
+            step.order === null ||
+            !Number.isInteger(step.order) ||
+            step.order < 1
+          ) {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: ${at} declares no positive-integer order (got ${step.order === null ? 'none' : step.order}) — the step order is a positive integer (test-program-shape)`,
+            );
+          } else if (orders.has(step.order)) {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: preparation step order ${step.order} is declared twice — the order is unique within the program (test-program-shape)`,
+            );
+          } else {
+            orders.add(step.order);
+          }
+          if (step.action === '' && step.drive === '') {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: ${at} declares neither action nor drive — a preparation step carries a prose action AND/OR a drive reference (test-program-shape)`,
+            );
+          }
+          if (
+            step.verify &&
+            (step.verify.read === '' || step.verify.tolerance === '')
+          ) {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: ${at} declares a verify block without ${
+                step.verify.read === '' ? 'read' : 'tolerance'
+              } — the verification names what to read AND the tolerance reference (test-program-shape)`,
+            );
+          }
+          if (step.hold !== '' && parseFreshnessWindow(step.hold) === null) {
+            err(
+              'C148',
+              `conformance_test ${ct.id}: ${at} hold "${step.hold}" is not a parseable duration (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT30M) (test-program-duration)`,
+            );
+          }
+        }
+      }
+      const stim = ct.stimulus;
+      if (stim) {
+        const orders = new Set<number>();
+        for (const point of stim.entries) {
+          const at =
+            point.order !== null
+              ? `stimulus point ${point.order}`
+              : 'a stimulus point';
+          if (
+            point.order === null ||
+            !Number.isInteger(point.order) ||
+            point.order < 1
+          ) {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: ${at} declares no positive-integer order (got ${point.order === null ? 'none' : point.order}) — the point order is a positive integer (test-program-shape)`,
+            );
+          } else if (orders.has(point.order)) {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: stimulus point order ${point.order} is declared twice — the order is unique within the program (test-program-shape)`,
+            );
+          } else {
+            orders.add(point.order);
+          }
+          if (point.drive === '') {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: ${at} declares no drive — a stimulus point names the drive operation (test-program-shape)`,
+            );
+          }
+          if (point.acceptance === '') {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: ${at} declares no acceptance — a stimulus point names the MPE/requirement node it is judged against (test-program-shape)`,
+            );
+          }
+          if (point.hold !== '' && parseFreshnessWindow(point.hold) === null) {
+            err(
+              'C148',
+              `conformance_test ${ct.id}: ${at} hold "${point.hold}" is not a parseable duration (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT30M) (test-program-duration)`,
+            );
+          }
+          if (point.freshWithin === '') {
+            err(
+              'C148',
+              `conformance_test ${ct.id}: ${at} declares no fresh_within — a measurement point's read carries its freshness bound (§14.12: no stale semantics) (test-program-duration)`,
+            );
+          } else if (parseFreshnessWindow(point.freshWithin) === null) {
+            err(
+              'C148',
+              `conformance_test ${ct.id}: ${at} fresh_within "${point.freshWithin}" is not a parseable freshness window (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT5S) (test-program-duration)`,
+            );
+          }
         }
       }
     }
