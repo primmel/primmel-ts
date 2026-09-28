@@ -4,6 +4,9 @@ import ConformanceTest, {
   AcceptanceCriterion,
   TestPrecondition,
   TestInstances,
+  PreparationStep,
+  StimulusPoint,
+  TestProgram,
 } from '../../types/ConformanceTest';
 import tokenize from '../tokenize';
 import {
@@ -13,6 +16,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import {
+  parseRef,
   parseRefFromReaders,
   foldRefIntoLegacy,
   dumpSourceRefAsRef,
@@ -26,6 +30,8 @@ import {
   parseApplicability,
   dumpApplicabilityEntries,
   dumpBareSafe,
+  readSource,
+  readValueToken,
 } from './field-parser';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import {
@@ -38,7 +44,7 @@ import {
   parseRequiredCompetence,
   dumpRequiredCompetence,
 } from './competenceKind';
-import { forEachEntry, unwrapped } from '../parse-block';
+import { forEachEntry, skipUnknownValue, unwrapped } from '../parse-block';
 import { Dumper, Parser } from '../types';
 
 function readStringList(block: string): string[] {
@@ -405,6 +411,326 @@ function parseInstances(block: string): TestInstances {
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// The executable test programs (smart TODO.twin-demo/03 — the
+// model-drive bindings): `preparation { … }` and `stimulus { … }` on a
+// conformance test. The preparation program is the ordered warm-up /
+// preload / zero-check discipline; the stimulus program is the ordered
+// measurement program (the R 60-2 load-step table, the creep hold). The
+// programs reference the world vocabulary's operation NAMES (`drive
+// ladApply`); the vocabulary itself is declared by the twin kind
+// packages, and reference RESOLUTION is the consumer-side conformance
+// leg's job — the kernel checks syntax/shape only (the C92/C93 vs R39
+// split).
+//
+//   preparation {
+//     description "Warm-up, preload, and zero check"
+//     step 1 {
+//       action "Energize the instrument and allow the indication to stabilize"
+//       hold 30min
+//     }
+//     step 2 {
+//       action "Apply the preload three times, returning to zero between applications"
+//       drive ladApply
+//       args { load: "e_max" }
+//       hold PT1M
+//     }
+//     step 3 {
+//       action "Verify the zero indication"
+//       verify { read zero_indication tolerance "/req/metrological/zero-error" }
+//     }
+//     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.2" }
+//   }
+//   stimulus {
+//     point 1 {
+//       drive ladApply
+//       args { load: "0.1 * e_max" }
+//       hold PT1M
+//       fresh_within 5s
+//       acceptance "/req/metrological/mpe"
+//     }
+//     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.7" }
+//   }
+//
+// Surface-syntax notes:
+//   - an entry is `step <order> { … }` / `point <order> { … }` — the
+//     test_sequence head-scalar idiom: the head is the declared order, so
+//     the program body parses with a manual token walk (forEachEntry
+//     cannot interleave head-scalar + block pairs with scalar facets);
+//   - `args { name: expr … }` mirrors the form field's
+//     calculation_bindings idiom; values are model expressions over the
+//     subject's declared parameters — quoted text, a bare token, or
+//     inline ocl{…} (readValueToken accumulates the tokenizer-split
+//     braces). The dump quotes the values ALWAYS (free strings — the
+//     comment-character hazard);
+//   - hold / fresh_within carry the freshness-window duration vocabulary
+//     (the serve contract's idiom: shorthand 30min or ISO 8601
+//     fixed-length PT30M — C148 polices the shape);
+//   - `source { doc "…" clause "…" }` repeats at the program level,
+//     collecting into sourceRefs (the requirement family's idiom,
+//     TODO.roadmap/24);
+//   - the parser stays TOTAL: a missing entry head parses with order
+//     null, unknown facets stay skipped (skipUnknownValue); the linter
+//     (C147/C148) judges the shape.
+// ─────────────────────────────────────────────────────────────────────
+
+/** `args { name: expr … }` — the calculation_bindings idiom; values may
+ *  be quoted, bare, or inline ocl{…} (brace-accumulated). */
+function parseProgramArgs(block: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const key = stripColon(t[i++]);
+    if (i >= t.length) {
+      break;
+    }
+    if (t[i] === ':') {
+      i++;
+    }
+    if (i < t.length) {
+      const read = readValueToken(t, i);
+      out[key] = stripWrapping(read.text);
+      i = read.next;
+    }
+  }
+  return out;
+}
+
+/** `verify { read <what> tolerance <requirement-ref> }` — the zero-check
+ *  idiom: what to read + the tolerance reference it is judged against. */
+function parseVerify(block: string): { read: string; tolerance: string } {
+  const v = { read: '', tolerance: '' };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'read') {
+      v.read = stripWrapping(t[i++]);
+    } else if (cmd === 'tolerance') {
+      v.tolerance = stripWrapping(t[i++]);
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return v;
+}
+
+/** The shared program-body walk: description, the repeated source
+ *  blocks, and the `step|point <order> { … }` entries. */
+function parseProgramBody<TStep extends PreparationStep | StimulusPoint>(
+  block: string,
+  entryKeyword: 'step' | 'point',
+  makeEntry: () => TStep,
+  parseEntryFacets: (block: string, entry: TStep) => void,
+  errCtx: string,
+): TestProgram<TStep> {
+  const program: TestProgram<TStep> = {
+    description: '',
+    entries: [],
+    sourceRefs: [],
+  };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const command = t[i++];
+    if (i >= t.length) {
+      throw new Error(
+        `Parsing error: ${errCtx}: Expecting value for ${command}`,
+      );
+    }
+    if (command === 'description') {
+      program.description = stripWrapping(t[i++]);
+    } else if (command === 'source') {
+      program.sourceRefs.push(readSource(unwrapBlock(t[i++])));
+    } else if (command === 'ref') {
+      // The canonical provenance spelling (docs/primmel/18 §18.4) — a
+      // derives-from ref folds back into the program's sourceRefs, so the
+      // dump's canonical emission re-parses identically (the fixpoint).
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      foldRefIntoLegacy(program, rr.ref);
+      i = rr.next;
+    } else if (command === entryKeyword) {
+      const entry = makeEntry();
+      let value = t[i++];
+      if (!value.startsWith('{')) {
+        // The head scalar is the declared order — Number() stays total
+        // (garbage lands as NaN for C147, never a parse error).
+        entry.order = Number(stripWrapping(value));
+        value = i < t.length && t[i].startsWith('{') ? t[i++] : '';
+      }
+      if (value.startsWith('{')) {
+        parseEntryFacets(unwrapBlock(value), entry);
+      }
+      program.entries.push(entry);
+    } else {
+      // Forward compatibility: skip the unknown facet's value (the
+      // multi-token-facet-aware skip, MN 114 §9.5).
+      i = skipUnknownValue(t, i, command);
+    }
+  }
+  return program;
+}
+
+function parsePreparation(
+  block: string,
+  id: string,
+): TestProgram<PreparationStep> {
+  return parseProgramBody(
+    block,
+    'step',
+    (): PreparationStep => ({
+      order: null,
+      action: '',
+      drive: '',
+      args: {},
+      hold: '',
+      verify: null,
+    }),
+    (stepBlock, step) => {
+      forEachEntry(
+        stepBlock,
+        (facet, value) => {
+          if (facet === 'action') {
+            step.action = unwrapped(value);
+          } else if (facet === 'drive') {
+            step.drive = stripWrapping(value());
+          } else if (facet === 'args') {
+            step.args = parseProgramArgs(unwrapBlock(value()));
+          } else if (facet === 'hold') {
+            step.hold = stripWrapping(value());
+          } else if (facet === 'verify') {
+            step.verify = parseVerify(unwrapBlock(value()));
+          } else {
+            return false;
+          }
+          return true;
+        },
+        { construct: 'conformance_test.preparation', id },
+      );
+    },
+    `conformance_test.preparation. ID ${id}`,
+  );
+}
+
+function parseStimulus(block: string, id: string): TestProgram<StimulusPoint> {
+  return parseProgramBody(
+    block,
+    'point',
+    (): StimulusPoint => ({
+      order: null,
+      drive: '',
+      args: {},
+      hold: '',
+      freshWithin: '',
+      acceptance: '',
+    }),
+    (pointBlock, point) => {
+      forEachEntry(
+        pointBlock,
+        (facet, value) => {
+          if (facet === 'drive') {
+            point.drive = stripWrapping(value());
+          } else if (facet === 'args') {
+            point.args = parseProgramArgs(unwrapBlock(value()));
+          } else if (facet === 'hold') {
+            point.hold = stripWrapping(value());
+          } else if (facet === 'fresh_within') {
+            point.freshWithin = stripWrapping(value());
+          } else if (facet === 'acceptance') {
+            point.acceptance = stripWrapping(value());
+          } else {
+            return false;
+          }
+          return true;
+        },
+        { construct: 'conformance_test.stimulus', id },
+      );
+    },
+    `conformance_test.stimulus. ID ${id}`,
+  );
+}
+
+/** Dump the `args { … }` block: the values quote ALWAYS (free strings —
+ *  the comment-character hazard; the E10 source-quoting precedent). */
+function dumpProgramArgs(args: Record<string, string>): string {
+  const keys = Object.keys(args);
+  if (keys.length === 0) {
+    return '';
+  }
+  return (
+    ' args { ' +
+    keys.map(k => k + ': "' + escapeString(args[k]) + '"').join(' ') +
+    ' }'
+  );
+}
+
+function dumpPreparation(program: TestProgram<PreparationStep>): string {
+  let out = '  preparation {\n';
+  if (program.description !== '') {
+    out += '    description "' + escapeString(program.description) + '"\n';
+  }
+  for (const step of program.entries) {
+    out += '    step' + (step.order !== null ? ' ' + step.order : '') + ' {';
+    if (step.action !== '') {
+      out += ' action "' + escapeString(step.action) + '"';
+    }
+    if (step.drive !== '') {
+      out += ' drive ' + dumpBareSafe(step.drive);
+    }
+    out += dumpProgramArgs(step.args);
+    if (step.hold !== '') {
+      out += ' hold ' + dumpBareSafe(step.hold);
+    }
+    if (step.verify) {
+      out += ' verify {';
+      if (step.verify.read !== '') {
+        out += ' read ' + dumpBareSafe(step.verify.read);
+      }
+      if (step.verify.tolerance !== '') {
+        out += ' tolerance ' + dumpBareSafe(step.verify.tolerance);
+      }
+      out += ' }';
+    }
+    out += ' }\n';
+  }
+  for (const src of program.sourceRefs) {
+    out += dumpSourceRefAsRef(src, '    ', escapeString);
+  }
+  return out + '  }\n';
+}
+
+function dumpStimulus(program: TestProgram<StimulusPoint>): string {
+  let out = '  stimulus {\n';
+  if (program.description !== '') {
+    out += '    description "' + escapeString(program.description) + '"\n';
+  }
+  for (const point of program.entries) {
+    out += '    point' + (point.order !== null ? ' ' + point.order : '') + ' {';
+    if (point.drive !== '') {
+      out += ' drive ' + dumpBareSafe(point.drive);
+    }
+    out += dumpProgramArgs(point.args);
+    if (point.hold !== '') {
+      out += ' hold ' + dumpBareSafe(point.hold);
+    }
+    if (point.freshWithin !== '') {
+      out += ' fresh_within ' + dumpBareSafe(point.freshWithin);
+    }
+    if (point.acceptance !== '') {
+      out += ' acceptance ' + dumpBareSafe(point.acceptance);
+    }
+    out += ' }\n';
+  }
+  for (const src of program.sourceRefs) {
+    out += dumpSourceRefAsRef(src, '    ', escapeString);
+  }
+  return out + '  }\n';
+}
+
 export const parseConformanceTest: Parser = function (id, data) {
   const result: ConformanceTest = {
     id,
@@ -416,6 +742,8 @@ export const parseConformanceTest: Parser = function (id, data) {
     bindsTo: [],
     applicability: [],
     procedure: [],
+    preparation: null,
+    stimulus: null,
     measurements: [],
     kind: '',
     obligation: '',
@@ -554,6 +882,12 @@ export const parseConformanceTest: Parser = function (id, data) {
         }
       } else if (keyword === 'procedure_steps') {
         result.procedureSteps = readStringList(value());
+      } else if (keyword === 'preparation') {
+        // The executable preparation program (smart TODO.twin-demo/03).
+        result.preparation = parsePreparation(unwrapBlock(value()), id);
+      } else if (keyword === 'stimulus') {
+        // The executable stimulus program (smart TODO.twin-demo/03).
+        result.stimulus = parseStimulus(unwrapBlock(value()), id);
       } else if (keyword === 'kind') {
         result.kind = stripWrapping(value());
       } else if (keyword === 'obligation') {
@@ -699,6 +1033,12 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   if (ct.procedureSteps && ct.procedureSteps.length > 0) {
     out += '  procedure_steps { ' + ct.procedureSteps.join(' ') + ' }\n';
+  }
+  if (ct.preparation) {
+    out += dumpPreparation(ct.preparation);
+  }
+  if (ct.stimulus) {
+    out += dumpStimulus(ct.stimulus);
   }
   if (ct.measurements.length > 0) {
     out += '  validate_measurement {\n';
