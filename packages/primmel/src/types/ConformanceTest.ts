@@ -108,6 +108,72 @@ export interface TestInstances {
   values: Record<string, Record<string, string | number>>;
 }
 
+/**
+ * One step of a test's preparation program (smart TODO.twin-demo/03 —
+ * the model-drive bindings): the warm-up, the preload discipline, the
+ * zero check. A step carries a prose action AND/OR a drive reference —
+ * the world-vocabulary operation NAME (e.g. `ladApply`); the operation
+ * vocabulary itself is declared by the twin's kind packages, and a
+ * consumer-side conformance leg proves the references resolve (the
+ * C92/C93 vs R39 split — the kernel checks shape only).
+ */
+export interface PreparationStep {
+  /** Declared order (positive integer; null on a malformed head — the parser stays total). */
+  order: number | null;
+  /** Prose action (the procedure-step idiom). */
+  action: string;
+  /** Drive reference — the operation name the step drives (may be ''). */
+  drive: string;
+  /** Drive arguments: name → model expression over the subject's declared
+   * parameters (the derivation idiom — quoted text, a bare token, or
+   * inline `ocl{…}`). */
+  args: Record<string, string>;
+  /** Settle/hold duration (the freshness-window duration vocabulary:
+   * shorthand 30min or ISO 8601 fixed-length PT30M). */
+  hold: string;
+  /** Post-step verification — what to read + the tolerance reference
+   * (e.g. the zero check against the declared zero-error requirement). */
+  verify: { read: string; tolerance: string } | null;
+}
+
+/**
+ * One point of a test's stimulus program (smart TODO.twin-demo/03): the
+ * ordered measurement program — the drive, its arguments as model
+ * expressions (load = 0.1·e_max … e_max per the R 60-2 load-step table),
+ * the settling/hold, the freshness bound for the read (the serve
+ * contract's `fresh_within` idiom), and the per-point acceptance
+ * reference (the MPE/requirement node).
+ */
+export interface StimulusPoint {
+  /** Declared order (positive integer; null on a malformed head — the parser stays total). */
+  order: number | null;
+  /** Drive reference — the operation name the point drives (e.g. ladApply). */
+  drive: string;
+  /** Drive arguments: name → model expression over the subject's declared parameters. */
+  args: Record<string, string>;
+  /** Settle/hold duration before the read. */
+  hold: string;
+  /** Freshness bound for the read (the serve contract's `fresh_within` idiom). */
+  freshWithin: string;
+  /** Per-point acceptance reference (the MPE/requirement node id). */
+  acceptance: string;
+}
+
+/**
+ * A test's executable program block — `preparation { … }` (steps) or
+ * `stimulus { … }` (points). Both carry the `source { doc clause }`
+ * provenance blocks (the requirement family's idiom, TODO.roadmap/24).
+ * Null on the test when the facet is absent.
+ */
+export interface TestProgram<TStep> {
+  /** Prose summary of the program (optional). */
+  description: string;
+  /** The ordered program entries (preparation steps | stimulus points). */
+  entries: TStep[];
+  /** Clause-URN provenance — repeated `source { doc "…" clause "…" }` blocks. */
+  sourceRefs: { doc: string; clause: string; fragment?: string }[];
+}
+
 export default interface ConformanceTest {
   id: string;
   name: string;
@@ -148,6 +214,22 @@ export default interface ConformanceTest {
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];
   procedure: ConformanceTestStep[];
+  /**
+   * The test's executable PREPARATION program (smart TODO.twin-demo/03):
+   * `preparation { step <order> { … } source { … } }` — warm-up, preload
+   * discipline, zero check. Null when the facet is absent.
+   */
+  preparation?: TestProgram<PreparationStep> | null;
+  /**
+   * The test's executable STIMULUS program (smart TODO.twin-demo/03):
+   * `stimulus { point <order> { drive … args { … } hold … fresh_within …
+   * acceptance … } source { … } }` — the ordered measurement program.
+   * Null when the facet is absent. (Scoped to the conformance_test block:
+   * the subject anatomy's behavior-level `stimulus` quantity-kind facet
+   * lives in the `does` entry of a subject — disjoint scopes, no
+   * collision.)
+   */
+  stimulus?: TestProgram<StimulusPoint> | null;
   /** Named string step references (R 60-style procedure_steps). */
   procedureSteps?: string[];
   measurements: string[];
