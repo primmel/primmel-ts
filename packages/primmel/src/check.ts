@@ -409,6 +409,7 @@ import type {
   ClassificationDimension,
   PromiseCertificateProjection,
   Subject,
+  SubjectPromise,
 } from './types/Subject';
 import type { DataClass } from './types/data';
 import type { ProcessParameter, ProcessStep } from './types/process';
@@ -643,6 +644,12 @@ export function checkPackage(
 
   // ── C116/C117: the verdict chain (MN 114 v3.2, clause 11.3) ────────
   issues.push(...checkVerdictChains(standard));
+
+  // ── C149: the closed-derivation rule (the typed kernel, R3) ────────
+  issues.push(...checkClosedDerivations(standard));
+
+  // ── C150/C151: the attestation's references and claim lineage ──────
+  issues.push(...checkAttestations(standard));
 
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
@@ -7440,6 +7447,302 @@ function textAddressKey(item: unknown, segment: string): boolean {
  *     (titular:source:target:identifying); a `zz-` user-assigned code
  *     validates with a warning (user-assigned codes are not portable).
  */
+// ── C150/C151: the attestation's references and claim lineage ───────
+// C150 attestation-references-resolve: the subject is a declared
+// instance, the promise set resolves in `Subject.promise_set_id` form,
+// every basis entry carries kind and id, and every claim's declaration
+// and verdict references are stated. C151
+// attestation-claim-lineage: every promise the certificate prints as
+// mandatory must be carried by a claim — a mandatory characteristic is
+// carried by lineage, never restated (clause 19).
+
+export function checkAttestations(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+
+  const instanceIds = new Set((standard.instances ?? []).map(i => i.id));
+  const roleIds = new Set((standard.roles ?? []).map(r => r.id));
+  const verdictIds = new Set((standard.verdicts ?? []).map(v => v.id));
+  const subjectIds = new Set((standard.subjects ?? []).map(s => s.id));
+
+  // A promise set is either a top-level promise_set construct or a
+  // subject's anonymous is-promises register. The reference forms:
+  // the bare construct id, `Subject.set`, or `Subject.promise_set`.
+  interface SetView {
+    promises: SubjectPromise[];
+  }
+  const setViews = new Map<string, SetView>();
+  for (const ps of standard.promiseSets ?? []) {
+    setViews.set(ps.id, { promises: ps.promises });
+    setViews.set(`${ps.id}.promise_set`, { promises: ps.promises });
+  }
+  for (const s of standard.subjects ?? []) {
+    if ((s.is?.promises ?? []).length > 0) {
+      setViews.set(s.id, { promises: s.is.promises });
+    }
+  }
+  const resolveSet = (ref: string): SetView | null =>
+    setViews.get(ref) ??
+    setViews.get(ref.split('.').slice(1).join('.')) ??
+    null;
+
+  const mandatoryOf = (view: SetView): Set<string> => {
+    const out = new Set<string>();
+    for (const p of view.promises) {
+      if (p.certificate?.obligation === 'mandatory') {
+        out.add(p.id);
+      }
+    }
+    return out;
+  };
+
+  for (const a of standard.attestations ?? []) {
+    if (!a.subject) {
+      err(
+        'C150',
+        `attestation ${a.id}: no subject facet (attestation-references-resolve)`,
+      );
+    } else if (!instanceIds.has(a.subject)) {
+      err(
+        'C150',
+        `attestation ${a.id}: subject "${a.subject}" is not a declared instance (attestation-references-resolve)`,
+      );
+    }
+    if (!a.promises) {
+      err(
+        'C150',
+        `attestation ${a.id}: no promises facet (attestation-references-resolve)`,
+      );
+    }
+    const set = a.promises ? resolveSet(a.promises) : null;
+    if (a.promises && !set) {
+      err(
+        'C150',
+        `attestation ${a.id}: promises "${a.promises}" does not resolve to a declared promise set (attestation-references-resolve)`,
+      );
+    }
+    for (const b of a.basis) {
+      if (!b.kind || !b.id) {
+        err(
+          'C150',
+          `attestation ${a.id}: a basis entry needs an evidence kind and an id (attestation-references-resolve)`,
+        );
+      }
+    }
+    if (
+      a.authority.role &&
+      roleIds.size > 0 &&
+      !roleIds.has(a.authority.role)
+    ) {
+      err(
+        'C150',
+        `attestation ${a.id}: authority role "${a.authority.role}" is not a declared role (attestation-references-resolve)`,
+      );
+    }
+
+    const carried = new Set(a.claims.map(c => c.promise));
+    for (const c of a.claims) {
+      if (set && !set.promises.some(p => p.id === c.promise)) {
+        err(
+          'C150',
+          `attestation ${a.id}: claim "${c.promise}" is not a promise of "${a.promises}" (attestation-references-resolve)`,
+        );
+      }
+      if (!c.declared) {
+        err(
+          'C151',
+          `attestation ${a.id}: claim "${c.promise}" carries no declaration reference (attestation-claim-lineage)`,
+        );
+      }
+      if (!c.validatedBy) {
+        err(
+          'C151',
+          `attestation ${a.id}: claim "${c.promise}" carries no verdict reference (attestation-claim-lineage)`,
+        );
+      } else if (
+        verdictIds.size > 0 &&
+        !c.validatedBy.startsWith('/') &&
+        !verdictIds.has(c.validatedBy)
+      ) {
+        // Bare ids resolve inside the package; slash ids are the
+        // requirement-anatomy path form and resolve in the linker.
+        err(
+          'C150',
+          `attestation ${a.id}: claim "${c.promise}" names verdict "${c.validatedBy}", which is not declared (attestation-references-resolve)`,
+        );
+      }
+    }
+    if (set) {
+      for (const pid of mandatoryOf(set)) {
+        if (!carried.has(pid)) {
+          err(
+            'C151',
+            `attestation ${a.id}: the mandatory promise "${pid}" of "${a.promises}" is carried by no claim — a mandatory characteristic is carried by lineage, never restated (attestation-claim-lineage)`,
+          );
+        }
+      }
+    }
+  }
+  return issues;
+}
+
+// ── C149: closed-derivation-references-declared ─────────────────────
+// The typed kernel's rule R3: a derivation expression names only
+// declared definitions — declared calculations, tables, symbols,
+// measurements/variables, data classes, enums, and attributes of the
+// model. The checker rejects an expression that references anything
+// else and names the missing declaration, so the undefined-reference
+// defect class cannot be authored.
+
+const CLOSED_DERIVATION_STOP = new Set([
+  'self',
+  'p',
+  'ocl',
+  'true',
+  'false',
+  'null',
+  'undefined',
+  // OCL navigation and collection operators
+  'and',
+  'or',
+  'not',
+  'implies',
+  'if',
+  'then',
+  'else',
+  'endif',
+  'xor',
+  'let',
+  'in',
+  'exists',
+  'forAll',
+  'select',
+  'reject',
+  'collect',
+  'isEmpty',
+  'size',
+  'sum',
+  'min',
+  'max',
+  'abs',
+  'round',
+  'floor',
+  'sqrt',
+  'includes',
+  'excludes',
+  'includesAll',
+  'excludesAll',
+  'count',
+  'first',
+  'last',
+  'asSet',
+  'asOrderedSet',
+  'asSequence',
+  'asBag',
+  'sortedBy',
+  'iterate',
+  'oclIsUndefined',
+  'oclIsKindOf',
+  'oclIsTypeOf',
+  'allInstances',
+  // table-lookup engine vocabulary (the lookup facet names these)
+  'lookup',
+  'profile',
+]);
+
+const CLOSED_DERIVATION_PATH_RE = /\b(?:self|p)\.[A-Za-z_][A-Za-z0-9_]*/g;
+const CLOSED_DERIVATION_IDENT_RE = /[A-Za-z_][A-Za-z0-9_]*/g;
+
+export function checkClosedDerivations(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+
+  // The declared universe every derivation may reference.
+  const declared = new Set<string>();
+  for (const c of standard.calculations ?? []) {
+    declared.add(c.id);
+    declared.add(c.name);
+  }
+  for (const tb of standard.tables ?? []) {
+    declared.add(tb.id);
+  }
+  for (const s of standard.symbols ?? []) {
+    declared.add(s.id);
+  }
+  for (const v of standard.variables ?? []) {
+    declared.add(v.id);
+  }
+  for (const a of standard.attributeDefinitions ?? []) {
+    declared.add(a.id);
+  }
+  for (const e of standard.enums ?? []) {
+    declared.add(e.id);
+  }
+  for (const d of standard.dataclasses ?? []) {
+    declared.add(d.id);
+  }
+  // A calculation's own output name is declared too (requirements bind
+  // it), and so is every input of every calculation.
+  for (const c of standard.calculations ?? []) {
+    if (c.output?.name) {
+      declared.add(c.output.name);
+    }
+    for (const i of c.inputs ?? []) {
+      declared.add(i.name);
+    }
+  }
+
+  const localsOf = (extra: string[]): Set<string> =>
+    new Set([...declared, ...extra]);
+
+  const checkExpression = (
+    expr: string,
+    locals: Set<string>,
+    where: string,
+  ): void => {
+    if (!expr) {
+      return;
+    }
+    const stripped = expr.replace(CLOSED_DERIVATION_PATH_RE, ' ');
+    const seen = new Set<string>();
+    for (const raw of stripped.match(CLOSED_DERIVATION_IDENT_RE) ?? []) {
+      if (CLOSED_DERIVATION_STOP.has(raw) || locals.has(raw) || seen.has(raw)) {
+        continue;
+      }
+      seen.add(raw);
+      err(
+        'C149',
+        `${where}: expression references "${raw}", which no declared calculation, table, symbol, measurement, or attribute defines (closed-derivation-references-declared)`,
+      );
+    }
+  };
+
+  for (const a of standard.attributeDefinitions ?? []) {
+    checkExpression(a.derived, localsOf([]), `attribute_definition ${a.id}`);
+  }
+  for (const c of standard.calculations ?? []) {
+    // The normative body is the declared expression; engine variants
+    // are consumer code and outside the language's semantics.
+    const inputs = (c.inputs ?? []).map(i => i.name);
+    checkExpression(c.expression, localsOf(inputs), `calculation ${c.id}`);
+  }
+  for (const s of standard.symbols ?? []) {
+    if (s.formula?.expression) {
+      checkExpression(
+        s.formula.expression,
+        localsOf(s.formula.inputs ?? []),
+        `symbol ${s.id}`,
+      );
+    }
+  }
+  for (const v of standard.verdicts ?? []) {
+    checkExpression(v.derive, localsOf(v.inputs ?? []), `verdict ${v.id}`);
+  }
+  return issues;
+}
+
 export function checkSpellingCodes(standard: Standard): CheckIssue[] {
   const issues: CheckIssue[] = [];
   const err = (check: string, message: string) =>

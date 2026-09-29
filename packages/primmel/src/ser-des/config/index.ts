@@ -157,6 +157,7 @@ import {
   dumpEvaluationProfile,
   parseEvaluationProfile,
 } from './evaluationProfile';
+import { dumpAttestation, parseAttestation } from './attestation';
 import {
   dumpCertificateTemplate,
   parseCertificateTemplate,
@@ -476,6 +477,16 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   // The certificate rendering contract (smart TODO.roadmap/40 batch 3)
   // — form-adjacent (the certificate is the issuing-side document);
   // singleton per package.
+  // The attestation (the typed kernel; clause 19) — the claim that a
+  // third party has verified a subject against a declared promise set,
+  // carrying the lineage of the claims (C150/C151 check the references).
+  defineConstruct({
+    keyword: 'attestation',
+    field: 'attestations',
+    takesID: true,
+    parse: parseAttestation,
+    dump: dumpAttestation as never,
+  }),
   defineConstruct({
     keyword: 'certificate_template',
     field: 'certificateTemplates',

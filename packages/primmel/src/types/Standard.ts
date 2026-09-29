@@ -38,6 +38,7 @@ import type ApplicationDeclaration from './ApplicationDeclaration';
 import type CalculationContext from './CalculationContext';
 import type EvaluationDimensions from './EvaluationDimension';
 import type EvaluationProfile from './EvaluationProfile';
+import type Attestation from './Attestation';
 import type CertificateTemplate from './CertificateTemplate';
 import type WorkflowConfig from './WorkflowConfig';
 import type WorkflowStage from './WorkflowStage';
@@ -203,6 +204,7 @@ export default interface Standard {
   /** The certificate rendering contract (smart TODO.roadmap/40 batch 3)
    *  — singleton per package; the number format, the dimension-label
    *  pattern, the explicit characteristic rows, the ANR section. */
+  attestations: Attestation[];
   certificateTemplates: CertificateTemplate[];
   /** The certification workflow step registers (smart TODO.roadmap/40
    *  batch 3): the core layer carries the OIML-CS skeleton, the rec

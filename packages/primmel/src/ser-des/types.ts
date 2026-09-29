@@ -39,6 +39,7 @@ import type ApplicationDeclaration from '../types/ApplicationDeclaration';
 import type CalculationContext from '../types/CalculationContext';
 import type EvaluationDimensions from '../types/EvaluationDimension';
 import type EvaluationProfile from '../types/EvaluationProfile';
+import type Attestation from '../types/Attestation';
 import type CertificateTemplate from '../types/CertificateTemplate';
 import type WorkflowConfig from '../types/WorkflowConfig';
 import type WorkflowStage from '../types/WorkflowStage';
@@ -263,6 +264,7 @@ export interface ParseContext {
   evaluationDimensions: Record<string, EvaluationDimensions>;
   evaluationProfiles: Record<string, EvaluationProfile>;
   // The certificate rendering contract (smart TODO.roadmap/40 batch 3).
+  attestations: Record<string, Attestation>;
   certificateTemplates: Record<string, CertificateTemplate>;
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — overlay-composable (OVERLAY_DEEP_MERGE_FIELDS).

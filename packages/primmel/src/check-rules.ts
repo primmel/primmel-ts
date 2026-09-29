@@ -19,6 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 export type CheckFamily =
+  | 'attestation'
   | 'base'
   | 'anatomy'
   | 'process'
@@ -1303,6 +1304,27 @@ export const CHECK_RULES: CheckRule[] = [
     'warning',
     'normal',
     'the reconfiguration phase 2 (TODO.reconfigure/09-migration-plan.md)',
+  ),
+  // ── the attestation (the typed kernel, clause 19): the claim that a
+  // third party has verified a subject against a declared promise set.
+  // C150 resolves its subject, promise set, basis, authority, and claim
+  // references; C151 requires the claim lineage — a mandatory
+  // characteristic is carried by lineage, never restated.
+  R(
+    'C150',
+    'attestation-references-resolve',
+    'attestation',
+    'error',
+    'normal',
+    'the typed kernel clause 19 (TODO.reconfigure/07-subjects-twins-attestation.md)',
+  ),
+  R(
+    'C151',
+    'attestation-claim-lineage',
+    'attestation',
+    'error',
+    'normal',
+    'the typed kernel clause 19 (TODO.reconfigure/07-subjects-twins-attestation.md)',
   ),
   // ── the per-test evaluation-formula traces (smart gap-close E11,
   // analysis/architecture-gaps-2026-07.md; the smart contract
