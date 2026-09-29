@@ -117,6 +117,7 @@ export default function parse(
     evaluationDimensions: {},
     evaluationProfiles: {},
     // The certificate rendering contract (batch 3)
+    attestations: {},
     certificateTemplates: {},
     // The certification workflow step register (batch 3)
     workflowConfigs: {},
