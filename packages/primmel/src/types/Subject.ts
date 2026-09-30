@@ -85,6 +85,14 @@ export interface ClassificationDimension {
   valuesOf?: string;
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
+  /**
+   * The class typing every value's payload (the typed kernel R2,
+   * clause 10): a dimension that declares payload_class types each
+   * value's definition — the payload conforms to the class's fields,
+   * and a value IS its definition rather than a symbol pointing at a
+   * table.
+   */
+  payloadClass?: string;
 }
 
 export interface ModelGroupDef {
@@ -268,6 +276,12 @@ export interface AttributeDefinition {
   correspondences?: import('./Correspondence').Correspondence[];
   /** The pair-list block (value_type pair-list; null = absent). */
   pairList?: PairListDecl | null;
+  /**
+   * The class-typing bridge (the typed kernel R2, clause 10): the
+   * attribute's values are instances of the named class — the same
+   * grammar as a registry entry's field.
+   */
+  classRef?: string;
 }
 
 /** capability <id> — mixin: what the instrument CAN do (OCP mechanism). */

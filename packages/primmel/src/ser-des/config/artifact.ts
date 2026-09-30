@@ -222,6 +222,8 @@ const parseArtifactDefinition: ConstructDefinition['parse'] = function (
       result.description = stripWrapping(t[i++]);
     } else if (cmd === 'content_contract') {
       result.contentContract = parseContentContract(unwrapBlock(t[i++]));
+    } else if (cmd === 'contract_from') {
+      result.contractFrom = stripColon(stripWrapping(t[i++]));
     } else if (cmd === 'produced_when') {
       const kind = stripWrapping(t[i++] ?? '');
       if (kind === 'per_interval') {
@@ -282,6 +284,9 @@ const dumpArtifactDefinition = function (d: ArtifactDefinition): string {
   }
   if (d.description) {
     out += '  description "' + escapeString(d.description) + '"\n';
+  }
+  if (d.contractFrom) {
+    out += '  contract_from ' + d.contractFrom + '\n';
   }
   const c = d.contentContract;
   const hasContract = c.fields.length > 0 || c.structure || c.media.length > 0;

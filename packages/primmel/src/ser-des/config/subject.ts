@@ -525,6 +525,8 @@ export function parseDimension(
       dim.source = readSource(unwrapBlock(t[i++]));
     } else if (cmd === 'values') {
       dim.values = parseDimensionValues(unwrapBlock(t[i++]));
+    } else if (cmd === 'payload_class') {
+      dim.payloadClass = stripColon(stripWrapping(t[i++]));
     } else if (cmd === 'values_of') {
       // Top-level dimensions only (MN 114 v3.2, clause 10.6): the named
       // register's members ARE the value domain.
@@ -649,6 +651,9 @@ export function dumpDimension(
   }
   if (d.description) {
     out += inner + 'description "' + escapeString(d.description) + '"\n';
+  }
+  if (d.payloadClass) {
+    out += inner + 'payload_class ' + d.payloadClass + '\n';
   }
   out += dumpSource('reference', d.source, inner);
   if (d.valuesOf) {
@@ -1110,6 +1115,10 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
       result.note = stripWrapping(t[i++]);
     } else if (cmd === 'irdi') {
       result.irdi = stripWrapping(t[i++]);
+    } else if (cmd === 'class') {
+      // The class-typing bridge (the typed kernel R2): the attribute's
+      // values are instances of the named class.
+      result.classRef = stripColon(stripWrapping(t[i++]));
     } else if (cmd === 'derived') {
       result.derived = stripWrapping(t[i++]);
     } else if (cmd === 'ref') {
@@ -1206,6 +1215,9 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
   }
   if (a.irdi) {
     out += '  irdi "' + escapeString(a.irdi) + '"\n';
+  }
+  if (a.classRef) {
+    out += '  class ' + a.classRef + '\n';
   }
   if (a.derived) {
     out += '  derived "' + escapeString(a.derived) + '"\n';
