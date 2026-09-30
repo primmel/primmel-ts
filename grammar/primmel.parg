@@ -51,12 +51,369 @@ grammar Primmel version "0.1.0" {
   # hashes — the shape tree would flatten to leaf captures (the
   # recursive-capture finding, evidence/s2-parsanol/). `gap` carries no
   # capture and disappears from the folded sequence.
-  construct = ((keyword as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  #
+  # The typed surface: a KNOWN construct dispatches to its own rule,
+  # which carries the kernel parser's per-construct discipline — a
+  # required-value key left bare before the block's close, and a closed
+  # facet vocabulary offered an undeclared token, are parse errors (the
+  # fail-closed precedent). The generic rule stays open for UNKNOWN
+  # keywords (forward compatibility: the same parser reads MMEL-era and
+  # Primmel-era models).
+  construct = c_end_event / c_start_event / c_approval / c_application_declaration / c_attribute_definition / c_certificate_template / c_common_test_condition / c_conformance_test / c_calculation / c_calculation_context / c_dataspace / c_declaration_gate / c_decision_rule / c_evaluation_dimensions / c_evaluation_profile / c_exclusive_gateway / c_form / c_formula_note / c_framework_document / c_governance_organ / c_identity_slot / c_informative_annex / c_lab_selection_criterion / c_link / c_participant_kind / c_part_annex / c_policy / c_promise_set / c_provision / c_process / c_sample_selection_rule / c_scheme_activity_kind / c_scheme_lifecycle / c_table / c_test_report_checklist / c_test_report_skeleton / c_verification_pathway / generic_construct
   keyword = bare
+  keyword_open = !known_keyword bare
+  known_keyword = ("end_event" !bare_next) / ("start_event" !bare_next) / ("approval" !bare_next) / ("application_declaration" !bare_next) / ("attribute_definition" !bare_next) / ("certificate_template" !bare_next) / ("common_test_condition" !bare_next) / ("conformance_test" !bare_next) / ("calculation" !bare_next) / ("calculation_context" !bare_next) / ("dataspace" !bare_next) / ("declaration_gate" !bare_next) / ("decision_rule" !bare_next) / ("evaluation_dimensions" !bare_next) / ("evaluation_profile" !bare_next) / ("exclusive_gateway" !bare_next) / ("form" !bare_next) / ("formula_note" !bare_next) / ("framework_document" !bare_next) / ("governance_organ" !bare_next) / ("identity_slot" !bare_next) / ("informative_annex" !bare_next) / ("lab_selection_criterion" !bare_next) / ("link" !bare_next) / ("participant_kind" !bare_next) / ("part_annex" !bare_next) / ("policy" !bare_next) / ("promise_set" !bare_next) / ("provision" !bare_next) / ("process" !bare_next) / ("sample_selection_rule" !bare_next) / ("scheme_activity_kind" !bare_next) / ("scheme_lifecycle" !bare_next) / ("table" !bare_next) / ("test_report_checklist" !bare_next) / ("test_report_skeleton" !bare_next) / ("verification_pathway" !bare_next)
   # An identifier is a bare word or a quoted string ("chief verifier")
   # — SYN-02's quoted-identifier case, cross-referenced by name.
   ident = bare / string
+  # the open rule: UNKNOWN keywords keep the forward-compatible surface
+  generic_construct = ((keyword_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
 
+  # ── the typed surface: one rule per known construct ──────────────
+  # Each block_X = "{" *(gap (!bad_X X_item)) gap "}": when bad_X
+  # matches (a required key bare before the close, or an undeclared
+  # vocabulary token), the iteration fails, the repetition stops, and
+  # the closer — unable to skip the offending text — fails the block,
+  # the construct, and the document. A parent with sub-blocks
+  # dispatches them FIRST (s_* rules); every other word-starting item
+  # of that scope uses the sub-keyword-EXCLUDED bare (X_open), so a
+  # failed sub-rule leaves no rescue — the open kwline/bare of the
+  # shared stream cannot re-admit the line the sub-rule rejected.
+
+  # events: an id and an EMPTY block, both required (the kernel's
+  # "Expecting empty body")
+  c_end_event = ((kw_end_event as keyword) gap [(ident as ident) gap] (block_empty as body)) as construct
+  c_start_event = ((kw_start_event as keyword) gap [(ident as ident) gap] (block_empty as body)) as construct
+  kw_end_event = "end_event" !bare_next
+  kw_start_event = "start_event" !bare_next
+  block_empty = "{" gap "}"
+
+  c_application_declaration = ((kw_application_declaration as keyword) gap [(ident as ident) gap] (block_application_declaration as body)) as construct
+  kw_application_declaration = "application_declaration" !bare_next
+  block_application_declaration = "{" *(gap appd_item) gap "}"
+  appd_item = s_app_document / appd_construct / appd_entry / appd_kwline / string / block / appd_bare
+  appd_construct = ((appd_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  appd_open = !(("document" !bare_next)) bare
+  appd_entry = ((appd_open as key) gap ":" [gap (value_run as value)]) as entry
+  appd_kwline = ((appd_open as key) gap (value_run as value)) as kwline
+  appd_bare = appd_open
+
+  s_app_document = ((kw_app_document as keyword) gap [(ident as ident) gap] (block_app_document as body)) as construct
+  kw_app_document = "document" !bare_next
+  block_app_document = "{" *(gap (!bad_app_document block_item)) gap "}"
+  bad_app_document = "obligation" gap !("shall" / "should" / "may")
+
+  c_certificate_template = ((kw_certificate_template as keyword) gap [(ident as ident) gap] (block_certificate_template as body)) as construct
+  kw_certificate_template = "certificate_template" !bare_next
+  block_certificate_template = "{" *(gap ctpl_item) gap "}"
+  ctpl_item = s_characteristic / ctpl_construct / ctpl_entry / ctpl_kwline / string / block / ctpl_bare
+  ctpl_construct = ((ctpl_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  ctpl_open = !(("characteristic" !bare_next)) bare
+  ctpl_entry = ((ctpl_open as key) gap ":" [gap (value_run as value)]) as entry
+  ctpl_kwline = ((ctpl_open as key) gap (value_run as value)) as kwline
+  ctpl_bare = ctpl_open
+
+  s_characteristic = ((kw_characteristic as keyword) gap [(ident as ident) gap] (block_characteristic as body)) as construct
+  kw_characteristic = "characteristic" !bare_next
+  block_characteristic = "{" *(gap (!bad_characteristic block_item)) gap "}"
+  bad_characteristic = "obligation" gap !("mandatory" / "optional")
+
+  c_calculation = ((kw_calculation as keyword) gap [(ident as ident) gap] (block_calculation as body)) as construct
+  kw_calculation = "calculation" !bare_next
+  block_calculation = "{" *(gap (!bad_calculation calc_item)) gap "}"
+  bad_calculation = "expression" gap &("}")
+  calc_item = s_variant / calc_construct / calc_entry / calc_kwline / string / block / calc_bare
+  calc_construct = ((calc_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  calc_open = !(("variant" !bare_next)) bare
+  calc_entry = ((calc_open as key) gap ":" [gap (value_run as value)]) as entry
+  calc_kwline = ((calc_open as key) gap (value_run as value)) as kwline
+  calc_bare = calc_open
+
+  s_variant = ((kw_variant as keyword) gap [(ident as ident) gap] (block_variant as body)) as construct
+  kw_variant = "variant" !bare_next
+  block_variant = "{" *(gap (!bad_variant block_item)) gap "}"
+  bad_variant = "type" gap !("expression" / "table_lookup" / "profile_lookup" / "pass_fail")
+
+  c_calculation_context = ((kw_calculation_context as keyword) gap [(ident as ident) gap] (block_calculation_context as body)) as construct
+  kw_calculation_context = "calculation_context" !bare_next
+  block_calculation_context = "{" *(gap cctx_item) gap "}"
+  cctx_item = s_context_field / cctx_construct / cctx_entry / cctx_kwline / string / block / cctx_bare
+  cctx_construct = ((cctx_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  cctx_open = !(("field" !bare_next)) bare
+  cctx_entry = ((cctx_open as key) gap ":" [gap (value_run as value)]) as entry
+  cctx_kwline = ((cctx_open as key) gap (value_run as value)) as kwline
+  cctx_bare = cctx_open
+
+  s_context_field = ((kw_context_field as keyword) gap [(ident as ident) gap] (block_context_field as body)) as construct
+  kw_context_field = "field" !bare_next
+  block_context_field = "{" *(gap (!bad_context_field block_item)) gap "}"
+  bad_context_field = "source" gap &("}")
+
+  c_dataspace = ((kw_dataspace as keyword) gap [(ident as ident) gap] (block_dataspace as body)) as construct
+  kw_dataspace = "dataspace" !bare_next
+  block_dataspace = "{" *(gap (!bad_dataspace ds_item)) gap "}"
+  bad_dataspace = "name" gap &("}")
+  ds_item = s_trust_anchor / ds_construct / ds_entry / ds_kwline / string / block / ds_bare
+  ds_construct = ((ds_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  ds_open = !(("trust_anchor" !bare_next)) bare
+  ds_entry = ((ds_open as key) gap ":" [gap (value_run as value)]) as entry
+  ds_kwline = ((ds_open as key) gap (value_run as value)) as kwline
+  ds_bare = ds_open
+
+  s_trust_anchor = ((kw_trust_anchor as keyword) gap [(ident as ident) gap] (block_trust_anchor as body)) as construct
+  kw_trust_anchor = "trust_anchor" !bare_next
+  block_trust_anchor = "{" *(gap (!bad_trust_anchor block_item)) gap "}"
+  bad_trust_anchor = "trust_ref" gap &("}")
+
+  c_evaluation_dimensions = ((kw_evaluation_dimensions as keyword) gap [(ident as ident) gap] (block_evaluation_dimensions as body)) as construct
+  kw_evaluation_dimensions = "evaluation_dimensions" !bare_next
+  block_evaluation_dimensions = "{" *(gap edim_item) gap "}"
+  edim_item = s_dimension_field / edim_construct / edim_entry / edim_kwline / string / block / edim_bare
+  edim_construct = ((edim_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  edim_open = !(("field" !bare_next)) bare
+  edim_entry = ((edim_open as key) gap ":" [gap (value_run as value)]) as entry
+  edim_kwline = ((edim_open as key) gap (value_run as value)) as kwline
+  edim_bare = edim_open
+
+  s_dimension_field = ((kw_dimension_field as keyword) gap [(ident as ident) gap] (block_dimension_field as body)) as construct
+  kw_dimension_field = "field" !bare_next
+  block_dimension_field = "{" *(gap (!bad_dimension_field block_item)) gap "}"
+  bad_dimension_field = "type" gap !("integer" / "number" / "string" / "text" / "boolean" / "date")
+
+  c_identity_slot = ((kw_identity_slot as keyword) gap [(ident as ident) gap] (block_identity_slot as body)) as construct
+  kw_identity_slot = "identity_slot" !bare_next
+  block_identity_slot = "{" *(gap islot_item) gap "}"
+  islot_item = s_presentation / islot_construct / islot_entry / islot_kwline / string / block / islot_bare
+  islot_construct = ((islot_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  islot_open = !(("presentation" !bare_next)) bare
+  islot_entry = ((islot_open as key) gap ":" [gap (value_run as value)]) as entry
+  islot_kwline = ((islot_open as key) gap (value_run as value)) as kwline
+  islot_bare = islot_open
+
+  # the presentation channels are enumerated positively — an undeclared
+  # channel fails the block outright
+  s_presentation = (("presentation" !bare_next) gap (block_presentation as body)) as construct
+  block_presentation = "{" *(gap presentation_channel) gap "}"
+  presentation_channel = "marked-on-instrument" / "accompanying-document"
+
+  c_informative_annex = ((kw_informative_annex as keyword) gap [(ident as ident) gap] (block_informative_annex as body)) as construct
+  kw_informative_annex = "informative_annex" !bare_next
+  block_informative_annex = "{" *(gap annex_item) gap "}"
+  annex_item = s_annex_document / annex_construct / annex_entry / annex_kwline / string / block / annex_bare
+  annex_construct = ((annex_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  annex_open = !(("document" !bare_next)) bare
+  annex_entry = ((annex_open as key) gap ":" [gap (value_run as value)]) as entry
+  annex_kwline = ((annex_open as key) gap (value_run as value)) as kwline
+  annex_bare = annex_open
+
+  s_annex_document = ((kw_annex_document as keyword) gap [(ident as ident) gap] (block_annex_document as body)) as construct
+  kw_annex_document = "document" !bare_next
+  block_annex_document = "{" *(gap (!bad_annex_document block_item)) gap "}"
+  bad_annex_document = "role" gap !("informative")
+
+  c_lab_selection_criterion = ((kw_lab_selection_criterion as keyword) gap [(ident as ident) gap] (block_lab_selection_criterion as body)) as construct
+  kw_lab_selection_criterion = "lab_selection_criterion" !bare_next
+  block_lab_selection_criterion = "{" *(gap labsel_item) gap "}"
+  labsel_item = s_match / labsel_construct / labsel_entry / labsel_kwline / string / block / labsel_bare
+  labsel_construct = ((labsel_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  labsel_open = !(("match" !bare_next)) bare
+  labsel_entry = ((labsel_open as key) gap ":" [gap (value_run as value)]) as entry
+  labsel_kwline = ((labsel_open as key) gap (value_run as value)) as kwline
+  labsel_bare = labsel_open
+
+  s_match = ((kw_match as keyword) gap [(ident as ident) gap] (block_match as body)) as construct
+  kw_match = "match" !bare_next
+  block_match = "{" *(gap (!bad_match block_item)) gap "}"
+  bad_match = "operator" gap !("has_capability" / "capability_from_field" / "capability_covers_value" / "capability_prefix_match" / "always_pass")
+
+  c_policy = ((kw_policy as keyword) gap [(ident as ident) gap] (block_policy as body)) as construct
+  kw_policy = "policy" !bare_next
+  block_policy = "{" *(gap (!bad_policy pol_item)) gap "}"
+  bad_policy = "default_posture" gap !("true" / "false")
+  pol_item = s_rule / pol_construct / pol_entry / pol_kwline / string / block / pol_bare
+  pol_construct = ((pol_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  pol_open = !(("rule" !bare_next)) bare
+  pol_entry = ((pol_open as key) gap ":" [gap (value_run as value)]) as entry
+  pol_kwline = ((pol_open as key) gap (value_run as value)) as kwline
+  pol_bare = pol_open
+
+  s_rule = ((kw_policy_rule as keyword) gap [(ident as ident) gap] (block_policy_rule as body)) as construct
+  kw_policy_rule = "rule" !bare_next
+  block_policy_rule = "{" *(gap (!bad_policy_rule block_item)) gap "}"
+  bad_policy_rule = "kind" gap !("permission" / "obligation" / "prohibition")
+
+  c_promise_set = ((kw_promise_set as keyword) gap [(ident as ident) gap] (block_promise_set as body)) as construct
+  kw_promise_set = "promise_set" !bare_next
+  block_promise_set = "{" *(gap pset_item) gap "}"
+  pset_item = s_promise / pset_construct / pset_entry / pset_kwline / string / block / pset_bare
+  pset_construct = ((pset_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  pset_open = !(("promise" !bare_next)) bare
+  pset_entry = ((pset_open as key) gap ":" [gap (value_run as value)]) as entry
+  pset_kwline = ((pset_open as key) gap (value_run as value)) as kwline
+  pset_bare = pset_open
+
+  s_promise = ((kw_promise as keyword) gap [(ident as ident) gap] (block_promise as body)) as construct
+  kw_promise = "promise" !bare_next
+  block_promise = "{" *(gap prom_item) gap "}"
+  prom_item = s_certificate / prom_construct / prom_entry / prom_kwline / string / block / prom_bare
+  prom_construct = ((prom_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  prom_open = !("certificate" !bare_next) bare
+  prom_entry = ((prom_open as key) gap ":" [gap (value_run as value)]) as entry
+  prom_kwline = ((prom_open as key) gap (value_run as value)) as kwline
+  prom_bare = prom_open
+  s_certificate = ((kw_certificate as keyword) gap [(ident as ident) gap] (block_certificate as body)) as construct
+  kw_certificate = "certificate" !bare_next
+  block_certificate = "{" *(gap (!bad_certificate block_item)) gap "}"
+  bad_certificate = "obligation" gap !("mandatory" / "optional")
+
+  c_test_report_checklist = ((kw_test_report_checklist as keyword) gap [(ident as ident) gap] (block_test_report_checklist as body)) as construct
+  kw_test_report_checklist = "test_report_checklist" !bare_next
+  block_test_report_checklist = "{" *(gap chkl_item) gap "}"
+  chkl_item = s_checklist_entry / chkl_construct / chkl_entry / chkl_kwline / string / block / chkl_bare
+  chkl_construct = ((chkl_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  chkl_open = !(("entry" !bare_next)) bare
+  chkl_entry = ((chkl_open as key) gap ":" [gap (value_run as value)]) as entry
+  chkl_kwline = ((chkl_open as key) gap (value_run as value)) as kwline
+  chkl_bare = chkl_open
+
+  s_checklist_entry = ((kw_checklist_entry as keyword) gap [(ident as ident) gap] (block_checklist_entry as body)) as construct
+  kw_checklist_entry = "entry" !bare_next
+  block_checklist_entry = "{" *(gap (!bad_checklist_entry block_item)) gap "}"
+  bad_checklist_entry = "obligation" gap !("shall" / "may")
+
+  c_test_report_skeleton = ((kw_test_report_skeleton as keyword) gap [(ident as ident) gap] (block_test_report_skeleton as body)) as construct
+  kw_test_report_skeleton = "test_report_skeleton" !bare_next
+  block_test_report_skeleton = "{" *(gap skel_item) gap "}"
+  skel_item = s_skeleton_section / skel_construct / skel_entry / skel_kwline / string / block / skel_bare
+  skel_construct = ((skel_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  skel_open = !(("section" !bare_next)) bare
+  skel_entry = ((skel_open as key) gap ":" [gap (value_run as value)]) as entry
+  skel_kwline = ((skel_open as key) gap (value_run as value)) as kwline
+  skel_bare = skel_open
+
+  s_skeleton_section = ((kw_skeleton_section as keyword) gap [(ident as ident) gap] (block_skeleton_section as body)) as construct
+  kw_skeleton_section = "section" !bare_next
+  block_skeleton_section = "{" *(gap skelsec_item) gap "}"
+  skelsec_item = s_skeleton_form / skelsec_construct / skelsec_entry / skelsec_kwline / string / block / skelsec_bare
+  skelsec_construct = ((skelsec_open as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  skelsec_open = !("form" !bare_next) bare
+  skelsec_entry = ((skelsec_open as key) gap ":" [gap (value_run as value)]) as entry
+  skelsec_kwline = ((skelsec_open as key) gap (value_run as value)) as kwline
+  skelsec_bare = skelsec_open
+  s_skeleton_form = ((kw_skeleton_form as keyword) gap [(ident as ident) gap] (block_skeleton_form as body)) as construct
+  kw_skeleton_form = "form" !bare_next
+  block_skeleton_form = "{" *(gap (!bad_skeleton_form block_item)) gap "}"
+  bad_skeleton_form = "required" gap !("always" / "conditional")
+
+  c_approval = ((kw_approval as keyword) gap [(ident as ident) gap] (block_approval as body)) as construct
+  kw_approval = "approval" !bare_next
+  block_approval = "{" *(gap (!bad_approval block_item)) gap "}"
+  bad_approval = "actor" gap &("}")
+
+  c_attribute_definition = ((kw_attribute_definition as keyword) gap [(ident as ident) gap] (block_attribute_definition as body)) as construct
+  kw_attribute_definition = "attribute_definition" !bare_next
+  block_attribute_definition = "{" *(gap (!bad_attribute_definition block_item)) gap "}"
+  bad_attribute_definition = "corresponds" gap bare gap &("}")
+
+  c_common_test_condition = ((kw_common_test_condition as keyword) gap [(ident as ident) gap] (block_common_test_condition as body)) as construct
+  kw_common_test_condition = "common_test_condition" !bare_next
+  block_common_test_condition = "{" *(gap (!bad_common_test_condition block_item)) gap "}"
+  bad_common_test_condition = "description" gap &("}")
+
+  c_conformance_test = ((kw_conformance_test as keyword) gap [(ident as ident) gap] (block_conformance_test as body)) as construct
+  kw_conformance_test = "conformance_test" !bare_next
+  block_conformance_test = "{" *(gap (!bad_conformance_test block_item)) gap "}"
+  bad_conformance_test = "name" gap &("}")
+
+  c_declaration_gate = ((kw_declaration_gate as keyword) gap [(ident as ident) gap] (block_declaration_gate as body)) as construct
+  kw_declaration_gate = "declaration_gate" !bare_next
+  block_declaration_gate = "{" *(gap (!bad_declaration_gate block_item)) gap "}"
+  bad_declaration_gate = "statement" gap &("}")
+
+  c_decision_rule = ((kw_decision_rule as keyword) gap [(ident as ident) gap] (block_decision_rule as body)) as construct
+  kw_decision_rule = "decision_rule" !bare_next
+  block_decision_rule = "{" *(gap (!bad_decision_rule block_item)) gap "}"
+  bad_decision_rule = "organ" gap &("}")
+
+  c_evaluation_profile = ((kw_evaluation_profile as keyword) gap [(ident as ident) gap] (block_evaluation_profile as body)) as construct
+  kw_evaluation_profile = "evaluation_profile" !bare_next
+  block_evaluation_profile = "{" *(gap (!bad_evaluation_profile block_item)) gap "}"
+  bad_evaluation_profile = "description" gap &("}")
+
+  c_exclusive_gateway = ((kw_exclusive_gateway as keyword) gap [(ident as ident) gap] (block_exclusive_gateway as body)) as construct
+  kw_exclusive_gateway = "exclusive_gateway" !bare_next
+  block_exclusive_gateway = "{" *(gap (!bad_exclusive_gateway block_item)) gap "}"
+  bad_exclusive_gateway = "label" gap &("}")
+
+  c_form = ((kw_form as keyword) gap [(ident as ident) gap] (block_form as body)) as construct
+  kw_form = "form" !bare_next
+  block_form = "{" *(gap (!bad_form block_item)) gap "}"
+  bad_form = "name" gap &("}")
+
+  c_formula_note = ((kw_formula_note as keyword) gap [(ident as ident) gap] (block_formula_note as body)) as construct
+  kw_formula_note = "formula_note" !bare_next
+  block_formula_note = "{" *(gap (!bad_formula_note block_item)) gap "}"
+  bad_formula_note = "text" gap &("}")
+
+  c_framework_document = ((kw_framework_document as keyword) gap [(ident as ident) gap] (block_framework_document as body)) as construct
+  kw_framework_document = "framework_document" !bare_next
+  block_framework_document = "{" *(gap (!bad_framework_document block_item)) gap "}"
+  bad_framework_document = "title" gap &("}")
+
+  c_governance_organ = ((kw_governance_organ as keyword) gap [(ident as ident) gap] (block_governance_organ as body)) as construct
+  kw_governance_organ = "governance_organ" !bare_next
+  block_governance_organ = "{" *(gap (!bad_governance_organ block_item)) gap "}"
+  bad_governance_organ = "mandate" gap &("}")
+
+  c_link = ((kw_link as keyword) gap [(ident as ident) gap] (block_link as body)) as construct
+  kw_link = "link" !bare_next
+  block_link = "{" *(gap (!bad_link block_item)) gap "}"
+  bad_link = "kind" gap !("REPO" / "URL")
+
+  c_participant_kind = ((kw_participant_kind as keyword) gap [(ident as ident) gap] (block_participant_kind as body)) as construct
+  kw_participant_kind = "participant_kind" !bare_next
+  block_participant_kind = "{" *(gap (!bad_participant_kind block_item)) gap "}"
+  bad_participant_kind = "label" gap &("}")
+
+  c_part_annex = ((kw_part_annex as keyword) gap [(ident as ident) gap] (block_part_annex as body)) as construct
+  kw_part_annex = "part_annex" !bare_next
+  block_part_annex = "{" *(gap (!bad_part_annex block_item)) gap "}"
+  bad_part_annex = "obligation" gap !("normative" / "informative")
+
+  c_provision = ((kw_provision as keyword) gap [(ident as ident) gap] (block_provision as body)) as construct
+  kw_provision = "provision" !bare_next
+  block_provision = "{" *(gap (!bad_provision block_item)) gap "}"
+  bad_provision = "condition" gap &("}")
+
+  c_sample_selection_rule = ((kw_sample_selection_rule as keyword) gap [(ident as ident) gap] (block_sample_selection_rule as body)) as construct
+  kw_sample_selection_rule = "sample_selection_rule" !bare_next
+  block_sample_selection_rule = "{" *(gap (!bad_sample_selection_rule block_item)) gap "}"
+  bad_sample_selection_rule = "test_kind" gap !("full_evaluation" / "partial_evaluation" / "deduplicate" / "humidity" / "digital_additional")
+
+  c_scheme_activity_kind = ((kw_scheme_activity_kind as keyword) gap [(ident as ident) gap] (block_scheme_activity_kind as body)) as construct
+  kw_scheme_activity_kind = "scheme_activity_kind" !bare_next
+  block_scheme_activity_kind = "{" *(gap (!bad_scheme_activity_kind block_item)) gap "}"
+  bad_scheme_activity_kind = "family" gap !("common" / "determination" / "attestation" / "surveillance")
+
+  c_scheme_lifecycle = ((kw_scheme_lifecycle as keyword) gap [(ident as ident) gap] (block_scheme_lifecycle as body)) as construct
+  kw_scheme_lifecycle = "scheme_lifecycle" !bare_next
+  block_scheme_lifecycle = "{" *(gap (!bad_scheme_lifecycle block_item)) gap "}"
+  bad_scheme_lifecycle = "applies_to" gap &("}")
+
+  c_table = ((kw_table as keyword) gap [(ident as ident) gap] (block_table as body)) as construct
+  kw_table = "table" !bare_next
+  block_table = "{" *(gap (!bad_table block_item)) gap "}"
+  bad_table = "name" gap &("}")
+
+  c_verification_pathway = ((kw_verification_pathway as keyword) gap [(ident as ident) gap] (block_verification_pathway as body)) as construct
+  kw_verification_pathway = "verification_pathway" !bare_next
+  block_verification_pathway = "{" *(gap (!bad_verification_pathway block_item)) gap "}"
+  bad_verification_pathway = "kind" gap !("initial" / "subsequent" / "periodic" / "in-service")
+
+  c_process = ((kw_process as keyword) gap [(ident as ident) gap] (block_process as body)) as construct
+  kw_process = "process" !bare_next
+  block_process = "{" *(gap (!bad_process block_item)) gap "}"
+  bad_process = "summary" gap &("}") / "phase" gap &("}")
   # ── blocks and their item streams ────────────────────────────────
   block = "{" *(gap block_item) gap "}"
   block_item = construct / entry_line / kwline / string / block / bare
