@@ -38,6 +38,29 @@ export interface QuantityValue {
   uncertainty?: string | number;
   /** Symmetric band of a SPECIFIED value (designed side). */
   tolerance?: string | number;
+  /**
+   * Per-entry provenance (the typed kernel, clause 10): where the value
+   * was read from, in the register's own words when the wording
+   * differs, and the lineage references when the value's status has
+   * changed — the declaration it came from and the verdict that
+   * validated it. Optional per entry; carried through serialization.
+   */
+  provenance?: ValueProvenance;
+}
+
+export interface ValueProvenance {
+  /** The document, test report and run, or system of record. */
+  source: string;
+  /** The page the value was read from (scanned documents). */
+  page?: string;
+  /** The entry's own wording when it differs from the model's symbol. */
+  entryWording?: string;
+  /** When the value was read (ISO 8601 datetime). */
+  readAt?: string;
+  /** The declaration the value came from (lineage, kernel rule R7). */
+  declaration?: string;
+  /** The verdict that validated the value (lineage, kernel rule R7). */
+  verdict?: string;
 }
 
 /**

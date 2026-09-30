@@ -93,6 +93,13 @@ export interface ArtifactDefinition {
   /** Free-text description of the artifact. */
   description: string;
   contentContract: ArtifactContentContract;
+  /**
+   * The contract-derivation facet (the typed kernel, clause 10): the
+   * field list is the referenced promise set's print projection, never
+   * a restatement of it (C153: the reference resolves, and inline
+   * fields and contract_from never combine).
+   */
+  contractFrom?: string;
   producedWhen: ProducedWhen;
   /** Retention requirement (free text, e.g. "approx. three months (secure)"). */
   retention: string;

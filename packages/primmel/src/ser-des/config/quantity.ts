@@ -15,8 +15,8 @@ import tokenize, {
   stripWrapping,
   unwrapBlock,
 } from '../tokenize';
-import { dumpBareSafe } from './field-parser';
-import type { QuantityValue } from '../../types/Quantity';
+import { dumpBareSafe, stripColon } from './field-parser';
+import type { QuantityValue, ValueProvenance } from '../../types/Quantity';
 
 const NUMERIC = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
 
@@ -52,6 +52,8 @@ export function readQuantityBlock(content: string): QuantityValue {
       out.uncertainty = coerceValueToken(t[i++]);
     } else if (cmd === 'tolerance') {
       out.tolerance = coerceValueToken(t[i++]);
+    } else if (cmd === 'provenance') {
+      out.provenance = readProvenanceBlock(unwrapBlock(t[i++]));
     } else {
       unwrapBlock(t[i++]);
     }
@@ -64,8 +66,58 @@ export function needsQuantityBlock(v: QuantityValue): boolean {
   return (
     v.quantityKind !== undefined ||
     v.uncertainty !== undefined ||
-    v.tolerance !== undefined
+    v.tolerance !== undefined ||
+    v.provenance !== undefined
   );
+}
+
+/** The per-entry provenance block (the typed kernel, clause 10). */
+export function readProvenanceBlock(content: string): ValueProvenance {
+  const out: ValueProvenance = { source: '' };
+  const t = tokenize(content);
+  let i = 0;
+  while (i < t.length) {
+    const cmd = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    if (cmd === 'source') {
+      out.source = stripWrapping(t[i++]);
+    } else if (cmd === 'page') {
+      out.page = String(coerceValueToken(t[i++]));
+    } else if (cmd === 'entry_wording') {
+      out.entryWording = stripWrapping(t[i++]);
+    } else if (cmd === 'read_at') {
+      out.readAt = stripColon(stripWrapping(t[i++]));
+    } else if (cmd === 'declaration') {
+      out.declaration = stripColon(stripWrapping(t[i++]));
+    } else if (cmd === 'verdict') {
+      out.verdict = stripColon(stripWrapping(t[i++]));
+    } else {
+      unwrapBlock(t[i++]);
+    }
+  }
+  return out;
+}
+
+export function dumpProvenanceBlock(p: ValueProvenance): string {
+  const parts: string[] = ['source "' + escapeString(p.source) + '"'];
+  if (p.page !== undefined) {
+    parts.push('page ' + dumpScalarToken(p.page));
+  }
+  if (p.entryWording !== undefined) {
+    parts.push('entry_wording "' + escapeString(p.entryWording) + '"');
+  }
+  if (p.readAt !== undefined) {
+    parts.push('read_at ' + dumpScalarToken(p.readAt));
+  }
+  if (p.declaration !== undefined) {
+    parts.push('declaration ' + dumpScalarToken(p.declaration));
+  }
+  if (p.verdict !== undefined) {
+    parts.push('verdict ' + dumpScalarToken(p.verdict));
+  }
+  return '{ ' + parts.join(' ') + ' }';
 }
 
 /** Emit one value token: numbers bare; strings quoted when unsafe. */
@@ -110,6 +162,9 @@ export function dumpQuantityBlock(v: QuantityValue): string {
   }
   if (v.tolerance !== undefined) {
     parts.push('tolerance ' + dumpScalarToken(v.tolerance));
+  }
+  if (v.provenance !== undefined) {
+    parts.push('provenance ' + dumpProvenanceBlock(v.provenance));
   }
   return '{ ' + parts.join(' ') + ' }';
 }

@@ -1326,6 +1326,30 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'the typed kernel clause 19 (TODO.reconfigure/07-subjects-twins-attestation.md)',
   ),
+  // ── the typed payload rule (the typed kernel R2, clause 10): a
+  // dimension that declares payload_class types every value's
+  // definition — the class resolves, the payload fields are fields of
+  // that class, and every value carries its definition.
+  R(
+    'C152',
+    'payload-typed-by-class',
+    'quantities',
+    'error',
+    'normal',
+    'the typed kernel R2 (TODO.reconfigure/03-typed-kernel.md)',
+  ),
+  // ── the contract-derivation facet (the typed kernel, clause 10): an
+  // artifact definition whose content is the projection of declared
+  // claims derives its contract; the reference resolves and never
+  // combines with inline fields.
+  R(
+    'C153',
+    'artifact-contract-derivation',
+    'artifacts',
+    'error',
+    'normal',
+    'the typed kernel clause 10 (TODO.reconfigure/07-subjects-twins-attestation.md)',
+  ),
   // ── the per-test evaluation-formula traces (smart gap-close E11,
   // analysis/architecture-gaps-2026-07.md; the smart contract
   // data/schemas/formulas-used.yaml) ──
