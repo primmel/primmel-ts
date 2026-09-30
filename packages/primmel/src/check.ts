@@ -5427,9 +5427,6 @@ export function checkPackage(
         dataclassIds.add(c.id.slice(0, c.id.indexOf('#')));
       }
     }
-    const CLEAN_TOKEN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-  }
-
   // ── C138: verification-pathway-references (smart TODO.roadmap/40 ───
   // batch 3; the packages-as-SSOT epic) ────────────────────────────────
   // The verification pathways beyond type evaluation: the tests resolve
@@ -5775,10 +5772,6 @@ export function checkPackage(
     }
     // The workflow_stage members-resolve legs (step 5d) — the events
     // stay documentary, never resolved.
-    const stageApprovalIds = new Set((standard.approvals ?? []).map(a => a.id));
-    const stageGatewayIds = new Set((standard.gateways ?? []).map(g => g.id));
-  }
-
   // ── C143: approval-references-resolve (smart TODO.roadmap/40 batch ──
   // 5; the packages-as-SSOT epic) ─────────────────────────────────────
   // The first approval rule ever (the codec was dormant — no package
