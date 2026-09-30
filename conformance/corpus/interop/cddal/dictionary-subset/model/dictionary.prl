@@ -22,3 +22,19 @@ instance smp-001 {
     }
   }
 }
+
+enum accuracy {
+  A { }
+  B { }
+  C { }
+}
+
+attribute_definition serial_number {
+  name "Serial number"
+  definition "The manufacturer's serial number of the load cell."
+  value_type string
+  origin declared
+  scope model
+  category administrative
+  corresponds iec-cdd "0112/2///61987#ABA123"
+}

@@ -20,14 +20,19 @@ path = ARGV[0] or abort "usage: cddal-roundtrip.rb <file.cddal>"
 
 db = Opencdd::Cddal.parse(File.read(path))
 
-classes = db.classes.map do |c|
-  {
-    "code" => c.code.to_s,
-    "superclass" => c.superclass_irdi.to_s,
-  }
+def entity_codes(entities)
+  entities.map { |e| e.respond_to?(:code) ? e.code.to_s : nil }.compact
 end
 
 puts JSON.generate({
-  "classes" => classes,
+  "classes" => db.classes.map do |c|
+    {
+      "code" => c.code.to_s,
+      "superclass" => c.superclass_irdi.to_s,
+    }
+  end,
+  "properties" => entity_codes(db.properties),
+  "value_lists" => entity_codes(db.value_lists),
+  "value_terms" => entity_codes(db.value_terms),
   "serialized" => Opencdd::Cddal.serialize(db),
 })
