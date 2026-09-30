@@ -1759,11 +1759,18 @@ function dimensionUnit(d: ClassificationDimension): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(d.scope) ? { scope: d.scope } : {}),
     ...(present(d.cardinality) ? { cardinality: d.cardinality } : {}),
+    // The typed payload (the typed kernel R2): a value IS its
+    // definition — the class's fields ride the value, and the class
+    // reference rides the dimension.
+    ...(present(d.payloadClass) ? { payload_class: d.payloadClass } : {}),
     values: d.values.map(v => ({
       id: v.id,
       ...(present(v.label) ? { label: v.label } : {}),
       ...(presentList(v.implies) ? { implies: v.implies } : {}),
       ...(present(v.termRef) ? { term_ref: v.termRef } : {}),
+      ...(Object.keys(v.payload ?? {}).length > 0
+        ? { payload: v.payload }
+        : {}),
     })),
   };
   return assemble(
