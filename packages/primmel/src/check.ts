@@ -5427,6 +5427,8 @@ export function checkPackage(
         dataclassIds.add(c.id.slice(0, c.id.indexOf('#')));
       }
     }
+  }
+
   // ── C138: verification-pathway-references (smart TODO.roadmap/40 ───
   // batch 3; the packages-as-SSOT epic) ────────────────────────────────
   // The verification pathways beyond type evaluation: the tests resolve
@@ -5772,6 +5774,8 @@ export function checkPackage(
     }
     // The workflow_stage members-resolve legs (step 5d) — the events
     // stay documentary, never resolved.
+  }
+
   // ── C143: approval-references-resolve (smart TODO.roadmap/40 batch ──
   // 5; the packages-as-SSOT epic) ─────────────────────────────────────
   // The first approval rule ever (the codec was dormant — no package
