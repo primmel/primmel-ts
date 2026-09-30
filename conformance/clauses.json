@@ -429,14 +429,6 @@
    "rules": []
   },
   {
-   "id": "FWK-09",
-   "area": "framework",
-   "title": "The process_model construct",
-   "statement": "A process_model binds a pipeline: the sequence block (process ids in step order) and the register blocks (id, label, clause, maintainer, published, entries), with clause-URN provenance. The register facet is two-token — the id, then its block; the block must follow.",
-   "specAnchor": "MN 114 v3.3 (the process_model construct)",
-   "rules": []
-  },
-  {
    "id": "FWK-10",
    "area": "framework",
    "title": "The scheme-type register constructs",
@@ -448,7 +440,7 @@
    "id": "FWK-11",
    "area": "framework",
    "title": "The document-module constructs",
-   "statement": "A document_module makes one governing document's content module first-class: the document citation, title, edition, year, the owned requirement namespace, and the shared sequence/register sub-grammar (the process_model grammar at a second placement), with clause-URN provenance. An informative_annex binds a guidance document into the module: the document block (id, title, edition, year, the parse-enforced role, source), the applies_to package edge, applied_by, scope, the optional numbering caution, and the highlight blocks.",
+   "statement": "A document_module makes one governing document's content module first-class: the document citation, title, edition, year, the owned requirement namespace, and the shared sequence/register sub-grammar, with clause-URN provenance. An informative_annex binds a guidance document into the module: the document block (id, title, edition, year, the parse-enforced role, source), the applies_to package edge, applied_by, scope, the optional numbering caution, and the highlight blocks.",
    "specAnchor": "MN 114 v3.3 (the document-module constructs)",
    "rules": []
   },
@@ -456,7 +448,7 @@
    "id": "FWK-12",
    "area": "framework",
    "title": "Abstract-process references resolve",
-   "statement": "Every reference the abstract-process facets carry — the roles, organs, and participant kinds; the decision rule; the declaration kind and its sign|update action; the discharged gate; the realized_by processes and approved_by approvals; the window kind vocabulary and its exactly-one-duration shape; and the process_model's sequence members and register maintainers — resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C121).",
+   "statement": "Every reference the abstract-process facets carry — the roles, organs, and participant kinds; the decision rule; the declaration kind and its sign|update action; the discharged gate; the realized_by processes and approved_by approvals; the window kind vocabulary and its exactly-one-duration shape — resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C121).",
    "specAnchor": "MN 114 v3.3 (abstract-process reference resolution)",
    "rules": [
     "C121"
@@ -553,16 +545,6 @@
    ]
   },
   {
-   "id": "COD-06",
-   "area": "cod",
-   "title": "The demo_world and storyline demo seeds",
-   "statement": "The demo seeds: the demo_world carries its file-level metadata and the open participants registry, and the storyline carries its open subject entries and the workflow records in the record-value sub-grammar; the id_prefix is a lowercase slug, the party laboratory/authority name declared participant seeds when a demo_world with participants is in scope, the record stores name declared entity-class stores when that register is in scope, and a record field keyed by a sibling record's store names a sibling record of that store (C129).",
-   "specAnchor": "MN 114 v3.3 (the demo_world and storyline demo seeds, C129)",
-   "rules": [
-    "C129"
-   ]
-  },
-  {
    "id": "EVL-01",
    "area": "evl",
    "title": "The identity_slot and aspect registers",
@@ -630,16 +612,6 @@
    "specAnchor": "MN 114 v3.3 (the certificate_template register, C136)",
    "rules": [
     "C136"
-   ]
-  },
-  {
-   "id": "EVL-08",
-   "area": "evl",
-   "title": "The workflow_config register",
-   "statement": "The workflow_config register: the certification workflow steps with the parse-enforced phase vocabulary (intake, dispatch, testing, evaluation, issuance); the actor names a declared role when the role register is in scope, clean inputs/outputs tokens name declared data classes when the class register is in scope, composite documentary strings are skipped, and gates are prose, never resolved (C137).",
-   "specAnchor": "MN 114 v3.3 (the workflow_config register, C137)",
-   "rules": [
-    "C137"
    ]
   },
   {
@@ -728,16 +700,6 @@
    "specAnchor": "MN 114 v3.3 (the approval provenance and references, C143)",
    "rules": [
     "C143"
-   ]
-  },
-  {
-   "id": "WF-04",
-   "area": "wf",
-   "title": "The workflow_stage register",
-   "statement": "The workflow_stage register: the named pipeline stage groups the member processes (elements), the bracketing documentary events (start_event / end_events — never resolved), and the approvals and gateways it routes through; the member references resolve per-register gated (C142, the members-resolve legs).",
-   "specAnchor": "MN 114 v3.3 (the workflow_stage register, C142)",
-   "rules": [
-    "C142"
    ]
   },
   {
