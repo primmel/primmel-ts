@@ -157,8 +157,6 @@ export default function parse(
     documentModules: {},
     informativeAnnexes: {},
     partAnnexes: {},
-    demoWorlds: {},
-    storylines: {},
     // Primmel v3 twin interface (TODO.roadmap/32)
     connectorProfiles: {},
     // Primmel v3 continuous compliance (TODO.roadmap/34)
@@ -187,6 +185,16 @@ export default function parse(
     const tok = tokens[i++];
     const keyword = tok.value;
     const cfg = parsers[keyword];
+
+    // The deprecation report (phase 2): a construct whose definition
+    // carries a migration note warns on every use, under C154.
+    if (cfg?.deprecated) {
+      ctx.issues.push({
+        check: 'C154',
+        severity: 'warning',
+        message: `construct "${keyword}" at line ${tok.start.line} col ${tok.start.col} is deprecated: ${cfg.deprecated} (construct-deprecated)`,
+      });
+    }
 
     if (!cfg) {
       if (options.strict) {

@@ -212,12 +212,6 @@ import {
   parseInformativeAnnex,
 } from './informativeAnnex';
 import { dumpPartAnnex, parsePartAnnex } from './partAnnex';
-import {
-  dumpDemoWorld,
-  dumpStoryline,
-  parseDemoWorld,
-  parseStoryline,
-} from './storyline';
 
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
@@ -234,6 +228,13 @@ export interface ConstructDefinition {
   resolve?: Resolver<unknown, unknown>;
   /** Per-item dumper. */
   dump: (item: never) => string;
+  /**
+   * The deprecation note (phase 2 of the reconfiguration): when set,
+   * every use of the construct warns (C154 construct-deprecated) with
+   * this note as the migration path, and the construct is removed in
+   * the retirement phase.
+   */
+  deprecated?: string;
 }
 
 /** Identity helper — exists so call sites read as declarations, not data. */
@@ -272,6 +273,7 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   // batch 2): the pipeline sequence + the participant/expert registers.
   defineConstruct({
     keyword: 'process_model',
+    deprecated: 'merge into the surviving process dialect — canvas for stage groupings, process for activities (the reconfiguration, file 05); removed in the retirement phase',
     field: 'processModels',
     takesID: true,
     parse: parseProcessModel,
@@ -282,6 +284,7 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   // the rec-overlay deep merge (OVERLAY_DEEP_MERGE_FIELDS) lands here.
   defineConstruct({
     keyword: 'workflow_config',
+    deprecated: 'merge into the surviving process dialect — canvas for stage groupings, process for activities (the reconfiguration, file 05); removed in the retirement phase',
     field: 'workflowConfigs',
     takesID: true,
     parse: parseWorkflowConfig,
@@ -292,6 +295,7 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   // is C142's.
   defineConstruct({
     keyword: 'workflow_stage',
+    deprecated: 'merge into the surviving process dialect — canvas for stage groupings, process for activities (the reconfiguration, file 05); removed in the retirement phase',
     field: 'workflowStages',
     takesID: true,
     parse: parseWorkflowStage,
@@ -861,24 +865,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     parse: parsePartAnnex,
     dump: dumpPartAnnex as never,
   }),
-  // The demo seeds (smart TODO.roadmap/40 batch 4) — one demo_world per
-  // package (file-level metadata + the OPEN participants registry) and
-  // one storyline per flow; the record-value sub-grammar follows the
-  // quantity.ts dumpScalarToken conventions.
-  defineConstruct({
-    keyword: 'demo_world',
-    field: 'demoWorlds',
-    takesID: true,
-    parse: parseDemoWorld,
-    dump: dumpDemoWorld as never,
-  }),
-  defineConstruct({
-    keyword: 'storyline',
-    field: 'storylines',
-    takesID: true,
-    parse: parseStoryline,
-    dump: dumpStoryline as never,
-  }),
   // Primmel v3 twin interface (TODO.roadmap/32 — doctrine ch. 14 §14.4):
   // the connector-profile registry. Endpoints and serve bindings are NOT
   // top-level constructs — they are subject anatomy slots (is.endpoints /
@@ -943,7 +929,12 @@ function buildParserConfig(
     if (!c.field) {
       continue;
     }
-    const entry = { takesID: c.takesID, parse: c.parse, field: c.field };
+    const entry = {
+      takesID: c.takesID,
+      parse: c.parse,
+      field: c.field,
+      ...(c.deprecated ? { deprecated: c.deprecated } : {}),
+    };
     out[c.keyword] = entry;
     for (const alias of c.aliases ?? []) {
       out[alias] = entry;

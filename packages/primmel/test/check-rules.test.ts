@@ -41,10 +41,16 @@ const FAMILIES = [
 ];
 
 describe('check rule catalog (TODO.roadmap/17)', () => {
-  it('ids are unique and sequential (C1…C148)', () => {
+  it('ids are unique with the retired gap and the deprecation rule', () => {
     const ids = CHECK_RULES.map(r => r.id);
     assert.equal(new Set(ids).size, ids.length, 'duplicate rule ids');
-    const expected = Array.from({ length: 148 }, (_, i) => `C${i + 1}`);
+    // C129 retired with the storyline and demo_world constructs (phase
+    // 2 of the reconfiguration); C154 is the deprecation report.
+    const expected = [
+      ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`),
+      ...Array.from({ length: 19 }, (_, i) => `C${i + 130}`),
+      'C154',
+    ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
