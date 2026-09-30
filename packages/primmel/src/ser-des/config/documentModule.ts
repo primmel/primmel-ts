@@ -18,7 +18,7 @@ import {
   dumpProcessSequence,
   parseProcessRegister,
   parseProcessSequence,
-} from './processModel';
+} from './processSequence';
 import DocumentModule from '../../types/DocumentModule';
 
 export const parseDocumentModule: Parser = (id: string, data: string) => {

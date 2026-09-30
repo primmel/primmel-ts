@@ -22,7 +22,6 @@ describe('overlay deep-merge (smart TODO.roadmap/40 batch 3)', () => {
     // name listed before its collection exists would be dead config.
     assert.deepEqual([...OVERLAY_DEEP_MERGE_FIELDS].sort(), [
       'testReportChecklists',
-      'workflowConfigs',
     ]);
   });
 

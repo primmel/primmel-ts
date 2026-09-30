@@ -55,9 +55,6 @@ import { dumpGateway, parseExclusiveGate } from './gateway';
 
 import { parseMetadata } from './metadata';
 import { dumpProcess, parseProcess, resolveProcess } from './process';
-import { dumpProcessModel, parseProcessModel } from './processModel';
-import { dumpWorkflowConfig, parseWorkflowConfig } from './workflowConfig';
-import { dumpWorkflowStage, parseWorkflowStage } from './workflowStage';
 import {
   dumpVerificationPathway,
   parseVerificationPathway,
@@ -272,36 +269,12 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   }),
   // The abstract-process model's file-level home (smart TODO.roadmap/40
   // batch 2): the pipeline sequence + the participant/expert registers.
-  defineConstruct({
-    keyword: 'process_model',
-    deprecated: 'merge into the surviving process dialect — canvas for stage groupings, process for activities (the reconfiguration, file 05); removed in the retirement phase',
-    field: 'processModels',
-    takesID: true,
-    parse: parseProcessModel,
-    dump: dumpProcessModel as never,
-  }),
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — process-adjacent but NOT the abstract-process machinery;
   // the rec-overlay deep merge (OVERLAY_DEEP_MERGE_FIELDS) lands here.
-  defineConstruct({
-    keyword: 'workflow_config',
-    deprecated: 'merge into the surviving process dialect — canvas for stage groupings, process for activities (the reconfiguration, file 05); removed in the retirement phase',
-    field: 'workflowConfigs',
-    takesID: true,
-    parse: parseWorkflowConfig,
-    dump: dumpWorkflowConfig as never,
-  }),
   // The named pipeline stage (smart TODO.roadmap/40 batch 5) — groups
   // the workflow constructs per stage; the members-resolve discipline
   // is C142's.
-  defineConstruct({
-    keyword: 'workflow_stage',
-    deprecated: 'merge into the surviving process dialect — canvas for stage groupings, process for activities (the reconfiguration, file 05); removed in the retirement phase',
-    field: 'workflowStages',
-    takesID: true,
-    parse: parseWorkflowStage,
-    dump: dumpWorkflowStage as never,
-  }),
   defineConstruct({
     keyword: 'approval',
     field: 'approvals',

@@ -2146,15 +2146,6 @@ export function checkPackage(
         }
       }
     }
-    for (const m of standard.processModels ?? []) {
-      const where = `process_model ${m.id}`;
-      for (const s of m.sequence ?? []) {
-        resolveProcessRef(where, 'sequence', s);
-      }
-      for (const r of m.registers ?? []) {
-        resolveOrganAp(`${where} register ${r.id}`, 'maintainer', r.maintainer);
-      }
-    }
   }
 
   // ── C84: constraint-shape (TODO.roadmap/51 — BUG.R60-SSOT gap 7) ─────
@@ -5440,33 +5431,6 @@ export function checkPackage(
       }
     }
     const CLEAN_TOKEN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-    for (const w of standard.workflowConfigs ?? []) {
-      for (const s of w.steps ?? []) {
-        const where = `workflow_config ${w.id}: step ${s.id}`;
-        if (s.actor && roleIds.size > 0 && !roleIds.has(s.actor)) {
-          err(
-            'C137',
-            `${where}: actor "${s.actor}" is not a declared role (workflow-config-references)`,
-          );
-        }
-        for (const [facet, list] of [
-          ['inputs', s.inputs],
-          ['outputs', s.outputs],
-        ] as const) {
-          for (const entry of list) {
-            if (!CLEAN_TOKEN.test(entry)) {
-              continue; // a composite documentary string — never resolved
-            }
-            if (dataclassIds.size > 0 && !dataclassIds.has(entry)) {
-              err(
-                'C137',
-                `${where}: ${facet} entry "${entry}" is not a declared data class (workflow-config-references)`,
-              );
-            }
-          }
-        }
-      }
-    }
   }
 
   // ── C138: verification-pathway-references (smart TODO.roadmap/40 ───
@@ -5816,33 +5780,6 @@ export function checkPackage(
     // stay documentary, never resolved.
     const stageApprovalIds = new Set((standard.approvals ?? []).map(a => a.id));
     const stageGatewayIds = new Set((standard.gateways ?? []).map(g => g.id));
-    for (const s of standard.workflowStages ?? []) {
-      const where = `workflow_stage ${s.id}`;
-      for (const el of s.elements ?? []) {
-        if (gwProcessIds.size > 0 && !gwProcessIds.has(el)) {
-          err(
-            'C142',
-            `${where}: element "${el}" is not a declared process (gateway-edges-resolve)`,
-          );
-        }
-      }
-      for (const a of s.approvals ?? []) {
-        if (stageApprovalIds.size > 0 && !stageApprovalIds.has(a)) {
-          err(
-            'C142',
-            `${where}: approval "${a}" is not a declared approval (gateway-edges-resolve)`,
-          );
-        }
-      }
-      for (const g of s.gateways ?? []) {
-        if (stageGatewayIds.size > 0 && !stageGatewayIds.has(g)) {
-          err(
-            'C142',
-            `${where}: gateway "${g}" is not a declared gateway (gateway-edges-resolve)`,
-          );
-        }
-      }
-    }
   }
 
   // ── C143: approval-references-resolve (smart TODO.roadmap/40 batch ──
@@ -7784,7 +7721,8 @@ const CLOSED_DERIVATION_STOP = new Set([
 // declared name (an input, a calculation, an attribute, a class-typed
 // value); the tail is navigation over that head's type, judged by the
 // class layer (C152), not by the closed-derivation rule.
-const CLOSED_DERIVATION_PATH_RE = /\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+/g;
+const CLOSED_DERIVATION_PATH_RE =
+  /\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+/g;
 const CLOSED_DERIVATION_IDENT_RE = /[A-Za-z_][A-Za-z0-9_]*/g;
 
 export function checkClosedDerivations(standard: Standard): CheckIssue[] {
@@ -7847,10 +7785,13 @@ export function checkClosedDerivations(standard: Standard): CheckIssue[] {
       return;
     }
     // Values and lambdas are not references: single-quoted literals are
-  // values; an identifier before `|` is a lambda parameter.
-  const noLiterals = expr.replace(/'[^']*'/g, ' ');
-  const noLambdas = noLiterals.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\s*\|/g, ' ');
-  const stripped = noLambdas.replace(CLOSED_DERIVATION_PATH_RE, ' ');
+    // values; an identifier before `|` is a lambda parameter.
+    const noLiterals = expr.replace(/'[^']*'/g, ' ');
+    const noLambdas = noLiterals.replace(
+      /\b([A-Za-z_][A-Za-z0-9_]*)\s*\|/g,
+      ' ',
+    );
+    const stripped = noLambdas.replace(CLOSED_DERIVATION_PATH_RE, ' ');
     const seen = new Set<string>();
     for (const raw of stripped.match(CLOSED_DERIVATION_IDENT_RE) ?? []) {
       if (

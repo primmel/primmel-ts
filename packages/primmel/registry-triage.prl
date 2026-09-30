@@ -1,22 +1,12 @@
-# registry-triage.prl — the visible list of parser constructs that the
-# published specification (Annex A) does not yet register (kernel rule
-# R1; 01-audit.md D1; 09-migration-plan.md phase 0). The
-# registry-parity test (test/registry-parity.test.ts) fails for any
-# parser keyword that is neither in Annex A nor marked here, and fails
-# for any entry that has since gained a specification section — the
-# list only shrinks, and the construction freeze (phase 0) means
-# nothing joins the parser while entries are open.
+# registry-triage.prl — the visible list of parser constructs the
+# published specification (Annex A) does not register (kernel rule R1).
+# The registry-parity test fails for any parser keyword that is neither
+# in Annex A nor marked here, and fails for any entry that has since
+# gained a specification section — the list only shrinks.
 #
-# Dispositions follow the triage of 09-migration-plan.md phase 2 and
-# the layering of 08-oiml-extensions.md: specify-as-platform-module
-# (layer 2), specify-as-oiml-extension (layer 3), or merge (into the
-# surviving process dialect, deprecated pending phase 6 removal).
-# Phase 2's dispositions are complete: the thirty-two platform modules
-# are specified in clause 20; the five below are the merged trio and
-# the two unused constructs pending their removal legs.
-
-storyline unspecified-pending-triage
-demo_world unspecified-pending-triage
-process_model unspecified-pending-triage (merge into the surviving process dialect and retract — file 05)
-workflow_stage unspecified-pending-triage (merge into the surviving process dialect and retract — file 05)
-workflow_config unspecified-pending-triage (merge into the surviving process dialect and retract — file 05)
+# The list is EMPTY (phase 6 of the reconfiguration, 2026-09-30): the
+# thirty-two platform modules were specified in clause 20 (phase 2),
+# the two unused constructs were retracted, and the three workflow
+# constructs merged into the surviving process dialect and were removed
+# from the parser after the migration window (phase 5). Every construct
+# of the parser has its normative home in Annex A.

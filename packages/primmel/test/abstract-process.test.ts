@@ -4,7 +4,7 @@
 // facets (summary, roles/organs/participant_kinds, evidence, decision,
 // declaration, discharges_gate, realized_by/approved_by, the calendar
 // windows), the untyped signature parameter (bare name = entity-store
-// reference), the shared `process_model` construct (sequence +
+// reference), the abstract-process sequence (the canvas form; the
 // registers), and the C121 abstract-process-references-resolve linter
 // rule (per-register gated, the C58 doctrine).
 //
@@ -13,7 +13,7 @@
 //                declaration kind + gate, a decision rule, a role, an
 //                approval, and the realizing process.
 //   PIPELINE   — two abstract processes carrying every batch-2 facet,
-//                plus the process_model binding them into a sequence.
+//                retired process_model binding is the canvas now.
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -123,16 +123,17 @@ process ia_assessment {
   }
   realized_by { submit_application }
 }
-process_model evaluation {
-  sequence { ia_application ia_assessment }
-  register lme_register {
-    label "ILAC-IAF-OIML list of Legal Metrology Experts"
-    clause "PD-02, 9"
-    maintainer management_committee
-    published "The OIML-CS pages of the OIML website."
-    entries "Per Legal Metrology Expert: identity, contact, scope."
+canvas evaluation {
+  elements {
+    ia_application { x 0 y 0 }
+    ia_assessment { x 10 y 0 }
   }
-  source { doc "urn:oiml:pub:cs:pd-05:2024" clause "4" }
+  process_flow {
+    e1 {
+      from ia_application
+      to ia_assessment
+    }
+  }
 }
 `;
 
@@ -246,39 +247,7 @@ process mixed {
     );
     const m2 = load(dumped);
     assert.deepEqual(m2.processes, m1.processes);
-    assert.deepEqual(m2.processModels, m1.processModels);
-    assert.equal(dump(m2), dumped);
-  });
-});
-
-describe('process_model construct (smart TODO.roadmap/40 batch 2)', () => {
-  it('parses the sequence and the register block', () => {
-    const m = load(PIPELINE);
-    const pm = m.processModels.find(x => x.id === 'evaluation')!;
-    assert.deepEqual(pm.sequence, ['ia_application', 'ia_assessment']);
-    assert.equal(pm.registers.length, 1);
-    const r = pm.registers[0]!;
-    assert.equal(r.id, 'lme_register');
-    assert.equal(r.label, 'ILAC-IAF-OIML list of Legal Metrology Experts');
-    assert.equal(r.clause, 'PD-02, 9');
-    assert.equal(r.maintainer, 'management_committee');
-    assert.equal(r.published, 'The OIML-CS pages of the OIML website.');
-    assert.equal(
-      r.entries,
-      'Per Legal Metrology Expert: identity, contact, scope.',
-    );
-    assert.equal(pm.source.doc, 'urn:oiml:pub:cs:pd-05:2024');
-    assert.equal(pm.source.clause, '4');
-  });
-
-  it('round-trips the model losslessly (fixpoint)', () => {
-    const m1 = load(PIPELINE);
-    const dumped = dump(m1);
-    assert.ok(dumped.includes('process_model evaluation {'));
-    assert.ok(dumped.includes('sequence { ia_application ia_assessment }'));
-    assert.ok(dumped.includes('register lme_register {'));
-    const m2 = load(dumped);
-    assert.deepEqual(m2.processModels, m1.processModels);
+    assert.deepEqual(m2.pages, m1.pages);
     assert.equal(dump(m2), dumped);
   });
 });
@@ -364,14 +333,11 @@ describe('C121 abstract-process-references-resolve', () => {
     assert.ok(issues[0]!.message.includes('neither years nor months'));
   });
 
-  it('flags a dangling realized_by and a dangling sequence member', () => {
+  it('flags a dangling realized_by', () => {
     const issues = c121Issues(
       (FRAMEWORK + PIPELINE)
         .replace('realized_by { submit_application }', 'realized_by { ghost }')
-        .replace(
-          'sequence { ia_application ia_assessment }',
-          'sequence { ia_application ghost }',
-        ),
+        .replace('to ia_assessment', 'to ghost'),
     );
     assert.equal(issues.length, 2);
     assert.ok(issues.every(i => i.message.includes('"ghost"')));

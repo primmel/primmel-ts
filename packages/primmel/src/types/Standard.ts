@@ -15,7 +15,6 @@ import type MapProfile from './MapProfile';
 import type Metadata from './Metadata';
 import type Note from './Note';
 import type Process from './process';
-import type ProcessModel from './ProcessModel';
 import type { Subprocess } from './flow';
 import type Provision from './Provision';
 import type Reference from './Reference';
@@ -40,8 +39,6 @@ import type EvaluationDimensions from './EvaluationDimension';
 import type EvaluationProfile from './EvaluationProfile';
 import type Attestation from './Attestation';
 import type CertificateTemplate from './CertificateTemplate';
-import type WorkflowConfig from './WorkflowConfig';
-import type WorkflowStage from './WorkflowStage';
 import type VerificationPathway from './VerificationPathway';
 import type {
   LabSelectionCriterion,
@@ -99,7 +96,6 @@ export default interface Standard {
   /** The abstract-process models (smart TODO.roadmap/40 batch 2): the
    *  file-level pipelines (sequence + participant/expert registers) the
    *  processes belong to. */
-  processModels: ProcessModel[];
   dataclasses: DataClass[];
   regs: Registry[];
   events: EventNode[];
@@ -209,11 +205,9 @@ export default interface Standard {
   /** The certification workflow step registers (smart TODO.roadmap/40
    *  batch 3): the core layer carries the OIML-CS skeleton, the rec
    *  packages overlay it (the B3.1 deep merge). */
-  workflowConfigs: WorkflowConfig[];
   /** The named pipeline stages (smart TODO.roadmap/40 batch 5) — the
    *  workflow constructs grouped per stage: member processes, the
    *  bracketing (documentary) events, the approvals and gateways. */
-  workflowStages: WorkflowStage[];
   /** The verification pathways beyond type evaluation (smart
    *  TODO.roadmap/40 batch 3) — VIML 2.09/2.12–2.14. */
   verificationPathways: VerificationPathway[];

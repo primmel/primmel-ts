@@ -21,31 +21,26 @@ function makePackage(body: string): string {
 }
 
 describe('phase 2 triage dispositions', () => {
-  it('storyline and demo_world are retracted — the keywords no longer parse', () => {
+  it('the retracted and retired constructs no longer parse', () => {
+    // Phase 2 retracted storyline and demo_world (unused); phase 6
+    // removed the deprecated workflow trio after the migration window.
     const keywords = new Set(CONSTRUCTS.map(c => c.keyword));
-    assert.equal(keywords.has('storyline'), false);
-    assert.equal(keywords.has('demo_world'), false);
-  });
-
-  it('the workflow trio is deprecated with its migration note', () => {
-    const notes = new Map(
-      CONSTRUCTS.filter(c => c.deprecated).map(c => [c.keyword, c.deprecated]),
-    );
-    for (const kw of ['process_model', 'workflow_stage', 'workflow_config']) {
-      assert.match(notes.get(kw) ?? '', /canvas for stage groupings/);
+    for (const kw of [
+      'storyline',
+      'demo_world',
+      'process_model',
+      'workflow_stage',
+      'workflow_config',
+    ]) {
+      assert.equal(keywords.has(kw), false, kw);
     }
   });
 
-  it('C154 warns on every deprecated-construct use', () => {
-    const issues = checkPackage(
-      makePackage('workflow_stage stage_one { elements { a { x 0 y 0 } } }'),
-    ).filter(i => i.check === 'C154');
-    assert.equal(issues.length, 1);
-    assert.match(issues[0]!.message, /"workflow_stage".*deprecated/);
-    assert.match(issues[0]!.message, /canvas for stage groupings/);
-  });
-
-  it('a package that uses no deprecated construct raises no C154', () => {
+  it('no construct carries a deprecation note — the report is empty', () => {
+    assert.deepEqual(
+      CONSTRUCTS.filter(c => c.deprecated).map(c => c.keyword),
+      [],
+    );
     const issues = checkPackage(
       makePackage('instrument X { definition "X." }'),
     ).filter(i => i.check === 'C154');

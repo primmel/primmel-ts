@@ -20,7 +20,7 @@ function emptyContext(): ParseContext {
     provisions: {},
     comments: {},
     processes: {},
-    processModels: {},
+
     pages: {},
     gateways: {},
     regs: {},
@@ -71,8 +71,6 @@ function emptyContext(): ParseContext {
     evaluationProfiles: {},
     attestations: {},
     certificateTemplates: {},
-    workflowConfigs: {},
-    workflowStages: {},
     verificationPathways: {},
     labSelectionCriteria: {},
     sampleSelectionRules: {},

@@ -55,7 +55,7 @@ export default function parse(
     roles: {},
     processes: {},
     // The abstract-process models (smart TODO.roadmap/40 batch 2)
-    processModels: {},
+
     pages: {},
     gateways: {},
     regs: {},
@@ -120,9 +120,9 @@ export default function parse(
     attestations: {},
     certificateTemplates: {},
     // The certification workflow step register (batch 3)
-    workflowConfigs: {},
+
     // The named pipeline stages (batch 5)
-    workflowStages: {},
+
     // The verification pathways (batch 3)
     verificationPathways: {},
     // The selection rules (batch 3)
@@ -195,7 +195,11 @@ export default function parse(
         code: 'construct-deprecated',
         construct: keyword,
         message: `construct "${keyword}" at line ${tok.start.line} col ${tok.start.col} is deprecated: ${cfg.deprecated} (construct-deprecated)`,
-        position: { line: tok.start.line, col: tok.start.col, offset: tok.start.offset },
+        position: {
+          line: tok.start.line,
+          col: tok.start.col,
+          offset: tok.start.offset,
+        },
       });
     }
 
