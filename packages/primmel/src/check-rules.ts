@@ -506,28 +506,6 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
   ),
-  // C129 (smart TODO.roadmap/40 batch 4; the packages-as-SSOT epic): the
-  // demo-seed shapes — the storyline's id_prefix pattern (register-free),
-  // the party laboratory/authority → the demo_world participant seeds
-  // (gated on that register), the record stores → the entity-class stores
-  // (gated), and the in-construct record cross-references (a record field
-  // keyed by a sibling record's store names a sibling of that store —
-  // ungated). Field-level discipline stays app-side.
-  R(
-    'C129',
-    'storyline-shape',
-    'composition',
-    'error',
-    'normal',
-    'smart TODO.roadmap/40 batch 4 (the packages-as-SSOT epic)',
-  ),
-  // C130 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
-  // identity_slot / aspect registers — the ≥1-presentation shape leg, the
-  // aspect reference legs (term_ref → term, component → instrument
-  // component, attribute → attribute_definition, contains → identity path
-  // OR bare attribute/dimension id), and the R28 bind-path consumer leg
-  // (model.identity.<slot> / model.aspects.<id> in requirement/test
-  // binds_to), each leg gated on its target register (the C58 doctrine).
   R(
     'C130',
     'identity-and-aspect-references',
@@ -1313,6 +1291,18 @@ export const CHECK_RULES: CheckRule[] = [
     'error',
     'normal',
     'smart TODO.twin-demo/03 (the model-drive bindings)',
+  ),
+  // ── the deprecation report (phase 2 of the reconfiguration): a
+  // construct whose definition carries a migration note warns on every
+  // use; the retirement phase removes the constructs and the rule
+  // burns down to empty.
+  R(
+    'C154',
+    'construct-deprecated',
+    'base',
+    'warning',
+    'normal',
+    'the reconfiguration phase 2 (TODO.reconfigure/09-migration-plan.md)',
   ),
   // ── the per-test evaluation-formula traces (smart gap-close E11,
   // analysis/architecture-gaps-2026-07.md; the smart contract
