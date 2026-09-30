@@ -127,6 +127,8 @@ export interface ParserConfiguration {
     takesID?: true;
     parse: Parser;
     field?: keyof ParseContext;
+    /** The deprecation note (phase 2); every use warns under C154. */
+    deprecated?: string;
   };
 }
 
