@@ -59,8 +59,6 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
       'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation)',
     );
   });
-    );
-  });
 
   it('every rule has a valid family, severity, level, and a docs pointer', () => {
     for (const r of CHECK_RULES) {
