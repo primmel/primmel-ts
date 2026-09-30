@@ -6,13 +6,16 @@
 // reference implementation.
 //
 // The selection: every check-kind case whose expectation stays within
-// checker2's implemented rule set — clean positives across ALL
-// families (a false-positive detector: an over-eager rule breaks
-// clean packages of every kind) and the negatives whose full expected
-// rule set is implemented. Cases naming unimplemented rules are
-// counted and reported, never silently skipped: the register
-// (conformance/checker2-rules.json) is the visible only-grows list,
-// and the leg errors on drift in either direction.
+// checker2's reach — clean positives across ALL families (a
+// false-positive detector: an over-eager rule breaks clean packages
+// of every kind), the negatives whose full expected rule set is
+// implemented, and the error-form cases (the loader's fail-fast
+// diagnostics: the manifest's id and status discipline, whose
+// messages mirror the reference loader's). Cases naming
+// unimplemented rules are counted and reported, never silently
+// skipped: the register (conformance/checker2-rules.json) is the
+// visible only-grows list, and the leg errors on drift in either
+// direction.
 //
 // Usage: npx tsx conformance/runner/checker2-leg.mts
 // Exit codes: 0 every selected case passed under checker2 (or the leg
@@ -89,11 +92,9 @@ for (const c of cases.cases) {
   if (rules.length > 0 && rules.every(r => implemented.has(r))) {
     selected.push(c.id);
   } else if (c.expect.error !== undefined) {
-    // The error-form cases pin the LOADER's failure diagnostics (a
-    // manifest without an id; an unknown status token) — checker2's
-    // loader is total and reports findings as issues, so these wait
-    // for a fail-fast manifest reader, not for a rule.
-    waiting++;
+    // The error-form cases: the loader's fail-fast diagnostics, whose
+    // messages the adapter mirrors.
+    selected.push(c.id);
   } else {
     waiting++;
   }
