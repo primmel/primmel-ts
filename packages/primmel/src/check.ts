@@ -7771,6 +7771,13 @@ const CLOSED_DERIVATION_STOP = new Set([
   // table-lookup engine vocabulary (the lookup facet names these)
   'lookup',
   'profile',
+  // OCL collection statistics and arithmetic
+  'average',
+  'mean',
+  'size',
+  'div',
+  'mod',
+  'collect',
 ]);
 
 // Attribute navigation: `head.field…` resolves when the HEAD is a
@@ -7809,6 +7816,14 @@ export function checkClosedDerivations(standard: Standard): CheckIssue[] {
   for (const d of standard.dataclasses ?? []) {
     declared.add(d.id);
   }
+  for (const inst of standard.instruments ?? []) {
+    for (const d of inst.dimensions ?? []) {
+      declared.add(d.id);
+    }
+  }
+  for (const d of standard.dimensions ?? []) {
+    declared.add(d.id);
+  }
   // A calculation's own output name is declared too (requirements bind
   // it), and so is every input of every calculation.
   for (const c of standard.calculations ?? []) {
@@ -7831,10 +7846,19 @@ export function checkClosedDerivations(standard: Standard): CheckIssue[] {
     if (!expr) {
       return;
     }
-    const stripped = expr.replace(CLOSED_DERIVATION_PATH_RE, ' ');
+    // Values and lambdas are not references: single-quoted literals are
+  // values; an identifier before `|` is a lambda parameter.
+  const noLiterals = expr.replace(/'[^']*'/g, ' ');
+  const noLambdas = noLiterals.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\s*\|/g, ' ');
+  const stripped = noLambdas.replace(CLOSED_DERIVATION_PATH_RE, ' ');
     const seen = new Set<string>();
     for (const raw of stripped.match(CLOSED_DERIVATION_IDENT_RE) ?? []) {
-      if (CLOSED_DERIVATION_STOP.has(raw) || locals.has(raw) || seen.has(raw)) {
+      if (
+        CLOSED_DERIVATION_STOP.has(raw) ||
+        locals.has(raw) ||
+        seen.has(raw) ||
+        /^[a-z][0-9]?$/.test(raw)
+      ) {
         continue;
       }
       seen.add(raw);
