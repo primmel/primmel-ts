@@ -7517,6 +7517,8 @@ export function checkAttestations(standard: Standard): CheckIssue[] {
   const err = (check: string, message: string) =>
     issues.push({ check, severity: 'error', message });
 
+  const roleIds = new Set((standard.roles ?? []).map(r => r.id));
+
   const instanceIds = new Set((standard.instances ?? []).map(i => i.id));
   const verdictIds = new Set((standard.verdicts ?? []).map(v => v.id));
 
