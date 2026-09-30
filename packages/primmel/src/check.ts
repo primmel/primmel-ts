@@ -1408,7 +1408,9 @@ export function checkPackage(
   // C45 — artifact-def-contract: the content contract is well-formed.
   for (const d of standard.artifactDefinitions ?? []) {
     const c = d.contentContract;
-    if (c.fields.length === 0) {
+    // A derived contract (contract_from, C153) is the referenced
+    // promise set's projection — its fields are the set's.
+    if (!d.contractFrom && c.fields.length === 0) {
       err(
         'C45',
         `artifact definition ${d.id}: content contract declares no fields — a definition must contract SOME content (artifact-def-contract)`,
