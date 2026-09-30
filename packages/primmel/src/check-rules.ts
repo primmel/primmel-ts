@@ -1310,6 +1310,18 @@ export const CHECK_RULES: CheckRule[] = [
   // C150 resolves its subject, promise set, basis, authority, and claim
   // references; C151 requires the claim lineage — a mandatory
   // characteristic is carried by lineage, never restated.
+  // ── the typed kernel R3 (the reconfiguration): the closed-derivation
+  // rule. A derivation expression names only declared definitions —
+  // calculations, tables, symbols, measurements, and attributes — and
+  // the checker rejects anything else, naming the missing declaration.
+  R(
+    'C149',
+    'closed-derivation-references-declared',
+    'quantities',
+    'error',
+    'normal',
+    'the typed kernel R3 (TODO.reconfigure/03-typed-kernel.md)',
+  ),
   R(
     'C150',
     'attestation-references-resolve',
