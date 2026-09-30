@@ -450,6 +450,7 @@ import { FORMULA_ID_SHAPE } from './types/FormulasUsed';
 import { stripWrapping } from './ser-des/tokenize';
 import { extractStateGates } from './operational-state';
 import { activeRuleIds } from './check-rules';
+import { delegationSuccessors } from './instance-resolution';
 import {
   applyAllowlist,
   BUDGETED_RULES,
@@ -3055,6 +3056,7 @@ export function checkPackage(
   };
   const instrumentIds = new Set((standard.instruments ?? []).map(i => i.id));
   const instanceIds = new Set((standard.instances ?? []).map(i => i.id));
+  const dataclassIds = new Set((standard.dataclasses ?? []).map(c => c.id));
   const attrScopes = new Map(
     (standard.attributeDefinitions ?? []).map(a => [a.id, a.scope]),
   );
@@ -3197,11 +3199,12 @@ export function checkPackage(
     if (
       !subjectIds.has(inst.of) &&
       !instrumentIds.has(inst.of) &&
-      !instanceIds.has(inst.of)
+      !instanceIds.has(inst.of) &&
+      !dataclassIds.has(inst.of)
     ) {
       err(
         'C20',
-        `instance ${inst.id}: of "${inst.of}" is not a declared subject, instrument, or instance (instance-of-resolves)`,
+        `instance ${inst.id}: of "${inst.of}" is not a declared subject, instrument, class, or instance (instance-of-resolves)`,
       );
     }
 
@@ -3222,13 +3225,17 @@ export function checkPackage(
     }
   }
 
-  // C155 — power-type-chain (acyclicity leg): the of-to-instance graph is
-  // acyclic (a cycle would make the generalized delegation walk
-  // non-terminating, exactly as C19 guards the upward-link graph).
+  // C155 — power-type-chain (acyclicity leg): the MIXED delegation
+  // graph — of-chains to instances AND the prototype hop (an `of` to a
+  // class whose extends names an instance) — is acyclic: a cycle over
+  // these edges would make the delegation walk non-terminating, and a
+  // class instantiating its own prototype (`instance x of C` while
+  // `C extends { x }`) is the shapes' own mutual recursion.
+  const delegation = delegationSuccessors(standard);
   const ofAdj = new Map<string, string[]>();
-  for (const inst of standard.instances ?? []) {
-    if (inst.of && instanceIds.has(inst.of)) {
-      ofAdj.set(inst.id, [inst.of]);
+  for (const [from, to] of delegation) {
+    if (instanceIds.has(to)) {
+      ofAdj.set(from, [to]);
     }
   }
   const ofCycle = findCycle(ofAdj);
@@ -3244,7 +3251,6 @@ export function checkPackage(
   // discipline — a class extending an instance specializes that
   // individual). Successfully merged links clear at resolve time, so a
   // surviving link is exactly an unresolved one.
-  const dataclassIds = new Set((standard.dataclasses ?? []).map(c => c.id));
   for (const c of standard.dataclasses ?? []) {
     if (c.extends && !dataclassIds.has(c.extends) && !instanceIds.has(c.extends)) {
       warn(
@@ -7501,12 +7507,35 @@ export function checkTypedPayloads(standard: Standard): CheckIssue[] {
   for (const c of standard.dataclasses ?? []) {
     classFields.set(c.id, new Set(c.attributes.map(a => a.id)));
   }
+  // The power-type discipline reaches the typing bridge: an INSTANCE
+  // is a class, and its shape is the fields of the class its `of`
+  // chain terminates at (the prototype hop's mirror — an individual
+  // typed by its definition's fields).
+  const instanceShape = (id: string): Set<string> | undefined => {
+    const inst = (standard.instances ?? []).find(i => i.id === id);
+    if (!inst) {
+      return undefined;
+    }
+    let cur = inst;
+    const seen = new Set<string>([cur.id]);
+    while (cur.of) {
+      const next = (standard.instances ?? []).find(i => i.id === cur.of);
+      if (!next || seen.has(next.id)) {
+        break;
+      }
+      seen.add(next.id);
+      cur = next;
+    }
+    return cur.of !== '' ? classFields.get(cur.of) : undefined;
+  };
+  const typedFields = (id: string): Set<string> | undefined =>
+    classFields.get(id) ?? instanceShape(id);
 
   const checkDim = (owner: string, d: ClassificationDimension) => {
     if (!d.payloadClass) {
       return;
     }
-    const fields = classFields.get(d.payloadClass);
+    const fields = typedFields(d.payloadClass);
     if (!fields) {
       err(
         'C152',
@@ -7544,7 +7573,7 @@ export function checkTypedPayloads(standard: Standard): CheckIssue[] {
   }
 
   for (const a of standard.attributeDefinitions ?? []) {
-    if (a.classRef && !classFields.has(a.classRef)) {
+    if (a.classRef && !typedFields(a.classRef)) {
       err(
         'C152',
         `attribute_definition ${a.id}: class "${a.classRef}" is not a declared class (payload-typed-by-class)`,

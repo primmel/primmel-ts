@@ -2902,6 +2902,17 @@
     ]
    },
    "summary": "A cyclic of-chain fires C155 — the generalized delegation walk must terminate."
+  },
+  {
+   "id": "pwt-01-pos-prototype",
+   "clause": "PWT-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/power-type-prototype",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A class extending an INSTANCE (the prototype) checks clean: the production unit instantiates the product line, whose prototype is the characterized family instance — the delegation walk crosses the class plane."
   }
  ]
 }
