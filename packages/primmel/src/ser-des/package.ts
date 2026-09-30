@@ -485,7 +485,6 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'processes',
   // The abstract-process models (smart TODO.roadmap/40 batch 2) compose
   // like the processes they sequence, with uses-no-redefine semantics.
-  'processModels',
   'pages',
   'gateways',
   'regs',
@@ -553,10 +552,8 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'certificateTemplates',
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — the rec-overlay deep merge (OVERLAY_DEEP_MERGE_FIELDS).
-  'workflowConfigs',
   // The named pipeline stages (smart TODO.roadmap/40 batch 5) compose
   // with uses-no-redefine semantics.
-  'workflowStages',
   // The verification pathways (smart TODO.roadmap/40 batch 3) compose
   // with uses-no-redefine semantics.
   'verificationPathways',
@@ -648,7 +645,6 @@ export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([
   // The workflow step register (B3.7): a rec package's overlay-marked
   // workflow_config merges field-wise into the core skeleton (steps
   // union by id in first-seen order, gates append as a union).
-  'workflowConfigs',
   // The OIML-CS test-report checklist (B3.10): a rec package's
   // overlay-marked test_report_checklist merges field-wise into the
   // oiml-cs base — entry scalars land IN PLACE (the base order

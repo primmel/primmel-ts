@@ -14,7 +14,6 @@ import type MapProfile from '../types/MapProfile';
 import type Metadata from '../types/Metadata';
 import type { ResolvableNote } from '../types/Note';
 import type { ResolvableProcess } from '../types/process';
-import type ProcessModel from '../types/ProcessModel';
 import type { ResolvableSubprocess } from '../types/flow';
 import type { ResolvableProvision } from '../types/Provision';
 import type { ResolvableApproval } from '../types/Approval';
@@ -41,8 +40,6 @@ import type EvaluationDimensions from '../types/EvaluationDimension';
 import type EvaluationProfile from '../types/EvaluationProfile';
 import type Attestation from '../types/Attestation';
 import type CertificateTemplate from '../types/CertificateTemplate';
-import type WorkflowConfig from '../types/WorkflowConfig';
-import type WorkflowStage from '../types/WorkflowStage';
 import type VerificationPathway from '../types/VerificationPathway';
 import type {
   LabSelectionCriterion,
@@ -185,7 +182,6 @@ export interface ParseContext {
   provisions: Record<string, ResolvableProvision>;
   processes: Record<string, ResolvableProcess>;
   /** The abstract-process models (smart TODO.roadmap/40 batch 2). */
-  processModels: Record<string, ProcessModel>;
   pages: Record<string, ResolvableSubprocess>;
 
   // XXX: Make resolvable
@@ -268,9 +264,7 @@ export interface ParseContext {
   certificateTemplates: Record<string, CertificateTemplate>;
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — overlay-composable (OVERLAY_DEEP_MERGE_FIELDS).
-  workflowConfigs: Record<string, WorkflowConfig>;
   // The named pipeline stages (smart TODO.roadmap/40 batch 5).
-  workflowStages: Record<string, WorkflowStage>;
   // The verification pathways beyond type evaluation (smart
   // TODO.roadmap/40 batch 3).
   verificationPathways: Record<string, VerificationPathway>;

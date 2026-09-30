@@ -132,10 +132,8 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   certificateTemplates: 'secondary',
   // The certification workflow step register (smart TODO.roadmap/40
   // batch 3) — operational wiring, tertiary.
-  workflowConfigs: 'tertiary',
   // The named pipeline stages (smart TODO.roadmap/40 batch 5) —
   // operational wiring, tertiary.
-  workflowStages: 'tertiary',
   // The verification pathways (smart TODO.roadmap/40 batch 3) —
   // operational wiring, tertiary.
   verificationPathways: 'tertiary',
@@ -175,7 +173,6 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // Process models (smart TODO.roadmap/40 batch 2) are tertiary beside
   // processes: the pipeline sequence/registers are the abstract-process
   // model's file-level furniture.
-  processModels: 'tertiary',
   // Document modules (smart TODO.roadmap/40 batch 2) are tertiary beside
   // processes: the module is the pipeline's document-level furniture.
   documentModules: 'tertiary',

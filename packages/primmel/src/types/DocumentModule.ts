@@ -34,7 +34,7 @@
 // (the C58 doctrine); the codec stays total.
 // ─────────────────────────────────────────────────────────────────────
 
-import type { ProcessModelRegister } from './ProcessModel';
+import type { ProcessModelRegister } from '../ser-des/config/processSequence';
 import type { SourceRef } from './Subject';
 
 export default interface DocumentModule {

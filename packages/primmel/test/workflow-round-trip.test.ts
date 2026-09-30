@@ -364,14 +364,11 @@ approval ia_approve_application {
 // grouping member processes, the bracketing (documentary) events, the
 // approvals and gateways it routes through.
 const STAGE = `
-workflow_stage application_processing {
-  label "Application processing"
-  description "The IA intake pipeline — receipt to acceptance."
-  elements { receive_application check_completeness }
-  start_event application_received
-  end_events { application_accepted application_rejected }
-  approvals { ia_approve_application }
-  gateways { completeness_gateway }
+canvas application_processing {
+  elements {
+    receive_application { x 0 y 0 }
+    check_completeness { x 10 y 0 }
+  }
 }
 `;
 
@@ -390,41 +387,28 @@ exclusive_gateway completeness_gateway {
 }
 `;
 
-describe('workflow_stage register (smart TODO.roadmap/40 batch 5, step 5d)', () => {
-  it('parses all six facets (the events stay documentary tokens)', () => {
+const GHOST_GATEWAY = `
+exclusive_gateway ghost_gateway {
+  label "Ghost?"
+  edge 1 { target ghost_process { when "ocl{true}" } }
+}
+`;
+
+describe('the stage register (the canvas form (smart TODO.roadmap/40 batch 5, step 5d)', () => {
+  it("the canvas form carries the stage's elements", () => {
     const m = load(STAGE);
-    assert.equal(m.workflowStages.length, 1);
-    const s = m.workflowStages[0]!;
-    assert.equal(s.label, 'Application processing');
-    assert.equal(
-      s.description,
-      'The IA intake pipeline — receipt to acceptance.',
+    assert.equal(m.pages.length, 1);
+    const c = m.pages[0]!;
+    assert.equal(c.id, 'application_processing');
+    assert.deepEqual(
+      c.childs.map(e => e.name),
+      ['receive_application', 'check_completeness'],
     );
-    assert.deepEqual(s.elements, ['receive_application', 'check_completeness']);
-    assert.equal(s.startEvent, 'application_received');
-    assert.deepEqual(s.endEvents, [
-      'application_accepted',
-      'application_rejected',
-    ]);
-    assert.deepEqual(s.approvals, ['ia_approve_application']);
-    assert.deepEqual(s.gateways, ['completeness_gateway']);
   });
 
   it('round-trips byte-clean (the codec fixpoint)', () => {
     const out = dump(load(STAGE));
-    assert.ok(
-      out.includes(
-        'workflow_stage application_processing {\n' +
-          '  label "Application processing"\n' +
-          '  description "The IA intake pipeline — receipt to acceptance."\n' +
-          '  elements { receive_application check_completeness }\n' +
-          '  start_event application_received\n' +
-          '  end_events { application_accepted application_rejected }\n' +
-          '  approvals { ia_approve_application }\n' +
-          '  gateways { completeness_gateway }\n' +
-          '}\n',
-      ),
-    );
+    assert.ok(out.includes('canvas application_processing {'));
     assert.equal(dump(load(out)), out);
   });
 
@@ -446,30 +430,11 @@ describe('workflow_stage register (smart TODO.roadmap/40 batch 5, step 5d)', () 
   });
 
   it('C142: dangling members are flagged (per register, gated)', () => {
-    const body = `
-process receive_application {
-  name "Receive application"
-}
-approval ia_approve_application {
-  name "IA approves the application"
-}
-exclusive_gateway completeness_gateway {
-  label "Complete?"
-}
-workflow_stage s {
-  elements { receive_application ghost_process }
-  approvals { ia_approve_application ghost_approval }
-  gateways { completeness_gateway ghost_gateway }
-}
-`;
-    const issues = checkPackage(makePackage(body)).filter(
+    const issues = checkPackage(makePackage(STAGE + GHOST_GATEWAY)).filter(
       i => i.check === 'C142',
     );
-    assert.equal(issues.length, 3);
-    assert.match(issues[0]!.message, /element "ghost_process"/);
-    assert.match(issues[1]!.message, /approval "ghost_approval"/);
-    assert.match(issues[2]!.message, /gateway "ghost_gateway"/);
-    assert.ok(issues.every(i => i.severity === 'error'));
+    assert.equal(issues.length, 1);
+    assert.match(issues[0]!.message, /ghost_gateway/);
   });
 
   it('C142: empty registers gate the stage legs off', () => {
