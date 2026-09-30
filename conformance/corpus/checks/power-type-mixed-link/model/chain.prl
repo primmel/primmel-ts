@@ -1,0 +1,26 @@
+attribute_definition p_lc {
+  name "Apportioning factor"
+  definition "The ratio p_LC = E_max / (n_LC · v_min) characterizing the load cell's resolution spread."
+  value_type number
+  origin design-fixed
+  scope family
+  category metrological
+}
+
+subject LoadCellModelFamily {
+  has { attributes { p_lc } }
+}
+
+instance grp-500 {
+  of LoadCellModelFamily
+  level family
+  definition_versions { LoadCellModelFamily : "2021" attributes : "1.0.0" }
+  has { attributes { p_lc : 0.7 } }
+}
+
+instance mod-500-2t {
+  of grp-500
+  level model
+  model grp-500
+  definition_versions { LoadCellModelFamily : "2021" attributes : "1.0.0" }
+}

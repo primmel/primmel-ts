@@ -1,0 +1,10 @@
+# The power-type chain parses: an instance's of names another instance.
+instance grp-500 {
+  of LoadCellModelFamily
+  has { attributes { p_lc : 0.7 } }
+}
+
+instance mod-500-2t {
+  of grp-500
+  has { attributes { e_max : 2.2 t } }
+}

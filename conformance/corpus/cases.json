@@ -2854,6 +2854,54 @@
     ]
    },
    "summary": "A license_key without a license_holder is flagged C146."
+  },
+  {
+   "id": "pwt-01-pos-parse",
+   "clause": "PWT-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/power-type-chain.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "An instance whose of names another instance parses — the power-type chain is language surface."
+  },
+  {
+   "id": "pwt-01-pos",
+   "clause": "PWT-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/power-type-coherent",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A coherent of-chain checks clean: family instance, model instance of the family instance, values resolving upward."
+  },
+  {
+   "id": "pwt-01-neg-mixed-link",
+   "clause": "PWT-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/power-type-mixed-link",
+   "expect": {
+    "rules": [
+     "C155"
+    ]
+   },
+   "summary": "An instance instantiating another instance while carrying an upward model link fires C155 — the two chain spellings do not mix."
+  },
+  {
+   "id": "pwt-01-neg-cycle",
+   "clause": "PWT-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/power-type-cycle",
+   "expect": {
+    "rules": [
+     "C155"
+    ]
+   },
+   "summary": "A cyclic of-chain fires C155 — the generalized delegation walk must terminate."
   }
  ]
 }

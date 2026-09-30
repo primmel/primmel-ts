@@ -3191,11 +3191,65 @@ export function checkPackage(
     }
 
     // C20 — instance-of-resolves: the `of` reference names a declared
-    // subject (v3) or instrument (v2) definition.
-    if (!subjectIds.has(inst.of) && !instrumentIds.has(inst.of)) {
+    // subject (v3), instrument (v2), or ANOTHER INSTANCE (the power-type
+    // discipline — every instance can serve as the definition of further
+    // instantiation).
+    if (
+      !subjectIds.has(inst.of) &&
+      !instrumentIds.has(inst.of) &&
+      !instanceIds.has(inst.of)
+    ) {
       err(
         'C20',
-        `instance ${inst.id}: of "${inst.of}" is not a declared subject or instrument (instance-of-resolves)`,
+        `instance ${inst.id}: of "${inst.of}" is not a declared subject, instrument, or instance (instance-of-resolves)`,
+      );
+    }
+
+    // C155 — power-type-chain (coherence leg): an instance whose `of`
+    // names another instance carries NO upward subject-chain link — the
+    // two are one pattern's two spellings, and mixing them makes the
+    // delegation walk ambiguous.
+    if (instanceIds.has(inst.of)) {
+      const links = (['model', 'group', 'family'] as const).filter(
+        k => inst[k],
+      );
+      if (links.length > 0) {
+        err(
+          'C155',
+          `instance ${inst.id}: of "${inst.of}" names an instance and the instance carries an upward ${links.join('/')} link — the power-type chain and the subject-chain profile do not mix (power-type-chain)`,
+        );
+      }
+    }
+  }
+
+  // C155 — power-type-chain (acyclicity leg): the of-to-instance graph is
+  // acyclic (a cycle would make the generalized delegation walk
+  // non-terminating, exactly as C19 guards the upward-link graph).
+  const ofAdj = new Map<string, string[]>();
+  for (const inst of standard.instances ?? []) {
+    if (inst.of && instanceIds.has(inst.of)) {
+      ofAdj.set(inst.id, [inst.of]);
+    }
+  }
+  const ofCycle = findCycle(ofAdj);
+  if (ofCycle) {
+    err(
+      'C155',
+      `the power-type of-chain is cyclic: ${ofCycle.join(' → ')} (power-type-chain)`,
+    );
+  }
+
+  // C156 — class-extends-resolves: a class's extends names a declared
+  // class or a declared INSTANCE (the definition side of the power-type
+  // discipline — a class extending an instance specializes that
+  // individual). Successfully merged links clear at resolve time, so a
+  // surviving link is exactly an unresolved one.
+  const dataclassIds = new Set((standard.dataclasses ?? []).map(c => c.id));
+  for (const c of standard.dataclasses ?? []) {
+    if (c.extends && !dataclassIds.has(c.extends) && !instanceIds.has(c.extends)) {
+      warn(
+        'C156',
+        `class ${c.id}: extends "${c.extends}" is not a declared class or instance (class-extends-resolves)`,
       );
     }
   }
