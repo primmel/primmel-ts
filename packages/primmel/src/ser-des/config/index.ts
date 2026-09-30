@@ -244,7 +244,7 @@ export function defineConstruct(def: ConstructDefinition): ConstructDefinition {
 // Order here is the order constructs appear in PARSER_CONFIG and
 // DUMPER_CONFIG output. RESOLVER_CONFIG order is not load-bearing —
 // resolveFromContext is pure (see ser-des/resolve.ts).
-const CONSTRUCTS: ConstructDefinition[] = [
+export const CONSTRUCTS: ConstructDefinition[] = [
   defineConstruct({
     keyword: 'role',
     field: 'roles',

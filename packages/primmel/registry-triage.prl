@@ -1,0 +1,52 @@
+# registry-triage.prl — the visible list of parser constructs that the
+# published specification (Annex A) does not yet register (kernel rule
+# R1; 01-audit.md D1; 09-migration-plan.md phase 0). The
+# registry-parity test (test/registry-parity.test.ts) fails for any
+# parser keyword that is neither in Annex A nor marked here, and fails
+# for any entry that has since gained a specification section — the
+# list only shrinks, and the construction freeze (phase 0) means
+# nothing joins the parser while entries are open.
+#
+# Dispositions follow the triage of 09-migration-plan.md phase 2 and
+# the layering of 08-oiml-extensions.md: specify-as-platform-module
+# (layer 2), specify-as-oiml-extension (layer 3), merge (into the
+# surviving process dialect), or a bare unspecified-pending-triage
+# where the triage decision is not yet recorded.
+
+promise_set unspecified-pending-triage (specify as a platform module — file 08, the promise register of the certificate lineage)
+identity_slot unspecified-pending-triage (specify as a platform module — file 08, the marking/identity register)
+application_declaration unspecified-pending-triage (specify as a platform module — file 08, the application register)
+certificate_template unspecified-pending-triage (specify as a platform module — file 08, the attestation print projection)
+common_test_condition unspecified-pending-triage (specify as a platform module — file 08)
+test_report_skeleton unspecified-pending-triage (specify as a platform module — file 08, the evidence contract)
+test_report_checklist unspecified-pending-triage (specify as a platform module — file 08)
+calculation_context unspecified-pending-triage (specify as a platform module — file 08, the evaluation bindings)
+evaluation_dimensions unspecified-pending-triage (specify as a platform module — file 08)
+evaluation_profile unspecified-pending-triage (specify as a platform module — file 08)
+sample_selection_rule unspecified-pending-triage (specify as a platform module — file 08)
+lab_selection_criterion unspecified-pending-triage (specify as a platform module — file 08)
+specimen_governance_rule unspecified-pending-triage (specify as a platform module — file 08)
+decision_rule unspecified-pending-triage (specify as a platform module — file 08)
+verification_pathway unspecified-pending-triage (specify as a platform module — file 08)
+storyline unspecified-pending-triage
+aspect unspecified-pending-triage
+formula_note unspecified-pending-triage
+auto_inclusion unspecified-pending-triage
+demo_world unspecified-pending-triage
+document_module unspecified-pending-triage
+document_precedence unspecified-pending-triage
+declaration_gate unspecified-pending-triage
+declaration_kind unspecified-pending-triage
+declaration_status unspecified-pending-triage
+framework_document unspecified-pending-triage
+informative_annex unspecified-pending-triage
+part_annex unspecified-pending-triage
+governance_organ unspecified-pending-triage
+participant_kind unspecified-pending-triage
+scheme_definition unspecified-pending-triage
+scheme_type unspecified-pending-triage
+scheme_activity_kind unspecified-pending-triage
+scheme_lifecycle unspecified-pending-triage
+process_model unspecified-pending-triage (merge into the surviving process dialect and retract — file 05)
+workflow_stage unspecified-pending-triage (merge into the surviving process dialect and retract — file 05)
+workflow_config unspecified-pending-triage (merge into the surviving process dialect and retract — file 05)

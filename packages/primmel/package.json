@@ -1,7 +1,7 @@
 {
   "name": "@primmel/primmel",
   "version": "1.20.0",
-  "description": "Primmel — parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
+  "description": "Primmel \u2014 parser, types, and serializer for the Primmel modelling language (successor to MMEL)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
@@ -82,7 +82,9 @@
     "prepublishOnly": "yarn build && yarn build:browser && yarn build:cli",
     "test": "node --test --import tsx test/*.test.ts",
     "test:exports": "node --test --import tsx scripts/exports-map.test.mts",
-    "check": "tsx scripts/check.mts"
+    "annex-a": "tsx scripts/annex-a.mts",
+    "check": "tsx scripts/check.mts",
+    "annex-a": "tsx scripts/annex-a.mts"
   },
   "files": [
     "dist/",
