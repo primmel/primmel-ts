@@ -281,6 +281,29 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.roadmap/03',
   ),
+  // ── the power-type discipline (the reconfiguration phase 8; the CDD
+  // family's central modelling relationship, and the CDDAL interop
+  // requirement): every instance can serve as the definition of further
+  // instantiation. C155 keeps the of-chain coherent — an instance that
+  // instantiates another instance carries no upward subject-chain link,
+  // and the of-graph is acyclic. C156 reaches the definition side: a
+  // class's extends names a class or an instance.
+  R(
+    'C155',
+    'power-type-chain',
+    'instantiation',
+    'error',
+    'normal',
+    'the reconfiguration phase 8 (TODO.reconfigure/09-subjects-twins-attestation.md, the power-type clause)',
+  ),
+  R(
+    'C156',
+    'class-extends-resolves',
+    'instantiation',
+    'warning',
+    'normal',
+    'the reconfiguration phase 8 (TODO.reconfigure/09-subjects-twins-attestation.md, the power-type clause)',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',

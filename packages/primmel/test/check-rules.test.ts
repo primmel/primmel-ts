@@ -46,17 +46,17 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     const ids = CHECK_RULES.map(r => r.id);
     assert.equal(new Set(ids).size, ids.length, 'duplicate rule ids');
     // C129 retired with the storyline and demo_world constructs (phase
-    // 2); C149-C153 are the typed kernel; C154 is the deprecation report.
+    // 2); C149-C153 are the typed kernel; C154 is the deprecation
+    // report; C155-C156 are the power-type discipline (phase 8).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`),
       ...Array.from({ length: 19 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 5 }, (_, i) => `C${i + 149}`),
-      'C154',
+      ...Array.from({ length: 8 }, (_, i) => `C${i + 149}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation)',
+      'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation), C155-C156 (power type)',
     );
   });
 

@@ -149,9 +149,20 @@ export function instanceChain(
   }
   const chain: Instance[] = [start];
   const visited = new Set([start.id]);
+  const byId = new Map((standard.instances ?? []).map(i => [i.id, i]));
   let current = start;
   for (;;) {
-    const nextId = current.model || current.group || current.family;
+    // The power-type discipline: with no upward subject-chain link, an
+    // instance whose `of` names another instance continues the walk
+    // through it (every instance can serve as the definition of further
+    // instantiation — the C155 coherence rule keeps the two spellings
+    // from mixing on one instance).
+    const ofTarget =
+      !current.model && !current.group && !current.family && current.of
+        ? byId.get(current.of)
+        : undefined;
+    const nextId =
+      current.model || current.group || current.family || ofTarget?.id;
     if (!nextId) {
       return chain;
     }

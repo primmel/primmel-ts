@@ -713,6 +713,18 @@
     "C145",
     "C146"
    ]
+  },
+  {
+   "id": "PWT-01",
+   "area": "checks",
+   "title": "Power-type instantiation",
+   "statement": "An instance's of reference names a subject, an instrument, or ANOTHER INSTANCE: every instance can serve as the definition of further instantiation (the CDD family's power-type discipline — the CDDAL interop requirement). The delegation walk continues through an of-to-instance link with no upward subject-chain link (C20 resolves of; C155 keeps the of-chain coherent — no mixing with the model/group/family links — and acyclic). A class's extends names a class or an instance, specializing that individual (C156).",
+   "specAnchor": "the power-type instantiation clause of the subject model",
+   "rules": [
+    "C20",
+    "C155",
+    "C156"
+   ]
   }
  ]
 }

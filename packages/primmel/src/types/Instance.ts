@@ -86,8 +86,12 @@ export interface InstanceHas {
 export interface Instance {
   id: string;
   /**
-   * The definition this is an instance of — a subject (v3) or instrument
-   * (v2) id. Resolution is checked by the linter (C20 instance-of-resolves).
+   * The definition this is an instance of — a subject (v3), an
+   * instrument (v2), or ANOTHER INSTANCE (the power-type discipline:
+   * every instance can serve as the definition of further
+   * instantiation). Resolution is checked by the linter (C20
+   * instance-of-resolves; C155 keeps the of-chain coherent and
+   * acyclic).
    */
   of: string;
   /**

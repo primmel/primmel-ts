@@ -1,0 +1,8 @@
+class Prototype {
+  serial_number : string { modality SHALL }
+}
+
+class ProductLine {
+  extends { nowhere }
+  family_code : string { modality SHALL }
+}
