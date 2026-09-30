@@ -32,6 +32,15 @@ jobs:
         run: yarn lint
       - name: Test
         run: yarn test
+      - name: Check out the specification (the registry-parity counterpart)
+        uses: actions/checkout@v4
+        with:
+          repository: primmel/spec
+          path: spec
+      - name: Registry parity (R1) — Annex A against the parser, both directions
+        run: yarn workspace @primmel/primmel annex-a --check
+        env:
+          PRIMMEL_SPEC_SOURCES: ${{ github.workspace }}/spec/sources
       - name: Conformance suite (the reference toolchain against the corpus)
         run: yarn test:conformance
       - name: Build package
