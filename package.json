@@ -21,6 +21,7 @@
     "test:conformance": "tsx conformance/runner/run.mts --adapter 'tsx conformance/runner/reference-adapter.mts'",
     "test:conformance:grammar": "tsx conformance/runner/grammar-leg.mts",
     "test:conformance:cddal": "tsx conformance/runner/cddal-leg.mts",
+    "test:conformance:checker2": "tsx conformance/runner/checker2-leg.mts",
     "build": "yarn workspace @primmel/primmel run build",
     "prepare": "yarn run compile",
     "pretest": "yarn run compile",

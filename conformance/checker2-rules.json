@@ -1,0 +1,4 @@
+{
+ "$comment": "The second checker's rule register: the rules checker2 (packages/checker2) implements over the PG grammar's shape tree, sharing no code with the kernel. The register only grows as rules are re-implemented, and the leg errors on drift in either direction — an implemented rule missing from the register, or a registered rule the implementation does not carry. Every corpus case whose expectation stays within the implemented set runs through BOTH implementations under the same runner; the rest wait for their rules (the first slice: the structural family C1, C2, C4, C10, C11, C96, C109).",
+ "implemented": ["C1", "C2", "C4", "C10", "C11", "C96", "C109"]
+}

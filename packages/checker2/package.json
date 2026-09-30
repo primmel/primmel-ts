@@ -1,0 +1,10 @@
+{
+  "name": "@primmel/checker2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The second checker implementation: the conformance suite's rules re-implemented over the PG grammar's shape tree, sharing no code with the kernel.",
+  "type": "module",
+  "scripts": {
+    "adapter": "tsx adapter.mts"
+  }
+}

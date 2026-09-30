@@ -41,6 +41,9 @@
   "runner/grammar-leg.mts": "the second-implementation leg: the PG grammar over every parse case, polarity agreement required",
   "corpus/interop/cddal/": "the CDDAL interop fixtures: the dictionary-subset pair (.prl + the tracked golden projection)",
   "runner/cddal-leg.mts": "the CDDAL interop leg: the projection round-trips through the reference implementation (opencdd-ruby) with identifier and assignment preservation",
-  "runner/cddal-roundtrip.rb": "the reference-implementation bridge the CDDAL leg spawns"
+  "runner/cddal-roundtrip.rb": "the reference-implementation bridge the CDDAL leg spawns",
+  "packages/checker2/": "the second checker implementation: the rules re-implemented over the PG grammar shape tree, sharing no code with the kernel",
+  "checker2-rules.json": "the second checker's rule register (only grows): the rules checker2 implements; the leg errors on drift in either direction",
+  "runner/checker2-leg.mts": "the second-checker leg: every corpus case within the implemented rule set runs under BOTH implementations"
  }
 }
