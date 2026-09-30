@@ -580,15 +580,10 @@ export function checkPackage(
     });
     standard = loaded.standard;
     for (const i of loaded.issues) {
-      // Parse-time issues that already carry their rule id (the
-      // deprecation report's C154) pass through as themselves.
-      if ((i as unknown as { check?: string }).check) {
-        const pi = i as unknown as {
-          check: string;
-          severity: 'error' | 'warning';
-          message: string;
-        };
-        issues.push({ check: pi.check, severity: pi.severity, message: pi.message });
+      // The deprecation report (phase 2): the parse-time issue maps to
+      // its rule.
+      if (i.code === 'construct-deprecated') {
+        warn('C154', i.message);
       } else if (i.code === 'provides-unconsumed') {
         warn('C30', i.message);
       } else if (i.code === 'extends-deprecated') {

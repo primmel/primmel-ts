@@ -190,9 +190,11 @@ export default function parse(
     // carries a migration note warns on every use, under C154.
     if (cfg?.deprecated) {
       ctx.issues.push({
-        check: 'C154',
         severity: 'warning',
+        code: 'construct-deprecated',
+        construct: keyword,
         message: `construct "${keyword}" at line ${tok.start.line} col ${tok.start.col} is deprecated: ${cfg.deprecated} (construct-deprecated)`,
+        position: { line: tok.start.line, col: tok.start.col, offset: tok.start.offset },
       });
     }
 
