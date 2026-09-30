@@ -7,6 +7,7 @@
 //   primmel export rdf <package-dir> [--out <file>] [--format turtle|jsonld]
 //   primmel export retrieval <package-dir> [--out <file>]
 //   primmel export impact <package-dir> [--out <file>]
+//   primmel export cddal <package-dir> [--out <file>]
 //
 // (The `check` token is optional for back-compatibility: `primmel
 // [--strict]… <package-dir>` runs check as before.)
@@ -112,6 +113,7 @@ import {
   exportPackageImpact,
   type ImpactExport,
 } from '../src/export/impact.ts';
+import { exportPackageCddal, type CddalExport } from '../src/export/cddal.ts';
 import {
   formatTextCoverageReport,
   packageTextCoverageReport,
@@ -125,7 +127,7 @@ const CHECK_USAGE =
 const DIFF_USAGE =
   'Usage: primmel diff [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>';
 const EXPORT_USAGE =
-  'Usage: primmel export reqif|rdf|retrieval|impact <package-dir> [--out <file>] [--format turtle|jsonld]';
+  'Usage: primmel export reqif|rdf|retrieval|impact|cddal <package-dir> [--out <file>] [--format turtle|jsonld]';
 
 // An unreadable/missing package directory — a positional argument or a
 // --with locator target — must not crash with a stack trace: print a
@@ -335,7 +337,8 @@ function exportCli(args: string[]): void {
     surface !== 'reqif' &&
     surface !== 'rdf' &&
     surface !== 'retrieval' &&
-    surface !== 'impact'
+    surface !== 'impact' &&
+    surface !== 'cddal'
   ) {
     console.error(EXPORT_USAGE);
     process.exit(2);
@@ -373,7 +376,14 @@ function exportCli(args: string[]): void {
   let document: string;
   let summary: string;
   try {
-    if (surface === 'impact') {
+    if (surface === 'cddal') {
+      const result: CddalExport = exportPackageCddal(dir);
+      document = result.cddal;
+      summary =
+        `${n(result.stats.classes, 'class', 'classes')}, ` +
+        `${n(result.stats.instances, 'instance', 'instances')}, ` +
+        `${n(result.stats.assignments, 'assignment', 'assignments')}`;
+    } else if (surface === 'impact') {
       const result: ImpactExport = exportPackageImpact(dir);
       document = result.json;
       const s = result.stats;
