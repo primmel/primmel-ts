@@ -1,21 +1,3 @@
-workflow_config certification {
-  step application {
-    phase intake
-    actor applicant
-    label "Type Evaluation Application"
-    inputs { Application }
-    outputs { TestRequest }
-    gates { "Application.status = SUBMITTED" }
-  }
-  step test-request-dispatch {
-    phase dispatch
-    actor issuing_authority
-    label "Test request dispatch"
-    inputs { Application }
-    outputs { TestRequest }
-    gates { "Each TestRequest references >= 1 MeasuringInstrumentSample" }
-  }
-}
 test_report_checklist oiml-cs-trf {
   entry title {
     element "a"

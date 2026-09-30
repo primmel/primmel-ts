@@ -2,6 +2,30 @@
 // coherent — a unique variant id, and the expression-typed variant
 // carries its expression facet. C125 stays silent.
 // Clause: COD-02 (positive).
+// The display expression's names are declared as symbols so C149 (the
+// closed-derivation rule) stays silent — this case's subject is the
+// variant block, not the derivation layer.
+symbol E_L {
+  name "Load cell error"
+  definition "the load cell error at the reference load"
+  type number
+  unit "1"
+}
+
+symbol I {
+  name "Indication"
+  definition "the instrument indication at the load"
+  type number
+  unit "1"
+}
+
+symbol I_ref {
+  name "Reference indication"
+  definition "the reference indication for the error computation"
+  type number
+  unit "1"
+}
+
 calculation loadCellError {
   name "loadCellError"
   description "Load cell error"
@@ -10,7 +34,7 @@ calculation loadCellError {
     referenceIndication : number { unit "1" description "Reference indication" }
   }
   output : number { unit "1" }
-  expression "E_L = (I - I_{ref}) / f"
+  expression "E_L = (I - I_ref) / f"
   variant engine {
     type expression
     label "Load Cell Error E_L"

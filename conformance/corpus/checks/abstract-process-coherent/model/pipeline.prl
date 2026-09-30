@@ -1,7 +1,7 @@
 // Conformance corpus: a coherent framework plus an abstract-process
 // pipeline — every batch-2 facet edge (roles, organs, participant
 // kinds, decision rule, declaration kind + gate, realized_by,
-// approved_by, the process_model sequence and register maintainer)
+// approved_by)
 // resolves against its in-scope register. C121 stays silent.
 // Clause: FWK-12 (positive).
 
@@ -99,15 +99,4 @@ process ia_assessment {
     out { assessment_reports }
   }
   realized_by { submit_application }
-}
-process_model evaluation {
-  sequence { ia_application ia_assessment }
-  register lme_register {
-    label "ILAC-IAF-OIML list of Legal Metrology Experts"
-    clause "PD-02, 9"
-    maintainer management_committee
-    published "The OIML-CS pages of the OIML website."
-    entries "Per Legal Metrology Expert: identity, contact, scope."
-  }
-  source { doc "urn:oiml:pub:cs:pd-05:2024" clause "4" }
 }
