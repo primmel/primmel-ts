@@ -105,6 +105,9 @@ if (proc.status !== 0) {
 }
 const result = JSON.parse(proc.stdout) as {
   classes: { code: string; superclass: string }[];
+  properties: string[];
+  value_lists: string[];
+  value_terms: string[];
   serialized: string;
 };
 
@@ -123,7 +126,32 @@ const expectEntity = (code: string, superclass: string): void => {
 expectEntity('LoadCellSample', 'UNIVERSE');
 expectEntity('smp-001', 'LoadCellSample');
 
-for (const id of ['LoadCellSample', 'smp-001', 'serial_number', 'e_max', 'accuracy_class']) {
+// The definition layer: the field's property entity carries the
+// declared IRDI as its code; the enum projects as a value list with
+// one value term per value.
+const expectCode = (kind: string, codes: string[], code: string): void => {
+  if (!codes.includes(code)) {
+    failures.push(`no ${kind} entity with code "${code}" after the reference parse`);
+  }
+};
+// An IRDI rides its full form in the serialized text; the reference
+// model splits it — the entity's code is the element part after the
+// IRDI prefix's '#'.
+expectCode('property', result.properties, 'ABA123');
+expectCode('value list', result.value_lists, 'accuracy');
+for (const term of ['A', 'B', 'C']) {
+  expectCode('value term', result.value_terms, term);
+}
+
+for (const id of [
+  'LoadCellSample',
+  'smp-001',
+  'serial_number',
+  'e_max',
+  'accuracy_class',
+  '0112/2///61987#ABA123',
+  'accuracy',
+]) {
   if (!result.serialized.includes(id)) {
     failures.push(`identifier "${id}" absent from the reference re-serialization`);
   }
@@ -146,7 +174,8 @@ for (const [prop, value] of assignments) {
 
 process.stdout.write(
   `cddal-leg: the golden is byte-stable; the reference parse builds ` +
-    `${result.classes.length} entities (${failures.length} preservation failures)\n`,
+    `${result.classes.length + result.properties.length + result.value_lists.length + result.value_terms.length} entities ` +
+    `(${failures.length} preservation failures)\n`,
 );
 if (failures.length > 0) {
   process.stdout.write(failures.map(f => `  ${f}`).join('\n') + '\n');

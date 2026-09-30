@@ -7,6 +7,28 @@ instance LoadCellSample < MDC_C002 {
   applicable_properties: { serial_number, e_max, accuracy_class }
 }
 
+instance serial_number < MDC_C003 {
+  code: "0112/2///61987#ABA123"
+  definition.en: "The manufacturer's serial number of the load cell."
+}
+
+instance accuracy < MDC_C005 {
+  code: accuracy
+  MDC_P043: ( A, B, C )
+}
+
+instance A < MDC_C010 {
+  code: A
+}
+
+instance B < MDC_C010 {
+  code: B
+}
+
+instance C < MDC_C010 {
+  code: C
+}
+
 instance smp_001 < MDC_C002 {
   code: "smp-001"
   superclass: LoadCellSample
