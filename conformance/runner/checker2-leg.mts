@@ -81,12 +81,6 @@ for (const c of cases.cases) {
   if (c.kind !== 'check') {
     continue;
   }
-  // Composition cases (`with` locators) need the uses-merge — outside
-  // this slice; they wait with the unimplemented rules.
-  if (c.with && Object.keys(c.with).length > 0) {
-    waiting++;
-    continue;
-  }
   if (c.expect.clean === true) {
     selected.push(c.id);
     continue;
@@ -94,6 +88,12 @@ for (const c of cases.cases) {
   const rules = c.expect.rules ?? [];
   if (rules.length > 0 && rules.every(r => implemented.has(r))) {
     selected.push(c.id);
+  } else if (c.expect.error !== undefined) {
+    // The error-form cases pin the LOADER's failure diagnostics (a
+    // manifest without an id; an unknown status token) — checker2's
+    // loader is total and reports findings as issues, so these wait
+    // for a fail-fast manifest reader, not for a rule.
+    waiting++;
   } else {
     waiting++;
   }

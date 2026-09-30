@@ -35,8 +35,12 @@ grammar Primmel version "0.1.0" {
   escape_seq = "\\" any_char
   str_char = escape_seq / !"\"" any_char
   string = "\"" *str_char "\""
-  bare_first = !ws_char !"\"" !"{" !"}" !"#" !":" any_char
-  bare_next = !ws_char !"\"" !"{" !"}" !":" any_char
+  # A colon is a normal word character (urn:oiml:pub:r:60-2:2021 is
+  # ONE token, as the kernel whitespace tokenizer sees it); the entry
+  # separator is the SPACE-DELIMITED colon (entry_line gap ":"),
+  # never a mid-word one.
+  bare_first = !ws_char !"\"" !"{" !"}" !"#" any_char
+  bare_next = !ws_char !"\"" !"{" !"}" any_char
   bare = bare_first *bare_next
 
   # ── document and declarations ────────────────────────────────────
@@ -192,7 +196,7 @@ grammar Primmel version "0.1.0" {
 
   # the presentation channels are enumerated positively — an undeclared
   # channel fails the block outright
-  s_presentation = (("presentation" !bare_next) gap (block_presentation as body)) as construct
+  s_presentation = ((("presentation" !bare_next) as keyword) gap (block_presentation as body)) as construct
   block_presentation = "{" *(gap presentation_channel) gap "}"
   presentation_channel = "marked-on-instrument" / "accompanying-document"
 

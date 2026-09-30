@@ -14,6 +14,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveParsanolTs, collectPrlFiles, readPackage } from './src/front-end.ts';
+import { resolve } from 'node:path';
 import { check } from './src/rules.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -25,9 +26,17 @@ function emit(result: unknown): void {
 }
 
 async function main(): Promise<void> {
-  const [cmd, target] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const cmd = argv[0];
+  const target = argv.find(a => !a.startsWith('--') && a !== cmd);
+  const withArgs = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--with' && argv[i + 1] !== undefined) {
+      withArgs.push(argv[i + 1]!);
+    }
+  }
   if (!cmd || !target || !existsSync(target)) {
-    emit({ ok: false, error: `usage: checker2-adapter.mts parse|check <path>` });
+    emit({ ok: false, error: `usage: checker2-adapter.mts parse|check <path> [--with <id>=<dir>]…` });
     return;
   }
   const parsanolTs = resolveParsanolTs(REPO_ROOT);
@@ -55,13 +64,31 @@ async function main(): Promise<void> {
 
   if (cmd === 'check') {
     try {
-      const files = collectPrlFiles(
-        target,
-        p => readdirSync(p),
-        p => statSync(p).isDirectory(),
-      );
-      const pkg = readPackage(runtime, files, p => readFileSync(p, 'utf8'));
-      const issues = check(pkg);
+      const read = (p: string) => readFileSync(p, 'utf8');
+      const loadDir = (d: string) => {
+        const files = collectPrlFiles(d, p => readdirSync(p), p => statSync(p).isDirectory());
+        return readPackage(runtime, files, read);
+      };
+      const pkg = loadDir(target);
+      pkg.dir = resolve(target);
+      // The lineage counterparties: the sibling package directories.
+      pkg.siblings = readdirSync(resolve(target, '..'))
+        .map(e => join(resolve(target, '..'), e))
+        .filter(p => statSync(p).isDirectory() && p !== resolve(target) && existsSync(join(p, 'package.primmel')))
+        .map(loadDir);
+      const located = { packages: new Map() };
+      for (const w of withArgs) {
+        const eq = w.indexOf('=');
+        if (eq <= 0) {
+          continue;
+        }
+        const id = w.slice(0, eq);
+        const dir = w.slice(eq + 1);
+        if (existsSync(dir)) {
+          located.packages.set(id, loadDir(dir));
+        }
+      }
+      const issues = check(pkg, located);
       emit({
         ok: true,
         issues: issues.map(i => ({ rule: i.rule, severity: i.severity, message: i.message })),
