@@ -13,7 +13,12 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveParsanolTs, collectPrlFiles, readPackage } from './src/front-end.ts';
+import {
+  resolveParsanolTs,
+  collectPrlFiles,
+  readPackage,
+  documentConstructs,
+} from './src/front-end.ts';
 import { resolve } from 'node:path';
 import { check } from './src/rules.ts';
 
@@ -64,6 +69,52 @@ async function main(): Promise<void> {
 
   if (cmd === 'check') {
     try {
+      // The manifest's fail-fast discipline — the two loader
+      // diagnostics the corpus pins: a manifest declares its id, and a
+      // declared status is in the closed vocabulary. The message
+      // mirrors the reference loader's so the same expectation
+      // judges both implementations.
+      const manifestFiles = collectPrlFiles(
+        target,
+        p => readdirSync(p),
+        p => statSync(p).isDirectory(),
+      ).filter(f => f.endsWith('package.primmel'));
+      if (manifestFiles.length === 0) {
+        emit({
+          ok: false,
+          error: `loadPackage: no package manifest at ${target}`,
+        });
+        return;
+      }
+      const manifestSrc = readFileSync(manifestFiles[0]!, 'utf8');
+      const manifest = documentConstructs(runtime.parseShape(manifestSrc)).find(
+        c => c.keyword === 'package',
+      );
+      const idLine = (manifest?.items ?? []).find(
+        i => i.kind === 'line' && i.key === 'id' && i.tokens.length > 0,
+      );
+      if (!idLine) {
+        emit({
+          ok: false,
+          error: `loadPackage: ${manifestFiles[0]} is not a valid package manifest`,
+        });
+        return;
+      }
+      const statusLine = (manifest?.items ?? []).find(
+        i => i.kind === 'line' && i.key === 'status',
+      );
+      if (
+        statusLine !== undefined &&
+        !['current', 'preview', 'superseded', 'withdrawn'].includes(
+          statusLine.tokens[0] ?? '',
+        )
+      ) {
+        emit({
+          ok: false,
+          error: `Parsing error: package: Expected status current|preview|superseded|withdrawn, got "${statusLine.tokens[0] ?? ''}"`,
+        });
+        return;
+      }
       const read = (p: string) => readFileSync(p, 'utf8');
       const loadDir = (d: string) => {
         const files = collectPrlFiles(d, p => readdirSync(p), p => statSync(p).isDirectory());
