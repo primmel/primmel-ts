@@ -651,6 +651,12 @@ export function checkPackage(
   // ── C150/C151: the attestation's references and claim lineage ──────
   issues.push(...checkAttestations(standard));
 
+  // ── C152: the typed payload rule (the typed kernel, R2) ────────────
+  issues.push(...checkTypedPayloads(standard));
+
+  // ── C153: the contract-derivation facet (the typed kernel, clause 10)
+  issues.push(...checkArtifactContracts(standard));
+
   const reqIds = new Set(
     (standard.requirements ?? []).map((r: Requirement) => r.id),
   );
@@ -7447,6 +7453,120 @@ function textAddressKey(item: unknown, segment: string): boolean {
  *     (titular:source:target:identifying); a `zz-` user-assigned code
  *     validates with a warning (user-assigned codes are not portable).
  */
+// ── C153: artifact-contract-derivation (the typed kernel, clause 10) ─
+// An artifact definition whose content is the projection of declared
+// claims declares contract_from; the referenced set resolves, and a
+// definition that restates inline fields while deriving its contract
+// is the restatement the rule exists to prevent.
+
+export function checkArtifactContracts(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+
+  const setIds = new Set<string>();
+  for (const ps of standard.promiseSets ?? []) {
+    setIds.add(ps.id);
+    setIds.add(`${ps.id}.promise_set`);
+  }
+  for (const s of standard.subjects ?? []) {
+    if ((s.is?.promises ?? []).length > 0) {
+      setIds.add(s.id);
+      setIds.add(`${s.id}.promise_set`);
+    }
+  }
+
+  for (const d of standard.artifactDefinitions ?? []) {
+    if (!d.contractFrom) {
+      continue;
+    }
+    if (!setIds.has(d.contractFrom)) {
+      err(
+        'C153',
+        `artifact_definition ${d.id}: contract_from "${d.contractFrom}" does not resolve to a declared promise set (artifact-contract-derivation)`,
+      );
+    }
+    const c = d.contentContract;
+    if (c.fields.length > 0 || c.structure || c.media.length > 0) {
+      err(
+        'C153',
+        `artifact_definition ${d.id}: declares both contract_from and inline contract fields — the derived contract is the referenced set's projection, never a restatement (artifact-contract-derivation)`,
+      );
+    }
+  }
+  return issues;
+}
+
+// ── C152: payload-typed-by-class (the typed kernel R2, clause 10) ────
+// A dimension that declares payload_class types every value's
+// definition: the class resolves, every payload field is a field of
+// that class, and every value carries its definition — a value IS its
+// definition, not a symbol pointing at a table. The attribute-side
+// bridge resolves too: an attribute_definition's class reference names
+// a declared class.
+
+export function checkTypedPayloads(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+
+  const classFields = new Map<string, Set<string>>();
+  for (const c of standard.dataclasses ?? []) {
+    classFields.set(c.id, new Set(c.attributes.map(a => a.id)));
+  }
+
+  const checkDim = (owner: string, d: ClassificationDimension) => {
+    if (!d.payloadClass) {
+      return;
+    }
+    const fields = classFields.get(d.payloadClass);
+    if (!fields) {
+      err(
+        'C152',
+        `${owner} dimension ${d.id}: payload_class "${d.payloadClass}" is not a declared class (payload-typed-by-class)`,
+      );
+      return;
+    }
+    for (const v of d.values) {
+      const keys = Object.keys(v.payload ?? {});
+      if (keys.length === 0) {
+        err(
+          'C152',
+          `${owner} dimension ${d.id}: value ${v.id} carries no payload — a value of a payload_class dimension IS its definition (payload-typed-by-class)`,
+        );
+        continue;
+      }
+      for (const key of keys) {
+        if (!fields.has(key)) {
+          err(
+            'C152',
+            `${owner} dimension ${d.id}: value ${v.id} payload field "${key}" is not a field of class "${d.payloadClass}" (payload-typed-by-class)`,
+          );
+        }
+      }
+    }
+  };
+
+  for (const inst of standard.instruments ?? []) {
+    for (const d of inst.dimensions ?? []) {
+      checkDim(`instrument ${inst.id}`, d);
+    }
+  }
+  for (const d of standard.dimensions ?? []) {
+    checkDim('top-level', d);
+  }
+
+  for (const a of standard.attributeDefinitions ?? []) {
+    if (a.classRef && !classFields.has(a.classRef)) {
+      err(
+        'C152',
+        `attribute_definition ${a.id}: class "${a.classRef}" is not a declared class (payload-typed-by-class)`,
+      );
+    }
+  }
+  return issues;
+}
+
 // ── C150/C151: the attestation's references and claim lineage ───────
 // C150 attestation-references-resolve: the subject is a declared
 // instance, the promise set resolves in `Subject.promise_set_id` form,
@@ -7651,7 +7771,11 @@ const CLOSED_DERIVATION_STOP = new Set([
   'profile',
 ]);
 
-const CLOSED_DERIVATION_PATH_RE = /\b(?:self|p)\.[A-Za-z_][A-Za-z0-9_]*/g;
+// Attribute navigation: `head.field…` resolves when the HEAD is a
+// declared name (an input, a calculation, an attribute, a class-typed
+// value); the tail is navigation over that head's type, judged by the
+// class layer (C152), not by the closed-derivation rule.
+const CLOSED_DERIVATION_PATH_RE = /\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+/g;
 const CLOSED_DERIVATION_IDENT_RE = /[A-Za-z_][A-Za-z0-9_]*/g;
 
 export function checkClosedDerivations(standard: Standard): CheckIssue[] {
