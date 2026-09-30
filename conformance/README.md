@@ -1,13 +1,33 @@
 # The Primmel conformance test suite
 
-**Version 3.4.0 · 2026-09-16.** The public, versioned corpus and runner
+**Version 3.10.0 · 2026-09-30.** The public, versioned corpus and runner
 with which any implementation of the Primmel modelling language proves
 its conformance, clause by clause. The suite pairs with the Primmel
 Language Specification (MN 114, draft for comment, the v3.3 revision):
 when the specification publishes its
 conformance clauses, this suite's clause identifiers re-key to them (see
 `clauses.json`, the `spec` block); the v3.1 clauses (DAT-01 to DAT-04)
-already anchor to MN 114 clause 19. Version 3.4.0 over 3.3.0: the v3.3
+already anchor to MN 114 clause 19.
+
+Version 3.10.0 over 3.9.0: the clauses of the RETIRED constructs leave
+the suite — FWK-09 (the process_model construct), COD-06 (the
+demo_world/storyline demo seeds), EVL-08 (the workflow_config register),
+and WF-04 (the workflow_stage register) — the constructs were removed
+from the language after their migration window, and a clause whose
+subject no longer exists proves nothing; the affected fixtures were
+rewritten onto surviving constructs. The suite also gains the
+SECOND-IMPLEMENTATION grammar leg: the language's grammar is defined a
+second time in PG (`grammar/primmel.parg`, the Parsanol grammar
+language, compiled to the checksummed artifact
+`grammar/artifacts/primmel.json`), and `runner/grammar-leg.mts`
+requires the PG grammar's accept/reject verdict to agree with every
+parse-kind case's expectation (polarity only — diagnostics are
+implementation-specific; strict-mode cases are kernel options, not
+grammar; the visible skip register `grammar-leg-skips.json` names the
+cases whose rejection is the kernel's per-construct parse discipline —
+it only shrinks). Run it with `yarn test:conformance:grammar`.
+
+Version 3.4.0 over 3.3.0: the v3.3
 certification-framework clauses FWK-01 to FWK-07 (the participant-kind
 and governance-organ registers, the declaration constructs, the scheme
 architecture, the framework documents, the decision rules, and the

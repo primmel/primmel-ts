@@ -1,0 +1,103 @@
+# The Primmel grammar, in PG (Parsanol PN 1).
+#
+# This grammar is the deterministic surface of the Primmel language: the
+# lexical structure, the declaration/statement structure, and the shared
+# value forms. It mirrors spec/sources/language-v3/sections/
+# 17-formal-grammar.adoc (the EBNF of record) rule for rule:
+#
+#   Text        ::= { Whitespace | Comment | Token }
+#   Comment     ::= ('#' | '//') at a token boundary, to end of line
+#   Token       ::= QuotedString | Block | BareToken
+#   Declaration ::= Keyword [Identifier] Block  (plus root/version)
+#
+# What the grammar does not decide (per the specification's own clause):
+# closed vocabularies, reference resolution, and scope discipline are
+# checker matters, and per-construct facet interpretation is schema and
+# binding work above the grammar (Parsanol PN 2/PN 4). The grammar
+# captures each block's item stream; construct-level structure is
+# materialized from the captures, not restated here.
+#
+# Materialization note: consumers walk the artifact's shape tree
+# (PargRuntime#parseShape), which preserves the nesting of declarations
+# inside blocks. The flat binding layer is not used for document-level
+# materialization, because its captures are collected per name across
+# nesting levels and a nested language needs the level structure.
+
+grammar Primmel version "0.1.0" {
+
+  # ── lexical ──────────────────────────────────────────────────────
+  any_char = %x01-10FFFF
+  ws_char = " " / "\t" / "\r" / "\n"
+  optws = *ws_char
+  gap = *(ws_char / comment)
+  hgap = *(" " / "\t")
+  comment = ("#" / "//") *(!"\n" any_char)
+  escape_seq = "\\" any_char
+  str_char = escape_seq / !"\"" any_char
+  string = "\"" *str_char "\""
+  bare_first = !ws_char !"\"" !"{" !"}" !"#" !":" any_char
+  bare_next = !ws_char !"\"" !"{" !"}" !":" any_char
+  bare = bare_first *bare_next
+
+  # ── document and declarations ────────────────────────────────────
+  document = *(gap declaration) gap !any_char
+  declaration = construct / root_decl / version_decl / include_decl / value_decl / entry_line
+  include_decl = "include" gap string
+  value_decl = bare gap bare gap string
+  root_decl = "root" gap bare
+  version_decl = "version" gap string
+  # Every sequence child is captured: an uncaptured child that reaches a
+  # repetition is array-valued, and a mixed sequence never merges its
+  # hashes — the shape tree would flatten to leaf captures (the
+  # recursive-capture finding, evidence/s2-parsanol/). `gap` carries no
+  # capture and disappears from the folded sequence.
+  construct = ((keyword as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  keyword = bare
+  # An identifier is a bare word or a quoted string ("chief verifier")
+  # — SYN-02's quoted-identifier case, cross-referenced by name.
+  ident = bare / string
+
+  # ── blocks and their item streams ────────────────────────────────
+  block = "{" *(gap block_item) gap "}"
+  block_item = construct / entry_line / kwline / string / block / bare
+  entry_line = ((bare as key) gap ":" [gap (value_run as value)]) as entry
+  kwline = ((bare as key) gap (value_run as value)) as kwline
+  key = !next_is_block bare
+  next_is_block = bare gap [bare gap] "{" gap
+  value_run = value_atom *(hgap value_atom)
+  value_atom = (string as value) / (block as blockvalue) / (bracket_list as value) / (ocl_block as value) / (value_word as value)
+  value_word = !key_ahead bare
+  key_ahead = bare optws ":" optws
+  bracket_list = "[" *(gap bracket_item) gap "]"
+  bracket_item = block / bracket_list / string / bracket_word
+  bracket_word = !bracket_key_ahead !bracket_construct_ahead !"]" bare
+  bracket_key_ahead = bare optws ":" optws
+  bracket_construct_ahead = bare gap [bare gap] "{"
+
+  # ── expressions ──────────────────────────────────────────────────
+  ocl_block = "ocl{" ocl_body "}"
+  ocl_body = *(escape_seq / ocl_nested / !"{" !"}" any_char)
+  ocl_nested = "{" ocl_body "}"
+
+  entry document: document
+
+  test document {
+    accept "package { id oiml-r60 kind rec title \"OIML R 60\" }"
+    accept "root x"
+    accept "version \"1.0\""
+    accept "instrument LoadCell { measurand_kind force }"
+    accept "note n1 { message \"a # hash and a // slash stay inside strings\" }"
+    accept "# a whole-line comment\ninstrument X { }\n"
+    accept "instrument X { // line comment\n  label \"X\" }"
+    accept "class Application#data { id: string { modality SHALL } }"
+    accept "dimension d { values { A { label \"Class A\" payload { n_lc_limits { lower: \"50000\" } } } } }"
+    accept "instance smp-1 { has { attributes { e_max : 2.2 t d_min : 0 kg } } }"
+    accept "calculation c { expression \"ocl{(d_max - d_min) / (n_lc * f)}\" }"
+    accept "conditions ocl{self.temperature >= rated.t_min and self.temperature <= rated.t_max}"
+    accept "registers { raw_signal : voltage = 0 V last_indication : mass = 0 kg }"
+    accept "attestation a { subject ssm-1 promises LoadCell.promise_set limits { scope \"the type\" } }"
+    reject "root"
+    reject "\"unterminated"
+    reject "instrument { unclosed"
+  }
+}
