@@ -335,8 +335,10 @@ describe('C121 abstract-process-references-resolve', () => {
 
   it('flags a dangling realized_by', () => {
     const issues = c121Issues(
-      (FRAMEWORK + PIPELINE)
-        .replace('realized_by { submit_application }', 'realized_by { ghost }'),
+      (FRAMEWORK + PIPELINE).replace(
+        'realized_by { submit_application }',
+        'realized_by { ghost }',
+      ),
     );
     assert.equal(issues.length, 1);
     assert.ok(issues[0]!.message.includes('"ghost"'));

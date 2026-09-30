@@ -666,12 +666,11 @@ export function checkPackage(
   const attrIds = new Set(
     (standard.attributeDefinitions ?? []).map((a: AttributeDefinition) => a.id),
   );
+  const roleIds = new Set((standard.roles ?? []).map(r => r.id));
   const behaviorIds = new Set(
     (standard.behaviors ?? []).map((b: Behavior) => b.id),
   );
-  const subjectIds = new Set(
-    (standard.subjects ?? []).map((s: Subject) => s.id),
-  );
+  const subjectIds = new Set((standard.subjects ?? []).map(s => s.id));
   // Observables live in the symbols registry, not the attribute layer —
   // binds_to / limit.uses may reference them (e.g. sample.test_context
   // quantities that are measured test outputs).
@@ -2614,7 +2613,6 @@ export function checkPackage(
   // escalation ACTIONS are runtime — the smart app's monitor service owns
   // them; these rules guarantee the declarations the runtime needs.
   {
-    const roleIds = new Set((standard.roles ?? []).map(r => r.id));
     const KNOWN_OUTCOMES = new Set<string>(MONITOR_OUTCOMES);
     const KNOWN_ACTIONS = new Set<string>(MONITOR_ESCALATION_ACTIONS);
     const KNOWN_STREAMS = new Set<string>(MONITOR_STREAMS);
@@ -5419,7 +5417,6 @@ export function checkPackage(
   // (the R26 field-resolution precedent). The phase vocabulary is
   // parse-enforced upstream (no check leg).
   {
-    const roleIds = new Set((standard.roles ?? []).map(r => r.id));
     // Class ids may carry a namespace suffix (`Application#data`) while
     // the workflow's inputs/outputs spell the bare entity name — index
     // both spellings (the semantic-status leg's precedent).
@@ -7521,9 +7518,7 @@ export function checkAttestations(standard: Standard): CheckIssue[] {
     issues.push({ check, severity: 'error', message });
 
   const instanceIds = new Set((standard.instances ?? []).map(i => i.id));
-  const roleIds = new Set((standard.roles ?? []).map(r => r.id));
   const verdictIds = new Set((standard.verdicts ?? []).map(v => v.id));
-  const subjectIds = new Set((standard.subjects ?? []).map(s => s.id));
 
   // A promise set is either a top-level promise_set construct or a
   // subject's anonymous is-promises register. The reference forms:
