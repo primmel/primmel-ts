@@ -127,6 +127,21 @@ enum accuracy {
     assert.match(o4.cddal, /instance C3 < MDC_C010 \{/);
   });
 
+  it('carries language-tagged definition alternates from the l10n files', () => {
+    const m5 = load(`
+class C {
+  description { "Default spelling" }
+  a : string { modality SHALL }
+}
+`);
+    const l10n = new Map([
+      ['C.description', [{ tag: 'fra-Latn', value: 'Orthographe française' }]],
+    ]);
+    const o5 = projectCddal(m5, 'test-pkg', l10n);
+    assert.match(o5.cddal, /  definition\.en: "Default spelling"/);
+    assert.match(o5.cddal, /  definition\.fra-Latn: "Orthographe française"/);
+  });
+
   it('throws when the package carries no dictionary content', () => {
     const empty = load('note n1 { message "no dictionary content" }');
     assert.throws(

@@ -10,6 +10,7 @@ instance LoadCellSample < MDC_C002 {
 instance serial_number < MDC_C003 {
   code: "0112/2///61987#ABA123"
   definition.en: "The manufacturer's serial number of the load cell."
+  definition.fr: "Numéro de série de la cellule de pesage."
 }
 
 instance accuracy < MDC_C005 {

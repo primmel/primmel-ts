@@ -76,15 +76,30 @@ function tokenText(t: unknown): string {
   return '';
 }
 
-/** Split a raw block text (`{ a b -> c }`) into its whitespace tokens. */
+/** Split a raw block text (`{ a "b c" -> d }`) into its tokens,
+ *  respecting double-quoted strings. */
 function splitRaw(raw: string): string[] {
-  return raw
-    .replace(/^\{/, '')
-    .replace(/\}$/, '')
-    .trim()
-    .split(/\s+/)
-    .filter(t => t.length > 0)
-    .map(t => t.replace(/^"(.*)"$/s, '$1'));
+  const body = raw.replace(/^\{/, '').replace(/\}$/, '');
+  const out: string[] = [];
+  let cur = '';
+  let quoted = false;
+  for (const ch of body) {
+    if (ch === '"') {
+      quoted = !quoted;
+      cur += ch;
+    } else if (!quoted && /\s/.test(ch)) {
+      if (cur !== '') {
+        out.push(cur.replace(/^"(.*)"$/s, '$1'));
+        cur = '';
+      }
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur !== '') {
+    out.push(cur.replace(/^"(.*)"$/s, '$1'));
+  }
+  return out;
 }
 
 function runItems(run: unknown): { tokens: string[]; blocks: Item[][] } {
@@ -183,6 +198,10 @@ export function documentConstructs(shape: unknown): Construct[] {
 
 export interface ParsedPackage {
   constructs: Construct[];
+  /** The package directory (absent for in-memory packages). */
+  dir?: string;
+  /** Sibling-directory packages (the lineage counterparties). */
+  siblings?: ParsedPackage[];
 }
 
 export function readPackage(
@@ -212,7 +231,7 @@ export function collectPrlFiles(
       }
       if (isDir(p)) {
         walk(p);
-      } else if (e.endsWith('.prl') && !e.startsWith('.')) {
+      } else if ((e.endsWith('.prl') || e === 'package.primmel') && !e.startsWith('.')) {
         out.push(p);
       }
     }

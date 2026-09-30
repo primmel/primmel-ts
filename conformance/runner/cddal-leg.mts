@@ -27,7 +27,11 @@
 // When neither is present the leg reports a skip (an optional gate
 // until the gem publishes).
 //
-// Known counterpart finding, carried: opencdd-ruby's SERIALIZER emits
+// Known counterpart findings, carried: opencdd-ruby's LEXER rejects
+// RFC 5646 language tags carrying hyphens (definition.en-US fails —
+// the spec's own vocabulary; single-subtag tags parse), so this
+// fixture's alternate uses the single-subtag `fr`; the projection
+// itself emits the verbatim tag and is spec-correct. The SERIALIZER emits
 // hyphenated symbolic names unquoted in the instance declaration's
 // name slot, which its own lexer cannot re-parse — serialize→parse
 // idempotence holds for identifier-safe ids only. The leg asserts the
@@ -151,6 +155,8 @@ for (const id of [
   'accuracy_class',
   '0112/2///61987#ABA123',
   'accuracy',
+  'definition.fr:',
+  'Numéro de série de la cellule de pesage.',
 ]) {
   if (!result.serialized.includes(id)) {
     failures.push(`identifier "${id}" absent from the reference re-serialization`);

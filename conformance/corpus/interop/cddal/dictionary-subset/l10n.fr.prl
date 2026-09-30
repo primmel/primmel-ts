@@ -1,0 +1,6 @@
+# The fixture's French alternate — the serial_number property's
+# definition carries its fra-Latn spelling through the projection
+# (the C89 tail-address rule: <id>.<field>).
+text dictionary/serial_number.definition {
+  spell fr "Numéro de série de la cellule de pesage."
+}
