@@ -127,6 +127,29 @@ enum accuracy {
     assert.match(o4.cddal, /instance C3 < MDC_C010 \{/);
   });
 
+  it('projects a class extending an instance as the prototype superclass', () => {
+    const m6 = load(`
+class P {
+  a : string { modality SHALL }
+}
+
+instance proto {
+  of P
+  has { attributes { a : "seed" } }
+}
+
+class Line {
+  extends { proto }
+  b : string { modality SHALL }
+}
+`);
+    const o6 = projectCddal(m6, 'test-pkg');
+    assert.match(o6.cddal, /instance Line < MDC_C002 \{/);
+    assert.match(o6.cddal, /  superclass: proto/);
+    assert.match(o6.cddal, /instance proto < MDC_C002 \{/);
+    assert.match(o6.cddal, /  code: proto/);
+  });
+
   it('carries language-tagged definition alternates from the l10n files', () => {
     const m5 = load(`
 class C {

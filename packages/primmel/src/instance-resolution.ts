@@ -128,6 +128,74 @@ function attributeScope(standard: Standard, attrId: string): string {
 }
 
 /**
+ * The PROTOTYPE HOP (the power-type discipline, definition side): a
+ * class whose `extends` names an INSTANCE specializes that individual.
+ * Following the class plane's extends links terminates at the prototype
+ * instance — the individual whose exhibited values the class's
+ * instances inherit. Class-to-class links are followed transitively;
+ * a dangling or cyclic chain yields null (the linter's C155/C156 own
+ * those findings).
+ */
+export function classPrototype(
+  standard: Standard,
+  classId: string,
+): Instance | null {
+  const classes = new Map(
+    (standard.dataclasses ?? []).map(c => [c.id, c]),
+  );
+  const instances = new Map(
+    (standard.instances ?? []).map(i => [i.id, i]),
+  );
+  const seen = new Set<string>([classId]);
+  let cur = classes.get(classId);
+  while (cur && cur.extends) {
+    const target = cur.extends;
+    if (seen.has(target)) {
+      return null;
+    }
+    seen.add(target);
+    const inst = instances.get(target);
+    if (inst) {
+      return inst;
+    }
+    cur = classes.get(target);
+  }
+  return null;
+}
+
+/**
+ * The mixed delegation graph (the C155 cycle rule's substrate): for
+ * every instance, its continuation under the delegation law — the
+ * upward subject-chain link, else the `of` target when it names an
+ * instance, else the PROTOTYPE reached through an `of`-named class's
+ * extends chain. One edge per instance; a cycle over these edges would
+ * make the walk non-terminating.
+ */
+export function delegationSuccessors(standard: Standard): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const inst of standard.instances ?? []) {
+    const upward = inst.model || inst.group || inst.family;
+    if (upward) {
+      out.set(inst.id, upward);
+      continue;
+    }
+    if (!inst.of) {
+      continue;
+    }
+    const direct = (standard.instances ?? []).find(i => i.id === inst.of);
+    if (direct) {
+      out.set(inst.id, direct.id);
+      continue;
+    }
+    const prototype = classPrototype(standard, inst.of);
+    if (prototype) {
+      out.set(inst.id, prototype.id);
+    }
+  }
+  return out;
+}
+
+/**
  * The upward walk from one instance: [start, …, family]. At each node the
  * next link is `model ?? group ?? family` (a sample links only its model;
  * a model links its group, or its family when the Recommendation has no
@@ -161,8 +229,21 @@ export function instanceChain(
       !current.model && !current.group && !current.family && current.of
         ? byId.get(current.of)
         : undefined;
+    // The PROTOTYPE HOP: when the `of` names a CLASS whose extends
+    // names an instance, the walk continues through that individual —
+    // the class's instances inherit the prototype's exhibited values
+    // (class defaults stay outside the delegation walk, as they always
+    // were; the walk reads exhibited values only).
+    const prototype =
+      ofTarget === undefined &&
+      !current.model &&
+      !current.group &&
+      !current.family &&
+      current.of
+        ? classPrototype(standard, current.of)
+        : undefined;
     const nextId =
-      current.model || current.group || current.family || ofTarget?.id;
+      current.model || current.group || current.family || ofTarget?.id || prototype?.id;
     if (!nextId) {
       return chain;
     }

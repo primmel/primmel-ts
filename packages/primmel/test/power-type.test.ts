@@ -69,7 +69,7 @@ describe('power-type instantiation (parse + check)', () => {
       issues.some(
         i =>
           i.check === 'C20' &&
-          i.message.includes('not a declared subject, instrument, or instance'),
+          i.message.includes('not a declared subject, instrument, class, or instance'),
       ),
     );
   });
@@ -136,6 +136,182 @@ class C {
           i.check === 'C156' &&
           i.message.includes('class C: extends "nowhere" is not a declared class or instance'),
       ),
+    );
+  });
+});
+
+describe('the prototype hop (a class extends an instance)', () => {
+  const model = load(`
+class Prototype {
+  serial_number : string { modality SHALL }
+}
+
+instance p1 {
+  of Prototype
+  has { attributes { serial_number : "PROTO-001" } }
+}
+
+class ProductionUnit {
+  extends { p1 }
+  family_code : string { modality SHALL }
+}
+
+instance u7 {
+  of ProductionUnit
+  has { attributes { family_code : "F7" } }
+}
+`);
+
+  it("an instance of the class inherits the prototype's exhibited values", () => {
+    assert.equal(
+      resolveInstanceValue(model, 'u7', 'parameters.serial_number')?.value,
+      'PROTO-001',
+    );
+    assert.equal(
+      resolveInstanceValue(model, 'u7', 'parameters.family_code')?.value,
+      'F7',
+    );
+  });
+
+  it('the instance chain crosses the class plane to the prototype', () => {
+    assert.deepEqual(
+      instanceChain(model, 'u7').map(i => i.id),
+      ['u7', 'p1'],
+    );
+  });
+
+  it("the prototype's own values still resolve on the prototype", () => {
+    assert.equal(
+      resolveInstanceValue(model, 'p1', 'parameters.serial_number')?.value,
+      'PROTO-001',
+    );
+  });
+
+  it('a chain of classes reaches the prototype transitively', () => {
+    const m2 = load(`
+class P {
+  a : string { modality SHALL }
+}
+
+instance p1 {
+  of P
+  has { attributes { a : "one" } }
+}
+
+class Mid {
+  extends { p1 }
+}
+
+class Leaf {
+  extends { Mid }
+}
+
+instance i {
+  of Leaf
+}
+`);
+    assert.equal(resolveInstanceValue(m2, 'i', 'parameters.a')?.value, 'one');
+  });
+
+  it('a lower statement overrides the inherited prototype value', () => {
+    const m3 = load(`
+class P {
+  a : string { modality SHALL }
+}
+
+instance p1 {
+  of P
+  has { attributes { a : "one" } }
+}
+
+class C {
+  extends { p1 }
+}
+
+instance i {
+  of C
+  has { attributes { a : "two" } }
+}
+`);
+    assert.equal(resolveInstanceValue(m3, 'i', 'parameters.a')?.value, 'two');
+  });
+
+  it('C155 rejects a prototype cycle: the class instantiates itself', () => {
+    // x instantiates C; C's prototype IS x — x's continuation through
+    // the class plane points back at x: the shapes' own recursion.
+    const issues = checkPackage(
+      makePackage(`
+class C {
+  extends { x }
+  a : string { modality SHALL }
+}
+
+instance x {
+  of C
+  has { attributes { a : "seed" } }
+}
+`),
+    );
+    assert.ok(
+      issues.some(i => i.check === 'C155' && i.message.includes('cyclic')),
+      `expected a cyclic finding, got: ${JSON.stringify(issues.filter(i => i.check === 'C155').map(i => i.message))}`,
+    );
+
+    // The non-cyclic shape: a prototype chain terminates and stays
+    // silent.
+    const ok = checkPackage(
+      makePackage(`
+class C {
+  a : string { modality SHALL }
+}
+
+instance x {
+  of C
+  has { attributes { a : "seed" } }
+}
+
+class D {
+  extends { x }
+  b : string { modality SHALL }
+}
+
+instance y {
+  of D
+}
+`),
+    );
+    assert.deepEqual(
+      ok.filter(i => i.check === 'C155'),
+      [],
+    );
+  });
+});
+
+describe('the typed-payload bridge power-types (an instance is a class)', () => {
+  it('payload fields resolve against an instance target through its class', () => {
+    const issues = checkPackage(
+      makePackage(`
+class Reading {
+  value : string { modality SHALL }
+}
+
+instance ref_reading {
+  of Reading
+  has { attributes { value : "1.000 kg" } }
+}
+
+subject S {
+  is {
+    attributes {
+      d : string { payload_class ref_reading }
+    }
+  }
+}
+`),
+    );
+    assert.deepEqual(
+      issues.filter(i => i.check === 'C152'),
+      [],
     );
   });
 });
