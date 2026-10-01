@@ -231,7 +231,10 @@ export function collectPrlFiles(
       }
       if (isDir(p)) {
         walk(p);
-      } else if ((e.endsWith('.prl') || e === 'package.primmel') && !e.startsWith('.')) {
+      } else if (
+        (e.endsWith('.prl') || e === 'package.primmel') &&
+        !e.startsWith('.')
+      ) {
         out.push(p);
       }
     }

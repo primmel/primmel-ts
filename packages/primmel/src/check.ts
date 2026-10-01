@@ -3252,7 +3252,11 @@ export function checkPackage(
   // individual). Successfully merged links clear at resolve time, so a
   // surviving link is exactly an unresolved one.
   for (const c of standard.dataclasses ?? []) {
-    if (c.extends && !dataclassIds.has(c.extends) && !instanceIds.has(c.extends)) {
+    if (
+      c.extends &&
+      !dataclassIds.has(c.extends) &&
+      !instanceIds.has(c.extends)
+    ) {
       warn(
         'C156',
         `class ${c.id}: extends "${c.extends}" is not a declared class or instance (class-extends-resolves)`,

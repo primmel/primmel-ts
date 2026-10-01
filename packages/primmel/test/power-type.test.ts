@@ -62,14 +62,14 @@ describe('power-type instantiation (parse + check)', () => {
   });
 
   it('C20 still rejects an of-reference to nothing declared', () => {
-    const issues = checkPackage(
-      makePackage('instance x {\n  of nowhere\n}\n'),
-    );
+    const issues = checkPackage(makePackage('instance x {\n  of nowhere\n}\n'));
     assert.ok(
       issues.some(
         i =>
           i.check === 'C20' &&
-          i.message.includes('not a declared subject, instrument, class, or instance'),
+          i.message.includes(
+            'not a declared subject, instrument, class, or instance',
+          ),
       ),
     );
   });
@@ -88,9 +88,7 @@ instance b {
 `),
     );
     assert.ok(
-      issues.some(
-        i => i.check === 'C155' && i.message.includes('do not mix'),
-      ),
+      issues.some(i => i.check === 'C155' && i.message.includes('do not mix')),
     );
   });
 
@@ -129,12 +127,16 @@ class C {
 }
 `),
     );
-    assert.ok(!issues.some(i => i.check === 'C156' && i.message.includes('"B"')));
+    assert.ok(
+      !issues.some(i => i.check === 'C156' && i.message.includes('"B"')),
+    );
     assert.ok(
       issues.some(
         i =>
           i.check === 'C156' &&
-          i.message.includes('class C: extends "nowhere" is not a declared class or instance'),
+          i.message.includes(
+            'class C: extends "nowhere" is not a declared class or instance',
+          ),
       ),
     );
   });
@@ -320,9 +322,18 @@ describe('power-type delegation (INV-10 through the of-chain)', () => {
   const model = load(CHAIN);
 
   it('walks the of-chain upward with lower override', () => {
-    assert.equal(resolveInstanceValue(model, 'smp-001', 'parameters.e_max')?.value, 2.2);
-    assert.equal(resolveInstanceValue(model, 'smp-001', 'parameters.p_lc')?.value, 0.7);
-    assert.equal(resolveInstanceValue(model, 'mod-500-2t', 'parameters.p_lc')?.value, 0.7);
+    assert.equal(
+      resolveInstanceValue(model, 'smp-001', 'parameters.e_max')?.value,
+      2.2,
+    );
+    assert.equal(
+      resolveInstanceValue(model, 'smp-001', 'parameters.p_lc')?.value,
+      0.7,
+    );
+    assert.equal(
+      resolveInstanceValue(model, 'mod-500-2t', 'parameters.p_lc')?.value,
+      0.7,
+    );
   });
 
   it('the chain is the of-chain, terminating at the subject', () => {

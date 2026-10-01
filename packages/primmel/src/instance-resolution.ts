@@ -140,12 +140,8 @@ export function classPrototype(
   standard: Standard,
   classId: string,
 ): Instance | null {
-  const classes = new Map(
-    (standard.dataclasses ?? []).map(c => [c.id, c]),
-  );
-  const instances = new Map(
-    (standard.instances ?? []).map(i => [i.id, i]),
-  );
+  const classes = new Map((standard.dataclasses ?? []).map(c => [c.id, c]));
+  const instances = new Map((standard.instances ?? []).map(i => [i.id, i]));
   const seen = new Set<string>([classId]);
   let cur = classes.get(classId);
   while (cur && cur.extends) {
@@ -243,7 +239,11 @@ export function instanceChain(
         ? classPrototype(standard, current.of)
         : undefined;
     const nextId =
-      current.model || current.group || current.family || ofTarget?.id || prototype?.id;
+      current.model ||
+      current.group ||
+      current.family ||
+      ofTarget?.id ||
+      prototype?.id;
     if (!nextId) {
       return chain;
     }
