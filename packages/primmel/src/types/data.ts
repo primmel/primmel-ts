@@ -24,6 +24,15 @@ export interface DataClass {
   helper?: boolean;
   /** Inheritance: fields merge from the parent (v2 G2). */
   extends?: string;
+  /**
+   * Overlay marker (composition): this class intentionally supersedes
+   * an upstream package's class with the same id — uses-no-redefine
+   * is lifted and the entry merges FIELD-WISE (attributes union by id
+   * in first-seen order), the downstream's added fields landing beside
+   * the upstream's (e.g. a Recommendation's entity carrying two extra
+   * attributes over oiml-smart-core's).
+   */
+  overlay?: boolean;
   /** Class-level description. */
   description?: string;
   /** Class-level references (Extension 2 — primmel-ts#52). Provenance:
@@ -38,6 +47,7 @@ export type ResolvableDataClass = {
   indexes?: string[];
   helper?: boolean;
   extends?: string;
+  overlay?: boolean;
   description?: string;
   ref?: Ref[];
 };

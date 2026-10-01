@@ -18,9 +18,12 @@ import {
 
 describe('overlay deep-merge (smart TODO.roadmap/40 batch 3)', () => {
   it('the opt-in set carries exactly the landed overlay collections', () => {
-    // workflowConfigs (B3.7) + testReportChecklists (B3.10). A field
-    // name listed before its collection exists would be dead config.
+    // workflowConfigs (B3.7) + testReportChecklists (B3.10) +
+    // dataclasses (the entity plane: a rec's overlay-marked class
+    // adds attributes beside the core's). A field name listed before
+    // its collection exists would be dead config.
     assert.deepEqual([...OVERLAY_DEEP_MERGE_FIELDS].sort(), [
+      'dataclasses',
       'testReportChecklists',
     ]);
   });

@@ -1002,6 +1002,8 @@ export const parseProcess: Parser = function (id, data) {
           .filter(s => s.length > 0);
       } else if (keyword === 'name') {
         result.name = unwrapped(value);
+      } else if (keyword === 'overlay') {
+        result.overlay = value() === 'true';
       } else if (keyword === 'actor') {
         result._relations.actor = value();
       } else if (keyword === 'parent') {
@@ -1356,6 +1358,11 @@ export const dumpProcess: (
 ) => string = function (process, ctx) {
   let out: string = 'process ' + process.id + ' {\n';
   out += '  name "' + escapeString(process.name) + '"\n';
+  // The overlay marker (composition; the absent marker never
+  // canonicalizes to `overlay false` — the terms' dump precedent).
+  if (process.overlay) {
+    out += '  overlay true\n';
+  }
   if (process.summary) {
     out += '  summary "' + escapeString(process.summary) + '"\n';
   }

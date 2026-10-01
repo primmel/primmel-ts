@@ -142,6 +142,12 @@ export const parseDataClass: Parser = function (id, data) {
         result.helper = details.trim() === 'true';
         return;
       }
+      if (head === 'overlay') {
+        // The class-level facet carries a brace block (`overlay { true }`)
+        // — the helper precedent.
+        result.overlay = details.replace(/[{}\s]/g, '') === 'true';
+        return;
+      }
       if (head === 'extends') {
         result.extends = details.trim();
         return;
@@ -309,6 +315,9 @@ export const resolveDataClass: Resolver<DataClass, ResolvableDataClass> =
         ? { indexes: unresolved.indexes }
         : {}),
       ...(unresolved.helper !== undefined ? { helper: unresolved.helper } : {}),
+      ...(unresolved.overlay !== undefined
+        ? { overlay: unresolved.overlay }
+        : {}),
       ...(unresolved.extends !== undefined
         ? { extends: unresolved.extends }
         : {}),
@@ -350,6 +359,11 @@ export const dumpDataClass: Dumper<DataClass> = function (dataclass) {
   }
   if (dataclass.helper !== undefined) {
     out += '  helper { ' + dataclass.helper + ' }\n';
+  }
+  // The overlay marker (composition; absent never canonicalizes to
+  // `overlay false` — the terms' dump precedent).
+  if (dataclass.overlay) {
+    out += '  overlay { true }\n';
   }
   if (dataclass.extends) {
     out += '  extends { ' + dataclass.extends + ' }\n';
