@@ -1,0 +1,39 @@
+attribute_definition serial_number {
+  name "Serial number"
+  value_type string
+  origin design-fixed
+  scope family
+  category metrological
+}
+
+attribute_definition e_max {
+  name "Maximum capacity"
+  value_type number
+  origin design-variable
+  scope model
+  category metrological
+}
+
+subject LC-Family {
+  has { attributes { serial_number } }
+}
+
+class LoadCellSample {
+  attribute serial_number, String { definition "the marking" modality SHALL }
+  attribute e_max, Number { cardinality 1..1 }
+}
+
+instance fam-1 {
+  of LC-Family
+  level family
+  definition_versions { LC-Family : "2021" attributes : "1.0.0" }
+  serial_number = "FAM"
+}
+
+instance smp-001 {
+  of fam-1
+  level sample
+  definition_versions { LC-Family : "2021" attributes : "1.0.0" }
+  serial_number = "HBK-001"
+  e_max = 2.2 t
+}
