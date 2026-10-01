@@ -651,6 +651,11 @@ export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([
   // survives; append-at-end would reorder the composition-point
   // entries to the tail).
   'testReportChecklists',
+  // The entity classes (the smart core's #data plane): a rec
+  // package's overlay-marked class merges field-wise into the core's
+  // — attributes union by id in first-seen order (the rec's added
+  // fields land beside the core's), scalars override.
+  'dataclasses',
 ]);
 
 function isPlainRecord(v: unknown): v is Record<string, unknown> {
@@ -882,7 +887,9 @@ function composePackage(
             typeof value === 'object' &&
             value !== null &&
             (value as { overlay?: boolean }).overlay === true &&
-            (field === 'terms' || OVERLAY_DEEP_MERGE_FIELDS.has(field));
+            (field === 'terms' ||
+              field === 'processes' ||
+              OVERLAY_DEEP_MERGE_FIELDS.has(field));
           if (!isOverlay) {
             throw new CompositionError(
               'uses-no-redefine',

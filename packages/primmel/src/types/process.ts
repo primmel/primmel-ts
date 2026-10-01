@@ -272,6 +272,14 @@ export default interface Process {
   name: string;
   modality: string;
   /**
+   * Overlay marker (composition): this process intentionally supersedes
+   * an upstream package's process with the same id — uses-no-redefine
+   * is lifted, the whole value replaces (the terms' escape; e.g.
+   * oiml-cs's CS-specific `application` restating ISO/IEC 17065's
+   * abstract functional-approach process).
+   */
+  overlay?: boolean;
+  /**
    * The workflow pipeline phase this process belongs to (smart
    * TODO.roadmap/40 batch 5; the packages-as-SSOT epic) — a bare token
    * (intake, dispatch, testing, evaluation, issuance). Retires the
