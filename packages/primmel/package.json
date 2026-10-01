@@ -73,7 +73,12 @@
       "require": "./dist/src/ser-des/config/twin.js",
       "types": "./dist/src/ser-des/config/twin.d.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./ser-des/shape": {
+      "import": "./dist/src/ser-des/shape-front-end.js",
+      "require": "./dist/src/ser-des/shape-front-end.js",
+      "types": "./dist/src/ser-des/shape-front-end.d.ts"
+    }
   },
   "scripts": {
     "build": "../../node_modules/.bin/tsc",
@@ -84,7 +89,7 @@
     "test:exports": "node --test --import tsx scripts/exports-map.test.mts",
     "annex-a": "tsx scripts/annex-a.mts",
     "check": "tsx scripts/check.mts",
-    "annex-a": "tsx scripts/annex-a.mts"
+    "test:browser": "node --test --import tsx scripts/browser-build.test.mts"
   },
   "files": [
     "dist/",

@@ -1,6 +1,7 @@
 import Standard from '../types/Standard';
 import parse from './parse';
-import type { ParseOptions } from './parse';
+import { parseDeclarations } from './parse';
+import type { ParseOptions, SourceDeclaration } from './parse';
 import resolve from './resolve';
 import _dump from './dump';
 import { PARSER_CONFIG, RESOLVER_CONFIG, DUMPER_CONFIG } from './config';
@@ -115,6 +116,12 @@ export function validate(standard: Standard): ValidationIssue[] {
 }
 
 export type { ParseOptions };
+// The dispatch core: the seam every front end feeds. The token front
+// end (parse, above) and the shape front end (ser-des/shape, Node-only
+// — it loads the parsanol runtime from disk) both reduce to a
+// SourceDeclaration[] and share this kernel entry.
+export { parseDeclarations };
+export type { SourceDeclaration };
 export type { ValidationIssue, ValidationSeverity, Position };
 export type { Subprocess, SubprocessComponent, Edge } from '../types/flow';
 

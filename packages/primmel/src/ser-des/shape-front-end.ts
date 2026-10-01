@@ -10,9 +10,12 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import parse, { parseDeclarations, type SourceDeclaration } from './parse';
-import type { ParseContext, ParseOptions } from './types';
-import type { ParserConfiguration } from './config';
+import parse, {
+  parseDeclarations,
+  type ParseOptions,
+  type SourceDeclaration,
+} from './parse';
+import type { ParseContext, ParserConfiguration } from './types';
 
 interface PosNode {
   value: string;
@@ -37,10 +40,10 @@ async function shapeParser(
   if (cached) {
     return cached;
   }
-  const here = import.meta.url.replace('file://', '');
-  // here = packages/primmel/src/ser-des/shape-front-end.ts — five ups
-  // to the repository root, then the workspace sibling.
-  const parsanol = resolveParsanolTs(join(here, '..', '..', '..', '..', '..'));
+  // here = packages/primmel/src/ser-des — four ups to the repository
+  // root, then the workspace sibling. (__dirname, never import.meta —
+  // the package builds as CommonJS.)
+  const parsanol = resolveParsanolTs(join(__dirname, '..', '..', '..', '..'));
   if (!parsanol || !existsSync(artifact)) {
     throw new Error(
       'the shape front end needs the parsanol checkout (PRIMMEL_PARSANOL_TS) and the grammar artifact',
@@ -237,8 +240,7 @@ export async function parseFromShape(
   parsers: ParserConfiguration,
   options: ParseOptions = {},
   artifact = join(
-    import.meta.url.replace('file://', ''),
-    '..',
+    __dirname,
     '..',
     '..',
     '..',

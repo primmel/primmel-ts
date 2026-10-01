@@ -15,9 +15,10 @@ const SUBPATHS: [string, string[]][] = [
   ['@primmel/primmel/model-diff', ['formatDiffReport']],
   ['@primmel/primmel/operational-state', []],
   ['@primmel/primmel/text-coverage', ['packageTextCoverageReport']],
-  ['@primmel/primmel/ser-des', ['load', 'dump', 'dumpPackage']],
+  ['@primmel/primmel/ser-des', ['load', 'dump', 'dumpPackage', 'parseDeclarations']],
   ['@primmel/primmel/ser-des/package', ['loadPackage', 'loadPackageWithIssues', 'loadPackageWithProvenance', 'groupBySourceFile', 'packageFiles']],
   ['@primmel/primmel/ser-des/config/twin', []],
+  ['@primmel/primmel/ser-des/shape', ['parseFromShape', 'resolveParsanolTs']],
 ];
 
 for (const [spec, expected] of SUBPATHS) {

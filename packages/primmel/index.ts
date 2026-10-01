@@ -6,6 +6,8 @@ export {
   loadFileWithIssues,
   dump,
   validate,
+  parseDeclarations,
+  type SourceDeclaration,
   loadPackage,
   loadPackageWithProvenance,
   groupBySourceFile,
