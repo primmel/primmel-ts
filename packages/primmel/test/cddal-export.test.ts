@@ -107,8 +107,11 @@ class LoadCellSample {
     const o3 = projectCddal(m3, 'test-pkg');
     assert.equal(o3.stats.properties, 1);
     assert.match(o3.cddal, /instance serial_number < MDC_C003 \{/);
-    assert.match(o3.cddal, /  code: "0112\/2\/\/\/61987#ABA123"/);
-    assert.match(o3.cddal, /  definition\.en: "The manufacturer's serial number\."/);
+    assert.match(o3.cddal, / {2}code: "0112\/2\/\/\/61987#ABA123"/);
+    assert.match(
+      o3.cddal,
+      / {2}definition\.en: "The manufacturer's serial number\."/,
+    );
   });
 
   it('projects enums as value lists with one value term per value', () => {
@@ -121,8 +124,8 @@ enum accuracy {
     const o4 = projectCddal(m4, 'test-pkg');
     assert.equal(o4.stats.valueLists, 1);
     assert.match(o4.cddal, /instance accuracy < MDC_C005 \{/);
-    assert.match(o4.cddal, /  code: accuracy/);
-    assert.match(o4.cddal, /  MDC_P043: \( A, C3 \)/);
+    assert.match(o4.cddal, / {2}code: accuracy/);
+    assert.match(o4.cddal, / {2}MDC_P043: \( A, C3 \)/);
     assert.match(o4.cddal, /instance A < MDC_C010 \{/);
     assert.match(o4.cddal, /instance C3 < MDC_C010 \{/);
   });
@@ -145,9 +148,9 @@ class Line {
 `);
     const o6 = projectCddal(m6, 'test-pkg');
     assert.match(o6.cddal, /instance Line < MDC_C002 \{/);
-    assert.match(o6.cddal, /  superclass: proto/);
+    assert.match(o6.cddal, / {2}superclass: proto/);
     assert.match(o6.cddal, /instance proto < MDC_C002 \{/);
-    assert.match(o6.cddal, /  code: proto/);
+    assert.match(o6.cddal, / {2}code: proto/);
   });
 
   it('carries language-tagged definition alternates from the l10n files', () => {
@@ -161,8 +164,8 @@ class C {
       ['C.description', [{ tag: 'fra-Latn', value: 'Orthographe française' }]],
     ]);
     const o5 = projectCddal(m5, 'test-pkg', l10n);
-    assert.match(o5.cddal, /  definition\.en: "Default spelling"/);
-    assert.match(o5.cddal, /  definition\.fra-Latn: "Orthographe française"/);
+    assert.match(o5.cddal, / {2}definition\.en: "Default spelling"/);
+    assert.match(o5.cddal, / {2}definition\.fra-Latn: "Orthographe française"/);
   });
 
   it('throws when the package carries no dictionary content', () => {

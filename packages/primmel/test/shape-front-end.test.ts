@@ -88,10 +88,10 @@ describe(
           // surface.
           stricter++;
           continue;
-      }
-      assert.deepEqual(
-        JSON.parse(
-          JSON.stringify({
+        }
+        assert.deepEqual(
+          JSON.parse(
+            JSON.stringify({
               ...(shapeCtx as object),
               issues: [],
               constructs: undefined,

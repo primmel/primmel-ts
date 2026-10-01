@@ -66,7 +66,9 @@ function facetTokens(items: Item[], key: string): string[] {
 function tokensOf(c: Construct, key: string): string[] {
   // ALL lines of this key — a facet declared twice is itself a rule
   // matter (C145), never silently collapsed.
-  const all = lines(c).filter(l => l.key === key).flatMap(l => l.tokens);
+  const all = lines(c)
+    .filter(l => l.key === key)
+    .flatMap(l => l.tokens);
   if (all.length > 0) {
     return all;
   }
@@ -108,7 +110,7 @@ function siblingManifests(pkg: ParsedPackage): Construct[] {
     return [];
   }
   const out: Construct[] = [];
-  for (const entry of (pkg.siblings ?? [])) {
+  for (const entry of pkg.siblings ?? []) {
     for (const c of entry.constructs) {
       if (c.keyword === 'package') {
         out.push(c);
@@ -165,7 +167,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
   // COMPOSED universe (an upstream declaration satisfies a consumer's
   // reference), while the shape rules judge the root alone.
   const closureConstructs = located
-    ? [...pkg.constructs, ...[...located.packages.values()].flatMap(x => x.constructs)]
+    ? [
+        ...pkg.constructs,
+        ...[...located.packages.values()].flatMap(x => x.constructs),
+      ]
     : pkg.constructs;
 
   const requirements = new Set(
@@ -184,7 +189,9 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       .map(c => c.ident),
   );
   const roles = new Set(
-    closureConstructs.filter(c => c.keyword === 'role' && c.ident).map(c => c.ident),
+    closureConstructs
+      .filter(c => c.keyword === 'role' && c.ident)
+      .map(c => c.ident),
   );
   const organs = new Set(
     pkg.constructs
@@ -192,16 +199,24 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       .map(c => c.ident),
   );
   const policies = new Set(
-    closureConstructs.filter(c => c.keyword === 'policy' && c.ident).map(c => c.ident),
+    closureConstructs
+      .filter(c => c.keyword === 'policy' && c.ident)
+      .map(c => c.ident),
   );
   const symbols = new Set(
-    pkg.constructs.filter(c => c.keyword === 'symbol' && c.ident).map(c => c.ident),
+    pkg.constructs
+      .filter(c => c.keyword === 'symbol' && c.ident)
+      .map(c => c.ident),
   );
   const forms = new Set(
-    closureConstructs.filter(c => c.keyword === 'form' && c.ident).map(c => c.ident),
+    closureConstructs
+      .filter(c => c.keyword === 'form' && c.ident)
+      .map(c => c.ident),
   );
   const processes = new Set(
-    closureConstructs.filter(c => c.keyword === 'process' && c.ident).map(c => c.ident),
+    closureConstructs
+      .filter(c => c.keyword === 'process' && c.ident)
+      .map(c => c.ident),
   );
   const dimensions = new Map<string, Set<string>>();
   for (const c of pkg.constructs) {
@@ -225,9 +240,11 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         c.ident,
         new Set([
           ...tokensOf(c, 'inputs'),
-          ...nested(c)
+          ...(nested(c)
             .find(n => n.keyword === 'inputs')
-            ?.items.flatMap(i => (i.kind === 'line' && i.key ? [i.key, ...i.tokens] : i.tokens)) ?? [],
+            ?.items.flatMap(i =>
+              i.kind === 'line' && i.key ? [i.key, ...i.tokens] : i.tokens,
+            ) ?? []),
         ]),
       );
     }
@@ -235,15 +252,25 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
   const registeredKinds = new Set(
     pkg.constructs
       .filter(c => c.keyword === 'quantity_register')
-      .flatMap(r => nested(r).filter(k => k.keyword === 'kind').map(k => k.ident)),
+      .flatMap(r =>
+        nested(r)
+          .filter(k => k.keyword === 'kind')
+          .map(k => k.ident),
+      ),
   );
   const symbolsAll = new Set(
-    closureConstructs.filter(c => c.keyword === 'symbol' && c.ident).map(c => c.ident),
+    closureConstructs
+      .filter(c => c.keyword === 'symbol' && c.ident)
+      .map(c => c.ident),
   );
   const variables = new Set(
-    pkg.constructs.filter(c => c.keyword === 'variable' && c.ident).map(c => c.ident),
+    pkg.constructs
+      .filter(c => c.keyword === 'variable' && c.ident)
+      .map(c => c.ident),
   );
-  for (const t of pkg.constructs.filter(c => c.keyword === 'conformance_test')) {
+  for (const t of pkg.constructs.filter(
+    c => c.keyword === 'conformance_test',
+  )) {
     for (const group of nested(t)) {
       if (group.keyword !== 'variables' && group.keyword !== 'observables') {
         continue;
@@ -269,8 +296,14 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     // C105: a trust anchor declares its trust reference.
     if (c.keyword === 'dataspace') {
       for (const anchor of nested(c)) {
-        if (anchor.keyword === 'trust_anchor' && tokensOf(anchor, 'trust_ref').length === 0) {
-          err('C105', `dataspace ${c.ident}: trust anchor "${anchor.ident}" declares no trust_ref with an organization identifier — an anchor without its trust reference says nothing (dataspace-shape)`);
+        if (
+          anchor.keyword === 'trust_anchor' &&
+          tokensOf(anchor, 'trust_ref').length === 0
+        ) {
+          err(
+            'C105',
+            `dataspace ${c.ident}: trust anchor "${anchor.ident}" declares no trust_ref with an organization identifier — an anchor without its trust reference says nothing (dataspace-shape)`,
+          );
         }
       }
       for (const p of nested(c)) {
@@ -283,7 +316,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'policy') {
       for (const rule of nested(c)) {
         if (rule.keyword === 'rule' && tokensOf(rule, 'action').length === 0) {
-          err('C107', `policy ${c.ident}: rule "${rule.ident}" declares no action — a rule without its action says nothing (policy-shape)`);
+          err(
+            'C107',
+            `policy ${c.ident}: rule "${rule.ident}" declares no action — a rule without its action says nothing (policy-shape)`,
+          );
         }
       }
     }
@@ -295,21 +331,33 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         const scheme = line.tokens[0] ?? '';
         const concept = line.tokens[1] ?? '';
         if (scheme === '' || concept === '') {
-          err('C108', `attribute_definition ${c.ident}: a corresponds entry carries an empty scheme or concept — the entry names its scheme and the scheme's concept identifier (corresponds-shape)`);
+          err(
+            'C108',
+            `attribute_definition ${c.ident}: a corresponds entry carries an empty scheme or concept — the entry names its scheme and the scheme's concept identifier (corresponds-shape)`,
+          );
         }
         schemes.set(scheme, (schemes.get(scheme) ?? 0) + 1);
       }
       for (const [scheme, n] of schemes) {
         if (n > 1) {
-          err('C108', `attribute_definition ${c.ident}: ${n} corresponds entries name scheme "${scheme}" — one element has at most one correspondence per scheme (corresponds-shape)`);
+          err(
+            'C108',
+            `attribute_definition ${c.ident}: ${n} corresponds entries name scheme "${scheme}" — one element has at most one correspondence per scheme (corresponds-shape)`,
+          );
         }
       }
     }
     // C112: a reference's urn is a well-formed IRI.
     if (c.keyword === 'reference') {
       const urn = tokensOf(c, 'urn')[0] ?? '';
-      if (urn !== '' && !/^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/.test(urn)) {
-        err('C112', `reference ${c.ident}: urn "${urn}" is not a well-formed IRI (a scheme followed by no whitespace or IRI delimiters) (reference-identity)`);
+      if (
+        urn !== '' &&
+        !/^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/.test(urn)
+      ) {
+        err(
+          'C112',
+          `reference ${c.ident}: urn "${urn}" is not a well-formed IRI (a scheme followed by no whitespace or IRI delimiters) (reference-identity)`,
+        );
       }
     }
     // C114: a requirement's limit kind agrees with its acceptance
@@ -317,20 +365,40 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'requirement') {
       const limit = nested(c).find(n => n.keyword === 'limit');
       if (limit) {
-        const limitKind = tokensOf(limit, 'quantity_kind')[0] ?? nested(limit).find(n => n.keyword === 'quantity') ? tokensOf(nested(limit).find(n => n.keyword === 'quantity')!, 'kind')[0] ?? '' : '';
-        for (const accept of nested(limit).find(n => n.keyword === 'accepts')?.items ?? []) {
+        const limitKind =
+          (tokensOf(limit, 'quantity_kind')[0] ??
+          nested(limit).find(n => n.keyword === 'quantity'))
+            ? (tokensOf(
+                nested(limit).find(n => n.keyword === 'quantity')!,
+                'kind',
+              )[0] ?? '')
+            : '';
+        for (const accept of nested(limit).find(n => n.keyword === 'accepts')
+          ?.items ?? []) {
           void accept;
         }
         for (const line of lines(limit)) {
           void line;
         }
         for (const vName of tokensOf(limit, 'accepts')) {
-          const verdict = pkg.constructs.find(x => x.keyword === 'verdict' && x.ident === vName);
+          const verdict = pkg.constructs.find(
+            x => x.keyword === 'verdict' && x.ident === vName,
+          );
           const verdictKind = verdict
-            ? tokensOf(nested(verdict).find(n => n.keyword === 'quantity') ?? verdict, 'kind')[0] ?? ''
+            ? (tokensOf(
+                nested(verdict).find(n => n.keyword === 'quantity') ?? verdict,
+                'kind',
+              )[0] ?? '')
             : '';
-          if (limitKind !== '' && verdictKind !== '' && limitKind !== verdictKind) {
-            err('C114', `requirement ${c.ident}: limit declares quantity kind "${limitKind}" but accepts verdict ${vName} derives kind "${verdictKind}" — a limit and its acceptance chain never drift apart in units (limit-quantity-coherence)`);
+          if (
+            limitKind !== '' &&
+            verdictKind !== '' &&
+            limitKind !== verdictKind
+          ) {
+            err(
+              'C114',
+              `requirement ${c.ident}: limit declares quantity kind "${limitKind}" but accepts verdict ${vName} derives kind "${verdictKind}" — a limit and its acceptance chain never drift apart in units (limit-quantity-coherence)`,
+            );
           }
         }
       }
@@ -339,7 +407,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'calculation') {
       const inputs = nested(c).find(n => n.keyword === 'inputs');
       const fields: { id: string; items: Item[] }[] = [
-        ...(inputs ? nested(inputs) : []).map(f => ({ id: f.ident || f.keyword, items: f.items })),
+        ...(inputs ? nested(inputs) : []).map(f => ({
+          id: f.ident || f.keyword,
+          items: f.items,
+        })),
         // `q : number { … }` — the input id rides the line's KEY and
         // the facets ride the value block.
         ...(inputs ? lines(inputs) : []).map(l => ({
@@ -350,7 +421,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       for (const field of fields) {
         for (const kind of facetTokens(field.items, 'quantity_kind')) {
           if (!registeredKinds.has(kind)) {
-            err('C115', `calculation ${c.ident}: input ${field.id}: quantity_kind "${kind}" resolves to no registered kind of the merged quantity register (calculation-signature)`);
+            err(
+              'C115',
+              `calculation ${c.ident}: input ${field.id}: quantity_kind "${kind}" resolves to no registered kind of the merged quantity register (calculation-signature)`,
+            );
           }
         }
       }
@@ -359,11 +433,15 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'requirement') {
       const params = nested(c).find(n => n.keyword === 'parameters');
       const paramItems: { id: string; items: Item[] }[] = [
-        ...(params ? nested(params) : []).map(pm => ({ id: pm.ident || pm.keyword, items: pm.items })),
+        ...(params ? nested(params) : []).map(pm => ({
+          id: pm.ident || pm.keyword,
+          items: pm.items,
+        })),
         // `param e_max: number { … }` inside the parameters block —
         // the param id rides the line's KEY, the facets its block.
         ...(params ? lines(params) : []).map(l => ({
-          id: l.key === 'param' ? (l.tokens[0]?.replace(/:$/, '') ?? '') : l.key,
+          id:
+            l.key === 'param' ? (l.tokens[0]?.replace(/:$/, '') ?? '') : l.key,
           items: l.blocks.flat(),
         })),
       ];
@@ -371,7 +449,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         for (const bind of facetTokens(param.items, 'bind')) {
           const attr = bind.split('.').pop() ?? '';
           if (attr !== '' && !attributeDefinitions.has(attr)) {
-            err('C118', `requirement ${c.ident}: param ${param.id}: bind "${bind}" — attribute "${attr}" not defined (requirement-parameter-shape)`);
+            err(
+              'C118',
+              `requirement ${c.ident}: param ${param.id}: bind "${bind}" — attribute "${attr}" not defined (requirement-parameter-shape)`,
+            );
           }
         }
       }
@@ -385,7 +466,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           !variables.has(input) &&
           ![...verdicts.keys()].includes(input)
         ) {
-          err('C116', `verdict ${c.ident}: input "${input}" resolves to no declared symbol, test variable or observable, or verdict (verdict-inputs-resolve)`);
+          err(
+            'C116',
+            `verdict ${c.ident}: input "${input}" resolves to no declared symbol, test variable or observable, or verdict (verdict-inputs-resolve)`,
+          );
         }
       }
     }
@@ -393,12 +477,21 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'attribute_definition') {
       const pairList = nested(c).find(n => n.keyword === 'pair_list');
       if (pairList && tokensOf(pairList, 'key').length === 0) {
-        err('C124', `attribute_definition ${c.ident}: pair_list: the key slot is required (pair-list-shape)`);
+        err(
+          'C124',
+          `attribute_definition ${c.ident}: pair_list: the key slot is required (pair-list-shape)`,
+        );
       }
     }
     // C127: a common test condition carries its description.
-    if (c.keyword === 'common_test_condition' && tokensOf(c, 'description').length === 0) {
-      err('C127', `common_test_condition ${c.ident}: the description is required — a condition entry carries its normative text (common-test-condition-shape)`);
+    if (
+      c.keyword === 'common_test_condition' &&
+      tokensOf(c, 'description').length === 0
+    ) {
+      err(
+        'C127',
+        `common_test_condition ${c.ident}: the description is required — a condition entry carries its normative text (common-test-condition-shape)`,
+      );
     }
     // C131: the promise certificate content binds by XOR.
     if (c.keyword === 'promise_set') {
@@ -414,7 +507,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           k => tokensOf(cert, k).length > 0,
         );
         if (bound.length > 1) {
-          err('C131', `promise_set ${c.ident}: promise "${promise.ident}": the certificate content binds by XOR — at most one of attribute / attributes / dimension (promise-certificate-projection)`);
+          err(
+            'C131',
+            `promise_set ${c.ident}: promise "${promise.ident}": the certificate content binds by XOR — at most one of attribute / attributes / dimension (promise-certificate-projection)`,
+          );
         }
       }
     }
@@ -432,7 +528,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
             !sourceForm.startsWith('parameters.') &&
             sourceForm !== 'computed'
           ) {
-            err('C133', `calculation_context ${c.ident}: field ${field.ident}: source "${sourceForm}" is not a subject-chain source (classification.<dimension>, parameters.<attribute>, computed) (calculation-context-references)`);
+            err(
+              'C133',
+              `calculation_context ${c.ident}: field ${field.ident}: source "${sourceForm}" is not a subject-chain source (classification.<dimension>, parameters.<attribute>, computed) (calculation-context-references)`,
+            );
           }
         }
       }
@@ -446,7 +545,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         }
         for (const e of tokensOf(field, 'enum')) {
           if (!dimensions.has(e)) {
-            err('C134', `evaluation_dimensions ${c.ident}: field ${field.ident}: enum "${e}" is not a declared classification dimension (evaluation-dimension-references)`);
+            err(
+              'C134',
+              `evaluation_dimensions ${c.ident}: field ${field.ident}: enum "${e}" is not a declared classification dimension (evaluation-dimension-references)`,
+            );
           }
         }
       }
@@ -456,7 +558,9 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       const dimsBlock = nested(c).find(n => n.keyword === 'dimensions');
       const entries: { key: string; tokens: string[] }[] = dimsBlock
         ? dimsBlock.items.flatMap(i =>
-            i.kind === 'line' && i.key ? [{ key: i.key, tokens: i.tokens }] : [],
+            i.kind === 'line' && i.key
+              ? [{ key: i.key, tokens: i.tokens }]
+              : [],
           )
         : lines(c).filter(l => l.key === 'dimensions');
       for (const entry of entries) {
@@ -468,7 +572,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         // technology digital`): the FIRST token is this key's value.
         const v = entry.tokens[0] ?? '';
         if (v !== '' && !values.has(v)) {
-          err('C135', `evaluation_profile ${c.ident}: dimensions entry "${entry.key}" names value "${v}", which the dimension does not declare (evaluation-profile-coherence)`);
+          err(
+            'C135',
+            `evaluation_profile ${c.ident}: dimensions entry "${entry.key}" names value "${v}", which the dimension does not declare (evaluation-profile-coherence)`,
+          );
         }
       }
     }
@@ -480,21 +587,34 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           continue;
         }
         const type = tokensOf(ch, 'type')[0] ?? '';
-        if (type !== '' && !['string', 'integer', 'number', 'quantity', 'statement'].includes(type)) {
-          err('C136', `certificate_template ${c.ident}: characteristic ${ch.ident}: type "${type}" is outside the renderer vocabulary (string, integer, number, quantity, statement) (certificate-template-references)`);
+        if (
+          type !== '' &&
+          !['string', 'integer', 'number', 'quantity', 'statement'].includes(
+            type,
+          )
+        ) {
+          err(
+            'C136',
+            `certificate_template ${c.ident}: characteristic ${ch.ident}: type "${type}" is outside the renderer vocabulary (string, integer, number, quantity, statement) (certificate-template-references)`,
+          );
         }
       }
     }
     // C138: a signal trigger carries its event.
     if (c.keyword === 'verification_pathway') {
       const triggerHosts = [
-        ...nested(c).map(n => [n, ...nested(n)] as Construct[]).flat(),
+        ...nested(c)
+          .map(n => [n, ...nested(n)] as Construct[])
+          .flat(),
       ].filter(n => n.keyword === 'trigger');
       for (const trigger of triggerHosts) {
         {
           const kind = tokensOf(trigger, 'kind')[0] ?? '';
           if (kind === 'signal' && tokensOf(trigger, 'event').length === 0) {
-            err('C138', `verification_pathway ${c.ident}: trigger ${trigger.ident}: kind signal requires the event facet (verification-pathway-references)`);
+            err(
+              'C138',
+              `verification_pathway ${c.ident}: trigger ${trigger.ident}: kind signal requires the event facet (verification-pathway-references)`,
+            );
           }
         }
       }
@@ -507,7 +627,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         tokensOf(c, 'required_capability').length > 0 ||
         (match ? tokensOf(match, 'required_capability').length > 0 : false);
       if (op === 'has_capability' && !required) {
-        err('C139', `lab_selection_criterion ${c.ident}: operator has_capability requires the required_capability facet (selection-rule-references)`);
+        err(
+          'C139',
+          `lab_selection_criterion ${c.ident}: operator has_capability requires the required_capability facet (selection-rule-references)`,
+        );
       }
     }
     if (
@@ -517,7 +640,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       tokensOf(c, 'applicability').length === 0 &&
       c.keyword === 'specimen_governance_rule'
     ) {
-      err('C139', `${c.keyword} ${c.ident}: the applicability facet is required (selection-rule-references)`);
+      err(
+        'C139',
+        `${c.keyword} ${c.ident}: the applicability facet is required (selection-rule-references)`,
+      );
     }
     // C59: a segregation disjoint constraint is ONLY a pair.
     if (c.keyword === 'process') {
@@ -525,9 +651,14 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       for (const constraint of seg ? nested(seg) : []) {
         const kind = tokensOf(constraint, 'kind')[0] ?? '';
         if (kind.endsWith('_disjoint')) {
-          const extras = ['period', 'barred'].filter(k => tokensOf(constraint, k).length > 0);
+          const extras = ['period', 'barred'].filter(
+            k => tokensOf(constraint, k).length > 0,
+          );
           if (extras.length > 0) {
-            err('C59', `process ${c.ident}: segregation constraint "${constraint.ident}" is ${kind} but declares ${extras.join('/')} — a disjoint constraint is ONLY a pair; the period/barred facets belong to barred constraints (segregation-kind-xor)`);
+            err(
+              'C59',
+              `process ${c.ident}: segregation constraint "${constraint.ident}" is ${kind} but declares ${extras.join('/')} — a disjoint constraint is ONLY a pair; the period/barred facets belong to barred constraints (segregation-kind-xor)`,
+            );
           }
         }
       }
@@ -546,25 +677,40 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
   }
   const cycle = findCycle(verdictAdj);
   if (cycle) {
-    err('C117', `verdict chain cycle: ${cycle.join(' → ')} — the acceptance chain is a graph a consumer traverses, so it must be acyclic (verdict-chain-acyclic)`);
+    err(
+      'C117',
+      `verdict chain cycle: ${cycle.join(' → ')} — the acceptance chain is a graph a consumer traverses, so it must be acyclic (verdict-chain-acyclic)`,
+    );
   }
 
   // ── the composition family (the uses closure) ────────────────────
   if (located !== undefined) {
     const rootManifest = pkg.constructs.find(c => c.keyword === 'package');
-    const usesEntries = rootManifest
-      ? tokensOf(rootManifest, 'uses')
-      : [];
-    const rootId = tokensOf(rootManifest ?? ({ keyword: '', ident: '', items: [] } as Construct), 'id')[0] ?? '';
-    const rootUrn = tokensOf(rootManifest ?? ({ keyword: '', ident: '', items: [] } as Construct), 'base_urn')[0]
-      ?? tokensOf(rootManifest ?? ({ keyword: '', ident: '', items: [] } as Construct), 'baseUrn')[0]
-      ?? '';
+    const usesEntries = rootManifest ? tokensOf(rootManifest, 'uses') : [];
+    const rootId =
+      tokensOf(
+        rootManifest ?? ({ keyword: '', ident: '', items: [] } as Construct),
+        'id',
+      )[0] ?? '';
+    const rootUrn =
+      tokensOf(
+        rootManifest ?? ({ keyword: '', ident: '', items: [] } as Construct),
+        'base_urn',
+      )[0] ??
+      tokensOf(
+        rootManifest ?? ({ keyword: '', ident: '', items: [] } as Construct),
+        'baseUrn',
+      )[0] ??
+      '';
 
     // C27: every uses entry resolves to a located package.
     for (const entry of usesEntries) {
       const id = entry.split('@')[0]!;
       if (!located.packages.has(id)) {
-        err('C27', `package "${rootId}": uses "${entry}" resolves to no package of the composition (uses-resolves)`);
+        err(
+          'C27',
+          `package "${rootId}": uses "${entry}" resolves to no package of the composition (uses-resolves)`,
+        );
       }
     }
 
@@ -575,11 +721,23 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       if (!target) {
         continue;
       }
-      const targetManifest = target.constructs.find(c => c.keyword === 'package');
-      const version = targetManifest ? tokensOf(targetManifest, 'version')[0] ?? '' : '';
-      const kind = targetManifest ? tokensOf(targetManifest, 'kind')[0] ?? '' : '';
-      if (kind === 'product_reference' && (pin === undefined || pin !== version)) {
-        err('C83', `package "${rootId}": uses "${entry}" — a product reference is imported by an exact version pin (expected @${version}) (abstract-import-pin)`);
+      const targetManifest = target.constructs.find(
+        c => c.keyword === 'package',
+      );
+      const version = targetManifest
+        ? (tokensOf(targetManifest, 'version')[0] ?? '')
+        : '';
+      const kind = targetManifest
+        ? (tokensOf(targetManifest, 'kind')[0] ?? '')
+        : '';
+      if (
+        kind === 'product_reference' &&
+        (pin === undefined || pin !== version)
+      ) {
+        err(
+          'C83',
+          `package "${rootId}": uses "${entry}" — a product reference is imported by an exact version pin (expected @${version}) (abstract-import-pin)`,
+        );
       }
     }
 
@@ -604,7 +762,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         // A collision within ONE package is the duplicate-id rule's
         // matter (C96); C28 is the cross-package redefinition.
         if (owner !== undefined && owner !== id) {
-          err('C28', `package "${id}" redefines ${k}, already declared in ${owner} — a downstream package references upstream ids, it never redefines them (uses-no-redefine)`);
+          err(
+            'C28',
+            `package "${id}" redefines ${k}, already declared in ${owner} — a downstream package references upstream ids, it never redefines them (uses-no-redefine)`,
+          );
         } else {
           declared.set(k, id);
         }
@@ -613,7 +774,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
 
     // C29: the uses graph over the closure is acyclic.
     const graph = new Map<string, string[]>();
-    const closure = new Map<string, ParsedPackage>([[rootId, pkg], ...located.packages]);
+    const closure = new Map<string, ParsedPackage>([
+      [rootId, pkg],
+      ...located.packages,
+    ]);
     for (const [id, pack] of closure) {
       const m = pack.constructs.find(c => c.keyword === 'package');
       const targets = (m ? tokensOf(m, 'uses') : [])
@@ -625,7 +789,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     }
     const usesCycle = findCycle(graph);
     if (usesCycle) {
-      err('C29', `the uses graph is cyclic: ${usesCycle.join(' → ')} — composition order would not exist (uses-cycle)`);
+      err(
+        'C29',
+        `the uses graph is cyclic: ${usesCycle.join(' → ')} — composition order would not exist (uses-cycle)`,
+      );
     }
 
     // C119: a requirement namespace an upstream package owns is never
@@ -642,11 +809,15 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       for (const ns of owned) {
         for (const c of pkg.constructs) {
           if (
-            (c.keyword === 'requirement_class' || c.keyword === 'requirement') &&
+            (c.keyword === 'requirement_class' ||
+              c.keyword === 'requirement') &&
             c.ident !== '' &&
             (c.ident === ns || c.ident.startsWith(`${ns}/`))
           ) {
-            err('C119', `package "${rootId}" declares ${c.keyword} ${c.ident} inside the namespace "${ns}" an upstream package owns — a downstream package references its provisions, it never declares into the owned namespace (namespace-pin-violation)`);
+            err(
+              'C119',
+              `package "${rootId}" declares ${c.keyword} ${c.ident} inside the namespace "${ns}" an upstream package owns — a downstream package references its provisions, it never declares into the owned namespace (namespace-pin-violation)`,
+            );
           }
         }
       }
@@ -656,7 +827,9 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     // the composed closure).
     const closureProcesses = new Set(
       [...closure.values()].flatMap(pack =>
-        pack.constructs.filter(c => c.keyword === 'process' && c.ident).map(c => c.ident),
+        pack.constructs
+          .filter(c => c.keyword === 'process' && c.ident)
+          .map(c => c.ident),
       ),
     );
     for (const c of pkg.constructs) {
@@ -665,7 +838,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
       for (const step of tokensOf(c, 'sequence')) {
         if (!closureProcesses.has(step)) {
-          err('C123', `document_module ${c.ident}: sequence "${step}" is not a declared process (document-module-references-resolve)`);
+          err(
+            'C123',
+            `document_module ${c.ident}: sequence "${step}" is not a declared process (document-module-references-resolve)`,
+          );
         }
       }
     }
@@ -677,15 +853,24 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         continue;
       }
       const upstreamSame = [...located.packages.values()].flatMap(pack =>
-        pack.constructs.filter(u => u.keyword === c.keyword && u.ident === c.ident),
+        pack.constructs.filter(
+          u => u.keyword === c.keyword && u.ident === c.ident,
+        ),
       );
       const upstreamEntries = new Set(
-        upstreamSame.flatMap(u => nested(u).filter(e => e.keyword === 'entry').map(e => e.ident)),
+        upstreamSame.flatMap(u =>
+          nested(u)
+            .filter(e => e.keyword === 'entry')
+            .map(e => e.ident),
+        ),
       );
       if (upstreamSame.length > 0) {
         for (const e of nested(c).filter(e => e.keyword === 'entry')) {
           if (!upstreamEntries.has(e.ident)) {
-            err('C141', `package "${rootId}" overlay ${c.keyword} "${c.ident}" declares entry "${e.ident}", which no upstream package's checklist carries — an overlay adds rec-bound entries, never orphans (overlay-entries-exist)`);
+            err(
+              'C141',
+              `package "${rootId}" overlay ${c.keyword} "${c.ident}" declares entry "${e.ident}", which no upstream package's checklist carries — an overlay adds rec-bound entries, never orphans (overlay-entries-exist)`,
+            );
           }
         }
       }
@@ -699,14 +884,18 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       if (supersedes.length > 0) {
         const siblings = siblingManifests(pkg);
         for (const urn of supersedes) {
-          const predecessor = siblings.find(m =>
-            tokensOf(m, 'base_urn').includes(urn) ||
-            tokensOf(m, 'baseUrn').includes(urn),
+          const predecessor = siblings.find(
+            m =>
+              tokensOf(m, 'base_urn').includes(urn) ||
+              tokensOf(m, 'baseUrn').includes(urn),
           );
           if (predecessor) {
             const backRefs = tokensOf(predecessor, 'superseded_by');
             if (backRefs.length > 0 && !backRefs.includes(rootUrn)) {
-              err('C113', `package "${rootId}": supersedes/replaces ${urn}, but that package declares superseded_by { ${backRefs.join(' ')} } without ${rootUrn} — opposite lineage edges between the same pair must agree (edition-lineage-coherent)`);
+              err(
+                'C113',
+                `package "${rootId}": supersedes/replaces ${urn}, but that package declares superseded_by { ${backRefs.join(' ')} } without ${rootUrn} — opposite lineage edges between the same pair must agree (edition-lineage-coherent)`,
+              );
             }
           }
         }
@@ -722,14 +911,23 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     const keys = tokensOf(m, 'license_key');
     for (const k of keys) {
       if (!/^std:[a-z0-9-]+$/.test(k)) {
-        err('C144', `package "${m.ident}": license_key "${k}" is not a catalog key — the key shape is std: followed by a lowercase kebab id, ^std:[a-z0-9-]+$ (license-key-shape)`);
+        err(
+          'C144',
+          `package "${m.ident}": license_key "${k}" is not a catalog key — the key shape is std: followed by a lowercase kebab id, ^std:[a-z0-9-]+$ (license-key-shape)`,
+        );
       }
     }
     if (keys.length > 1) {
-      err('C145', `package "${m.ident}": license_key declared again ("${keys[0]}" before "${keys[keys.length - 1]}") — a package declares at most one license key (license-key-unique)`);
+      err(
+        'C145',
+        `package "${m.ident}": license_key declared again ("${keys[0]}" before "${keys[keys.length - 1]}") — a package declares at most one license key (license-key-unique)`,
+      );
     }
     if (keys.length > 0 && tokensOf(m, 'license_holder').length === 0) {
-      err('C146', `package "${m.ident}": license_key "${keys[0]}" without a license_holder — a licensed package declares its copyright owner (license-holder-required)`);
+      err(
+        'C146',
+        `package "${m.ident}": license_key "${keys[0]}" without a license_holder — a licensed package declares its copyright owner (license-holder-required)`,
+      );
     }
 
     // C77: a current/preview edition is the register's newest entry.
@@ -738,9 +936,19 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     const editions = tokensOf(m, 'editions').map(e => e.replace(/^"|"$/g, ''));
     if (status === 'current' || status === 'preview') {
       const register = [...editions, ...(version !== '' ? [version] : [])];
-      const newest = register.map(Number).filter(Number.isFinite).sort((a, b) => b - a)[0];
-      if (newest !== undefined && version !== '' && Number(version) !== newest) {
-        err('C77', `package "${m.ident}": status ${status} but version "${version}" is not the edition register's newest entry (${newest}) (edition-status)`);
+      const newest = register
+        .map(Number)
+        .filter(Number.isFinite)
+        .sort((a, b) => b - a)[0];
+      if (
+        newest !== undefined &&
+        version !== '' &&
+        Number(version) !== newest
+      ) {
+        err(
+          'C77',
+          `package "${m.ident}": status ${status} but version "${version}" is not the edition register's newest entry (${newest}) (edition-status)`,
+        );
       }
     }
   }
@@ -752,30 +960,36 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     manifestPkg ?? ({ keyword: '', ident: '', items: [] } as Construct);
   const editionRegister = new Set<string>([
     ...tokensOf(manifestConstruct, 'editions'),
-    ...(tokensOf(manifestConstruct, 'version')),
+    ...tokensOf(manifestConstruct, 'version'),
   ]);
   // The pin discipline applies when the register EXISTS — a package
   // with no editions declares no pins to violate.
   if (editionRegister.size > 0) {
-  for (const c of pkg.constructs) {
-    if (c.keyword !== 'instance') {
-      continue;
-    }
-    for (const pin of nested(c).find(n => n.keyword === 'definition_versions')?.items ?? []) {
-      if (pin.kind !== 'line' || pin.tokens.length !== 1) {
+    for (const c of pkg.constructs) {
+      if (c.keyword !== 'instance') {
         continue;
       }
-      const pinned = pin.tokens[0]!.replace(/^"|"$/g, '');
-      if (!editionRegister.has(pinned)) {
-        err('C80', `instance ${c.ident}: definition_versions pin ${pin.key} : "${pinned}" does not resolve against the edition register { ${[...editionRegister].join(' ')} } — every executed definition is version-pinned to a declared edition (INV-8) (edition-pin-resolves)`);
+      for (const pin of nested(c).find(n => n.keyword === 'definition_versions')
+        ?.items ?? []) {
+        if (pin.kind !== 'line' || pin.tokens.length !== 1) {
+          continue;
+        }
+        const pinned = pin.tokens[0]!.replace(/^"|"$/g, '');
+        if (!editionRegister.has(pinned)) {
+          err(
+            'C80',
+            `instance ${c.ident}: definition_versions pin ${pin.key} : "${pinned}" does not resolve against the edition register { ${[...editionRegister].join(' ')} } — every executed definition is version-pinned to a declared edition (INV-8) (edition-pin-resolves)`,
+          );
+        }
       }
     }
-  }
   }
 
   // ── C155 power-type-chain: the of-chain is coherent and acyclic ─
   const instanceIds = new Set(
-    pkg.constructs.filter(c => c.keyword === 'instance' && c.ident).map(c => c.ident),
+    pkg.constructs
+      .filter(c => c.keyword === 'instance' && c.ident)
+      .map(c => c.ident),
   );
   const ofAdj = new Map<string, string[]>();
   for (const c of pkg.constructs) {
@@ -787,10 +1001,15 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       if (instanceIds.has(of)) {
         ofAdj.set(c.ident, [of]);
         const links = lines(c)
-          .filter(l => l.key === 'model' || l.key === 'group' || l.key === 'family')
+          .filter(
+            l => l.key === 'model' || l.key === 'group' || l.key === 'family',
+          )
           .map(l => l.key);
         if (links.length > 0) {
-          err('C155', `instance ${c.ident}: of "${of}" names an instance and the instance carries an upward ${links.join('/')} link — the power-type chain and the subject-chain profile do not mix (power-type-chain)`);
+          err(
+            'C155',
+            `instance ${c.ident}: of "${of}" names an instance and the instance carries an upward ${links.join('/')} link — the power-type chain and the subject-chain profile do not mix (power-type-chain)`,
+          );
         }
       }
     }
@@ -804,7 +1023,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       path.push(cur);
       cur = ofAdj.get(cur)![0];
       if (path.includes(cur)) {
-        err('C155', `the power-type of-chain is cyclic: ${[...path, cur].join(' → ')} (power-type-chain)`);
+        err(
+          'C155',
+          `the power-type of-chain is cyclic: ${[...path, cur].join(' → ')} (power-type-chain)`,
+        );
         break;
       }
     }
@@ -817,7 +1039,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       const seenAliases = new Set<string>();
       for (const t of tokensOf(c, 'aliases')) {
         if (seenAliases.has(t)) {
-          err('C110', `term ${c.ident}: aliases: duplicate entry "${t}" — one entry has one home (term-alias-shape)`);
+          err(
+            'C110',
+            `term ${c.ident}: aliases: duplicate entry "${t}" — one entry has one home (term-alias-shape)`,
+          );
         }
         seenAliases.add(t);
       }
@@ -840,7 +1065,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     }
     for (const [id, n] of valueIds) {
       if (n > 1) {
-        err('C111', `dimension ${c.ident}: duplicate value id "${id}" (dimension-shape)`);
+        err(
+          'C111',
+          `dimension ${c.ident}: duplicate value id "${id}" (dimension-shape)`,
+        );
       }
     }
   }
@@ -857,7 +1085,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     }
     const owner = annexLetters.get(letter);
     if (owner !== undefined) {
-      err('C128', `part_annex ${c.ident}: letter "${letter}" is already keyed by ${owner} (part-annex-register)`);
+      err(
+        'C128',
+        `part_annex ${c.ident}: letter "${letter}" is already keyed by ${owner} (part-annex-register)`,
+      );
     } else {
       annexLetters.set(letter, c.ident);
     }
@@ -1042,7 +1273,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
       for (const [id, n] of seen) {
         if (n > 1) {
-          err('C132', `application_declaration ${c.ident}: document "${id}" is declared ${n} times (application-declaration-shape)`);
+          err(
+            'C132',
+            `application_declaration ${c.ident}: document "${id}" is declared ${n} times (application-declaration-shape)`,
+          );
         }
       }
     }
@@ -1057,7 +1291,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
       for (const [id, n] of seen) {
         if (n > 1) {
-          err('C141', `test_report_checklist ${c.ident}: entry "${id}" is declared ${n} times (checklist-shape)`);
+          err(
+            'C141',
+            `test_report_checklist ${c.ident}: entry "${id}" is declared ${n} times (checklist-shape)`,
+          );
         }
       }
     }
@@ -1071,7 +1308,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         }
         const type = tokensOf(v, 'type')[0] ?? '';
         if (type === 'expression' && tokensOf(v, 'expression').length === 0) {
-          err('C125', `calculation ${c.ident}: variant ${v.ident}: type expression requires the expression facet (formula-variant-shape)`);
+          err(
+            'C125',
+            `calculation ${c.ident}: variant ${v.ident}: type expression requires the expression facet (formula-variant-shape)`,
+          );
         }
       }
     }
@@ -1084,7 +1324,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         ...lines(c).filter(l => l.key === 'presentation'),
       ];
       if (presentations.length === 0) {
-        err('C130', `identity_slot ${c.ident}: at least one presentation channel is required (identity-and-aspect-references)`);
+        err(
+          'C130',
+          `identity_slot ${c.ident}: at least one presentation channel is required (identity-and-aspect-references)`,
+        );
       }
     }
 
@@ -1093,7 +1336,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'dataspace') {
       for (const entry of tokensOf(c, 'policies')) {
         if (!policies.has(entry)) {
-          err('C104', `dataspace ${c.ident}: policies entry "${entry}" declares no policy of that id (dataspace-references-resolve)`);
+          err(
+            'C104',
+            `dataspace ${c.ident}: policies entry "${entry}" declares no policy of that id (dataspace-references-resolve)`,
+          );
         }
       }
     }
@@ -1103,7 +1349,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'process') {
       for (const entry of tokensOf(c, 'organs')) {
         if (!organs.has(entry)) {
-          err('C121', `process ${c.ident}: organs "${entry}" is not a declared governance organ (abstract-process-references-resolve)`);
+          err(
+            'C121',
+            `process ${c.ident}: organs "${entry}" is not a declared governance organ (abstract-process-references-resolve)`,
+          );
         }
       }
     }
@@ -1113,7 +1362,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'scheme_type') {
       for (const entry of tokensOf(c, 'determination')) {
         if (!activityKinds.has(entry)) {
-          err('C122', `scheme_type ${c.ident}: determination "${entry}" is not a declared scheme activity kind (scheme-type-resolves)`);
+          err(
+            'C122',
+            `scheme_type ${c.ident}: determination "${entry}" is not a declared scheme activity kind (scheme-type-resolves)`,
+          );
         }
       }
     }
@@ -1122,7 +1374,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'formula_note') {
       for (const entry of tokensOf(c, 'applies_to')) {
         if (!symbols.has(entry)) {
-          err('C126', `formula_note ${c.ident}: applies_to "${entry}" is not a declared symbol (formula-note-targets-resolve)`);
+          err(
+            'C126',
+            `formula_note ${c.ident}: applies_to "${entry}" is not a declared symbol (formula-note-targets-resolve)`,
+          );
         }
       }
     }
@@ -1136,7 +1391,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         }
         for (const f of nested(section)) {
           if (f.keyword === 'form' && !forms.has(f.ident)) {
-            err('C140', `test_report_skeleton ${c.ident}: section ${section.ident}: form ${f.ident}: the entry id is not a declared form (test-report-skeleton-references)`);
+            err(
+              'C140',
+              `test_report_skeleton ${c.ident}: section ${section.ident}: form ${f.ident}: the entry id is not a declared form (test-report-skeleton-references)`,
+            );
           }
         }
       }
@@ -1147,17 +1405,26 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     if (c.keyword === 'approval') {
       for (const actor of tokensOf(c, 'actor')) {
         if (!roles.has(actor)) {
-          err('C143', `approval ${c.ident}: actor "${actor}" is not a declared role (approval-references-resolve)`);
+          err(
+            'C143',
+            `approval ${c.ident}: actor "${actor}" is not a declared role (approval-references-resolve)`,
+          );
         }
       }
       for (const approver of tokensOf(c, 'approve_by')) {
         if (!roles.has(approver)) {
-          err('C143', `approval ${c.ident}: approve_by "${approver}" is not a declared role (approval-references-resolve)`);
+          err(
+            'C143',
+            `approval ${c.ident}: approve_by "${approver}" is not a declared role (approval-references-resolve)`,
+          );
         }
       }
       for (const store of tokensOf(c, 'approval_record')) {
         if (!classStores.has(store)) {
-          err('C143', `approval ${c.ident}: approval_record "${store}" is not a declared class store (approval-references-resolve)`);
+          err(
+            'C143',
+            `approval ${c.ident}: approval_record "${store}" is not a declared class store (approval-references-resolve)`,
+          );
         }
       }
     }
@@ -1186,13 +1453,19 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         if (processes.size > 0) {
           for (const target of targets) {
             if (!processes.has(target)) {
-              err('C142', `exclusive_gateway ${c.ident}: edge ${e.ident} targets "${target}", which is not a declared process (gateway-edges-resolve)`);
+              err(
+                'C142',
+                `exclusive_gateway ${c.ident}: edge ${e.ident} targets "${target}", which is not a declared process (gateway-edges-resolve)`,
+              );
             }
           }
         }
       }
       if (defaults > 1) {
-        err('C142', `exclusive_gateway ${c.ident}: ${defaults} default edges — exactly one catch-all is allowed (gateway-edges-resolve)`);
+        err(
+          'C142',
+          `exclusive_gateway ${c.ident}: ${defaults} default edges — exactly one catch-all is allowed (gateway-edges-resolve)`,
+        );
       }
     }
 
@@ -1205,7 +1478,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         }
         for (const decider of tokensOf(approval, 'decided_by')) {
           if (!organs.has(decider)) {
-            err('C120', `participant_kind ${c.ident}: approval.decided_by "${decider}" is not a declared governance organ (framework-references-resolve)`);
+            err(
+              'C120',
+              `participant_kind ${c.ident}: approval.decided_by "${decider}" is not a declared governance organ (framework-references-resolve)`,
+            );
           }
         }
       }

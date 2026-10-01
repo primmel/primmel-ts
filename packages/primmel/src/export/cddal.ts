@@ -114,7 +114,10 @@ function quantity(v: QuantityValue): string {
  *  the address's trailing `<id>.<field>` segment (the C89
  *  longest-prefix rule in miniature: a block addressed at an element's
  *  field belongs to that element's field). */
-function readL10n(files: string[], read: (p: string) => string): Map<string, { tag: string; value: string }[]> {
+function readL10n(
+  files: string[],
+  read: (p: string) => string,
+): Map<string, { tag: string; value: string }[]> {
   const out = new Map<string, { tag: string; value: string }[]>();
   const block = /text\s+([\w./#-]+)\s*\{([\s\S]*?)\}/g;
   const spell = /spell\s+([\w-]+)\s+"((?:[^"\\]|\\.)*)"/g;
