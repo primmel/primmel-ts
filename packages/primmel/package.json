@@ -78,6 +78,11 @@
       "import": "./dist/src/ser-des/shape-front-end.js",
       "require": "./dist/src/ser-des/shape-front-end.js",
       "types": "./dist/src/ser-des/shape-front-end.d.ts"
+    },
+    "./runtime": {
+      "import": "./dist/src/runtime.js",
+      "require": "./dist/src/runtime.js",
+      "types": "./dist/src/runtime.d.ts"
     }
   },
   "scripts": {

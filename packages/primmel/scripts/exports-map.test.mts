@@ -19,6 +19,7 @@ const SUBPATHS: [string, string[]][] = [
   ['@primmel/primmel/ser-des/package', ['loadPackage', 'loadPackageWithIssues', 'loadPackageWithProvenance', 'groupBySourceFile', 'packageFiles']],
   ['@primmel/primmel/ser-des/config/twin', []],
   ['@primmel/primmel/ser-des/shape', ['parseFromShape', 'resolveParsanolTs']],
+  ['@primmel/primmel/runtime', ['executeRun', 'evaluateExpression']],
 ];
 
 for (const [spec, expected] of SUBPATHS) {

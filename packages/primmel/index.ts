@@ -198,6 +198,15 @@ export {
   type CheckLevel,
 } from './src/check-rules';
 export {
+  executeRun,
+  evaluateExpression,
+  type Run,
+  type RunInput,
+  type RunProgramStep,
+  type RunVerdict,
+  type RunEvidenceRecord,
+} from './src/runtime';
+export {
   parseSpellingCode,
   parseConversionCode,
   isSpellingCode,
