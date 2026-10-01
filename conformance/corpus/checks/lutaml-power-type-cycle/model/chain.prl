@@ -1,0 +1,29 @@
+attribute_definition serial_number {
+  name "Serial number"
+  value_type string
+  origin design-fixed
+  scope family
+  category metrological
+}
+
+subject LC-Family {
+  has { attributes { serial_number } }
+}
+
+class LoadCellSample {
+  attribute serial_number, String { definition "the marking" modality SHALL }
+}
+
+instance a {
+  of b
+  level family
+  definition_versions { LC-Family : "2021" attributes : "1.0.0" }
+  serial_number = "HBK-001"
+}
+
+instance b {
+  of a
+  level family
+  definition_versions { LC-Family : "2021" attributes : "1.0.0" }
+  serial_number = "HBK-002"
+}

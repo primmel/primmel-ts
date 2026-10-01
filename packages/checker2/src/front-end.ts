@@ -15,6 +15,9 @@
 //   { kwline: { key, value } }    — `key value…` (the value run may
 //                                    carry {blockvalue: […]} nodes)
 //   { entry: { key, value? } }    — `key : value…`
+//   { assignment: { key, value } }— `key = value…` (the LutaML
+//                                    instance surface; the value run
+//                                    may be a token ARRAY: 2.2 t)
 //   a string                      — a bare or quoted token
 // A value run is greedy on its own line (the grammar's hgap
 // continuation): `start_event begin end_event done` on one line is ONE
@@ -139,7 +142,7 @@ function toItem(node: unknown): Item | null {
       ? { kind: 'construct', construct: c, tokens: [], blocks: [] }
       : null;
   }
-  for (const key of ['kwline', 'entry'] as const) {
+  for (const key of ['kwline', 'entry', 'assignment'] as const) {
     if (key in n) {
       const line = n[key] as ShapeNode;
       const run = runItems(line['value']);
@@ -163,7 +166,10 @@ export function toConstruct(node: unknown): Construct | null {
   if (keyword === '') {
     return null;
   }
-  const ident = tokenText(n['ident']);
+  // The LutaML attribute surface separates name and type with a comma
+  // that rides the bare token (`attribute e_max, Mass`) — the kernel's
+  // parseLutamlAttribute strips it; so does the second implementation.
+  const ident = tokenText(n['ident']).replace(/,$/, '');
   const body = n['body'];
   const items: Item[] = [];
   if (Array.isArray(body)) {
