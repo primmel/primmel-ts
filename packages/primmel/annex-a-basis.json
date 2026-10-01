@@ -1,0 +1,386 @@
+{
+ "process": {
+  "basis": "MMEL process node",
+  "mode": "inherit"
+ },
+ "approval": {
+  "basis": "MMEL approval node",
+  "mode": "inherit"
+ },
+ "exclusive_gateway": {
+  "basis": "MMEL gateway node",
+  "mode": "inherit"
+ },
+ "start": {
+  "basis": "MMEL start event",
+  "mode": "inherit"
+ },
+ "end": {
+  "basis": "MMEL end event",
+  "mode": "inherit"
+ },
+ "timer": {
+  "basis": "MMEL timer event",
+  "mode": "inherit"
+ },
+ "signalcatch": {
+  "basis": "MMEL signal event (docs: deprecation candidate)",
+  "mode": "inherit"
+ },
+ "role": {
+  "basis": "MMEL role",
+  "mode": "inherit"
+ },
+ "term": {
+  "basis": "MMEL term",
+  "mode": "inherit"
+ },
+ "reference": {
+  "basis": "MMEL reference",
+  "mode": "inherit"
+ },
+ "link": {
+  "basis": "MMEL link",
+  "mode": "inherit"
+ },
+ "figure": {
+  "basis": "MMEL multimedia",
+  "mode": "inherit"
+ },
+ "table": {
+  "basis": "MMEL table",
+  "mode": "inherit"
+ },
+ "enum": {
+  "basis": "LutaML enum",
+  "mode": "inherit"
+ },
+ "map_profile": {
+  "basis": "MMEL mapping",
+  "mode": "inherit"
+ },
+ "note": {
+  "basis": "MMEL note",
+  "mode": "inherit"
+ },
+ "provision": {
+  "basis": "MMEL provision",
+  "mode": "inherit"
+ },
+ "conformance_test": {
+  "basis": "MMEL measurement validation test",
+  "mode": "inherit"
+ },
+ "data_registry": {
+  "basis": "MMEL registry",
+  "mode": "inherit"
+ },
+ "class": {
+  "basis": "LutaML class / MMEL data class",
+  "mode": "inherit"
+ },
+ "variable": {
+  "basis": "MMEL measurement variable",
+  "mode": "inherit"
+ },
+ "view_profile": {
+  "basis": "MMEL view profile",
+  "mode": "inherit"
+ },
+ "canvas": {
+  "basis": "MMEL diagram",
+  "mode": "inherit"
+ },
+ "package": {
+  "basis": "MMEL metadata",
+  "mode": "inherit"
+ },
+ "text": {
+  "basis": "MMEL section",
+  "mode": "inherit"
+ },
+ "subject": {
+  "basis": "IS/HAS/DOES over O",
+  "mode": "inherit"
+ },
+ "instance": {
+  "basis": "O with HAS (LutaML assignment form)",
+  "mode": "composition"
+ },
+ "instrument": {
+  "basis": "Subject (v2 spelling)",
+  "mode": "composition"
+ },
+ "symbol": {
+  "basis": "P with unit/kind",
+  "mode": "composition"
+ },
+ "calculation": {
+  "basis": "T over values",
+  "mode": "composition"
+ },
+ "state_machine": {
+  "basis": "T-decomposition of dynamics",
+  "mode": "composition"
+ },
+ "condition_set": {
+  "basis": "V-restriction",
+  "mode": "composition"
+ },
+ "constraint": {
+  "basis": "Predicate over P/V",
+  "mode": "composition"
+ },
+ "invariant": {
+  "basis": "Always-holds predicate",
+  "mode": "composition"
+ },
+ "form": {
+  "basis": "MMEL form (element semantics)",
+  "mode": "composition"
+ },
+ "subform": {
+  "basis": "MMEL subform",
+  "mode": "composition"
+ },
+ "dimension": {
+  "basis": "P with closed V-set (applicability)",
+  "mode": "composition"
+ },
+ "aspect": {
+  "basis": "Named HAS grouping",
+  "mode": "composition"
+ },
+ "behavior": {
+  "basis": "Named DOES grouping",
+  "mode": "composition"
+ },
+ "capability": {
+  "basis": "Named IS grouping",
+  "mode": "composition"
+ },
+ "test_sequence": {
+  "basis": "Rho(T)-ordering",
+  "mode": "composition"
+ },
+ "test_point_set": {
+  "basis": "V-set of operating points",
+  "mode": "composition"
+ },
+ "measurement": {
+  "basis": "V with provenance",
+  "mode": "composition"
+ },
+ "monitor": {
+  "basis": "Standing predicate over a trajectory",
+  "mode": "composition"
+ },
+ "artifact_definition": {
+  "basis": "Rho of a produced output-kind",
+  "mode": "composition"
+ },
+ "artifact_instance": {
+  "basis": "A produced V-bundle",
+  "mode": "composition"
+ },
+ "comment": {
+  "basis": "Attached prose",
+  "mode": "composition"
+ },
+ "dataspace": {
+  "basis": "Guard over rho(T)",
+  "mode": "composition"
+ },
+ "policy": {
+  "basis": "Guard rules over rho(T)",
+  "mode": "composition"
+ },
+ "predicate": {
+  "basis": "Predicate",
+  "mode": "composition"
+ },
+ "dual": {
+  "basis": "Designed/exhibited duality",
+  "mode": "extension"
+ },
+ "quantity_register": {
+  "basis": "The quantity type system",
+  "mode": "extension"
+ },
+ "verdict": {
+  "basis": "Re-runnable function over facts",
+  "mode": "composition"
+ },
+ "requirement": {
+  "basis": "MMEL provision + scope",
+  "mode": "composition"
+ },
+ "requirement_class": {
+  "basis": "MMEL provision scope",
+  "mode": "composition"
+ },
+ "conformance_class": {
+  "basis": "Provision grouping",
+  "mode": "composition"
+ },
+ "connector_profile": {
+  "basis": "External interface binding to P/V",
+  "mode": "composition"
+ },
+ "passport": {
+  "basis": "The attestation bundle projection",
+  "mode": "composition"
+ },
+ "discrepancy_record": {
+  "basis": "A fact about a fact",
+  "mode": "composition"
+ },
+ "attestation": {
+  "basis": "The certificate lineage",
+  "mode": "extension"
+ },
+ "promise_set": {
+  "basis": "The claim set the certificate projects",
+  "mode": "extension"
+ },
+ "certificate_template": {
+  "basis": "The print projection contract",
+  "mode": "extension"
+ },
+ "identity_slot": {
+  "basis": "Scheme identity properties",
+  "mode": "extension"
+ },
+ "attribute_definition": {
+  "basis": "The evidence discipline over properties",
+  "mode": "extension"
+ },
+ "evaluation_dimensions": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "evaluation_profile": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "calculation_context": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "common_test_condition": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "test_report_skeleton": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "test_report_checklist": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "verification_pathway": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "lab_selection_criterion": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "sample_selection_rule": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "specimen_governance_rule": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "formula_note": {
+  "basis": "Clause 20 register",
+  "mode": "extension"
+ },
+ "formulas_used": {
+  "basis": "Derivable",
+  "mode": "retract-candidate"
+ },
+ "governance_organ": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "participant_kind": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "decision_rule": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "declaration_gate": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "declaration_kind": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "declaration_status": {
+  "basis": "Derivable from the edition register",
+  "mode": "retract-candidate"
+ },
+ "scheme_type": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "scheme_definition": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "scheme_lifecycle": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "scheme_activity_kind": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "framework_document": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "document_module": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "informative_annex": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "part_annex": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "competence_kind": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "activity_archetype": {
+  "basis": "The OIML-CS framework (clause 20)",
+  "mode": "extension"
+ },
+ "auto_inclusion": {
+  "basis": "Expressed by uses composition",
+  "mode": "retract-candidate"
+ },
+ "application_declaration": {
+  "basis": "The scheme application documents",
+  "mode": "extension"
+ },
+ "reference_material": {
+  "basis": "MMEL reference / table (the reference-material carrier)",
+  "mode": "inherit"
+ },
+ "document_precedence": {
+  "basis": "The edition lineage (which document governs)",
+  "mode": "extension"
+ }
+}

@@ -24,7 +24,17 @@ interface Row {
   collection: string;
   since: string;
   clause: string;
+  basis: string;
 }
+
+// The semantic basis (the full flow's phase 1): every construct's
+// basis and mode — a documented MMEL primitive it realizes, a named
+// composition over the eight terms, an extension with rationale, or a
+// retraction candidate. The map is data (annex-a-basis.json, kept
+// beside this script); a construct missing from it fails the check.
+const basisMap = JSON.parse(
+  readFileSync(join(import.meta.dirname, '../annex-a-basis.json'), 'utf8'),
+) as Record<string, { basis: string; mode: string }>;
 
 function specAnnexPath(): string {
   const env = process.env.PRIMMEL_SPEC_SOURCES;
@@ -43,7 +53,7 @@ function specAnnexPath(): string {
 function parseRows(text: string): Row[] {
   const rows: Row[] = [];
   for (const line of text.split('\n')) {
-    const m = line.match(/^\|`([a-z_]+)`\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|?$/);
+    const m = line.match(/^\|`([a-z_]+)`\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)(?:\|([^|]*))?\|?$/);
     if (!m) {
       continue;
     }
@@ -57,6 +67,7 @@ function parseRows(text: string): Row[] {
       collection: (m[3] ?? '').trim(),
       since: (m[4] ?? '').trim(),
       clause: (m[5] ?? '').trim(),
+      basis: (m[6] ?? '').trim(),
     });
   }
   return rows;
@@ -64,7 +75,7 @@ function parseRows(text: string): Row[] {
 
 function rowLine(r: Row): string {
   const aliasCell = r.aliases.length > 0 ? '`' + r.aliases.join('` `') + '`' : '';
-  return `|\`${r.keyword}\` |${aliasCell ? ' ' + aliasCell : ''} |${r.collection ? ' ' + r.collection : ''} |${r.since ? ' ' + r.since : ''} |${r.clause ? ' ' + r.clause : ''}`;
+  return `|\`${r.keyword}\` |${aliasCell ? ' ' + aliasCell : ''} |${r.collection ? ' ' + r.collection : ''} |${r.since ? ' ' + r.since : ''} |${r.clause ? ' ' + r.clause : ''} |${r.basis ? ' ' + r.basis : ''}`;
 }
 
 // ── the parser's mechanical truth ────────────────────────────────────
@@ -105,6 +116,8 @@ for (const pr of parserRows) {
   pr.collection = existing?.collection ?? pr.collection;
   pr.since = existing?.since ?? '?? (fill before merge)';
   pr.clause = existing?.clause ?? '?? (fill before merge)';
+  const basis = basisMap[pr.keyword];
+  pr.basis = basis ? `${basis.mode}: ${basis.basis}` : '?? (basis missing — map it)';
 }
 
 // The triage list: constructs the specification has not yet registered
@@ -125,7 +138,16 @@ const mode = process.argv[2] ?? '--check';
 
 if (mode === '--write') {
   const lines = text.split('\n');
-  const firstRow = lines.findIndex(l => /^\|`[a-z_]+`/.test(l));
+  // The replacement window is the REGISTRY table's rows only: the
+  // annex carries other keyword-shaped tables above it (the special
+  // declarations), so the window starts after the registry's own
+  // header row (|Keyword …).
+  const registryHeader = lines.findIndex(l => /^\|Keyword/.test(l));
+  if (registryHeader < 0) {
+    console.error('the construct registry header row was not found — refusing to write');
+    process.exit(1);
+  }
+  const firstRow = lines.findIndex((l, i) => i > registryHeader && /^\|`[a-z_]+`/.test(l));
   const lastRow =
     lines.length -
     1 -
@@ -163,6 +185,11 @@ for (const pr of parserRows) {
   }
   if (sr.since.includes('??') || sr.clause.includes('??')) {
     drift.push(`${pr.keyword}: editorial placeholder unfilled — the construction freeze requires the section first`);
+  }
+  if (sr.basis !== pr.basis) {
+    drift.push(
+      `mechanical drift on ${pr.keyword}: basis column "${sr.basis}" does not match the map ("${pr.basis}")`,
+    );
   }
 }
 for (const sr of specRows) {
