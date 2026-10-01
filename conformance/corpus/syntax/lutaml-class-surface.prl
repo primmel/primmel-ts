@@ -1,0 +1,8 @@
+# The LutaML attribute surface (the normative form, phase 2): the
+# class declares its attributes as `attribute <name>, <Type> { facets }`
+# with definition, cardinality, values, modality and reference.
+class LoadCellSample {
+  attribute serial_number, String { definition "The manufacturer's serial number" modality SHALL }
+  attribute e_max, Mass { cardinality 1..1 }
+  attribute accuracy_class, AccuracyClass { values A B C D }
+}

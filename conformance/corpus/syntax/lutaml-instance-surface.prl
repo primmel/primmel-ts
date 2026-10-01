@@ -1,0 +1,12 @@
+# The LutaML instance surface: the ASSIGNMENT FORM — `attribute = value`
+# with quantity units — beside the of-chain refinement.
+class C {
+  attribute a, String { definition "a" }
+  attribute e_max, Mass { cardinality 1..1 }
+}
+
+instance smp-001 {
+  of C
+  a = "HBK-001"
+  e_max = 2.2 t
+}
