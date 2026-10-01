@@ -34,7 +34,11 @@ describe('the LutaML class surface', () => {
 
   it('the dump preserves the authored form and is a fixed point', () => {
     const out = dump(load(src));
-    assert.ok(out.includes('attribute serial_number, String { definition "The serial number" modality SHALL }'));
+    assert.ok(
+      out.includes(
+        'attribute serial_number, String { definition "The serial number" modality SHALL }',
+      ),
+    );
     assert.ok(out.includes('attribute e_max, Mass { cardinality 1..1 }'));
     assert.equal(dump(load(out)), out);
   });
@@ -51,30 +55,33 @@ describe('the LutaML class surface', () => {
 
 describe('the LutaML instance surface (the assignment form)', () => {
   it('parses attribute = value assignments with quantities', () => {
-    const inst = load([
-      'class C {',
-      '  attribute serial_number, String { definition "sn" }',
-      '  attribute e_max, Mass { cardinality 1..1 }',
-      '}',
-      'instance smp-001 {',
-      '  of C',
-      '  serial_number = "HBK-001"',
-      '  e_max = 2.2 t',
-      '}',
-    ].join('\n')).instances[0]!;
+    const inst = load(
+      [
+        'class C {',
+        '  attribute serial_number, String { definition "sn" }',
+        '  attribute e_max, Mass { cardinality 1..1 }',
+        '}',
+        'instance smp-001 {',
+        '  of C',
+        '  serial_number = "HBK-001"',
+        '  e_max = 2.2 t',
+        '}',
+      ].join('\n'),
+    ).instances[0]!;
     assert.equal(inst.id, 'smp-001');
     assert.equal(inst.of, 'C');
-    assert.deepEqual(inst.has.attributes['serial_number'], { value: 'HBK-001' });
+    assert.deepEqual(inst.has.attributes['serial_number'], {
+      value: 'HBK-001',
+    });
     assert.deepEqual(inst.has.attributes['e_max'], { value: '2.2', unit: 't' });
   });
 
   it('the has-facet form still parses (the migration window)', () => {
-    const inst = load([
-      'instance i {',
-      '  of C',
-      '  has { attributes { a : "v" } }',
-      '}',
-    ].join('\n')).instances[0]!;
+    const inst = load(
+      ['instance i {', '  of C', '  has { attributes { a : "v" } }', '}'].join(
+        '\n',
+      ),
+    ).instances[0]!;
     assert.deepEqual(inst.has.attributes['a'], { value: 'v' });
   });
 });

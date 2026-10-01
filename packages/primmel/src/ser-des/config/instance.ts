@@ -146,7 +146,10 @@ function parseInstanceHas(block: string, result: Instance): void {
 }
 
 /** One assignment's value: `v`, `v unit`, or a quoted string. */
-function readQuantity(tokens: string[]): { value: string | number; unit?: string } {
+function readQuantity(tokens: string[]): {
+  value: string | number;
+  unit?: string;
+} {
   if (tokens.length === 0) {
     return { value: '' };
   }
