@@ -44,6 +44,9 @@ export type ResolvableDataClass = {
 
 export interface DataAttribute {
   id: string;
+  /** The authored surface — 'lutaml' or undefined (the v2 field
+   *  dialect); carried through the migration window for the dump. */
+  surface?: 'lutaml';
   type: string;
   modality: string;
   cardinality: string;
