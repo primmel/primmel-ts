@@ -2913,6 +2913,28 @@
     "clean": true
    },
    "summary": "A class extending an INSTANCE (the prototype) checks clean: the production unit instantiates the product line, whose prototype is the characterized family instance — the delegation walk crosses the class plane."
+  },
+  {
+   "id": "syn-12-pos-lutaml-class",
+   "clause": "SYN-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/lutaml-class-surface.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The LutaML attribute surface parses: attribute <name>, <Type> { facets } with definition, cardinality, values, modality."
+  },
+  {
+   "id": "syn-13-pos-lutaml-instance",
+   "clause": "SYN-01",
+   "polarity": "positive",
+   "kind": "parse",
+   "path": "syntax/lutaml-instance-surface.prl",
+   "expect": {
+    "parse": "ok"
+   },
+   "summary": "The LutaML instance surface parses: the assignment form attribute = value with quantity units."
   }
  ]
 }
