@@ -367,6 +367,120 @@ export function evaluateExpression(expr: string, env: RunEnv): number {
   return v;
 }
 
+/** One certificate claim as projected: the declared value with its
+ *  provenance, and the validation outcome the run recorded. */
+export interface CertificateClaim {
+  id: string;
+  declared?: { value: number | string; unit?: string; source?: string };
+  validatedBy?: string;
+  /** The run verdict this claim rides ('' when the claim carries no
+   *  validation reference). */
+  outcome: 'pass' | 'fail' | 'indeterminate' | 'unexecuted';
+  value?: number;
+}
+
+/** The projected certificate (file 12, phase 4): the attestation's
+ *  claims with their declared values (read from the authored lineage —
+ *  never re-entered) and the validation outcomes the run recorded.
+ *  Deterministic; JSON-stable. */
+export interface CertificateProjection {
+  attestation: string;
+  subject?: string;
+  statement?: string;
+  claims: CertificateClaim[];
+}
+
+/** Project the certificate from an executed run: the attestation's
+ *  claims, each judged by the run verdict its validated_by names. */
+export function projectCertificate(
+  standard: Standard,
+  run: Run,
+  attestationId: string,
+): CertificateProjection {
+  const att = standard.attestations?.find(a => a.id === attestationId);
+  if (!att) {
+    throw new Error(`runtime: no attestation "${attestationId}" is declared`);
+  }
+
+  // The declared values: the lineage instance each claim names — the
+  // claim's declared path's leading id is the declaration instance.
+  const claims: CertificateClaim[] = [];
+  for (const claim of att.claims ?? []) {
+    const id = claim.promise;
+    // The declared path names the declaration stage (e.g. the
+    // application declaration's id); the lineage INSTANCE carries the
+    // suffix -declared on it — resolve either spelling.
+    const declaredId = claim.declared?.split('.')[0] ?? '';
+    const source =
+      standard.instances.find(i => i.id === declaredId) ??
+      standard.instances.find(i => i.id === `${declaredId}-declared`) ??
+      standard.instances.find(i => i.id === att.subject);
+    // The declared value rides the attributes — or, for a
+    // classification claim, the dimensions map.
+    const raw = source
+      ? ((
+          source.has?.attributes as unknown as
+            | Record<
+                string,
+                {
+                  value?: unknown;
+                  unit?: string;
+                  provenance?: { source?: string };
+                }
+              >
+            | undefined
+        )?.[id] ??
+        (
+          source.has?.dimensions as unknown as
+            Record<string, string | number> | undefined
+        )?.[id])
+      : undefined;
+    const value =
+      typeof raw === 'object' && raw !== null
+        ? (raw as { value?: unknown }).value
+        : raw;
+    const declared =
+      value === undefined
+        ? undefined
+        : {
+            value: (typeof value === 'object' && value !== null
+              ? (value as { value?: number | string }).value
+              : value) as number | string,
+            unit: (raw as { unit?: string } | undefined)?.unit,
+            source: (raw as { provenance?: { source?: string } } | undefined)
+              ?.provenance?.source,
+          };
+    const verdictId = claim.validatedBy ?? '';
+    const matched = run.verdicts.filter(
+      v => v.id === verdictId || verdictId === '',
+    );
+    const outcome: CertificateClaim['outcome'] =
+      verdictId === ''
+        ? 'unexecuted'
+        : matched.length === 0
+          ? 'unexecuted'
+          : matched.every(v => v.outcome === 'pass')
+            ? 'pass'
+            : matched.some(v => v.outcome === 'fail')
+              ? 'fail'
+              : 'indeterminate';
+    claims.push({
+      id,
+      declared,
+      validatedBy: verdictId || undefined,
+      outcome,
+      value:
+        matched.length > 0 ? matched[matched.length - 1]!.value : undefined,
+    });
+  }
+  return {
+    attestation: att.id,
+    subject: att.subject,
+    statement: att.statement,
+    claims,
+  };
+}
+
 /** ── The run ────────────────────────────────────────────────────── */
 
 interface InstanceValueLike {
@@ -429,6 +543,11 @@ export interface ExecuteRunOptions {
   test?: string;
   /** The requirement judged (defaults to the test's targets). */
   requirement?: string;
+  /** Verdict constructs to execute over each input (the attestation
+   *  claims' validated_by set) — each derive evaluates as the
+   *  judgment, with every declared calculation's value bound into
+   *  the scope under its id. */
+  verdicts?: string[];
   /** The applied runs: each an applied load with its observed error. */
   inputs: RunInput[];
   /** The registry the evidence record lands in (the evidence
@@ -632,6 +751,43 @@ export function executeRun(
           outcome: input.e_l <= bound ? 'pass' : 'fail',
         });
       }
+    }
+
+    // The named verdicts: the attestation claims' validated_by set.
+    // Every declared calculation's value binds into the scope under
+    // its id (mpe-verdict's derive reads `mpe`), then the derive
+    // evaluates as the judgment — truthy passes, falsy fails.
+    for (const vid of options.verdicts ?? []) {
+      const vdef = standard.verdicts.find(v => v.id === vid);
+      if (!vdef) {
+        continue;
+      }
+      const judgeScope: RunEnv = { ...runScope };
+      for (const calc of standard.calculations) {
+        if (!calc.expression || calc.id in judgeScope) {
+          continue;
+        }
+        try {
+          judgeScope[calc.id] = evaluateExpression(calc.expression, runScope);
+        } catch {
+          // an unrestorable binding stays absent — the derive's own
+          // evaluation reports it
+        }
+      }
+      let outcome: RunVerdict['outcome'] = 'indeterminate';
+      try {
+        outcome = evaluateExpression(vdef.derive, judgeScope) ? 'pass' : 'fail';
+      } catch {
+        outcome = 'indeterminate';
+      }
+      verdicts.push({
+        id: vdef.id,
+        derive: vdef.derive,
+        inputs: { e_l: input.e_l, load_v: input.load_v },
+        value: input.e_l,
+        unit: vdef.unit || undefined,
+        outcome,
+      });
     }
   }
 

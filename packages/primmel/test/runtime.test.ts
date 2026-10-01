@@ -16,7 +16,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { loadPackage } from '../src/ser-des/package';
-import { evaluateExpression, executeRun, type Run } from '../src/runtime';
+import {
+  evaluateExpression,
+  executeRun,
+  projectCertificate,
+  type Run,
+} from '../src/runtime';
 
 const PKG = join(homedir(), 'src/oimlsmart/model-library-spike/oiml-r60-lml');
 const FIXTURES = join(
@@ -142,6 +147,49 @@ describe(
       assert.ok(
         rec.values.length >= 2,
         'the record carries the load and the verdict',
+      );
+    });
+
+    it('the Flintec certificate projects from the run — declared values and outcomes', async () => {
+      const std = (await loadComposed()) as unknown as Parameters<
+        typeof executeRun
+      >[0];
+      const att = std.attestations.find(
+        (a: { id: string }) => a.id === 'r60-certificate-claim',
+      );
+      assert.ok(att, 'the golden attestation is declared');
+      const vids = [
+        ...new Set(
+          att.claims
+            .map((c: { validatedBy?: string }) => c.validatedBy)
+            .filter(Boolean),
+        ),
+      ] as string[];
+      const run = executeRun(std, {
+        instance: 'ssm-ssb7',
+        requirement: '/req/metrological/mpe',
+        inputs: [
+          { load_v: 400, e_l: 0.3 },
+          { load_v: 600, e_l: 0.69 },
+        ],
+        verdicts: vids,
+      });
+      const cert = projectCertificate(std, run, att.id);
+      assert.equal(cert.subject, 'ssm-ssb7');
+      const byId = new Map(cert.claims.map(c => [c.id, c]));
+      // The declared values read from the authored lineage — never
+      // re-entered: accuracy class C, n_lc 3000 intervals, p_lc 0.7.
+      assert.equal(byId.get('accuracy_class')?.declared?.value, 'C');
+      assert.equal(byId.get('n_lc')?.declared?.value, 3000);
+      assert.equal(byId.get('p_lc')?.declared?.value, 0.7);
+      // Every validated claim holds: the MPE verdicts executed and
+      // passed (0.3 <= 0.35 at 400 v; 0.69 <= 0.7 at 600 v).
+      for (const c of cert.claims) {
+        assert.equal(c.outcome, 'pass', `claim ${c.id}`);
+      }
+      assert.equal(
+        JSON.stringify(projectCertificate(std, run, att.id)),
+        JSON.stringify(cert),
       );
     });
 
