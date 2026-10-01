@@ -39,7 +39,10 @@ grammar Primmel version "0.1.0" {
   # ONE token, as the kernel whitespace tokenizer sees it); the entry
   # separator is the SPACE-DELIMITED colon (entry_line gap ":"),
   # never a mid-word one.
-  bare_first = !ws_char !"\"" !"{" !"}" !"#" any_char
+  # A hash is a normal word character mid-word (Application#data —
+  # one token, as the kernel's tokenizer sees it); comments start only
+  # through gap (whitespace-delimited), never inside a word.
+  bare_first = !ws_char !"\"" !"{" !"}" any_char
   bare_next = !ws_char !"\"" !"{" !"}" any_char
   bare = bare_first *bare_next
 

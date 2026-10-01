@@ -33,12 +33,82 @@ export interface ParseOptions {
  * detection itself lives in `duplicate-id.ts` — this module just calls
  * it at the moment each declaration is parsed.
  */
+/** One top-level declaration in the dispatch core's terms: the
+ *  keyword, its id (when the construct takes one), the payload text
+ *  (the block or the bare/string token), and the keyword's position
+ *  (issues, provenance). Built from TOKENS by parse() and from the
+ *  PARG SHAPE TREE by parseFromShape() — the two front ends of one
+ *  dispatch core (the full flow's phase 2, the S2 endgame).
+ */
+export interface SourceDeclaration {
+  keyword: string;
+  id?: string;
+  payload?: string;
+  start: { line: number; col: number; offset: number };
+  /** The payload's end (provenance spans). */
+  end?: { line: number; col: number; offset: number };
+}
+
 export default function parse(
   mmelString: string,
   parsers: ParserConfiguration,
   options: ParseOptions = {},
 ): ParseContext {
   const tokens: Token[] = tokenizeWithPositions(mmelString);
+  const declarations: SourceDeclaration[] = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const tok = tokens[i++]!;
+    const cfg = parsers[tok.value];
+    // Unknown keywords skip ONE token at a time (the lenient
+    // forward-compat rule): consuming a payload for an unknown keyword
+    // desyncs the walk — the next real keyword's id would be eaten.
+    if (!cfg) {
+      if (options.strict) {
+        throw new Error(
+          `Unknown keyword "${tok.value}" at line ${tok.start.line} col ${tok.start.col}. Use lenient mode (default) to skip unknown keywords.`,
+        );
+      }
+      continue;
+    }
+    if (cfg.takesID) {
+      if (i + 1 > tokens.length) {
+        throw new Error(
+          `Keyword "${tok.value}" at line ${tok.start.line} col ${tok.start.col} expects an ID and payload, but only ${tokens.length - i + 1} token(s) remain.`,
+        );
+      }
+      const idTok = tokens[i++]!;
+      const payloadTok = tokens[i++]!;
+      declarations.push({
+        keyword: tok.value,
+        id: idTok.value,
+        payload: payloadTok.value,
+        start: tok.start,
+        end: payloadTok.end,
+      });
+    } else {
+      if (i >= tokens.length) {
+        throw new Error(
+          `Keyword "${tok.value}" at line ${tok.start.line} col ${tok.start.col} expects a payload, but no tokens remain.`,
+        );
+      }
+      const payloadTok = tokens[i++];
+      declarations.push({
+        keyword: tok.value,
+        payload: payloadTok.value,
+        start: tok.start,
+        end: payloadTok.end,
+      });
+    }
+  }
+  return parseDeclarations(declarations, parsers, options);
+}
+
+export function parseDeclarations(
+  declarations: SourceDeclaration[],
+  parsers: ParserConfiguration,
+  options: ParseOptions = {},
+): ParseContext {
   const dupChecker = createDuplicateIdChecker();
   // Opt-in construct provenance (withProvenance): collected aside and
   // attached at the end so parser functions that swap the ctx object
@@ -181,10 +251,10 @@ export default function parse(
     issues: [],
   };
 
-  let i = 0;
-  while (i < tokens.length) {
-    const tok = tokens[i++];
-    const keyword = tok.value;
+  const i = 0;
+  for (const decl of declarations) {
+    const tok = { start: decl.start };
+    const keyword = decl.keyword;
     const cfg = parsers[keyword];
 
     // The deprecation report (phase 2): a construct whose definition
@@ -215,13 +285,8 @@ export default function parse(
 
     let updateCtx: (ctx: ParseContext) => ParseContext;
     if (cfg.takesID) {
-      if (i + 1 > tokens.length) {
-        throw new Error(
-          `Keyword "${keyword}" at line ${tok.start.line} col ${tok.start.col} expects an ID and payload, but only ${tokens.length - i + 1} token(s) remain.`,
-        );
-      }
-      const idTok = tokens[i++];
-      const payloadTok = tokens[i++];
+      const idTok = { value: decl.id ?? '', start: decl.start };
+      const payloadTok = { value: decl.payload ?? '', end: decl.start };
 
       // Duplicate-ID detection runs at parse time because the parser
       // silently overwrites ctx entries — without this check, the
@@ -244,25 +309,20 @@ export default function parse(
           id: idTok.value,
           keyword,
           start: tok.start,
-          end: payloadTok.end,
+          end: decl.end ?? payloadTok.end,
         });
       }
 
       updateCtx = cfg.parse(idTok.value, payloadTok.value);
     } else {
-      if (i >= tokens.length) {
-        throw new Error(
-          `Keyword "${keyword}" at line ${tok.start.line} col ${tok.start.col} expects a payload, but no tokens remain.`,
-        );
-      }
-      const payloadTok = tokens[i++];
+      const payloadTok = { value: decl.payload ?? '', end: decl.start };
       if (options.withProvenance) {
         constructs.push({
           field: cfg.field ?? keyword,
           id: '',
           keyword,
           start: tok.start,
-          end: payloadTok.end,
+          end: decl.end ?? payloadTok.end,
         });
       }
       updateCtx = cfg.parse(payloadTok.value);
