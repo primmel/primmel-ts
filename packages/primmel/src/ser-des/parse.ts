@@ -251,7 +251,6 @@ export function parseDeclarations(
     issues: [],
   };
 
-  const i = 0;
   for (const decl of declarations) {
     const tok = { start: decl.start };
     const keyword = decl.keyword;
