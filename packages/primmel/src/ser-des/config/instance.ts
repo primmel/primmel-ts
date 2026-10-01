@@ -145,6 +145,18 @@ function parseInstanceHas(block: string, result: Instance): void {
   }
 }
 
+/** One assignment's value: `v`, `v unit`, or a quoted string. */
+function readQuantity(tokens: string[]): { value: string | number; unit?: string } {
+  if (tokens.length === 0) {
+    return { value: '' };
+  }
+  const first = stripWrapping(tokens[0]!);
+  if (tokens.length === 1) {
+    return { value: first };
+  }
+  return { value: first, unit: tokens.slice(1).map(stripWrapping).join(' ') };
+}
+
 const parseInstance: ConstructDefinition['parse'] = function (id, data) {
   const result: Instance = {
     id,
@@ -167,6 +179,20 @@ const parseInstance: ConstructDefinition['parse'] = function (id, data) {
     }
     if (cmd === 'of') {
       result.of = stripWrapping(t[i++]);
+    } else if (t[i] === '=' && i + 1 < t.length) {
+      // The LUTAML ASSIGNMENT FORM (the full flow's phase 2):
+      // `attribute = value [unit]…` — the value run continues until
+      // the next assignment pair or the block's end.
+      i++;
+      const valueTokens: string[] = [];
+      while (
+        i < t.length &&
+        t[i] !== '}' &&
+        !(i + 1 < t.length && t[i + 1] === '=')
+      ) {
+        valueTokens.push(t[i++]!);
+      }
+      result.has.attributes[cmd] = readQuantity(valueTokens);
     } else if (cmd === 'level') {
       result.level = stripWrapping(t[i++]);
     } else if (cmd === 'model') {

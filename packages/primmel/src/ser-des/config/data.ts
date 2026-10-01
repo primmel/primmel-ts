@@ -146,6 +146,19 @@ export const parseDataClass: Parser = function (id, data) {
         result.extends = details.trim();
         return;
       }
+      // The LUTAML attribute form (the full flow's phase 2, both
+      // surfaces through the migration window): `attribute <name>,
+      // <Type> { <facets> }` — the head carries the keyword, the
+      // comma-separated name and Type; the facets (definition,
+      // cardinality, values, modality, reference) ride the details
+      // block in LutaML's spellings.
+      const lutaml = head.match(
+        /^attribute\s+(\S+?)\s*,\s*(\S+)\s*$/,
+      );
+      if (lutaml) {
+        result.attributes.push(parseLutamlAttribute(lutaml[1]!, lutaml[2]!, details));
+        return;
+      }
       result.attributes.push(parseDataAttribute(head, details));
     },
     { construct: 'class', id },
@@ -155,6 +168,60 @@ export const parseDataClass: Parser = function (id, data) {
     ctx.dataclasses[id] = result;
     return ctx;
   };
+};
+
+const parseLutamlAttribute = (
+  name: string,
+  type: string,
+  details: string,
+): ResolveableDataAttribute => {
+  const result: ResolveableDataAttribute = {
+    id: name,
+    type,
+    modality: '',
+    cardinality: '',
+    definition: '',
+    ref: [],
+    satisfy: [],
+    _relations: { ref: [] },
+    surface: 'lutaml',
+  };
+  // forEachEntry tokenizes the WRAPPED block form (braces present) —
+  // the bare string loses its edge characters to the unwrap.
+  const wrapped = details.startsWith('{') ? details : `{ ${details} }`;
+  forEachEntry(
+    wrapped,
+    (keyword, value, peek) => {
+      if (keyword === 'definition') {
+        result.definition = unwrapped(value);
+      } else if (keyword === 'cardinality') {
+        result.cardinality = value().trim();
+      } else if (keyword === 'modality') {
+        result.modality = value();
+      } else if (keyword === 'values') {
+        // A value SET runs to the next facet keyword (`values A B C D`).
+        const facets = new Set([
+          'definition',
+          'cardinality',
+          'values',
+          'modality',
+          'reference',
+        ]);
+        const vals = [value()];
+        while (peek() !== undefined && !facets.has(peek()!)) {
+          vals.push(value());
+        }
+        result.enumValues = vals;
+      } else if (keyword === 'reference') {
+        result._relations.ref = tokenizePackage(value());
+      } else {
+        value();
+      }
+      return true;
+    },
+    { construct: 'class', id: name },
+  );
+  return result;
 };
 
 const parseDataAttribute = (
@@ -304,7 +371,35 @@ export const dumpDataClass: Dumper<DataClass> = function (dataclass) {
 };
 
 const toDataAttributeModel = (attribute: DataAttribute) => {
-  let out: string = '  ' + attribute.id;
+  // The LUTAML surface round-trips in its authored form through the
+  // migration window (the canonical emission flips when the window
+  // closes, with the corpus fixtures).
+  if (attribute.surface === 'lutaml') {
+    let lutaml = '  attribute ' + attribute.id + ', ' + attribute.type + ' {';
+    const facets: string[] = [];
+    if (attribute.definition !== '') {
+      facets.push('definition "' + escapeString(attribute.definition) + '"');
+    }
+    if (attribute.cardinality !== '') {
+      facets.push('cardinality ' + attribute.cardinality);
+    }
+    if (attribute.enumValues && attribute.enumValues.length > 0) {
+      facets.push('values ' + attribute.enumValues.join(' '));
+    }
+    if (attribute.modality !== '') {
+      facets.push('modality ' + attribute.modality);
+    }
+    if (facets.length === 0) {
+      return lutaml + ' }\n';
+    }
+    return (
+      lutaml +
+      ' ' +
+      facets.join(' ') +
+      ' }\n'
+    );
+  }
+  let out = '  ' + attribute.id;
   if (attribute.type !== '') {
     out += ': ' + attribute.type;
   }
