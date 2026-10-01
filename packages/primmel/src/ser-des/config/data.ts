@@ -152,11 +152,11 @@ export const parseDataClass: Parser = function (id, data) {
       // comma-separated name and Type; the facets (definition,
       // cardinality, values, modality, reference) ride the details
       // block in LutaML's spellings.
-      const lutaml = head.match(
-        /^attribute\s+(\S+?)\s*,\s*(\S+)\s*$/,
-      );
+      const lutaml = head.match(/^attribute\s+(\S+?)\s*,\s*(\S+)\s*$/);
       if (lutaml) {
-        result.attributes.push(parseLutamlAttribute(lutaml[1]!, lutaml[2]!, details));
+        result.attributes.push(
+          parseLutamlAttribute(lutaml[1]!, lutaml[2]!, details),
+        );
         return;
       }
       result.attributes.push(parseDataAttribute(head, details));
@@ -375,7 +375,7 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
   // migration window (the canonical emission flips when the window
   // closes, with the corpus fixtures).
   if (attribute.surface === 'lutaml') {
-    let lutaml = '  attribute ' + attribute.id + ', ' + attribute.type + ' {';
+    const lutaml = '  attribute ' + attribute.id + ', ' + attribute.type + ' {';
     const facets: string[] = [];
     if (attribute.definition !== '') {
       facets.push('definition "' + escapeString(attribute.definition) + '"');
@@ -392,12 +392,7 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
     if (facets.length === 0) {
       return lutaml + ' }\n';
     }
-    return (
-      lutaml +
-      ' ' +
-      facets.join(' ') +
-      ' }\n'
-    );
+    return lutaml + ' ' + facets.join(' ') + ' }\n';
   }
   let out = '  ' + attribute.id;
   if (attribute.type !== '') {
