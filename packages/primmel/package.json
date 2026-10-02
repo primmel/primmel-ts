@@ -92,8 +92,8 @@
     "prepublishOnly": "yarn build && yarn build:browser && yarn build:cli",
     "test": "node --test --import tsx test/*.test.ts",
     "test:exports": "node --test --import tsx scripts/exports-map.test.mts",
-    "annex-a": "tsx scripts/annex-a.mts",
-    "check": "tsx scripts/check.mts",
+    "annex-a": "../../node_modules/.bin/tsx scripts/annex-a.mts",
+    "check": "../../node_modules/.bin/tsx scripts/check.mts",
     "test:browser": "node --test --import tsx scripts/browser-build.test.mts"
   },
   "files": [
