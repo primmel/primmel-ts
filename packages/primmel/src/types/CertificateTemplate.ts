@@ -81,6 +81,10 @@ export interface CertificateAnrSection {
 export default interface CertificateTemplate {
   /** Conventionally `certificate` (singleton per package). */
   id: string;
+  /** Overlay marker (composition): this template intentionally
+   *  supersedes an upstream package's with the same id (whole-value
+   *  last-write-wins — the terms' escape). */
+  overlay?: boolean;
   /** The certificate-number format pattern ('' when unstated). */
   numberFormat: string;
   /** The dimension-label pattern block (null when unstated). */

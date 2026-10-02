@@ -656,6 +656,12 @@ export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([
   // — attributes union by id in first-seen order (the rec's added
   // fields land beside the core's), scalars override.
   'dataclasses',
+  // The quantity registers: an IDENTICAL unit/kind redeclaration is
+  // idempotent under composition (the IEC family declares kV/degC per
+  // package for standalone self-containment; the merged register
+  // unions them away by id — first-seen wins). A DIFFERING entry with
+  // the same id overrides field-wise, the extension semantics.
+  'quantityRegisters',
 ]);
 
 function isPlainRecord(v: unknown): v is Record<string, unknown> {
@@ -890,6 +896,7 @@ function composePackage(
             (field === 'terms' ||
               field === 'processes' ||
               field === 'attributeDefinitions' ||
+              field === 'certificateTemplates' ||
               OVERLAY_DEEP_MERGE_FIELDS.has(field));
           if (!isOverlay) {
             throw new CompositionError(
