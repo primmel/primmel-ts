@@ -1201,7 +1201,7 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
             items: [] as Item[],
           })),
       ];
-      const stream: { tokens: string[]; blocks: Item[][] }[] = [];
+      const stream: { key: string; tokens: string[]; blocks: Item[][] }[] = [];
       for (const d of does) {
         stream.push(...lines(d));
       }

@@ -22,6 +22,7 @@ import {
   instanceChain,
 } from '../src/instance-resolution';
 import { load } from '../src/ser-des/index';
+import type { InstanceValue } from '../src/types/Instance';
 
 function makePackage(body: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'primmel-powertype-'));
@@ -51,6 +52,11 @@ instance smp-001 {
   has { test_context { d_min : 0 kg } }
 }
 `;
+
+/** The resolver's union: a bare string reads as itself; a quantity
+ *  value reads its .value — the assertions stay type-honest. */
+const val = (r: InstanceValue | string | undefined): unknown =>
+  typeof r === 'string' ? r : r?.value;
 
 describe('power-type instantiation (parse + check)', () => {
   it('C20 accepts an of-reference to another instance', () => {
@@ -166,11 +172,11 @@ instance u7 {
 
   it("an instance of the class inherits the prototype's exhibited values", () => {
     assert.equal(
-      resolveInstanceValue(model, 'u7', 'parameters.serial_number')?.value,
+      val(resolveInstanceValue(model, 'u7', 'parameters.serial_number')),
       'PROTO-001',
     );
     assert.equal(
-      resolveInstanceValue(model, 'u7', 'parameters.family_code')?.value,
+      val(resolveInstanceValue(model, 'u7', 'parameters.family_code')),
       'F7',
     );
   });
@@ -184,7 +190,7 @@ instance u7 {
 
   it("the prototype's own values still resolve on the prototype", () => {
     assert.equal(
-      resolveInstanceValue(model, 'p1', 'parameters.serial_number')?.value,
+      val(resolveInstanceValue(model, 'p1', 'parameters.serial_number')),
       'PROTO-001',
     );
   });
@@ -212,7 +218,7 @@ instance i {
   of Leaf
 }
 `);
-    assert.equal(resolveInstanceValue(m2, 'i', 'parameters.a')?.value, 'one');
+    assert.equal(val(resolveInstanceValue(m2, 'i', 'parameters.a')), 'one');
   });
 
   it('a lower statement overrides the inherited prototype value', () => {
@@ -235,7 +241,7 @@ instance i {
   has { attributes { a : "two" } }
 }
 `);
-    assert.equal(resolveInstanceValue(m3, 'i', 'parameters.a')?.value, 'two');
+    assert.equal(val(resolveInstanceValue(m3, 'i', 'parameters.a')), 'two');
   });
 
   it('C155 rejects a prototype cycle: the class instantiates itself', () => {
@@ -323,15 +329,15 @@ describe('power-type delegation (INV-10 through the of-chain)', () => {
 
   it('walks the of-chain upward with lower override', () => {
     assert.equal(
-      resolveInstanceValue(model, 'smp-001', 'parameters.e_max')?.value,
+      val(resolveInstanceValue(model, 'smp-001', 'parameters.e_max')),
       2.2,
     );
     assert.equal(
-      resolveInstanceValue(model, 'smp-001', 'parameters.p_lc')?.value,
+      val(resolveInstanceValue(model, 'smp-001', 'parameters.p_lc')),
       0.7,
     );
     assert.equal(
-      resolveInstanceValue(model, 'mod-500-2t', 'parameters.p_lc')?.value,
+      val(resolveInstanceValue(model, 'mod-500-2t', 'parameters.p_lc')),
       0.7,
     );
   });
@@ -359,7 +365,7 @@ instance q {
   has { attributes { a : 2 } }
 }
 `);
-    assert.equal(resolveInstanceValue(m2, 'q', 'parameters.a')?.value, 2);
-    assert.equal(resolveInstanceValue(m2, 'p', 'parameters.a')?.value, 1);
+    assert.equal(val(resolveInstanceValue(m2, 'q', 'parameters.a')), 2);
+    assert.equal(val(resolveInstanceValue(m2, 'p', 'parameters.a')), 1);
   });
 });
