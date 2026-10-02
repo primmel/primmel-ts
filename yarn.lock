@@ -357,6 +357,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@primmel/checker2@workspace:packages/checker2":
+  version: 0.0.0-use.local
+  resolution: "@primmel/checker2@workspace:packages/checker2"
+  languageName: unknown
+  linkType: soft
+
 "@primmel/primmel@workspace:packages/primmel":
   version: 0.0.0-use.local
   resolution: "@primmel/primmel@workspace:packages/primmel"
