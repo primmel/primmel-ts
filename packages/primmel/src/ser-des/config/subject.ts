@@ -1078,6 +1078,8 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
     }
     if (cmd === 'symbol') {
       result.symbol = stripWrapping(t[i++]);
+    } else if (cmd === 'overlay') {
+      result.overlay = value() === 'true';
     } else if (cmd === 'name') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
@@ -1147,6 +1149,9 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
 
 const dumpAttributeDefinition = function (a: AttributeDefinition): string {
   let out = 'attribute_definition ' + a.id + ' {\n';
+  if (a.overlay) {
+    out += '  overlay true\n';
+  }
   if (a.symbol) {
     out += '  symbol "' + escapeString(a.symbol) + '"\n';
   }
