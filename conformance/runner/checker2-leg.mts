@@ -40,7 +40,7 @@ interface SuiteCase {
   id: string;
   kind: string;
   with?: Record<string, string>;
-  expect: { clean?: boolean; rules?: string[] };
+  expect: { clean?: boolean; rules?: string[]; error?: string };
 }
 
 const cases = JSON.parse(

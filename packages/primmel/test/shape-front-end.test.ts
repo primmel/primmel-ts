@@ -18,7 +18,7 @@ import {
   resolveParsanolTs,
 } from '../src/ser-des/shape-front-end';
 
-const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
+const REPO_ROOT = join(__dirname, '..', '..', '..');
 const available =
   resolveParsanolTs(REPO_ROOT) !== null &&
   existsSync(join(REPO_ROOT, 'grammar', 'artifacts', 'primmel.json'));
@@ -70,11 +70,7 @@ describe(
           tokenCtx = parse(src, PARSER_CONFIG);
         } catch {
           // A negative case: the shape front end must reject it too.
-          await assert.rejects(
-            () => parseFromShape(src, PARSER_CONFIG),
-            undefined,
-            f,
-          );
+          await assert.rejects(() => parseFromShape(src, PARSER_CONFIG), f);
           rejected++;
           continue;
         }
