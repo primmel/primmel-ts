@@ -41,7 +41,9 @@ export const parseCertificateTemplate: Parser = (id: string, data: string) => {
   forEachEntry(
     data,
     (keyword, value) => {
-      if (keyword === 'number_format') {
+      if (keyword === 'overlay') {
+        template.overlay = stripWrapping(value()) === 'true';
+      } else if (keyword === 'number_format') {
         template.numberFormat = stripWrapping(value());
       } else if (keyword === 'dimension_labels') {
         const labels = { pattern: '', separator: '' };
@@ -146,6 +148,9 @@ export const dumpCertificateTemplate: Dumper<CertificateTemplate> = function (
   t,
 ) {
   let out: string = 'certificate_template ' + dumpBareSafe(t.id) + ' {\n';
+  if (t.overlay) {
+    out += '  overlay true\n';
+  }
   if (t.numberFormat) {
     out += '  number_format "' + escapeString(t.numberFormat) + '"\n';
   }

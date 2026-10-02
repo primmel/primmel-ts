@@ -1079,7 +1079,7 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
     if (cmd === 'symbol') {
       result.symbol = stripWrapping(t[i++]);
     } else if (cmd === 'overlay') {
-      result.overlay = value() === 'true';
+      result.overlay = stripWrapping(t[i++]) === 'true';
     } else if (cmd === 'name') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {

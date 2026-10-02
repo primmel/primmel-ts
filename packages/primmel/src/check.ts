@@ -4479,6 +4479,13 @@ export function checkPackage(
   }
   const unitToKind = new Map<string, string>(); // unit id|symbol → kind id
   const unitHome = new Map<string, string>(); // unit id|symbol → register id
+  // The full entry behind each key: a redeclaration that is
+  // IDENTICAL (same kind, factor, symbol) is idempotent under
+  // composition — the sibling IEC packages each declare kV/degC for
+  // standalone self-containment, and the merged register set carries
+  // one shared entry, not a conflict. Only a CONFLICTING entry (the
+  // same key, different meaning) is a redefinition.
+  const unitEntry = new Map<string, string>(); // key → kind|factor|symbol
   const registersExist = (standard.quantityRegisters ?? []).length > 0;
   for (const reg of standard.quantityRegisters ?? []) {
     for (const u of reg.units) {
@@ -4491,15 +4498,19 @@ export function checkPackage(
       }
       // C33 — no cross-register redefinition: a rec EXTENDS the register
       // with domain units; it never redefines an existing entry.
+      const entry = `${u.kind}|${u.factorToSI}|${u.offsetToSI ?? ''}|${u.symbol}`;
       for (const key of new Set([u.id, u.symbol].filter(s => s))) {
         const prior = unitHome.get(key);
         if (prior !== undefined) {
-          err(
-            'C33',
-            `quantity_register ${reg.id}: unit "${u.id}" ("${key}") redefines a unit already declared by register "${prior}" — a package extends the register, it never redefines entries (quantity-coherence)`,
-          );
+          if (unitEntry.get(key) !== entry) {
+            err(
+              'C33',
+              `quantity_register ${reg.id}: unit "${u.id}" ("${key}") redefines a unit already declared by register "${prior}" — a package extends the register, it never redefines entries (quantity-coherence)`,
+            );
+          }
         } else {
           unitHome.set(key, reg.id);
+          unitEntry.set(key, entry);
           unitToKind.set(key, u.kind);
         }
       }
