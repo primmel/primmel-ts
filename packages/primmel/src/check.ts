@@ -3057,6 +3057,13 @@ export function checkPackage(
   const instrumentIds = new Set((standard.instruments ?? []).map(i => i.id));
   const instanceIds = new Set((standard.instances ?? []).map(i => i.id));
   const dataclassIds = new Set((standard.dataclasses ?? []).map(c => c.id));
+  // The BARE-PREFIX link spelling: a class's extends may name a class
+  // without its plane segment (Organization for Organization#data —
+  // the language's own link spelling; the pre-1.21.0 checker and the
+  // platform linker resolve it). C156 resolves both spellings.
+  const dataclassBareIds = new Set(
+    (standard.dataclasses ?? []).map(c => c.id.split('#')[0]!),
+  );
   const attrScopes = new Map(
     (standard.attributeDefinitions ?? []).map(a => [a.id, a.scope]),
   );
@@ -3255,6 +3262,7 @@ export function checkPackage(
     if (
       c.extends &&
       !dataclassIds.has(c.extends) &&
+      !dataclassBareIds.has(c.extends) &&
       !instanceIds.has(c.extends)
     ) {
       warn(

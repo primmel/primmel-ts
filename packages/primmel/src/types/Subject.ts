@@ -242,6 +242,10 @@ export interface PairListDecl {
 /** attribute_definition <id> — define an attribute ONCE (INV-2). */
 export interface AttributeDefinition {
   id: string;
+  /** Overlay marker (composition): this definition intentionally
+   *  supersedes an upstream package's with the same id (whole-value
+   *  last-write-wins — the terms' escape). */
+  overlay?: boolean;
   symbol: string;
   name: string;
   definition: string;

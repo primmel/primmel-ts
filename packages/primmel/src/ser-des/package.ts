@@ -889,6 +889,7 @@ function composePackage(
             (value as { overlay?: boolean }).overlay === true &&
             (field === 'terms' ||
               field === 'processes' ||
+              field === 'attributeDefinitions' ||
               OVERLAY_DEEP_MERGE_FIELDS.has(field));
           if (!isOverlay) {
             throw new CompositionError(
@@ -966,6 +967,13 @@ function composePackage(
   // package has no downstream, so its provides are exempt.
   const compositionIssues: ValidationIssue[] = [];
   order.forEach((id, i) => {
+    // The ROOT package has no downstream — its provides are exempt
+    // (the doctrine the comment below states; the exemption itself
+    // was missing — a root's own tokens are its public surface, not
+    // an unconsumed dependency).
+    if (i === order.length - 1) {
+      return;
+    }
     const m = manifests.get(id)!;
     const downstream = order.slice(i + 1);
     for (const p of m.provides ?? []) {
