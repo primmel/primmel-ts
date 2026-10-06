@@ -9,7 +9,12 @@ import {
 import type Node from '../../types/Node';
 import type { ParseContext } from '../types';
 import { resolveFromContext } from '../resolve';
-import { escapeString, unwrapBlock, tokenizePackage } from '../tokenize';
+import {
+  escapeString,
+  stripWrapping,
+  tokenizePackage,
+  unwrapBlock,
+} from '../tokenize';
 import { Dumper, Parser, Resolver } from '../types';
 // `Parser` is still used by parseSubprocess below; the sub-parsers
 // (parseElements/parseData/parseEdges) use SubprocessSubParser instead.
@@ -189,7 +194,10 @@ function readEdge(id: string, data: string): ResolvableEdge {
       } else if (command === 'description') {
         edge.description = unwrapBlock(t[i++]);
       } else if (command === 'condition') {
-        edge.condition = unwrapBlock(t[i++]);
+        // stripWrapping, not unwrapBlock: the corpus spells the
+        // catch-all as the BARE keyword (`condition default`) — an
+        // unconditional first+last strip mangles it to "efaul".
+        edge.condition = stripWrapping(t[i++]);
       } else if (command === 'to') {
         edge._relations.to = t[i++];
       } else {
