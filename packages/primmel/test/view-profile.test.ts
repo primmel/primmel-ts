@@ -18,6 +18,7 @@ const HEADER = `metadata {
   edition ""
   author ""
   namespace ""
+  shortname ""
 }
 
 `;
