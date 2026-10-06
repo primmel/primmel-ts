@@ -52,6 +52,36 @@ describe(
       };
     };
 
+    // The list aggregators — the MMEL v2 measurement language's postfix
+    // `.sum/.max/.min/.count/.average`, retained as call-form over the run
+    // scope's list payloads (the rename contract's expression table).
+    it('evaluates the list aggregators over list payloads', () => {
+      const env = {
+        Included_Emission: [10, 20, 30],
+        Excluded_Emission: [1, 2],
+        Total_Emission: 63,
+      };
+      const cases: Array<[string, number]> = [
+        ['sum(Included_Emission)', 60],
+        ['max(Included_Emission)', 30],
+        ['min(Included_Emission)', 10],
+        ['count(Included_Emission)', 3],
+        ['average(Included_Emission)', 20],
+        ['max(Included_Emission) / Total_Emission', 30 / 63],
+        ['sum(Included_Emission) + sum(Excluded_Emission)', 63],
+      ];
+      for (const [expr, want] of cases) {
+        assert.equal(evaluateExpression(expr, env), want, expr);
+      }
+    });
+
+    // Scalar min/max keeps its two-argument form even beside list payloads.
+    it('scalar min/max keeps the two-argument form beside list payloads', () => {
+      const env = { a: 5, b: 9, list: [1, 100] };
+      assert.equal(evaluateExpression('min(a, b)', env), 5);
+      assert.equal(evaluateExpression('max(a, b)', env), 9);
+    });
+
     it('the tier selection evaluates from the authored class data', async () => {
       const std = (await loadComposed()) as unknown as Parameters<
         typeof executeRun

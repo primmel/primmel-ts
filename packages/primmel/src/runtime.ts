@@ -162,6 +162,9 @@ class Reader {
   peek(): Tok | undefined {
     return this.toks[this.pos];
   }
+  peekAt(offset: number): Tok | undefined {
+    return this.toks[this.pos + offset];
+  }
   next(): Tok {
     const t = this.toks[this.pos];
     if (!t) {
@@ -294,12 +297,64 @@ function evalPostfix(r: Reader, env: RunEnv): number {
   }
 }
 
+/** True when the reader's next tokens are `( id )` and that id binds a
+ *  list — the discriminator between scalar min/max(a, b) and the
+ *  aggregators min(list)/max(list). Pure peek: no state to restore. */
+function listShaped(r: Reader, env: RunEnv): boolean {
+  const open = r.peek();
+  const id = r.peekAt(1);
+  const close = r.peekAt(2);
+  return (
+    open?.t === 'op' &&
+    open.v === '(' &&
+    id?.t === 'id' &&
+    close?.t === 'op' &&
+    close.v === ')' &&
+    Array.isArray(env[id.v])
+  );
+}
+
 function evalAtom(r: Reader, env: RunEnv): number {
   const t = r.next();
   if (t.t === 'num') {
     return t.v;
   }
   if (t.t === 'id') {
+    // The list aggregators (the MMEL v2 measurement language's postfix
+    // `.sum/.max/.min/.count/.average`, retained as call-form over the
+    // run scope's list payloads): sum/max/min/count/average(list).
+    // The min/max LIST form is discriminated by listShaped — scalar
+    // min/max(a, b) keeps its branch below.
+    if (
+      t.v === 'sum' ||
+      t.v === 'count' ||
+      t.v === 'average' ||
+      ((t.v === 'min' || t.v === 'max') && listShaped(r, env))
+    ) {
+      r.expectOp('(');
+      const name = r.next();
+      r.expectOp(')');
+      const list = env[name.v];
+      if (!Array.isArray(list)) {
+        throw new Error(
+          `runtime: ${t.v}(...) aggregates a list — "${name.v}" is ${Array.isArray(list) ? 'a list' : typeof list}`,
+        );
+      }
+      const nums = list.map(Number);
+      if (t.v === 'count') {
+        return nums.length;
+      }
+      if (nums.length === 0) {
+        throw new Error(`runtime: ${t.v}(...) over the empty list "${name.v}"`);
+      }
+      if (t.v === 'sum') {
+        return nums.reduce((a, b) => a + b, 0);
+      }
+      if (t.v === 'average') {
+        return nums.reduce((a, b) => a + b, 0) / nums.length;
+      }
+      return t.v === 'min' ? Math.min(...nums) : Math.max(...nums);
+    }
     if (t.v === 'abs' || t.v === 'min' || t.v === 'max') {
       r.expectOp('(');
       const a = evalExpr(r, env);
