@@ -275,6 +275,61 @@ describe('.prm — the standalone JSON serialization', () => {
     assert.throws(() => loadPrm('not json'), /invalid JSON/);
   });
 
+  it('accepts the legacy (MMEL v2) two-line from/to mapping spelling', () => {
+    // The corpus's mapped implementation fixture serializes mappings as
+    // `from <id>\n to <id>` — the alias rounds to the canonical arrow.
+    const src = [
+      'root Test',
+      'process P1 {',
+      '  name "P1"',
+      '}',
+      'map_profile BS20400 {',
+      '  description "Mappings into Standard S"',
+      '  mapping {',
+      '    from totalCostOfOwnership',
+      '    to TotalCostOfOwnership',
+      '  }',
+      '  mapping {',
+      '    from GiveRating',
+      '    to PrequalifySuppliers',
+      '  }',
+      '}',
+    ].join('\n');
+    const std = load(src);
+    const profile = Object.values(std.mapProfiles ?? {}).find(
+      (p: any) => p.namespace === 'BS20400',
+    ) as any;
+    assert.ok(profile, 'the map profile parsed');
+    assert.deepEqual(Object.keys(profile.mappings).sort(), [
+      'GiveRating',
+      'totalCostOfOwnership',
+    ]);
+    assert.equal(
+      profile.mappings['totalCostOfOwnership']?.[0]?.target,
+      'TotalCostOfOwnership',
+    );
+    const round = dump(std);
+    assert.match(round, /totalCostOfOwnership -> TotalCostOfOwnership/);
+    // a source literally named "from" still parses in arrow form
+    const arrow = load(
+      [
+        'root T2',
+        'process P1 {',
+        '  name "P1"',
+        '}',
+        'map_profile M {',
+        '  mapping {',
+        '    from -> X',
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+    const am: any = Object.values(arrow.mapProfiles ?? {}).find(
+      (p: any) => p.namespace === 'M',
+    ) as any;
+    assert.equal(am?.mappings?.['from']?.[0]?.target, 'X');
+  });
+
   it('bridges .prm ⇄ map profiles without loss', () => {
     const prm = loadPrm(
       readFileSync(join(PILOT, 'platform-to-pd05.prm'), 'utf8'),
