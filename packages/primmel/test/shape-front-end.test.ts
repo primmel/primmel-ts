@@ -19,9 +19,18 @@ import {
 } from '../src/ser-des/shape-front-end';
 
 const REPO_ROOT = join(__dirname, '..', '..', '..');
+const LIBRARY_SLICE = join(
+  REPO_ROOT,
+  '..',
+  '..',
+  'oimlsmart',
+  'model-library-spike',
+  'oiml-r60-lml',
+);
 const available =
   resolveParsanolTs(REPO_ROOT) !== null &&
-  existsSync(join(REPO_ROOT, 'grammar', 'artifacts', 'primmel.json'));
+  existsSync(join(REPO_ROOT, 'grammar', 'artifacts', 'primmel.json')) &&
+  existsSync(LIBRARY_SLICE);
 
 const SAMPLES = [
   'role verifier {\n  name "Verifier"\n}\n',
@@ -111,14 +120,7 @@ describe(
     });
 
     it('a slice of the model library agrees file by file', async () => {
-      const root = join(
-        REPO_ROOT,
-        '..',
-        '..',
-        'oimlsmart',
-        'model-library',
-        'oiml-r60',
-      );
+      const root = LIBRARY_SLICE;
       const files: string[] = [];
       const walk = (d: string): void => {
         for (const e of readdirSync(d).sort()) {

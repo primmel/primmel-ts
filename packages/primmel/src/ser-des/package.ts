@@ -423,6 +423,14 @@ export interface CompositionInfo {
   root: string;
   /** Package ids in merge order: dependencies first, root last. */
   order: string[];
+  /**
+   * The composed (non-root) packages, dependencies-first, with their
+   * directories — the KNOWN register travels with the package: a
+   * consumer's check applies each provider's own allowlist to the
+   * diagnostics its elements contribute (checkPackage's provider
+   * pass). Absent on a non-composed load.
+   */
+  providers?: Array<{ id: string; dir: string }>;
 }
 
 export type CompositionRule =
@@ -1015,7 +1023,13 @@ function composePackage(
   const result: InternalLoadResult = {
     standard,
     issues: [...acc.issues, ...compositionIssues],
-    composition: { root: rootId, order },
+    composition: {
+      root: rootId,
+      order,
+      providers: order
+        .slice(0, -1)
+        .map(id => ({ id, dir: resolve(dirs.get(id)!) })),
+    },
   };
   if (withProvenance) {
     // Fold in merge order with last-write-wins, mirroring the merge

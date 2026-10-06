@@ -344,3 +344,67 @@ export function applyAllowlist(
   }
   return { issues: out, known, stale };
 }
+
+/**
+ * The provider pass (composition): a consumer's check re-reports the
+ * diagnostics of every package in its `uses` closure, so the KNOWN
+ * register travels with the package — each provider's own allowlist
+ * entries apply to the issues its elements contribute, exactly as they
+ * do when the provider is checked alone. The consumer never re-authors
+ * its providers' dispositions.
+ *
+ * Attribution is by the entry's own glob: in a valid composition an
+ * element id has exactly ONE contributor (uses-no-redefine), and the
+ * entries name their elements — a provider's match on a consumer's
+ * diagnostic is the provider's own element by construction.
+ *
+ * The STALE discipline applies unchanged: a provider entry matching no
+ * issue in the consumer's check fails with C57 naming the provider
+ * (the entries are written for diagnostics that always fire when the
+ * elements are composed in, so a stale match is real drift).
+ */
+export function applyProviderAllowlists(
+  issues: CheckIssue[],
+  providers: ReadonlyArray<{ id: string; dir: string }>,
+  activeRules: Set<string>,
+): CheckIssue[] {
+  const out = [...issues];
+  for (const provider of providers) {
+    const { allowlist, issues: parseIssues } = loadAllowlist(provider.dir);
+    out.push(...parseIssues);
+    for (const entry of allowlist.entries) {
+      if (!activeRules.has(entry.rule)) {
+        continue; // dormant at this level, the root pass's rule
+      }
+      let matched = false;
+      for (const issue of out) {
+        if (
+          !issue.known &&
+          issue.check === entry.rule &&
+          globMatch(entry.match, issue.message)
+        ) {
+          issue.known = true;
+          matched = true;
+        }
+      }
+      if (!matched) {
+        // A WARNING here, never an error: a provider's entry set is
+        // validated when the PROVIDER is checked (its diagnostics fire
+        // there), but a consumer's overlay may legitimately REPLACE the
+        // element an entry was written for — the diagnostic then never
+        // fires in that closure (e.g. twin-cert's certificate-template
+        // overlay over r60-lml's). Visible, never a false gate.
+        out.push({
+          check: 'C57',
+          severity: 'warning',
+          // KNOWN: the note prints (visible) but never fails a gate,
+          // not even --strict — the entry is validated on the
+          // provider's own check, where its diagnostics fire.
+          known: true,
+          message: `provider "${provider.id}": entry [${entry.rule}] "${entry.match}" matches no issue in this composed check — the entry is stale, or a downstream overlay replaced its element (allowlist-stale)`,
+        });
+      }
+    }
+  }
+  return out;
+}

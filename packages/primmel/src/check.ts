@@ -453,6 +453,7 @@ import { activeRuleIds } from './check-rules';
 import { delegationSuccessors } from './instance-resolution';
 import {
   applyAllowlist,
+  applyProviderAllowlists,
   BUDGETED_RULES,
   loadAllowlist,
   TEXT_BUDGETED_RULES,
@@ -576,11 +577,15 @@ export function checkPackage(
     'namespace-pin-violation': 'C119',
   };
   let standard: Standard;
+  let compositionProviders: NonNullable<
+    import('./ser-des/package').CompositionInfo['providers']
+  > = [];
   try {
     const loaded = loadPackageWithIssues(dir, {
       resolvePackage: options.resolvePackage,
     });
     standard = loaded.standard;
+    compositionProviders = loaded.composition?.providers ?? [];
     for (const i of loaded.issues) {
       // The deprecation report (phase 2): the parse-time issue maps to
       // its rule.
@@ -7268,11 +7273,23 @@ export function checkPackage(
   const level: 'normal' | 'audit' = strictness === 'audit' ? 'audit' : 'normal';
   const { allowlist, issues: allowlistParseIssues } = loadAllowlist(dir);
   issues.push(...allowlistParseIssues);
-  const finalized = applyAllowlist(
+  let finalized = applyAllowlist(
     issues,
     allowlist,
     activeRuleIds(level),
   ).issues;
+  // The provider pass (composition): the KNOWN register travels with
+  // the package — every provider in the `uses` closure contributes its
+  // own allowlist to the diagnostics its elements carry into this
+  // check. The consumer never re-authors its providers' dispositions
+  // (the INHERITED-entry pattern retires here).
+  if (compositionProviders.length > 0) {
+    finalized = applyProviderAllowlists(
+      finalized,
+      compositionProviders,
+      activeRuleIds(level),
+    );
+  }
   if (options.strict) {
     for (const i of finalized) {
       if (i.severity !== 'warning' || i.known) {
