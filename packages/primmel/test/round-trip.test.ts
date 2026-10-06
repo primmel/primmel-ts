@@ -63,6 +63,62 @@ describe('round-trip', () => {
     assert.equal(second.references.find(r => r.id === 'R1')?.title, '');
   });
 
+  // The bare condition keyword survives parsing: the corpus spells the
+  // gateway catch-all as `condition default` (r144's skip edges,
+  // r60-lml's test-result gateway) — the unconditional first+last strip
+  // mangled it to "efaul".
+  it('parses the bare condition keyword (the gateway default)', () => {
+    const src = [
+      'root home',
+      'metadata {',
+      '  title "T"',
+      '  schema "MMEL 0.1"',
+      '  edition "1"',
+      '  author "A"',
+      '  namespace "T"',
+      '  shortname ""',
+      '}',
+      'start_event s { }',
+      'process p1 { name "P1" }',
+      'process p2 { name "P2" }',
+      'end_event e { }',
+      'exclusive_gateway g { label "G" }',
+      'canvas home {',
+      '  elements {',
+      '    s { x 0 y 0 }',
+      '    p1 { x 0 y 100 }',
+      '    g { x 0 y 200 }',
+      '    p2 { x 0 y 300 }',
+      '    e { x 0 y 400 }',
+      '  }',
+      '  process_flow {',
+      '    E1 { from s to p1 }',
+      '    E2 { from p1 to g }',
+      '    E3 { from g to p2',
+      '      condition "load > 50"',
+      '    }',
+      '    E4 { from g to e',
+      '      condition default',
+      '    }',
+      '  }',
+      '}',
+    ].join('\n');
+    const std = load(src) as unknown as {
+      pages: { id: string; edges: { id: string; condition: string }[] }[];
+    };
+    const page = std.pages.find(p => p.id === 'home');
+    const e4 = page?.edges.find(x => x.id === 'E4');
+    assert.equal(e4?.condition, 'default');
+    const again = load(dump(std as never)) as unknown as {
+      pages: { id: string; edges: { id: string; condition: string }[] }[];
+    };
+    assert.equal(
+      again.pages.find(p => p.id === 'home')?.edges.find(x => x.id === 'E4')
+        ?.condition,
+      'default',
+    );
+  });
+
   it('preserves a role definition', () => {
     const src = `role author { name "Author" }`;
     const out = roundTrip(src);
