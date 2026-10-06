@@ -47,8 +47,11 @@ export const dumpReference: Dumper<Reference> = function (ref) {
   let out: string = 'reference ' + ref.id + ' {\n';
   out += '  document "' + escapeString(ref.document) + '"\n';
   out += '  clause "' + escapeString(ref.clause) + '"\n';
-  if (ref.title) {
-    out += '  title "' + escapeString(ref.title) + '"\n';
+  // title is ALWAYS emitted: the legacy corpus distinguishes an empty
+  // title from an absent one (round-trip fidelity — the rename
+  // contract's retention guarantee).
+  if (ref.title !== undefined) {
+    out += '  title "' + escapeString(ref.title ?? '') + '"\n';
   }
   if (ref.org) {
     out += '  org "' + escapeString(ref.org) + '"\n';

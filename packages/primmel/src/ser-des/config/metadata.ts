@@ -57,6 +57,9 @@ export const dumpMetadata: Dumper<Metadata> = function (meta) {
   out += '  edition "' + escapeString(meta.edition) + '"\n';
   out += '  author "' + escapeString(meta.author) + '"\n';
   out += '  namespace "' + escapeString(meta.namespace) + '"\n';
+  // shortname is ALWAYS emitted (round-trip fidelity: the legacy
+  // corpus's metadata carries it, e.g. HLS's "ISO HLS").
+  out += '  shortname "' + escapeString(meta.shortname ?? '') + '"\n';
   out += '}\n';
   return out;
 };
