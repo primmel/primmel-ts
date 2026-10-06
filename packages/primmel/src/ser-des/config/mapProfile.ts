@@ -133,6 +133,38 @@ function parseMappingBlock(
   const t = expandCompactArrows(tokenize(block));
   let i = 0;
   while (i < t.length) {
+    // The legacy (MMEL v2) two-line spelling — `from <id>\n to <id>` —
+    // aliased like `view`: the (mapped) implementation fixtures in the
+    // corpus serialize mappings this way. `from -> X` (a source
+    // literally named "from", arrow form) still parses as the arrow.
+    if (t[i] === 'from' && t[i + 1] !== '->' && t[i + 1] !== '→') {
+      i++;
+      const legacySource = stripWrapping(t[i++]);
+      if (!legacySource) {
+        break;
+      }
+      const toKw = t[i++];
+      if (toKw !== 'to') {
+        throw new Error(
+          `Parsing error: map_profile. ID ${id}: Expecting "to" after legacy mapping source "${legacySource}" (got "${toKw ?? ''}")`,
+        );
+      }
+      const legacyTarget = stripWrapping(t[i++]);
+      let legacyPair: MappingPair = {
+        target: legacyTarget,
+        description: '',
+        justification: '',
+        coverage: '',
+      };
+      if (i < t.length && t[i].startsWith('{')) {
+        legacyPair = {
+          ...parsePairBlock(id, unwrapBlock(t[i++])),
+          target: legacyTarget,
+        };
+      }
+      (mappings[legacySource] ??= []).push(legacyPair);
+      continue;
+    }
     const source = stripWrapping(t[i++]);
     if (!source) {
       break;
