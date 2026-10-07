@@ -4,6 +4,7 @@ metadata {
   edition ""
   author ""
   namespace ""
+  shortname ""
 }
 
 note note_mpe_hysteresis {
