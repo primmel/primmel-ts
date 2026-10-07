@@ -5864,6 +5864,26 @@ export function checkPackage(
     // stay documentary, never resolved.
   }
 
+  // ── C157: registry-dataclass-resolves (the MMEL v2 validation's
+  // registry→dataclass leg — the rename contract's last flagged
+  // invariant): every data_registry's data_class names a declared
+  // dataclass. The resolver silently nulls unresolvable references,
+  // so the rule reads the resolved field; a null data means the
+  // authored data_class id resolved to nothing — the registry's rows
+  // would be formless (the legacy threw at load; the workspace forms,
+  // the cross-registry pickers, and the measurement table lookups all
+  // key on the pairing).
+  {
+    for (const reg of standard.regs ?? []) {
+      if (reg.data === null) {
+        err(
+          'C157',
+          `data_registry ${reg.id}: the data_class resolves to no declared dataclass — the registry's rows are formless (the pairing the workspace forms and the pickers key on) (registry-dataclass-resolves)`,
+        );
+      }
+    }
+  }
+
   // ── C143: approval-references-resolve (smart TODO.roadmap/40 batch ──
   // 5; the packages-as-SSOT epic) ─────────────────────────────────────
   // The first approval rule ever (the codec was dormant — no package

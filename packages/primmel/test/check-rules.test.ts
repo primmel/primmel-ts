@@ -51,12 +51,12 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`),
       ...Array.from({ length: 19 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 8 }, (_, i) => `C${i + 149}`),
+      ...Array.from({ length: 9 }, (_, i) => `C${i + 149}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation), C155-C156 (power type)',
+      'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation), C155-C156 (power type), C157 (registry pairing)',
     );
   });
 
