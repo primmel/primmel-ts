@@ -16,6 +16,7 @@
 
 import type Standard from './types/Standard';
 import type { Instance } from './types/Instance';
+import type { Variable } from './types/data';
 import type { StateTrajectoryEntry, FiredStep } from './operational-state';
 import { foldTrajectory } from './operational-state';
 
@@ -149,10 +150,11 @@ function tokenize(src: string): Tok[] {
   return out;
 }
 
-/** The evaluation environment: plain values, and nested objects for
+/** The evaluation environment: plain values, list payloads (the
+ *  measurement language's list variables), and nested objects for
  *  `.` field access (the dimension values' typed payloads). */
 export interface RunScopeObj {
-  [key: string]: number | string | RunScopeObj;
+  [key: string]: number | string | number[] | RunScopeObj;
 }
 export type RunEnv = RunScopeObj;
 
@@ -269,7 +271,7 @@ function evalUnary(r: Reader, env: RunEnv): number {
 }
 
 function evalPostfix(r: Reader, env: RunEnv): number {
-  let v: number | string | RunScopeObj = evalAtom(r, env);
+  let v: number | string | number[] | RunScopeObj = evalAtom(r, env);
   for (;;) {
     const t = r.peek();
     if (t && t.t === 'op' && t.v === '.') {
@@ -278,13 +280,14 @@ function evalPostfix(r: Reader, env: RunEnv): number {
       if (field.t !== 'id') {
         throw new Error('runtime: the derivation expected a field name');
       }
-      if (v === null || typeof v !== 'object') {
+      if (v === null || typeof v !== 'object' || Array.isArray(v)) {
         throw new Error(
           `runtime: the derivation reads "${field.v}" off a plain value`,
         );
       }
-      const scope: RunScopeObj = v as RunScopeObj;
-      const next: number | string | RunScopeObj | undefined = scope[field.v];
+      const scope: RunScopeObj = v;
+      const next: number | string | number[] | RunScopeObj | undefined =
+        scope[field.v];
       if (next === undefined) {
         throw new Error(
           `runtime: the derivation reads the undeclared field "${field.v}"`,
@@ -414,6 +417,42 @@ function evalAtom(r: Reader, env: RunEnv): number {
 export interface LookupTable {
   id: string;
   data: string[][];
+}
+
+/**
+ * The MMEL v2 TABLE-variable family — the `type` facet values that mark
+ * a variable whose value IS a table lookup, never an expression (the
+ * legacy measurement types `TABLE_OPTIONS` / `TABLE_REFERENCE`).
+ */
+export function isTableVariable(variable: Pick<Variable, 'type'>): boolean {
+  return (
+    variable.type === 'TABLE_OPTIONS' || variable.type === 'TABLE_REFERENCE'
+  );
+}
+
+/**
+ * The MMEL v2 TABLE-variable evaluation (the legacy Checker's
+ * measurement evaluation for the TABLE family): a `type TABLE_OPTIONS` /
+ * `TABLE_REFERENCE` variable's value is `lookupTable` over the model's
+ * declared tables with the variable's `definition` string. Throws when
+ * the variable is not a TABLE variable or carries no definition.
+ */
+export function evaluateTableVariable(
+  variable: Pick<Variable, 'id' | 'type' | 'definition'>,
+  tables: LookupTable[],
+  values: RunEnv,
+): number | string {
+  if (!isTableVariable(variable)) {
+    throw new Error(
+      `runtime: ${variable.id} declares type ${variable.type} — the table evaluation takes the TABLE variable family (TABLE_OPTIONS / TABLE_REFERENCE)`,
+    );
+  }
+  if (variable.definition === '') {
+    throw new Error(
+      `runtime: the table variable ${variable.id} carries no definition`,
+    );
+  }
+  return lookupTable(tables, variable.definition, values);
 }
 
 /**

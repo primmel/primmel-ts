@@ -20,6 +20,8 @@ import {
   evaluateExpression,
   lookupTable,
   type LookupTable,
+  evaluateTableVariable,
+  isTableVariable,
   executeRun,
   projectCertificate,
   type Run,
@@ -131,6 +133,100 @@ describe(
       );
       // malformed definition throws
       assert.throws(() => lookupTable(tables, 'data', {}), /tableId,targetCol/);
+    });
+
+    // The TABLE-variable evaluation wire — the legacy Checker's
+    // measurement evaluation for the TABLE family. The four variables
+    // and the grid are verbatim from the corpus (showcase 5's BS6004:
+    // type / area / class TABLE_OPTIONS, thicknessReq TABLE_REFERENCE).
+    it('evaluates the corpus TABLE variables over the declared grid', () => {
+      const tables: LookupTable[] = [
+        {
+          id: 'data',
+          data: [
+            ['', 'Rated voltage of cable', '', 'Conductor–earth', ''],
+            ['6181Y', '1 x 1.0', '1', '1', '0.6'],
+            ['6181Y', '1 x 1.5', '1.5', '1', '0.7'],
+          ],
+        },
+      ];
+      // measurement type: data,0,2,area,3,class — given the area and
+      // class, return the cable type (a string cell stays a string).
+      assert.equal(
+        evaluateTableVariable(
+          {
+            id: 'type',
+            type: 'TABLE_OPTIONS',
+            definition: 'data,0,2,area,3,class',
+          },
+          tables,
+          { area: '1', class: '1' },
+        ),
+        '6181Y',
+      );
+      // measurement area: data,2,0,type,3,class — both 6181Y rows share
+      // the class column '1', so the first surviving row wins (the
+      // legacy's first-match semantics); the numeric cell returns 1.
+      assert.equal(
+        evaluateTableVariable(
+          {
+            id: 'area',
+            type: 'TABLE_OPTIONS',
+            definition: 'data,2,0,type,3,class',
+          },
+          tables,
+          { type: '6181Y', class: '1' },
+        ),
+        1,
+      );
+      // measurement class: data,3,2,area,0,type — the round lookup.
+      assert.equal(
+        evaluateTableVariable(
+          {
+            id: 'class',
+            type: 'TABLE_OPTIONS',
+            definition: 'data,3,2,area,0,type',
+          },
+          tables,
+          { area: '1', type: '6181Y' },
+        ),
+        1,
+      );
+      // measurement thicknessReq (TABLE_REFERENCE, three match pairs):
+      // data,4,0,type,2,area,3,class narrows to the 1.5 row.
+      assert.equal(
+        evaluateTableVariable(
+          {
+            id: 'thicknessReq',
+            type: 'TABLE_REFERENCE',
+            definition: 'data,4,0,type,2,area,3,class',
+          },
+          tables,
+          { type: '6181Y', area: '1.5', class: '1' },
+        ),
+        0.7,
+      );
+      // a non-TABLE variable never enters the table path
+      assert.ok(!isTableVariable({ type: 'NUMERIC' }));
+      assert.throws(
+        () =>
+          evaluateTableVariable(
+            { id: 'sheath', type: 'NUMERIC', definition: '' },
+            tables,
+            {},
+          ),
+        /the TABLE variable family/,
+      );
+      // a TABLE variable without a definition is a declaration error
+      assert.throws(
+        () =>
+          evaluateTableVariable(
+            { id: 'type', type: 'TABLE_OPTIONS', definition: '' },
+            tables,
+            {},
+          ),
+        /carries no definition/,
+      );
     });
 
     it('the tier selection evaluates from the authored class data', async () => {
