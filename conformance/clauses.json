@@ -725,6 +725,16 @@
     "C155",
     "C156"
    ]
+  },
+  {
+   "id": "REG-01",
+   "area": "reg",
+   "title": "The data_registry↔dataclass pairing",
+   "statement": "Every data_registry declares a data_class that resolves to a declared class — the legacy corpus pairs 188/188. A data_class that names no declared class leaves the registry's rows formless: C157 (the legacy threw at load).",
+   "specAnchor": "MN 113 (the registry plane); C157 registry-dataclass-resolves",
+   "rules": [
+    "C157"
+   ]
   }
  ]
 }
