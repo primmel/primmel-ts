@@ -1,0 +1,12 @@
+// Conformance corpus: the data_registry↔dataclass pairing resolves —
+// every registry's data_class names a declared class.
+// Clause: REG-01 (positive).
+
+class Sample#data {
+  store { samples }
+  id: string [1..1] { modality SHALL }
+}
+data_registry samples {
+  title "Samples"
+  data_class Sample#data
+}

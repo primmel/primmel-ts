@@ -1,0 +1,8 @@
+// Conformance corpus: the data_registry's data_class names no declared
+// class — the rows are formless, C157 fires (the legacy threw at load).
+// Clause: REG-01 (negative).
+
+data_registry samples {
+  title "Samples"
+  data_class Missing#data
+}

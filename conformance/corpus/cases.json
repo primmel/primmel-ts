@@ -2959,6 +2959,30 @@
     "parse": "ok"
    },
    "summary": "The LutaML instance surface parses: the assignment form attribute = value with quantity units."
+  },
+  {
+   "id": "reg-01-pos",
+   "clause": "REG-01",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/registry-dataclass-pairing",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A data_registry whose data_class resolves checks clean."
+  },
+  {
+   "id": "reg-01-neg",
+   "clause": "REG-01",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/registry-dataclass-unresolved",
+   "expect": {
+    "rules": [
+     "C157"
+    ]
+   },
+   "summary": "A data_class naming no declared class is flagged C157."
   }
  ]
 }

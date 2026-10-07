@@ -4,8 +4,13 @@
 // reference resolves, no rule fires.
 // Clause: WF-01 (positive).
 
+class TestRequest#data {
+  store { testRequests }
+  id: string [1..1] { modality SHALL }
+}
 data_registry testRequests {
-  name "Test requests"
+  title "Test requests"
+  data_class TestRequest#data
 }
 process conduct_tests {
   name "Conduct tests"
