@@ -409,6 +409,57 @@ function evalAtom(r: Reader, env: RunEnv): number {
 /** Evaluate one closed derivation over the run scope. The checks
  *  guarantee every referenced name is declared (C149); this throws —
  *  never silently indeterminates — when the scope lacks one. */
+/** One model table (the subset the lookup reads): id + the data grid
+ *  (row 0 is the header — the legacy's slice(1) convention). */
+export interface LookupTable {
+  id: string;
+  data: string[][];
+}
+
+/**
+ * The MMEL v2 TABLE-variable lookup, retained with the legacy's exact
+ * signature and semantics (Checker.js `lookupTable`): the definition
+ * string is `tableId,targetCol,(matchCol,varName)…` — filter the
+ * table's rows (below the header) where every match column equals the
+ * named variable's value, and return the first surviving row's target
+ * cell (numeric when it parses). Throws — never silently nulls — when
+ * the table is missing or no row matches.
+ */
+export function lookupTable(
+  tables: LookupTable[],
+  definition: string,
+  values: RunEnv,
+): number | string {
+  const parts = definition.split(',');
+  if (parts.length < 3) {
+    throw new Error(
+      `runtime: the table lookup definition needs tableId,targetCol,matchCol,var — got "${definition}"`,
+    );
+  }
+  const table = tables.find(t => t.id === parts[0]!.trim());
+  const targetCol = Number(parts[1]!.trim());
+  if (!table || Number.isNaN(targetCol)) {
+    throw new Error(
+      `runtime: the table lookup names "${parts[0]!.trim()}", which no declared table carries`,
+    );
+  }
+  const rows = table.data.slice(1);
+  let matched = rows;
+  for (let i = 2; i + 1 < parts.length; i += 2) {
+    const col = Number(parts[i]!.trim());
+    const want = String(values[parts[i + 1]!.trim()] ?? '');
+    matched = matched.filter(r => String(r[col] ?? '') === want);
+  }
+  if (matched.length === 0) {
+    throw new Error(
+      `runtime: the table lookup over "${parts[0]!.trim()}" matches no row`,
+    );
+  }
+  const cell = matched[0]![targetCol] ?? '';
+  const num = Number(cell);
+  return cell !== '' && !Number.isNaN(num) ? num : cell;
+}
+
 export function evaluateExpression(expr: string, env: RunEnv): number {
   const cleaned = expr
     .replace(/^ocl\{/, '')

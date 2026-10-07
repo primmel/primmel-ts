@@ -18,6 +18,8 @@ import { join } from 'node:path';
 import { loadPackage } from '../src/ser-des/package';
 import {
   evaluateExpression,
+  lookupTable,
+  type LookupTable,
   executeRun,
   projectCertificate,
   type Run,
@@ -80,6 +82,55 @@ describe(
       const env = { a: 5, b: 9, list: [1, 100] };
       assert.equal(evaluateExpression('min(a, b)', env), 5);
       assert.equal(evaluateExpression('max(a, b)', env), 9);
+    });
+
+    // The MMEL v2 TABLE-variable lookup — retained with the legacy's exact
+    // signature and semantics (Checker.js lookupTable). The grid below is
+    // inlined from the corpus (showcase 5's BS6004 'data' table, rows 0–2)
+    // so the spec is self-contained.
+    it('resolves the legacy table lookup (the BS6004 grid, inlined)', () => {
+      const tables: LookupTable[] = [
+        {
+          id: 'data',
+          data: [
+            ['', 'Rated voltage of cable', '', 'Conductor–earth', ''],
+            ['6181Y', '1 x 1.0', '1', '1', '0.6'],
+            ['6181Y', '1 x 1.5', '1.5', '1', '0.7'],
+          ],
+        },
+      ];
+      // The lookup form: tableId,targetCol,matchCol,matchVar.
+      assert.equal(
+        lookupTable(tables, 'data,1,0,type', { type: '6181Y' }),
+        '1 x 1.0',
+      );
+      // numeric cells return numbers (the first matching row wins)
+      assert.equal(lookupTable(tables, 'data,2,0,type', { type: '6181Y' }), 1);
+      // multiple match pairs narrow to the second row
+      assert.equal(
+        lookupTable(tables, 'data,4,1,size', { size: '1 x 1.5' }),
+        0.7,
+      );
+      // the header row is skipped: 'Rated voltage' never matches the lookup
+      assert.throws(
+        () =>
+          lookupTable(tables, 'data,1,1,size', {
+            size: 'Rated voltage of cable',
+          }),
+        /matches no row/,
+      );
+      // no-match throws (never silently nulls)
+      assert.throws(
+        () => lookupTable(tables, 'data,1,0,type', { type: 'NOPE' }),
+        /matches no row/,
+      );
+      // missing table throws
+      assert.throws(
+        () => lookupTable(tables, 'missing,1,0,type', { type: 'x' }),
+        /no declared table/,
+      );
+      // malformed definition throws
+      assert.throws(() => lookupTable(tables, 'data', {}), /tableId,targetCol/);
     });
 
     it('the tier selection evaluates from the authored class data', async () => {
