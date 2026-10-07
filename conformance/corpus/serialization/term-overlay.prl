@@ -4,6 +4,7 @@ metadata {
   edition ""
   author ""
   namespace ""
+  shortname ""
 }
 
 term impartiality {
