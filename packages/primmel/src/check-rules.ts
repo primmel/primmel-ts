@@ -304,6 +304,19 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'the reconfiguration phase 8 (TODO.reconfigure/09-subjects-twins-attestation.md, the power-type clause)',
   ),
+  // ── C157: registry-dataclass-resolves — the MMEL v2 validation's
+  // registry→dataclass leg, the rename contract's last flagged
+  // invariant: a data_registry's data_class names a declared dataclass
+  // (the pairing the workspace forms, the cross-registry pickers, and
+  // the measurement table lookups key on; the legacy threw at load).
+  R(
+    'C157',
+    'registry-dataclass-resolves',
+    'instantiation',
+    'error',
+    'normal',
+    'the MMEL v2 validation parity (the rename contract — TODO.editor/41)',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',
