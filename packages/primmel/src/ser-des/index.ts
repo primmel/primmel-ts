@@ -196,3 +196,20 @@ export {
   ENDPOINT_ACCESS_SCOPES,
   ENDPOINT_OPERATION_KINDS,
 } from '../types/Twin';
+// The runtime (the execution plane) rides the browser bundle too — the
+// editor's simulator derives and the tick pipeline consume it in the
+// browser. Same rule as above: an export the root index carries but
+// this entry drops never reaches dist-browser.
+export {
+  executeRun,
+  evaluateExpression,
+  evaluateTableVariable,
+  isTableVariable,
+  lookupTable,
+  type LookupTable,
+  type Run,
+  type RunInput,
+  type RunProgramStep,
+  type RunVerdict,
+  type RunEvidenceRecord,
+} from '../runtime';
