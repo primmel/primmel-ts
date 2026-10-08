@@ -200,6 +200,10 @@ export {
 export {
   executeRun,
   evaluateExpression,
+  evaluateTableVariable,
+  isTableVariable,
+  lookupTable,
+  type LookupTable,
   type Run,
   type RunInput,
   type RunProgramStep,
