@@ -27,39 +27,53 @@ export const parseProvision: Parser = function (id, data) {
   // single-token values parse byte-identically to the old form.
   const KNOWN = new Set(['modality', 'condition', 'reference']);
 
-/** Unwrap one string token: quoted → unescape; brace block → strip the
- *  braces; bare → as-is. The string-form of parse-block's unwrapped(). */
-const unwrapToken = (x: string): string => {
-  if (x.length >= 2 && x.startsWith('"') && x.endsWith('"')) {
-    return unescapeString(x.slice(1, -1));
-  }
-  if (x.length >= 2 && x.startsWith('{') && x.endsWith('}')) {
-    return unwrapBlock(x);
-  }
-  return x;
-};
+  /** Unwrap one string token: quoted → unescape; brace block → strip the
+   *  braces; bare → as-is. The string-form of parse-block's unwrapped(). */
+  const unwrapToken = (x: string): string => {
+    if (x.length >= 2 && x.startsWith('"') && x.endsWith('"')) {
+      return unescapeString(x.slice(1, -1));
+    }
+    if (x.length >= 2 && x.startsWith('{') && x.endsWith('}')) {
+      return unwrapBlock(x);
+    }
+    return x;
+  };
   const t = tokenizePackage(data);
   let i = 0;
   while (i < t.length) {
     const keyword = t[i++]!;
     if (keyword === 'modality') {
-      if (i >= t.length) throw new Error(`Parsing error: provision. ID ${id}: Expecting value for modality`);
+      if (i >= t.length) {
+        throw new Error(
+          `Parsing error: provision. ID ${id}: Expecting value for modality`,
+        );
+      }
       result.modality = t[i++]!;
       continue;
     }
     if (keyword === 'condition') {
-      if (i >= t.length) throw new Error(`Parsing error: provision. ID ${id}: Expecting value for condition`);
+      if (i >= t.length) {
+        throw new Error(
+          `Parsing error: provision. ID ${id}: Expecting value for condition`,
+        );
+      }
       result.condition = unwrapToken(t[i++]!);
       continue;
     }
     if (keyword === 'reference') {
-      if (i >= t.length) throw new Error(`Parsing error: provision. ID ${id}: Expecting value for reference`);
+      if (i >= t.length) {
+        throw new Error(
+          `Parsing error: provision. ID ${id}: Expecting value for reference`,
+        );
+      }
       result._relations.ref = tokenizePackage(t[i++]!);
       continue;
     }
     // The free-form subject entry.
     const rest: string[] = [];
-    while (i < t.length && !KNOWN.has(t[i]!)) rest.push(t[i++]!);
+    while (i < t.length && !KNOWN.has(t[i]!)) {
+      rest.push(t[i++]!);
+    }
     if (rest.length === 0) {
       // A trailing bare keyword: a free-form key with an empty value.
       result.subject.set(keyword, '');
