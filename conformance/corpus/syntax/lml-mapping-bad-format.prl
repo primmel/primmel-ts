@@ -1,0 +1,5 @@
+root Root
+
+mapping rdf Ceramic {
+  element "ceramic"
+}

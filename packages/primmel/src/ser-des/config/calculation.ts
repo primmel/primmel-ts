@@ -61,6 +61,25 @@ export const parseCalculation: Parser = function (id, data) {
           result.description = unwrapBlock(t[i++]);
         } else if (command === 'expression') {
           result.expression = unwrapBlock(t[i++]);
+        } else if (command === 'math') {
+          // The declared math (TODO.lang-gaps 20): notation + formula —
+          // math is NOT in OCL (spec clause 13, calculation-math).
+          const inner = tokenizePackage(unwrapBlock(t[i++]));
+          let notation = '';
+          let formula = '';
+          let j = 0;
+          while (j < inner.length) {
+            const k = inner[j++];
+            if (j >= inner.length) {
+              break;
+            }
+            if (k === 'notation') {
+              notation = stripWrapping(inner[j++]);
+            } else if (k === 'formula') {
+              formula = stripWrapping(inner[j++]);
+            }
+          }
+          result.math = { notation, formula };
         } else if (command === 'reference') {
           result._relations.ref = tokenizePackage(t[i++]);
         } else if (command === 'ref') {
@@ -440,6 +459,23 @@ function parseVariant(
         .filter(s => s.length > 0);
     } else if (cmd === 'expression') {
       variant.expression = stripWrapping(t[i++]);
+    } else if (cmd === 'math') {
+      const inner = tokenizePackage(unwrapBlock(t[i++]));
+      let notation = '';
+      let formula = '';
+      let j = 0;
+      while (j < inner.length) {
+        const k = inner[j++];
+        if (j >= inner.length) {
+          break;
+        }
+        if (k === 'notation') {
+          notation = stripWrapping(inner[j++]);
+        } else if (k === 'formula') {
+          formula = stripWrapping(inner[j++]);
+        }
+      }
+      variant.math = { notation, formula };
     } else if (cmd === 'lookup') {
       variant.lookup = parseLookup(unwrapBlock(t[i++]));
     } else if (cmd === 'profile') {

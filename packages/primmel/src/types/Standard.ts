@@ -132,6 +132,14 @@ export default interface Standard {
   referenceMaterials: ReferenceMaterial[];
   /** Named shared test-point sets referenced by conformance tests. */
   testPointSets: TestPointSet[];
+  /** The LML-aligned substrate (TODO.lang-gaps; Annex F): declared wire
+   *  mappings, grammar-backed string formats, namespace declarations,
+   *  the unified datums, and the consolidated checks. */
+  wireMappings: import('./LmlAligned').WireMapping[];
+  stringFormats: import('./LmlAligned').StringFormat[];
+  namespaces: import('./LmlAligned').NamespaceDecl[];
+  datums: import('./LmlAligned').Datum[];
+  checks: import('./LmlAligned').Check[];
   /** The model-wide common test-conditions register (smart
    *  TODO.roadmap/40 batch 4) — one entry per condition. */
   commonTestConditions: CommonTestCondition[];

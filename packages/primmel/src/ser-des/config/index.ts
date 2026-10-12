@@ -211,6 +211,19 @@ import {
 } from './informativeAnnex';
 import { dumpPartAnnex, parsePartAnnex } from './partAnnex';
 
+import {
+  parseWireMapping,
+  dumpWireMapping,
+  parseStringFormat,
+  dumpStringFormat,
+  parseNamespace,
+  dumpNamespace,
+  parseDatum,
+  dumpDatum,
+  parseCheck,
+  dumpCheck,
+} from './lmlAligned';
+
 export interface ConstructDefinition {
   /** Primary keyword that triggers this parser (e.g. `role`, `process`). */
   keyword: string;
@@ -222,6 +235,13 @@ export interface ConstructDefinition {
   parse: Parser;
   /** Whether the keyword consumes an ID token before its payload. */
   takesID?: true;
+  /** LML two-token shape: the keyword consumes a FORMAT token (a
+   *  closed vocabulary) between itself and the id — `mapping xml X`. */
+  takesFormat?: true;
+  /** LML typed-id shape: an optional `: <type>` pair sits between the
+   *  id and the payload — `datum x : number { ... }`. The type folds
+   *  into the payload head for the parser. */
+  optionalTypedId?: true;
   /** Optional resolver for constructs with cross-references. */
   resolve?: Resolver<unknown, unknown>;
   /** Per-item dumper. */
@@ -903,6 +923,44 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   // 10.6): the top-level applicability dimension (one grammar with the
   // instrument's inline dimension blocks, two placements).
   dimensionConstruct as ConstructDefinition,
+  // ── the LML-aligned substrate (TODO.lang-gaps; Annex F) ─────────
+  defineConstruct({
+    keyword: 'mapping',
+    field: 'wireMappings',
+    takesID: true,
+    takesFormat: true,
+    parse: parseWireMapping,
+    dump: dumpWireMapping as never,
+  }),
+  defineConstruct({
+    keyword: 'string_format',
+    field: 'stringFormats',
+    takesID: true,
+    parse: parseStringFormat,
+    dump: dumpStringFormat as never,
+  }),
+  defineConstruct({
+    keyword: 'namespace',
+    field: 'namespaces',
+    takesID: true,
+    parse: parseNamespace,
+    dump: dumpNamespace as never,
+  }),
+  defineConstruct({
+    keyword: 'datum',
+    field: 'datums',
+    takesID: true,
+    optionalTypedId: true,
+    parse: parseDatum,
+    dump: dumpDatum as never,
+  }),
+  defineConstruct({
+    keyword: 'check',
+    field: 'checks',
+    takesID: true,
+    parse: parseCheck,
+    dump: dumpCheck as never,
+  }),
 ];
 
 function buildParserConfig(
@@ -915,6 +973,8 @@ function buildParserConfig(
     }
     const entry = {
       takesID: c.takesID,
+      takesFormat: c.takesFormat,
+      optionalTypedId: c.optionalTypedId,
       parse: c.parse,
       field: c.field,
       ...(c.deprecated ? { deprecated: c.deprecated } : {}),

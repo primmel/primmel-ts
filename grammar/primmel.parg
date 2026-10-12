@@ -66,10 +66,10 @@ grammar Primmel version "0.1.0" {
   # fail-closed precedent). The generic rule stays open for UNKNOWN
   # keywords (forward compatibility: the same parser reads MMEL-era and
   # Primmel-era models).
-  construct = c_end_event / c_start_event / c_class / c_instance / c_approval / c_application_declaration / c_attribute_definition / c_certificate_template / c_common_test_condition / c_conformance_test / c_calculation / c_calculation_context / c_dataspace / c_declaration_gate / c_decision_rule / c_evaluation_dimensions / c_evaluation_profile / c_exclusive_gateway / c_form / c_formula_note / c_framework_document / c_governance_organ / c_identity_slot / c_informative_annex / c_lab_selection_criterion / c_link / c_participant_kind / c_part_annex / c_policy / c_promise_set / c_provision / c_process / c_sample_selection_rule / c_scheme_activity_kind / c_scheme_lifecycle / c_table / c_test_report_checklist / c_test_report_skeleton / c_verification_pathway / generic_construct
+  construct = c_end_event / c_start_event / c_class / c_instance / c_approval / c_application_declaration / c_attribute_definition / c_certificate_template / c_common_test_condition / c_conformance_test / c_calculation / c_calculation_context / c_dataspace / c_declaration_gate / c_decision_rule / c_evaluation_dimensions / c_evaluation_profile / c_exclusive_gateway / c_form / c_formula_note / c_framework_document / c_governance_organ / c_identity_slot / c_informative_annex / c_lab_selection_criterion / c_link / c_participant_kind / c_part_annex / c_policy / c_promise_set / c_provision / c_process / c_sample_selection_rule / c_scheme_activity_kind / c_scheme_lifecycle / c_table / c_test_report_checklist / c_test_report_skeleton / c_verification_pathway / c_mapping / c_string_format / c_namespace / c_datum / c_check / generic_construct
   keyword = bare
   keyword_open = !known_keyword bare
-  known_keyword = ("end_event" !bare_next) / ("start_event" !bare_next) / ("approval" !bare_next) / ("application_declaration" !bare_next) / ("attribute_definition" !bare_next) / ("certificate_template" !bare_next) / ("common_test_condition" !bare_next) / ("conformance_test" !bare_next) / ("calculation" !bare_next) / ("calculation_context" !bare_next) / ("dataspace" !bare_next) / ("declaration_gate" !bare_next) / ("decision_rule" !bare_next) / ("evaluation_dimensions" !bare_next) / ("evaluation_profile" !bare_next) / ("exclusive_gateway" !bare_next) / ("class" !bare_next) / ("instance" !bare_next) / ("form" !bare_next) / ("formula_note" !bare_next) / ("framework_document" !bare_next) / ("governance_organ" !bare_next) / ("identity_slot" !bare_next) / ("informative_annex" !bare_next) / ("lab_selection_criterion" !bare_next) / ("link" !bare_next) / ("participant_kind" !bare_next) / ("part_annex" !bare_next) / ("policy" !bare_next) / ("promise_set" !bare_next) / ("provision" !bare_next) / ("process" !bare_next) / ("sample_selection_rule" !bare_next) / ("scheme_activity_kind" !bare_next) / ("scheme_lifecycle" !bare_next) / ("table" !bare_next) / ("test_report_checklist" !bare_next) / ("test_report_skeleton" !bare_next) / ("verification_pathway" !bare_next)
+  known_keyword = ("end_event" !bare_next) / ("start_event" !bare_next) / ("approval" !bare_next) / ("application_declaration" !bare_next) / ("attribute_definition" !bare_next) / ("certificate_template" !bare_next) / ("common_test_condition" !bare_next) / ("conformance_test" !bare_next) / ("calculation" !bare_next) / ("calculation_context" !bare_next) / ("dataspace" !bare_next) / ("declaration_gate" !bare_next) / ("decision_rule" !bare_next) / ("evaluation_dimensions" !bare_next) / ("evaluation_profile" !bare_next) / ("exclusive_gateway" !bare_next) / ("class" !bare_next) / ("instance" !bare_next) / ("form" !bare_next) / ("formula_note" !bare_next) / ("framework_document" !bare_next) / ("governance_organ" !bare_next) / ("identity_slot" !bare_next) / ("informative_annex" !bare_next) / ("lab_selection_criterion" !bare_next) / ("link" !bare_next) / ("participant_kind" !bare_next) / ("part_annex" !bare_next) / ("policy" !bare_next) / ("promise_set" !bare_next) / ("provision" !bare_next) / ("process" !bare_next) / ("sample_selection_rule" !bare_next) / ("scheme_activity_kind" !bare_next) / ("scheme_lifecycle" !bare_next) / ("table" !bare_next) / ("test_report_checklist" !bare_next) / ("test_report_skeleton" !bare_next) / ("verification_pathway" !bare_next) / ("mapping" !bare_next) / ("string_format" !bare_next) / ("namespace" !bare_next) / ("datum" !bare_next) / ("check" !bare_next)
   # An identifier is a bare word or a quoted string ("chief verifier")
   # — SYN-02's quoted-identifier case, cross-referenced by name.
   ident = bare / string
@@ -105,6 +105,38 @@ grammar Primmel version "0.1.0" {
   kw_instance = "instance" !bare_next
   block_instance = "{" *(gap (assign_line / block_item)) gap "}"
   assign_line = ((bare as key) hgap "=" hgap (value_run as value)) as assignment
+
+  # ── the LML-alignment surface (the revised language) ────────────
+  # mapping <format> <Class> { ... }: a TWO-token declaration — the
+  # format sits between the keyword and the class id (LML's shape).
+  # The block is the generic item stream (xml: element, namespace,
+  # map_element, map_attribute, map_content, mixed_content; key-value:
+  # map, map_key, map_value, render_nil).
+  c_mapping = ((kw_mapping as keyword) gap (mapping_format as format) gap (ident as ident) gap (block as body)) as construct
+  kw_mapping = "mapping" !bare_next
+  mapping_format = ("xml" / "yaml" / "json" / "toml" / "csv") !bare_next
+
+  # string_format :<name> { ... }: LML's registered-format sigil — the
+  # colon marks the format name (artifact + root inside).
+  c_string_format = ((kw_string_format as keyword) gap (string_format_name as format) gap (block as body)) as construct
+  kw_string_format = "string_format" !bare_next
+  string_format_name = ":" bare
+
+  # namespace <id> { ... }: uri + prefix (+ default marker).
+  c_namespace = ((kw_namespace as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  kw_namespace = "namespace" !bare_next
+
+  # datum <name> : <type> { ... }: the unified named, typed, unit-ed
+  # value (origin x scope). The name:type shape mirrors the attribute
+  # entry; the type is optional (free-form datums exist).
+  c_datum = ((kw_datum as keyword) gap (ident as ident) gap [":" gap (datum_type as type) gap] (block as body)) as construct
+  kw_datum = "datum" !bare_next
+  datum_type = bare / string
+
+  # check <id> { ... }: the boolean-verdict consolidation (inputs,
+  # expression, operator, threshold).
+  c_check = ((kw_check as keyword) gap [(ident as ident) gap] (block as body)) as construct
+  kw_check = "check" !bare_next
 
   # events: an id and an EMPTY block, both required (the kernel's
   # "Expecting empty body")

@@ -1,0 +1,5 @@
+root Root
+
+string_format pubid_iso {
+  artifact "pubid/iso"
+}

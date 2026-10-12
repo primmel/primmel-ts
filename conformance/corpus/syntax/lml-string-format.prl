@@ -1,0 +1,8 @@
+root Root
+
+class IsoIdentifier { }
+
+string_format :pubid_iso {
+  artifact "pubid/iso"
+  root "iso_identifier"
+}

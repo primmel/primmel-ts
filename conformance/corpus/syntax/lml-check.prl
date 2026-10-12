@@ -1,0 +1,7 @@
+root Root
+
+check within_mpe_check {
+  inputs { errors mpe }
+  expression "ocl{every(e | e <= mpe)}"
+  operator lte
+}

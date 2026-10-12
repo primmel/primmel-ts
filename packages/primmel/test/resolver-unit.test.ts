@@ -107,6 +107,11 @@ function emptyContext(): ParseContext {
     dataspaces: {},
     policies: {},
     dimensions: {},
+    wireMappings: {},
+    stringFormats: {},
+    namespaces: {},
+    datums: {},
+    checks: {},
     issues: [],
   };
 }

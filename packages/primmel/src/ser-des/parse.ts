@@ -72,16 +72,49 @@ export default function parse(
       continue;
     }
     if (cfg.takesID) {
-      if (i + 1 > tokens.length) {
+      // The LML two-token shapes (TODO.lang-gaps 04 09): the mapping's
+      // FORMAT sits between the keyword and the id; the datum's
+      // optional `: <type>` sits between the id and the payload.
+      let formatTok:
+        { value: string; start: { line: number; col: number } } | undefined;
+      if (cfg.takesFormat) {
+        const f = tokens[i++]!;
+        if (!['xml', 'yaml', 'json', 'toml', 'csv'].includes(f.value)) {
+          throw new Error(
+            `Parsing error: mapping. Unknown format "${f.value}" at line ${f.start.line} col ${f.start.col} (xml, yaml, json, toml, csv)`,
+          );
+        }
+        formatTok = f;
+      }
+      if (i + 1 >= tokens.length) {
         throw new Error(
           `Keyword "${tok.value}" at line ${tok.start.line} col ${tok.start.col} expects an ID and payload, but only ${tokens.length - i + 1} token(s) remain.`,
         );
       }
       const idTok = tokens[i++]!;
+      // The optional `: <type>` pair sits BEFORE the payload.
+      if (cfg.optionalTypedId && tokens[i]?.value === ':') {
+        const typeTok = tokens[i + 1]!;
+        const blockTok = tokens[i + 2];
+        if (!typeTok || !blockTok) {
+          throw new Error(
+            `Keyword "${tok.value}" at line ${tok.start.line} col ${tok.start.col} expects a type and payload, but too few token(s) remain.`,
+          );
+        }
+        i += 3;
+        declarations.push({
+          keyword: tok.value,
+          id: idTok.value,
+          payload: `: ${typeTok.value} ${blockTok.value}`,
+          start: tok.start,
+          end: blockTok.end,
+        });
+        continue;
+      }
       const payloadTok = tokens[i++]!;
       declarations.push({
         keyword: tok.value,
-        id: idTok.value,
+        id: formatTok ? `${formatTok.value}:${idTok.value}` : idTok.value,
         payload: payloadTok.value,
         start: tok.start,
         end: payloadTok.end,
@@ -153,6 +186,11 @@ export function parseDeclarations(
     calculations: {},
     verdicts: {},
     referenceMaterials: {},
+    wireMappings: {},
+    stringFormats: {},
+    namespaces: {},
+    datums: {},
+    checks: {},
     testPointSets: {},
     commonTestConditions: {},
     competenceKinds: {},
