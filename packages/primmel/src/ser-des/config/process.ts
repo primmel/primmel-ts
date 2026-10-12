@@ -1012,6 +1012,41 @@ export const parseProcess: Parser = function (id, data) {
         result._relations.page = value();
       } else if (keyword === 'validate_provision') {
         result._relations.provision = tokenizePackage(value());
+      } else if (keyword === 'step' || keyword === 'binding') {
+        // The LML-aligned step signature / binding edge (TODO.lang-gaps
+        // 01; spec clause 12.2): nested `step <id> { ... }` and
+        // `binding { from X to Y }` declarations inside a process.
+        // Pass-1 materialization: the id + the RAW block ride the
+        // process decl (steps[]/bindings[]); the full step typing
+        // (signature closure, C160) materializes in the kernel's step
+        // plane. The dumper re-emits both verbatim.
+        const sid = stripWrapping(value());
+        const blockTok = value();
+        if (keyword === 'step') {
+          (result.steps ??= []).push({
+            id: sid,
+            kind: 'action',
+            executor: '',
+            role: '',
+            capture: '',
+            reads: [],
+            writes: [],
+            fires: '',
+            calls: '',
+            signatureBlock:
+              blockTok !== undefined && blockTok.startsWith('{') ? unwrapBlock(blockTok) : blockTok ?? '',
+          } as never);
+        } else {
+          (result.bindings ??= []).push({
+            id: sid,
+            block: blockTok !== undefined && blockTok.startsWith('{') ? unwrapBlock(blockTok) : blockTok ?? '',
+          });
+        }
+      } else if (keyword === 'requires') {
+        // step-precondition: `requires { name1 name2 }` — the named
+        // outputs the step consumes.
+        const inner = tokenizePackage(unwrapBlock(value()));
+        (result.stepRequires ??= []).push(...inner.map(stripWrapping));
       } else if (keyword === 'validate_measurement') {
         result.measure = tokenizePackage(value()).map(x => unwrapBlock(x));
       } else if (keyword === 'output') {
@@ -1391,6 +1426,27 @@ export const dumpProcess: (
       '  machine_steps { ' +
       process.machineSteps.map(dumpBareSafe).join(' ') +
       ' }\n';
+  }
+  // The LML-aligned signature steps + bindings (TODO.lang-gaps 01):
+  // pass-1 re-emits the raw blocks (the step plane types them later).
+  for (const st of (process as { steps?: { signatureBlock?: string }[] }).steps ?? []) {
+    if (st.signatureBlock) {
+      out += '  step ' + (st as unknown as { id: string }).id + ' {\n';
+      for (const line of st.signatureBlock.split('\n')) {
+        out += line === '' ? '\n' : '  ' + line + '\n';
+      }
+      out += '  }\n';
+    }
+  }
+  for (const b of (process as { bindings?: { id: string; block: string }[] }).bindings ?? []) {
+    out += '  binding ' + b.id + ' {\n';
+    for (const line of b.block.split('\n')) {
+      out += line === '' ? '\n' : '  ' + line + '\n';
+    }
+    out += '  }\n';
+  }
+  for (const req of (process as { stepRequires?: string[] }).stepRequires ?? []) {
+    out += '  requires { ' + req + ' }\n';
   }
   // reference_data_registry dumps from the RAW ids (inputRefs): OIML
   // SMART names entity-class stores here, which never resolve to
