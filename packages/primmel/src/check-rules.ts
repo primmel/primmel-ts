@@ -317,6 +317,96 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'the MMEL v2 validation parity (the rename contract — TODO.editor/41)',
   ),
+  // ── the LML-aligned substrate (TODO.lang-gaps; the spec's validation
+  // contract, language-v3 §16) ── The five constructs (mapping /
+  // string_format / namespace / datum / check) carry their declared
+  // data; the checker does the discipline. C163 is the release
+  // classification contract — it runs over `primmel diff --exit-code`
+  // (the existing diff classifier, src/model-diff.ts), so its catalog
+  // entry documents the contract the CLI already enforces; no second
+  // implementation lives here. C165/C166 are RESERVED for the
+  // calculation math plane (the formula identifier bindings and the
+  // Plurimath-conformant parse) — catalogued, not faked.
+  R(
+    'C158',
+    'prose-quarantine',
+    'base',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
+  ),
+  R(
+    'C159',
+    'urn-only-refs',
+    'base',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
+  ),
+  R(
+    'C160',
+    'signature-closure',
+    'base',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
+  ),
+  R(
+    'C161',
+    'check-surface',
+    'base',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
+  ),
+  R(
+    'C162',
+    'namespace-coherence',
+    'base',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
+  ),
+  R(
+    'C163',
+    'change-levels',
+    'base',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16) — runs over `primmel diff --exit-code` (src/model-diff.ts, the diff classifier)',
+  ),
+  R(
+    'C164',
+    'wire-mapping-coverage',
+    'base',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
+  ),
+  R(
+    'C165',
+    'math-symbols-declared',
+    'quantities',
+    'warning',
+    'normal',
+    'RESERVED for the calculation math plane (language-v3 §16) — the formula identifier bindings',
+  ),
+  R(
+    'C166',
+    'math-parses',
+    'quantities',
+    'warning',
+    'normal',
+    'RESERVED for the calculation math plane (language-v3 §16) — the Plurimath-conformant parse (plurimath-ts)',
+  ),
+  R(
+    'C167',
+    'qualified-unit-reference',
+    'quantities',
+    'error',
+    'normal',
+    'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',

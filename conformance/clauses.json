@@ -133,7 +133,7 @@
    "id": "CHK-06",
    "area": "checks",
    "title": "State machine initial",
-   "statement": "A state machine declares its initial state — the starting state for new entities is required, so a machine without one is flagged; the serializer never emits the keyword without its value.",
+   "statement": "A state machine declares its initial state \u2014 the starting state for new entities is required, so a machine without one is flagged; the serializer never emits the keyword without its value.",
    "specAnchor": "state machine syntax (initial is required)",
    "rules": [
     "C109"
@@ -248,7 +248,7 @@
    "id": "DAT-03",
    "area": "dataspace",
    "title": "Trust references",
-   "statement": "A trust_ref names an organization by its registry identifier, optionally with one published key by key id. The reference is opaque to the model: it carries addressing only, the consumer resolves it at runtime, and a conforming checker never resolves it — an organization no package declares is not a finding. The checker verifies the anchor's shape only (C105).",
+   "statement": "A trust_ref names an organization by its registry identifier, optionally with one published key by key id. The reference is opaque to the model: it carries addressing only, the consumer resolves it at runtime, and a conforming checker never resolves it \u2014 an organization no package declares is not a finding. The checker verifies the anchor's shape only (C105).",
    "specAnchor": "MN 114 clause 19.3 (trust references)",
    "rules": [
     "C105"
@@ -268,7 +268,7 @@
    "id": "SUR-01",
    "area": "surface",
    "title": "The browser runtime surface",
-   "statement": "The toolchain's browser-facing runtime module exposes the language's enumerated vocabularies as data — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes — so browser consumers read them from the toolchain and never re-declare them. A probe name the surface does not carry is reported absent, never rubber-stamped present.",
+   "statement": "The toolchain's browser-facing runtime module exposes the language's enumerated vocabularies as data \u2014 the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes \u2014 so browser consumers read them from the toolchain and never re-declare them. A probe name the surface does not carry is reported absent, never rubber-stamped present.",
    "specAnchor": "the browser runtime surface (the reference toolchain's distribution)",
    "rules": []
   },
@@ -276,7 +276,7 @@
    "id": "CON-01",
    "area": "consumption",
    "title": "The term alias family",
-   "statement": "A term declares its everyday-words → defined-term bridge as the alias family (aliases, colloquial, abbreviations, deprecated, with spelling-tagged variant lists). Duplicate entries within one list of one term are errors (C110).",
+   "statement": "A term declares its everyday-words \u2192 defined-term bridge as the alias family (aliases, colloquial, abbreviations, deprecated, with spelling-tagged variant lists). Duplicate entries within one list of one term are errors (C110).",
    "specAnchor": "MN 114 clause 13.10.1 (the term alias family)",
    "rules": [
     "C110"
@@ -286,7 +286,7 @@
    "id": "CON-02",
    "area": "consumption",
    "title": "The dimension declaration",
-   "statement": "A top-level dimension declares the applicability axis's value domain — values or values_of, never both; value identifiers are unique, every implies target resolves inside its own dimension, and the implication graph is acyclic (C111).",
+   "statement": "A top-level dimension declares the applicability axis's value domain \u2014 values or values_of, never both; value identifiers are unique, every implies target resolves inside its own dimension, and the implication graph is acyclic (C111).",
    "specAnchor": "MN 114 clause 10.6 (the dimension declaration)",
    "rules": [
     "C111"
@@ -296,7 +296,7 @@
    "id": "CON-03",
    "area": "consumption",
    "title": "The structured reference identity",
-   "statement": "A reference carries a resolvable identity: the urn facet, where present, is a well-formed IRI — a scheme followed by no whitespace or IRI delimiters (C112).",
+   "statement": "A reference carries a resolvable identity: the urn facet, where present, is a well-formed IRI \u2014 a scheme followed by no whitespace or IRI delimiters (C112).",
    "specAnchor": "MN 114 clause 14.7 (the structured reference)",
    "rules": [
     "C112"
@@ -306,7 +306,7 @@
    "id": "CON-04",
    "area": "consumption",
    "title": "Edition lineage coherence",
-   "statement": "A manifest's superseded_by forward edge, where declared, agrees with the successor's backward supersedes/replaces edges across the composed closure — opposite lineage edges between the same pair must agree; a missing forward edge is never an error (C113).",
+   "statement": "A manifest's superseded_by forward edge, where declared, agrees with the successor's backward supersedes/replaces edges across the composed closure \u2014 opposite lineage edges between the same pair must agree; a missing forward edge is never an error (C113).",
    "specAnchor": "MN 114 clause 9.3.1 (edition lineage)",
    "rules": [
     "C113"
@@ -346,7 +346,7 @@
    "id": "CON-08",
    "area": "consumption",
    "title": "The verdict chain is acyclic",
-   "statement": "An input naming another verdict makes the acceptance chain an explicit graph; the verdict→verdict derivation graph never cycles — a consumption system traverses the chain, and a cycle never terminates (C117).",
+   "statement": "An input naming another verdict makes the acceptance chain an explicit graph; the verdict\u2192verdict derivation graph never cycles \u2014 a consumption system traverses the chain, and a cycle never terminates (C117).",
    "specAnchor": "MN 114 clause 11.3 (the verdict chain)",
    "rules": [
     "C117"
@@ -414,7 +414,7 @@
    "id": "FWK-07",
    "area": "framework",
    "title": "Framework references resolve",
-   "statement": "Every reference the framework constructs carry — the participant kind's organs, designating participant, and Declaration; the declaration gate's holder, Declaration, and blocked processes; the lifecycle's conditions reference and transition organs; the framework document's approving organ; the decision rule's organ and exempted participant kinds — resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C120).",
+   "statement": "Every reference the framework constructs carry \u2014 the participant kind's organs, designating participant, and Declaration; the declaration gate's holder, Declaration, and blocked processes; the lifecycle's conditions reference and transition organs; the framework document's approving organ; the decision rule's organ and exempted participant kinds \u2014 resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C120).",
    "specAnchor": "MN 114 v3.3 (framework reference resolution)",
    "rules": [
     "C120"
@@ -432,7 +432,7 @@
    "id": "FWK-10",
    "area": "framework",
    "title": "The scheme-type register constructs",
-   "statement": "A scheme_activity_kind declares one row of the ISO/IEC 17067 activity menu: family (common, selection, determination, review, attestation, surveillance — parse-enforced), row designation, and label. A scheme_type declares one scheme type: label, clause, description, attestation_object (parse-enforced), the determination/attestation menu lists, the surveillance block (required flag and activities list), optional sampling and notes, and clause-URN provenance.",
+   "statement": "A scheme_activity_kind declares one row of the ISO/IEC 17067 activity menu: family (common, selection, determination, review, attestation, surveillance \u2014 parse-enforced), row designation, and label. A scheme_type declares one scheme type: label, clause, description, attestation_object (parse-enforced), the determination/attestation menu lists, the surveillance block (required flag and activities list), optional sampling and notes, and clause-URN provenance.",
    "specAnchor": "MN 114 v3.3 (the scheme-type register constructs)",
    "rules": []
   },
@@ -448,7 +448,7 @@
    "id": "FWK-12",
    "area": "framework",
    "title": "Abstract-process references resolve",
-   "statement": "Every reference the abstract-process facets carry — the roles, organs, and participant kinds; the decision rule; the declaration kind and its sign|update action; the discharged gate; the realized_by processes and approved_by approvals; the window kind vocabulary and its exactly-one-duration shape — resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C121).",
+   "statement": "Every reference the abstract-process facets carry \u2014 the roles, organs, and participant kinds; the decision rule; the declaration kind and its sign|update action; the discharged gate; the realized_by processes and approved_by approvals; the window kind vocabulary and its exactly-one-duration shape \u2014 resolves against its target register whenever that register is in composition scope; an edge whose target register is absent from the composition is not adjudicated (C121).",
    "specAnchor": "MN 114 v3.3 (abstract-process reference resolution)",
    "rules": [
     "C121"
@@ -508,7 +508,7 @@
    "id": "COD-02",
    "area": "cod",
    "title": "The calculation variant block",
-   "statement": "The variant block on a calculation: the type vocabulary (expression, table_lookup, profile_lookup, pass_fail) is parse-enforced, variant ids are unique within the owning calculation, and the type-conditional facets are present — an expression variant carries its expression, a table_lookup variant its lookup block, a profile_lookup variant its profile (C125); the params are engine call-site names and deliberately carry no resolution leg.",
+   "statement": "The variant block on a calculation: the type vocabulary (expression, table_lookup, profile_lookup, pass_fail) is parse-enforced, variant ids are unique within the owning calculation, and the type-conditional facets are present \u2014 an expression variant carries its expression, a table_lookup variant its lookup block, a profile_lookup variant its profile (C125); the params are engine call-site names and deliberately carry no resolution leg.",
    "specAnchor": "MN 114 v3.3 (the calculation variant block, C125)",
    "rules": [
     "C125"
@@ -528,7 +528,7 @@
    "id": "COD-04",
    "area": "cod",
    "title": "The common_test_condition register",
-   "statement": "The common_test_condition register: every entry carries its description — the one facet both the array entries and the keyed-map entries carry (C127); the title stays optional (the keyed-map entries carry none) and the reference stays a free citation string.",
+   "statement": "The common_test_condition register: every entry carries its description \u2014 the one facet both the array entries and the keyed-map entries carry (C127); the title stays optional (the keyed-map entries carry none) and the reference stays a free citation string.",
    "specAnchor": "MN 114 v3.3 (the common_test_condition register, C127)",
    "rules": [
     "C127"
@@ -558,7 +558,7 @@
    "id": "EVL-02",
    "area": "evl",
    "title": "The promise certificate projection and the promise_set register",
-   "statement": "The certificate print projection on a promise: the content binds by XOR (at most one of attribute / attributes / dimension), the type sits in the closed renderer vocabulary, and the label is required; the file-grade promise_set register reuses the subject-promise sub-grammar verbatim and the C42–C44 verifiability legs fire on set entries exactly as on subject promises (C131).",
+   "statement": "The certificate print projection on a promise: the content binds by XOR (at most one of attribute / attributes / dimension), the type sits in the closed renderer vocabulary, and the label is required; the file-grade promise_set register reuses the subject-promise sub-grammar verbatim and the C42\u2013C44 verifiability legs fire on set entries exactly as on subject promises (C131).",
    "specAnchor": "MN 114 v3.3 (the promise certificate projection and the promise_set register, C131)",
    "rules": [
     "C131"
@@ -578,7 +578,7 @@
    "id": "EVL-04",
    "area": "evl",
    "title": "The calculation_context register",
-   "statement": "The calculation_context register: every field source is a subject-chain token (classification.<dimension>, parameters.<attribute>, computed) — the classification and parameters resolutions gate on their registers, legacy schema tokens are rejected ungated — source computed requires the expression facet while a non-computed source carries none, and a free expression identifier that names no field warns unless it is a function call (C133).",
+   "statement": "The calculation_context register: every field source is a subject-chain token (classification.<dimension>, parameters.<attribute>, computed) \u2014 the classification and parameters resolutions gate on their registers, legacy schema tokens are rejected ungated \u2014 source computed requires the expression facet while a non-computed source carries none, and a free expression identifier that names no field warns unless it is a function call (C133).",
    "specAnchor": "MN 114 v3.3 (the calculation_context register, C133)",
    "rules": [
     "C133"
@@ -598,7 +598,7 @@
    "id": "EVL-06",
    "area": "evl",
    "title": "The evaluation_profile register",
-   "statement": "The evaluation_profile register: the open-keyed dimensions map keys resolve against the dimension register when it is in scope, and every value is a member of its dimension's declared value set — an open dimension (no declared values) accepts any value (C135).",
+   "statement": "The evaluation_profile register: the open-keyed dimensions map keys resolve against the dimension register when it is in scope, and every value is a member of its dimension's declared value set \u2014 an open dimension (no declared values) accepts any value (C135).",
    "specAnchor": "MN 114 v3.3 (the evaluation_profile register, C135)",
    "rules": [
     "C135"
@@ -628,7 +628,7 @@
    "id": "EVL-10",
    "area": "evl",
    "title": "The lab_selection_criterion register",
-   "statement": "The lab_selection_criterion register: the parse-enforced weight, parameter_type, and match-operator vocabularies; the applies_when and match model_field references resolve against the attribute_definition / dimension registers (gated); and the match facets are operator-conditional — has_capability requires required_capability, the prefix operators require required_capability_prefix and model_field, always_pass carries no other match facet (C139).",
+   "statement": "The lab_selection_criterion register: the parse-enforced weight, parameter_type, and match-operator vocabularies; the applies_when and match model_field references resolve against the attribute_definition / dimension registers (gated); and the match facets are operator-conditional \u2014 has_capability requires required_capability, the prefix operators require required_capability_prefix and model_field, always_pass carries no other match facet (C139).",
    "specAnchor": "MN 114 v3.3 (the lab_selection_criterion register, C139)",
    "rules": [
     "C139"
@@ -648,7 +648,7 @@
    "id": "EVL-12",
    "area": "evl",
    "title": "The test_report_skeleton register",
-   "statement": "The test_report_skeleton register: the section / form / subsection tree with the parse-enforced required vocabulary (always, conditional); the form entry ids and the conformance_test / requirements references resolve per-register (gated); and a conditional form without applicability or notes warns — the inclusion rule is undocumented (C140).",
+   "statement": "The test_report_skeleton register: the section / form / subsection tree with the parse-enforced required vocabulary (always, conditional); the form entry ids and the conformance_test / requirements references resolve per-register (gated); and a conditional form without applicability or notes warns \u2014 the inclusion rule is undocumented (C140).",
    "specAnchor": "MN 114 v3.3 (the test_report_skeleton register, C140)",
    "rules": [
     "C140"
@@ -658,7 +658,7 @@
    "id": "EVL-13",
    "area": "evl",
    "title": "The test_report_checklist register",
-   "statement": "The test_report_checklist register: the parse-enforced obligation vocabulary (shall, may); entry ids are unique per checklist; the element letter sits within the PD-05 §4.4.3 vocabulary at warning (the vocabulary can grow); and an overlay entry names an upstream checklist entry id (C141).",
+   "statement": "The test_report_checklist register: the parse-enforced obligation vocabulary (shall, may); entry ids are unique per checklist; the element letter sits within the PD-05 \u00a74.4.3 vocabulary at warning (the vocabulary can grow); and an overlay entry names an upstream checklist entry id (C141).",
    "specAnchor": "MN 114 v3.3 (the test_report_checklist register, C141)",
    "rules": [
     "C141"
@@ -668,7 +668,7 @@
    "id": "PKG-08",
    "area": "packaging",
    "title": "The register overlay deep merge",
-   "statement": "The overlay deep merge: a register in the overlay-capable set (workflowConfigs, testReportChecklists) marked `overlay true` merges field-wise across the uses chain — entries union by identity key preserving first-seen order, scalar arrays append as a union, scalars override, and a null incoming facet is the unstated marker (the base facet survives); an overlay entry naming no upstream entry id is an error (C141).",
+   "statement": "The overlay deep merge: a register in the overlay-capable set (workflowConfigs, testReportChecklists) marked `overlay true` merges field-wise across the uses chain \u2014 entries union by identity key preserving first-seen order, scalar arrays append as a union, scalars override, and a null incoming facet is the unstated marker (the base facet survives); an overlay entry naming no upstream entry id is an error (C141).",
    "specAnchor": "MN 114 v3.3 (the overlay deep-merge composition rule, C141)",
    "rules": [
     "C141"
@@ -678,7 +678,7 @@
    "id": "WF-01",
    "area": "wf",
    "title": "The workflow-process facets",
-   "statement": "The workflow-process facets: phase (the pipeline phase token), the ordered repeatable guard criteria, and machine_steps (the documentary engine-run steps) parse and re-serialize in declaration order; provenance is spelled ONLY source { doc clause } — free citation strings land in doc. The facet vocabularies are intentionally open (the codec stays total); a value-taking keyword with no value token is a parse error.",
+   "statement": "The workflow-process facets: phase (the pipeline phase token), the ordered repeatable guard criteria, and machine_steps (the documentary engine-run steps) parse and re-serialize in declaration order; provenance is spelled ONLY source { doc clause } \u2014 free citation strings land in doc. The facet vocabularies are intentionally open (the codec stays total); a value-taking keyword with no value token is a parse error.",
    "specAnchor": "MN 114 v3.3 (the workflow-process facets, smart TODO.roadmap/40 batch 5)",
    "rules": []
   },
@@ -686,7 +686,7 @@
    "id": "WF-02",
    "area": "wf",
    "title": "The exclusive_gateway edge cascade",
-   "statement": "The exclusive_gateway edge cascade: the edge <target> { condition … label … } entries are repeatable and ordered, and the bare default token marks the catch-all; the edge targets resolve to declared processes (per-register gated), an edge-carrying gateway declares exactly one default edge (the edge-less label-only gateway carries no routing and is skipped), and the default is recommended last at warning (C142).",
+   "statement": "The exclusive_gateway edge cascade: the edge <target> { condition \u2026 label \u2026 } entries are repeatable and ordered, and the bare default token marks the catch-all; the edge targets resolve to declared processes (per-register gated), an edge-carrying gateway declares exactly one default edge (the edge-less label-only gateway carries no routing and is skipped), and the default is recommended last at warning (C142).",
    "specAnchor": "MN 114 v3.3 (the exclusive_gateway edge cascade, C142)",
    "rules": [
     "C142"
@@ -706,7 +706,7 @@
    "id": "PKG-09",
    "area": "packaging",
    "title": "The license facets",
-   "statement": "A package declares at most one license_key — the entitlement catalog key, shaped ^std:[a-z0-9-]+$ — and declares its license_holder (the copyright owner) alongside it; a package without a license key is public content and carries no entitlement.",
+   "statement": "A package declares at most one license_key \u2014 the entitlement catalog key, shaped ^std:[a-z0-9-]+$ \u2014 and declares its license_holder (the copyright owner) alongside it; a package without a license key is public content and carries no entitlement.",
    "specAnchor": "the package manifest (the entitlement facet, smart TODO.external-refs/04)",
    "rules": [
     "C144",
@@ -718,7 +718,7 @@
    "id": "PWT-01",
    "area": "checks",
    "title": "Power-type instantiation",
-   "statement": "An instance's of reference names a subject, an instrument, or ANOTHER INSTANCE: every instance can serve as the definition of further instantiation (the CDD family's power-type discipline — the CDDAL interop requirement). The delegation walk continues through an of-to-instance link with no upward subject-chain link (C20 resolves of; C155 keeps the of-chain coherent — no mixing with the model/group/family links — and acyclic). A class's extends names a class or an instance, specializing that individual (C156).",
+   "statement": "An instance's of reference names a subject, an instrument, or ANOTHER INSTANCE: every instance can serve as the definition of further instantiation (the CDD family's power-type discipline \u2014 the CDDAL interop requirement). The delegation walk continues through an of-to-instance link with no upward subject-chain link (C20 resolves of; C155 keeps the of-chain coherent \u2014 no mixing with the model/group/family links \u2014 and acyclic). A class's extends names a class or an instance, specializing that individual (C156).",
    "specAnchor": "the power-type instantiation clause of the subject model",
    "rules": [
     "C20",
@@ -729,12 +729,60 @@
   {
    "id": "REG-01",
    "area": "reg",
-   "title": "The data_registry↔dataclass pairing",
-   "statement": "Every data_registry declares a data_class that resolves to a declared class — the legacy corpus pairs 188/188. A data_class that names no declared class leaves the registry's rows formless: C157 (the legacy threw at load).",
+   "title": "The data_registry\u2194dataclass pairing",
+   "statement": "Every data_registry declares a data_class that resolves to a declared class \u2014 the legacy corpus pairs 188/188. A data_class that names no declared class leaves the registry's rows formless: C157 (the legacy threw at load).",
    "specAnchor": "MN 113 (the registry plane); C157 registry-dataclass-resolves",
    "rules": [
     "C157"
    ]
+  },
+  {
+   "id": "LML-01",
+   "area": "lml",
+   "title": "The wire-mapping declaration",
+   "statement": "mapping <format> <Class> { ... } declares one class's wire form per format; the format is a closed vocabulary (xml, yaml, json, toml, csv) and any other token is a parse error. C164.",
+   "specAnchor": "language-v3 clause 16.6; TODO.lang-gaps/09",
+   "rules": [
+    "C164"
+   ]
+  },
+  {
+   "id": "LML-02",
+   "area": "lml",
+   "title": "The namespace declaration",
+   "statement": "namespace <id> { uri ... prefix ... } declares a named uri+prefix pair in the package scope; the block is required. C162.",
+   "specAnchor": "language-v3 clause 9.6; TODO.lang-gaps/13",
+   "rules": [
+    "C162"
+   ]
+  },
+  {
+   "id": "LML-03",
+   "area": "lml",
+   "title": "The datum declaration",
+   "statement": "datum <name> : <type> { ... } declares the unified named, typed, unit-ed value (origin x scope); the block is required. C160.",
+   "specAnchor": "language-v3 clause 10.2; TODO.lang-gaps/04",
+   "rules": [
+    "C160"
+   ]
+  },
+  {
+   "id": "LML-04",
+   "area": "lml",
+   "title": "The check declaration",
+   "statement": "check <id> { inputs ... expression ... operator ... } \u2014 the consolidated boolean verdict; the block is required. C161.",
+   "specAnchor": "language-v3 clause 11.2; TODO.lang-gaps/03",
+   "rules": [
+    "C161"
+   ]
+  },
+  {
+   "id": "LML-05",
+   "area": "lml",
+   "title": "The string_format declaration",
+   "statement": "string_format :<name> { artifact ... root ... } \u2014 the colon sigil marks the registered format name; without it the declaration is a parse error.",
+   "specAnchor": "language-v3 clause 10.15; TODO.lang-gaps/11",
+   "rules": []
   }
  ]
 }

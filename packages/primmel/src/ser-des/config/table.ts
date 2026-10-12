@@ -40,6 +40,15 @@ function parseColumnDefs(block: string): TableColumnDef[] {
     if (!name) {
       break;
     }
+    // The OLD columns dialect (colN { name "X" type "T" }) is RETIRED:
+    // it parsed as garbage here (the block's facets read as
+    // name/type/unit tokens) and corrupted the round trip. Loud death,
+    // never a silent mangle.
+    if (i < t.length && t[i] === '{') {
+      throw new Error(
+        `Parsing error: table. Column "${name}": the old columns dialect (colN { name ... type ... }) is retired — write the canonical form: ${name === '' ? 'name' : name}: type "unit"`,
+      );
+    }
     if (i < t.length && t[i] === ':') {
       i++;
     }

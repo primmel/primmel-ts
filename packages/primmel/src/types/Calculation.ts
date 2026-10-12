@@ -64,6 +64,10 @@ interface Calculation {
   inputs: CalculationInput[];
   output: CalculationOutput;
   expression: string;
+  /** The declared math (TODO.lang-gaps 20): notation + formula —
+   *  math is NOT in OCL; the formula's identifiers bind declared
+   *  symbols (C165) and parse in the declared notation (C166). */
+  math?: { notation: string; formula: string };
   /** Parameter ids the calculation is parameterized by. */
   params?: string[];
   /** Table-lookup declaration. */
@@ -117,6 +121,10 @@ export interface CalculationVariant {
   lookup?: CalculationLookup | null;
   /** Profile path (required when type is profile_lookup — C125). */
   profile?: string;
+  /** The declared math (TODO.lang-gaps 20): notation + formula —
+   *  math is NOT in OCL; the formula's identifiers bind declared
+   *  symbols (C165) and parse in the declared notation (C166). */
+  math?: { notation: string; formula: string };
 }
 
 export default Calculation;

@@ -1,0 +1,6 @@
+root Root
+
+namespace CeramicsNs {
+  uri "http://example.com/ceramics"
+  prefix "cer"
+}

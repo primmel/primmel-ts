@@ -38,6 +38,7 @@ export const parseSymbol: Parser = function (id, data) {
     type: 'number',
     unit: '1',
     latex: '',
+    renders: [],
     values: [],
     series: null,
     kind: '',
@@ -93,6 +94,21 @@ export const parseSymbol: Parser = function (id, data) {
         result.unit = unwrapped(value);
       } else if (command === 'latex') {
         result.latex = unwrapped(value);
+      } else if (command === 'render') {
+        // render <notation> "<text>" — the notation named (the retired
+        // bare latex facet's replacement; spec clause 13.x).
+        const notation = stripWrapping(value());
+        const text = peek() !== undefined ? stripWrapping(value()) : '';
+        if (!result.renders) {
+          result.renders = [];
+        }
+        if (
+          ['asciimath', 'latex', 'unicodemath', 'mathml', 'omml'].includes(
+            notation,
+          )
+        ) {
+          result.renders.push({ notation, text });
+        }
       } else if (command === 'values') {
         // The canonical spelling is the brace block (`values { A B }`).
         // A bare single value reads whole — never through tokenizePackage,
@@ -188,6 +204,9 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
   }
   if (s.latex) {
     out += '  latex "' + escapeString(s.latex) + '"\n';
+  }
+  for (const r of s.renders ?? []) {
+    out += '  render ' + r.notation + ' "' + escapeString(r.text) + '"\n';
   }
   if (s.values.length > 0) {
     // The canonical spelling carries the braces: an unbraced dump

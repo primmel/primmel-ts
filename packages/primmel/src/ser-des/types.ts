@@ -123,6 +123,10 @@ export interface ParsedConstruct {
 export interface ParserConfiguration {
   [keyword: string]: {
     takesID?: true;
+    /** The LML two-token shape: consume a FORMAT token before the id. */
+    takesFormat?: true;
+    /** The LML typed-id shape: an optional `: <type>` before the payload. */
+    optionalTypedId?: true;
     parse: Parser;
     field?: keyof ParseContext;
     /** The deprecation note (phase 2); every use warns under C154. */
@@ -213,6 +217,11 @@ export interface ParseContext {
   calculations: Record<string, Calculation>;
   verdicts: Record<string, Verdict>;
   referenceMaterials: Record<string, ReferenceMaterial>;
+  wireMappings: Record<string, import('../types/LmlAligned').WireMapping>;
+  stringFormats: Record<string, import('../types/LmlAligned').StringFormat>;
+  namespaces: Record<string, import('../types/LmlAligned').NamespaceDecl>;
+  datums: Record<string, import('../types/LmlAligned').Datum>;
+  checks: Record<string, import('../types/LmlAligned').Check>;
   testPointSets: Record<string, TestPointSet>;
   commonTestConditions: Record<string, CommonTestCondition>;
   competenceKinds: Record<string, CompetenceKind>;

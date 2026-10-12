@@ -19,7 +19,12 @@ interface Symbol {
   definition: string;
   type: SymbolType;
   unit: string;
+  /** RETIRED surface (the prose quarantine): a bare per-symbol glyph
+   *  without a named notation. Use `renders` — the parse still fills
+   *  it during the migration window; the dump emits `render` entries. */
   latex: string;
+  /** The declared rendering hints, notation named (spec clause 13.x). */
+  renders: { notation: string; text: string }[];
   values: string[];
   /** Series shape (axes + cell) when the symbol holds a series of readings. */
   series: SeriesDecl | null;

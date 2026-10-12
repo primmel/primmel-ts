@@ -47,16 +47,18 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     assert.equal(new Set(ids).size, ids.length, 'duplicate rule ids');
     // C129 retired with the storyline and demo_world constructs (phase
     // 2); C149-C153 are the typed kernel; C154 is the deprecation
-    // report; C155-C156 are the power-type discipline (phase 8).
+    // report; C155-C156 are the power-type discipline (phase 8);
+    // C158-C167 are the LML-aligned substrate (the spec's validation
+    // contract — language-v3 §16).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`),
       ...Array.from({ length: 19 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 9 }, (_, i) => `C${i + 149}`),
+      ...Array.from({ length: 19 }, (_, i) => `C${i + 149}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation), C155-C156 (power type), C157 (registry pairing)',
+      'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation), C155-C156 (power type), C157 (registry pairing), C158-C167 (the LML-aligned substrate)',
     );
   });
 

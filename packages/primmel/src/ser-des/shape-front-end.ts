@@ -168,6 +168,11 @@ function toDeclarations(
       const c = n['construct'] as Record<string, unknown>;
       const kw = pos(c['keyword']);
       const id = pos(c['ident']);
+      // The two-token LML shapes: `mapping <format> <Class>` captures
+      // the format atom BEFORE the ident; `string_format :<name>`
+      // captures the sigil name INSTEAD of an ident. Fold the format
+      // into the materialized id (the parser splits it back out).
+      const fmt = pos(c['format']);
       if (!kw) {
         continue;
       }
@@ -175,13 +180,30 @@ function toDeclarations(
       // shape tree's offsets index the preprocessed text (comments
       // stripped) and drift, and shorter ids prefix-match inside
       // longer ones (Signatory#data inside IASignatory#data).
-      const anchor = id ? id.offset : kw.offset;
-      const afterIdent = id
-        ? indexOfToken(source, id.value, anchor) + id.value.length
-        : indexOfToken(source, kw.value, anchor) + kw.value.length;
+      // The payload starts after the LAST header token — the id, or
+      // the format when the two-token LML shape folded it (the format
+      // replaces the id for string_format, precedes it for mapping).
+      const headerEnd = (tok?: { value: string; offset: number } | null) =>
+        tok
+          ? indexOfToken(source, tok.value, tok.offset) + tok.value.length
+          : 0;
+      const anchor = (id ?? fmt ?? kw).offset;
+      let afterIdent =
+        headerEnd(id) || headerEnd(fmt) || headerEnd(kw) || anchor;
+      // The datum's optional `: <type>` pair sits between the id and
+      // the block — skip it so the payload is the block (the token
+      // front end folds the same pair into the payload head).
+      if (kw.value === 'datum') {
+        const typed = /^(\s*:\s*\S+\s*)\{/.exec(source.slice(afterIdent));
+        if (typed) {
+          afterIdent += typed[1].length;
+        }
+      }
+      const foldedId =
+        fmt && id ? `${fmt.value}:${id.value}` : fmt ? fmt.value : id?.value;
       out.push({
         keyword: kw.value,
-        id: id?.value,
+        id: foldedId,
         payload: payloadBlock(source, afterIdent),
         start: { line: -1, col: -1, offset: kw.offset },
       });
