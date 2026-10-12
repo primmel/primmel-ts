@@ -631,6 +631,12 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
   if (c.expression) {
     out += '  expression "' + escapeString(c.expression) + '"\n';
   }
+  if (c.math) {
+    out += '  math {\n';
+    out += '    notation ' + c.math.notation + '\n';
+    out += '    formula "' + escapeString(c.math.formula) + '"\n';
+    out += '  }\n';
+  }
   if (c.params && c.params.length > 0) {
     out += '  params { ' + c.params.join(' ') + ' }\n';
   }
