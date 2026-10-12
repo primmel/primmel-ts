@@ -108,6 +108,11 @@ export const parseSymbol: Parser = function (id, data) {
           )
         ) {
           result.renders.push({ notation, text });
+          // The latex-notation render doubles as the legacy latex cache —
+          // the runtime and the certificate renderer read symbol.latex.
+          if (notation === 'latex' && !result.latex) {
+            result.latex = text;
+          }
         }
       } else if (command === 'values') {
         // The canonical spelling is the brace block (`values { A B }`).

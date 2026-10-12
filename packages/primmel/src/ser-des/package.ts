@@ -970,14 +970,31 @@ function composePackage(
       // The SCOPED form (`<packageId>:<token>`) names THAT package's
       // provides token — the same convention the waives entries use.
       // The bare form matches any composed package's id or provides.
+      // A scoped require's package may sit OUTSIDE the uses closure
+      // (requires never content-merges — the capability-closure
+      // doctrine): resolve its MANIFEST through the locator for this
+      // check, without merging content.
       const at = req.indexOf(':');
       const scoped = at > 0 ? { pkg: req.slice(0, at), token: req.slice(at + 1) } : null;
+      let scopedProvides: string[] | null = null;
+      if (scoped && !order.includes(scoped.pkg)) {
+        try {
+          // Locate + read the manifest ONLY (requires never
+          // content-merges — the capability-closure doctrine).
+          const dir = locate(scoped.pkg);
+          if (dir) {
+            const rm = readPackageManifest(dir);
+            scopedProvides = rm.provides ?? [];
+            manifests.set(scoped.pkg, rm);
+          }
+        } catch {
+          // unresolvable → the check below fails it as unsatisfied
+        }
+      }
       const satisfied = scoped
-        ? order.some(
-            other =>
-              other === scoped.pkg &&
-              (manifests.get(other)!.provides ?? []).includes(scoped.token),
-          )
+        ? (order.includes(scoped.pkg)
+            ? (manifests.get(scoped.pkg)!.provides ?? []).includes(scoped.token)
+            : (scopedProvides ?? []).includes(scoped.token))
         : order.some(
             other =>
               other !== id &&
