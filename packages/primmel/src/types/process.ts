@@ -232,6 +232,14 @@ export interface ProcessStep {
    * '' = not a call step.
    */
   calls: string;
+  /**
+   * The LML-aligned SIGNATURE plane (TODO.lang-gaps 01; spec clause
+   * 12.2): `step <id> { inputs { … } outputs { … } completion check … }`
+   * — the raw block rides pass-1; the kernel's step plane types it
+   * (inputs/outputs, the completion check, requires — C160 closure).
+   * '' = a plain flow step (the v2 dialect).
+   */
+  signatureBlock: string;
   /** IN bindings of the call (callee param ← caller name; the caller READS). */
   callIn: ProcessCallBinding[];
   /** OUT mappings of the call (callee param → caller name; the caller WRITES). */
@@ -264,6 +272,10 @@ export interface ProcessFlowEdge {
  */
 export interface ProcessFlow {
   steps: ProcessStep[];
+  /** The LML-aligned binding edges (TODO.lang-gaps 01) — pass-1 raw. */
+  bindings?: { id: string; block: string }[];
+  /** Step preconditions: named outputs a step consumes. */
+  stepRequires?: string[];
   edges: ProcessFlowEdge[];
 }
 
