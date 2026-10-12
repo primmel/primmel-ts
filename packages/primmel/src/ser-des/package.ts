@@ -967,12 +967,23 @@ function composePackage(
   for (const id of order) {
     const m = manifests.get(id)!;
     for (const req of m.requires ?? []) {
-      const satisfied = order.some(
-        other =>
-          other !== id &&
-          (other === req ||
-            (manifests.get(other)!.provides ?? []).includes(req)),
-      );
+      // The SCOPED form (`<packageId>:<token>`) names THAT package's
+      // provides token — the same convention the waives entries use.
+      // The bare form matches any composed package's id or provides.
+      const at = req.indexOf(':');
+      const scoped = at > 0 ? { pkg: req.slice(0, at), token: req.slice(at + 1) } : null;
+      const satisfied = scoped
+        ? order.some(
+            other =>
+              other === scoped.pkg &&
+              (manifests.get(other)!.provides ?? []).includes(scoped.token),
+          )
+        : order.some(
+            other =>
+              other !== id &&
+              (other === req ||
+                (manifests.get(other)!.provides ?? []).includes(req)),
+          );
       if (!satisfied) {
         throw new CompositionError(
           'requires-satisfied',
