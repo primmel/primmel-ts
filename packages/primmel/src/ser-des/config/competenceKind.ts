@@ -7,7 +7,7 @@
 //     label "Force measurement"
 //     definition "…"
 //     source { doc "ISO/IEC 17025:2017, 6.4" clause "" }
-//     method_standard iec-60068-2-30 "Environmental testing — Test Db"
+//     method_ref iec-60068-2-30:damp-heat-cyclic
 //   }
 //
 // The required_competence facet on conformance_test (parsed/dumped here
@@ -15,7 +15,7 @@
 //   required_competence {
 //     competence force_measurement {
 //       range { min 0 max "e_max" unit "kg" }
-//       method_standard "iec-60068-2-30"
+//       method_ref iec-60068-2-30:damp-heat-cyclic
 //       resolution { value 0.1 unit "uV" }
 //       stability { value 2 unit "degC" }
 //       description "…"
@@ -93,7 +93,7 @@ export function parseRequiredCompetence(
     const entry: CompetenceRequirement = {
       kind: stripWrapping(t[i++]),
       range: null,
-      methodStandard: '',
+      methodRef: '',
       resolution: null,
       stability: null,
       description: '',
@@ -126,8 +126,8 @@ export function parseRequiredCompetence(
             }
           }
           entry.range = range;
-        } else if (cc === 'method_standard') {
-          entry.methodStandard = stripWrapping(ct[j++]);
+        } else if (cc === 'method_ref') {
+          entry.methodRef = stripWrapping(ct[j++]);
         } else if (cc === 'resolution') {
           entry.resolution = readQuantity(unwrapBlock(ct[j++]));
         } else if (cc === 'stability') {
@@ -185,8 +185,8 @@ export function dumpRequiredCompetence(
       line += ' unit "' + escapeString(e.range.unit) + '" }\n';
       out += line;
     }
-    if (e.methodStandard) {
-      out += '      method_standard "' + escapeString(e.methodStandard) + '"\n';
+    if (e.methodRef) {
+      out += '      method_ref ' + e.methodRef + '\n';
     }
     out += dumpQuantity('resolution', e.resolution);
     out += dumpQuantity('stability', e.stability);
@@ -217,11 +217,10 @@ export const parseCompetenceKind: Parser = function (id, data) {
     label: '',
     definition: '',
     source: null,
-    methodStandards: [],
   };
 
-  // Manual walk (not forEachEntry): a method_standard line carries TWO
-  // value tokens (id + title), which the pairwise helper cannot frame.
+  // Manual walk (not forEachEntry): the source line carries a block
+  // value the pairwise helper cannot frame.
   const t = tokenizePackage(data);
   let i = 0;
   while (i < t.length) {
@@ -237,14 +236,6 @@ export const parseCompetenceKind: Parser = function (id, data) {
       result.definition = readValue(t[i++]);
     } else if (keyword === 'source') {
       result.source = readSource(unwrapBlock(t[i++]));
-    } else if (keyword === 'method_standard') {
-      const stdId = stripWrapping(t[i++]);
-      if (i >= t.length) {
-        throw new Error(
-          `Parsing error: competence_kind. ID ${id}: Expecting title for method_standard ${stdId}`,
-        );
-      }
-      result.methodStandards.push({ id: stdId, title: readValue(t[i++]) });
     } else if (keyword === 'ref') {
       // The unified typed reference (docs/primmel/18).
       const rr = parseRef(t, i, stripWrapping, unwrapBlock);
@@ -287,9 +278,6 @@ export const dumpCompetenceKind: Dumper<CompetenceKind> = function (k) {
         ? ' fragment "' + escapeString(k.source.fragment) + '"'
         : '') +
       ' }\n';
-  }
-  for (const ms of k.methodStandards) {
-    out += '  method_standard ' + ms.id + ' "' + escapeString(ms.title) + '"\n';
   }
   out += dumpCorrespondences(
     k.correspondences,

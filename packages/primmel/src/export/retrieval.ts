@@ -123,6 +123,7 @@ import type Standard from '../types/Standard';
 import type { PackageManifest } from '../types/Package';
 import type { Requirement } from '../types/Requirement';
 import type ConformanceTest from '../types/ConformanceTest';
+import type Process from '../types/process';
 import type Term from '../types/Term';
 import type Calculation from '../types/Calculation';
 import type Symbol from '../types/Symbol';
@@ -188,7 +189,8 @@ export type RetrievalUnitKind =
   | 'note'
   | 'state_machine'
   | 'dimension'
-  | 'condition_set';
+  | 'condition_set'
+  | 'process';
 
 /**
  * One provenance edge of a unit, normalized onto the DOCUMENT's own
@@ -373,6 +375,14 @@ export interface RetrievalUnit {
   channel?: string;
   /** Requirement/test ids this unit depends on. */
   dependencies?: string[];
+  /**
+   * The processes the test realizes (C168's resolution targets): the
+   * test-level method_ref and the required_competence entries' method
+   * refs, de-duplicated and sorted — bare in-package ids or scoped
+   * `<package>:<id>` references, the cross-package retrieval edges to
+   * the cited standards' own models.
+   */
+  method_refs?: string[];
   /**
    * The structured acceptance decision rule (ask 8 — primmel-ts#84):
    * the shared AcceptanceDecision block as authored, on a requirement
@@ -1059,6 +1069,9 @@ export function retrievalFacet(
       facet[`app_${dim}_match`] = match;
     }
   }
+  if ((unit.method_refs ?? []).length > 0) {
+    facet.method_refs = unit.method_refs!.join('|');
+  }
   return facet;
 }
 
@@ -1295,11 +1308,43 @@ function requirementUnit(r: Requirement): UnitContent {
   );
 }
 
+function processUnit(pr: Process): UnitContent {
+  const steps = (pr as unknown as { steps?: unknown[] }).steps ?? [];
+  const calls = steps
+    .map(
+      s =>
+        (s as { calls?: string; id?: string }).calls
+          ? {
+              id: (s as { id?: string }).id ?? '',
+              calls: (s as { calls?: string }).calls ?? '',
+            }
+          : null,
+    )
+    .filter((s): s is { id: string; calls: string } => s !== null);
+  return assemble(
+    {
+      id: pr.id,
+      kind: 'process',
+      ...(present(pr.name) ? { name: pr.name } : {}),
+      ...(present(pr.summary) ? { statement: pr.summary } : {}),
+      ...(calls.length > 0 ? { calls } : {}),
+    },
+    collectClauses(pr),
+  );
+}
+
 function conformanceTestUnit(t: ConformanceTest): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(t.kind) ? { test_kind: t.kind } : {}),
     ...(present(t.methodRef) ? { method_ref: t.methodRef } : {}),
   };
+  const methodRefs = [
+    ...new Set(
+      [t.methodRef, ...(t.requiredCompetence ?? []).map(rc => rc.methodRef)]
+        .filter(m => present(m))
+        .map(m => m as string),
+    ),
+  ].sort();
   const decision = acceptanceDecisionOf(t.acceptance);
   const criteria = testAcceptanceCriteriaOf(t);
   return assemble(
@@ -1335,6 +1380,7 @@ function conformanceTestUnit(t: ConformanceTest): UnitContent {
           }
         : {}),
       ...(presentList(t.dependencies) ? { dependencies: t.dependencies } : {}),
+      ...(methodRefs.length > 0 ? { method_refs: methodRefs } : {}),
       ...(Object.keys(payload).length > 0 ? { payload } : {}),
     },
     collectClauses(t),
@@ -1877,6 +1923,9 @@ export function exportStandardRetrieval(
   }
   for (const t of standard.conformanceTests ?? []) {
     push(conformanceTestUnit(t), t.id);
+  }
+  for (const pr of standard.processes ?? []) {
+    push(processUnit(pr), pr.id);
   }
   for (const t of standard.terms ?? []) {
     push(termUnit(t, pkg.base_urn), t.id);

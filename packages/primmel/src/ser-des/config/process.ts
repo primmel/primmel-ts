@@ -684,9 +684,12 @@ function parseStepBody(
   kind: ProcessStepKind,
   block: string,
 ): ProcessStep {
+  // The flow dialect's steps are fully typed below; the raw signature
+  // plane rides only the nested pass-1 walk (process body `step`).
   const step: ProcessStep = {
     id,
     kind,
+    signatureBlock: '',
     executor: '',
     role: '',
     capture: '',

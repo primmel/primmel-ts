@@ -468,4 +468,15 @@ export default interface Process {
 export type ResolvableProcess = Resolvable<
   Process,
   'actor' | 'output' | 'input' | 'provision' | 'page'
->;
+> & {
+  /**
+   * Pass-1 raw plane: nested `step <id> { inputs … }` / `binding { … }`
+   * blocks awaiting the kernel's step-plane typing (C160); the dumper
+   * re-emits them verbatim.
+   */
+  steps?: unknown[];
+  bindings?: { id: string; block: string }[];
+  /** Pass-1 raw plane: a step's `requires { … }` names, resolved with
+   *  the signature plane in the kernel's step plane. */
+  stepRequires?: string[];
+};

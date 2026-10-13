@@ -1020,6 +1020,64 @@ export function checkPackage(
     }
   }
 
+  // ── C168 method-ref-resolves ────────────────────────────────────────
+  // A conformance test's method_ref names THE PROCESS the test realizes:
+  // a bare id resolved in this package, or a scoped <package>:<id>
+  // reference resolved read-only through the locator (the target's own
+  // content validates the id; nothing merges — the C31 doctrine). A
+  // bibliographic standard id is not a resolution target: the method is
+  // a process to be realized, not a document to cite. Locator-gated
+  // like C27-C31 — without a locator the scoped leg stays silent.
+  const methodTargetIds = (s: Standard): Set<string> =>
+    new Set([
+      ...(s.processes ?? []).map(p => p.id),
+      ...(s.conformanceTests ?? []).map(x => x.id),
+    ]);
+  const localMethodIds = methodTargetIds(standard);
+  const scopedMethodIds = new Map<string, Set<string>>();
+  for (const t of standard.conformanceTests ?? []) {
+    const ref = t.methodRef;
+    if (!ref) {
+      continue;
+    }
+    const colon = ref.indexOf(':');
+    if (colon <= 0) {
+      if (!localMethodIds.has(ref)) {
+        err(
+          'C168',
+          `conformance test ${t.id}: method_ref "${ref}" names no process or conformance test declared in this package (method-ref-resolves)`,
+        );
+      }
+      continue;
+    }
+    if (!options.resolvePackage) {
+      continue;
+    }
+    const pkgId = ref.slice(0, colon);
+    const localId = ref.slice(colon + 1);
+    let ids = scopedMethodIds.get(pkgId);
+    if (!ids) {
+      ids = new Set<string>();
+      try {
+        const depDir = options.resolvePackage(pkgId);
+        if (depDir) {
+          const dep = loadPackageWithIssues(depDir);
+          ids = methodTargetIds(dep.standard);
+        }
+      } catch {
+        // Unreadable dependency — C27 reports the resolution failure;
+        // this rule stays silent rather than double-reporting.
+      }
+      scopedMethodIds.set(pkgId, ids);
+    }
+    if (!ids.has(localId)) {
+      err(
+        'C168',
+        `conformance test ${t.id}: method_ref "${ref}" names no process or conformance test declared in package "${pkgId}" (method-ref-resolves)`,
+      );
+    }
+  }
+
   // C6 — subject anatomy: every aspect declared under exactly one family
   // (anatomy-family). The parser records wrong-family and undeclared
   // aspect keys on Subject.misplacedAspects; value-level markers catch

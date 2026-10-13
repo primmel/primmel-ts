@@ -25,24 +25,13 @@ export default interface CompetenceKind {
   refs?: import('./Ref').Ref[];
   /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
   correspondences?: import('./Correspondence').Correspondence[];
-  /** Method-standard ids recognized for this kind (the resolution registry
-   *  for `method_standard` references on required_competence /
-   *  accreditation_scope entries — e.g. iec-61000-4-4). */
-  methodStandards: MethodStandard[];
-}
-
-/** A recognized method standard of a competence kind. */
-export interface MethodStandard {
-  id: string;
-  /** Bibliographic title of the standard. */
-  title: string;
 }
 
 /**
  * One competence entry — the shared shape of a conformance test's
  * `required_competence` (what the test needs) and a laboratory scope
  * entry (what the lab is accredited for). The cover calculus:
- * kind equal; range covers; method_standard equal-or-compatible;
+ * kind equal; range covers; method_ref equal (the same process);
  * resolution/stability at-least-as-good (smaller is better).
  */
 export interface CompetenceRequirement {
@@ -52,9 +41,11 @@ export interface CompetenceRequirement {
    *  may name a subject parameter (resolved against the dispatch
    *  context, e.g. "e_max"); a laboratory scope always states numbers. */
   range: CompetenceRange | null;
-  /** Method-standard id (registry's methodStandards), when the
-   *  procedure prescribes the method (e.g. IEC 61000-4-4 for bursts). */
-  methodStandard: string;
+  /** The process the entry qualifies/requires, realized as a reference
+   *  (bare in-package id or scoped `<package>:<process-id>`) — the same
+   *  generic mechanism as a conformance test's `method_ref`; the cover
+   *  relation compares process ids, never bibliographic standard names. */
+  methodRef: string;
   /** Readout/indication resolution the work requires or the lab holds —
    *  smaller is better (at-least-as-good = ≤). */
   resolution: CompetenceQuantity | null;
