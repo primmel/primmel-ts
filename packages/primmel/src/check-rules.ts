@@ -407,6 +407,14 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'the LML-aligned validation contract (language-v3 §16; TODO.lang-gaps)',
   ),
+  R(
+    'C168',
+    'method-ref-resolves',
+    'process',
+    'error',
+    'normal',
+    'a conformance test method_ref names a process to be realized — bare in-package, or scoped <package>:<id> resolved read-only through the locator; never a bibliographic standard id',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',
