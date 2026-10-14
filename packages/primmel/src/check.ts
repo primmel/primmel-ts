@@ -1020,6 +1020,136 @@ export function checkPackage(
     }
   }
 
+  // ── C171 expression-identifiers-resolve ─────────────────────────────
+  // The machine-executable expressions are the executable core: every
+  // identifier inside a limit expression, a derivation, or a derive
+  // must resolve to a declared name in scope — the expression's own
+  // uses list, the test's declared variables, or the package's
+  // symbols/datums/verdicts. An identifier naming nothing is air inside
+  // the formula. Dotted paths (the subject-chain binds) and the OCL
+  // keywords are not identifiers for this purpose.
+  const OCL_WORDS = new Set([
+    'and', 'or', 'not', 'xor', 'implies', 'if', 'then', 'else', 'endif',
+    'true', 'false', 'null', 'invalid', 'abs', 'max', 'min', 'floor',
+    'ceil', 'mod', 'div', 'round', 'sqrt', 'exp', 'ln', 'log', 'sum',
+    'count', 'exists', 'forall', 'oclIsUndefined', 'oclIsKindOf',
+    'oclIsTypeOf', 'String', 'Integer', 'Real', 'Boolean', 'Set',
+    'Bag', 'Sequence', 'Collection',
+    // the subject-chain roots: every expression reads the dispatch
+    // context through them — context, never air
+    'sample', 'family', 'group', 'model', 'instrument', 'specimen',
+  ]);
+  const globalExprNames = new Set<string>([
+    ...(standard.symbols ?? []).map(s => s.id),
+    ...(standard.symbols ?? []).map(s => s.id.split('/').pop() ?? ''),
+    ...(standard.datums ?? []).map(d => d.id),
+    ...(standard.verdicts ?? []).map(v => v.id),
+    // the lookup tables: a dotted helper call's OBJECT is declared here —
+    // the method name rides the declared object
+    ...(standard.tables ?? []).map(v => v.id),
+  ].filter(x => x !== ''));
+  const bare = (q: string): string => q.split(':').pop() ?? q;
+  const usesCovers = (uses: string[], id: string): boolean =>
+    uses.some(u => {
+      const tail = bare(u.replace(/\./g, ':'));
+      return u === id || tail === id || u.endsWith('.' + id);
+    });
+  const exprIds = (expr: string): string[] => {
+    // dotted paths are WHOLE references: the interior segments are the
+    // chain's structure — only the final segment names the datum, and
+    // usesCovers judges the path against the uses entries.
+    const paths =
+      expr.match(/[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/g) ??
+      [];
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const p of paths) {
+      if (p.includes('.')) {
+        const segs = p.split('.');
+        // a method call on a declared object (table.permits(...)) rides
+        // the declared object — the final segment is its method
+        if (globalExprNames.has(segs[0])) {
+          continue;
+        }
+        const finalSeg = segs[segs.length - 1];
+        if (!seen.has(p)) {
+          seen.add(p);
+          if (!OCL_WORDS.has(finalSeg)) {
+            out.push(finalSeg);
+          }
+        }
+        continue;
+      }
+      if (!OCL_WORDS.has(p) && !seen.has(p)) {
+        seen.add(p);
+        out.push(p);
+      }
+    }
+    return out;
+  };
+  const unresolvedIn = (
+    expr: string,
+    scope: string[],
+    uses: string[],
+  ): string[] => {
+    const scopeSet = new Set([...scope, ...globalExprNames]);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const id of exprIds(expr)) {
+      if (seen.has(id)) {
+        continue;
+      }
+      seen.add(id);
+      if (OCL_WORDS.has(id) || scopeSet.has(id) || usesCovers(uses, id)) {
+        continue;
+      }
+      out.push(id);
+    }
+    return out;
+  };
+  for (const r of standard.requirements ?? []) {
+    const expr = r.limit?.expression;
+    if (!expr) {
+      continue;
+    }
+    const ocl = expr.replace(/^ocl\{/, '').replace(/\}$/, '');
+    const uses = r.limit?.uses ?? [];
+    for (const id of unresolvedIn(ocl, [], uses)) {
+      err(
+        'C171',
+        `requirement ${r.id}: the limit expression names "${id}", which no uses entry, symbol, datum, or verdict declares — air inside the formula (expression-identifiers-resolve)`,
+      );
+    }
+  }
+  for (const v of standard.verdicts ?? []) {
+    const expr = (v as unknown as { derive?: string }).derive;
+    if (!expr) {
+      continue;
+    }
+    const inputs = (v as unknown as { inputs?: string[] }).inputs ?? [];
+    for (const id of unresolvedIn(expr, inputs, [])) {
+      err(
+        'C171',
+        `verdict ${v.id}: the derive expression names "${id}", which no input declares — air inside the formula (expression-identifiers-resolve)`,
+      );
+    }
+  }
+  for (const t of standard.conformanceTests ?? []) {
+    const scope = (t.variables ?? []).map(v => v.name);
+    for (const v of t.variables ?? []) {
+      if (!v.derivation) {
+        continue;
+      }
+      const ocl = v.derivation.replace(/^ocl\{/, '').replace(/\}$/, '');
+      for (const id of unresolvedIn(ocl, scope, [])) {
+        err(
+          'C171',
+          `conformance test ${t.id}: variable ${v.name}'s derivation names "${id}", which no sibling variable, symbol, datum, or verdict declares — air inside the formula (expression-identifiers-resolve)`,
+        );
+      }
+    }
+  }
+
   // ── C170 edition-lineage-declared ───────────────────────────────────
   // A package declaring more than one edition carries a declarative
   // edition mapping (edition-mapping.json, primmel-edition-mapping/1)

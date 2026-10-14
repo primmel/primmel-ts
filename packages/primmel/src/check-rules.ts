@@ -431,6 +431,14 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'a package declaring more than one edition carries edition-mapping.json (primmel-edition-mapping/1) naming both edition states — the cross-edition linkage is an artifact, never implicit',
   ),
+  R(
+    'C171',
+    'expression-identifiers-resolve',
+    'base',
+    'error',
+    'normal',
+    'every identifier inside a limit expression, derivation, or derive resolves to a declared name in scope — the formula is the executable core, nothing in it is air',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',
