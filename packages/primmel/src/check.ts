@@ -1020,6 +1020,68 @@ export function checkPackage(
     }
   }
 
+  // ── C170 edition-lineage-declared ───────────────────────────────────
+  // A package declaring more than one edition carries a declarative
+  // edition mapping (edition-mapping.json, primmel-edition-mapping/1)
+  // naming both edition states — the cross-edition linkage is an
+  // artifact, never implicit. Born-at-edition packages map the prior
+  // edition with model_state: null and the reason.
+  try {
+    const mf = readPackageManifest(dir);
+    const eds = (mf.editions ?? []).map(String);
+    if (eds.length > 1) {
+      const map = JSON.parse(
+        readFileSync(join(dir, 'edition-mapping.json'), 'utf8'),
+      ) as {
+        kind?: string;
+        from?: { edition?: string | number };
+        to?: { edition?: string | number };
+      };
+      if (map.kind !== 'primmel-edition-mapping/1') {
+        err(
+          'C170',
+          `edition-mapping.json: kind "${String(map.kind)}" is not primmel-edition-mapping/1 (edition-lineage-declared)`,
+        );
+      } else {
+        const fromEd = map.from?.edition === undefined ? undefined : String(map.from.edition);
+        const toEd = map.to?.edition === undefined ? undefined : String(map.to.edition);
+        for (const [side, ed] of [
+          ['from', fromEd],
+          ['to', toEd],
+        ] as const) {
+          if (!ed || !eds.includes(ed)) {
+            err(
+              'C170',
+              `edition-mapping.json: the ${side} edition ${String(ed)} is not among the manifest's declared editions [${eds.join(', ')}] (edition-lineage-declared)`,
+            );
+          }
+        }
+      }
+    }
+  } catch (e) {
+    const code = (e as { code?: string }).code;
+    if (code === 'ENOENT') {
+      const eds = ((): string[] => {
+        try {
+          return ((readPackageManifest(dir).editions ?? []) as unknown[]).map(String);
+        } catch {
+          return [];
+        }
+      })();
+      if (eds.length > 1) {
+        err(
+          'C170',
+          `the package declares ${eds.length} editions [${eds.join(', ')}] but ships no edition-mapping.json — the cross-edition linkage is an artifact, never implicit (edition-lineage-declared)`,
+        );
+      }
+    } else if (e instanceof SyntaxError) {
+      err(
+        'C170',
+        `edition-mapping.json is not valid JSON: ${(e as Error).message} (edition-lineage-declared)`,
+      );
+    }
+  }
+
   // ── C168 method-ref-resolves ────────────────────────────────────────
   // A conformance test's method_ref names THE PROCESS the test realizes:
   // a bare id resolved in this package, or a scoped <package>:<id>
@@ -1035,6 +1097,62 @@ export function checkPackage(
     ]);
   const localMethodIds = methodTargetIds(standard);
   const scopedMethodIds = new Map<string, Set<string>>();
+  const resolveCitation = (elemId: string, ref: string): void => {
+    const colon = ref.indexOf(':');
+    if (colon <= 0) {
+      if (!localMethodIds.has(ref)) {
+        err(
+          'C168',
+          `${elemId}: the reference "${ref}" names no process or conformance test declared in this package (method-ref-resolves)`,
+        );
+      }
+      return;
+    }
+    if (!options.resolvePackage) {
+      return;
+    }
+    const pkgId = ref.slice(0, colon);
+    const localId = ref.slice(colon + 1);
+    let ids = scopedMethodIds.get(pkgId);
+    if (!ids) {
+      ids = new Set<string>();
+      try {
+        const depDir = options.resolvePackage(pkgId);
+        if (depDir) {
+          const dep = loadPackageWithIssues(depDir);
+          ids = methodTargetIds(dep.standard);
+        }
+      } catch {
+        // Unreadable dependency — C27 reports the resolution failure;
+        // this rule stays silent rather than double-reporting.
+      }
+      scopedMethodIds.set(pkgId, ids);
+    }
+    if (!ids.has(localId)) {
+      err(
+        'C168',
+        `${elemId}: the reference "${ref}" names no process or conformance test declared in package "${pkgId}" (method-ref-resolves)`,
+      );
+    }
+  };
+  for (const t of standard.conformanceTests ?? []) {
+    const ref = t.methodRef;
+    if (ref) {
+      resolveCitation(t.id, ref);
+    }
+  }
+  // The process bodies' call edges ride the same resolution: a step's
+  // `calls <p>` (typed or raw-plane) names a process to be realized.
+  for (const pr of standard.processes ?? []) {
+    const raw = pr as unknown as { steps?: { id?: string; calls?: string; signatureBlock?: string }[] };
+    for (const st of raw.steps ?? []) {
+      const call =
+        st.calls || st.signatureBlock?.match(/\bcalls +([\w:/.-]+)/)?.[1];
+      if (call) {
+        resolveCitation(`${pr.id}/step/${st.id ?? ''}`, call);
+      }
+    }
+  }
   for (const t of standard.conformanceTests ?? []) {
     const ref = t.methodRef;
     if (!ref) {

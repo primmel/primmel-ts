@@ -423,6 +423,14 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'a provenance binding citing a shipped document lands on a real fragment or sentence of that document — nothing linked to air',
   ),
+  R(
+    'C170',
+    'edition-lineage-declared',
+    'base',
+    'error',
+    'normal',
+    'a package declaring more than one edition carries edition-mapping.json (primmel-edition-mapping/1) naming both edition states — the cross-edition linkage is an artifact, never implicit',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',
