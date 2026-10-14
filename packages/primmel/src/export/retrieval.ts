@@ -1311,15 +1311,14 @@ function requirementUnit(r: Requirement): UnitContent {
 function processUnit(pr: Process): UnitContent {
   const steps = (pr as unknown as { steps?: unknown[] }).steps ?? [];
   const calls = steps
-    .map(
-      s =>
-        (s as { calls?: string; id?: string }).calls
-          ? {
-              id: (s as { id?: string }).id ?? '',
-              calls: (s as { calls?: string }).calls ?? '',
-            }
-          : null,
-    )
+    .map(s => {
+      const st = s as { calls?: string; id?: string; signatureBlock?: string };
+      const call =
+        st.calls ||
+        st.signatureBlock?.match(/\bcalls +([\w:/.-]+)/)?.[1] ||
+        '';
+      return call ? { id: st.id ?? '', calls: call } : null;
+    })
     .filter((s): s is { id: string; calls: string } => s !== null);
   return assemble(
     {
