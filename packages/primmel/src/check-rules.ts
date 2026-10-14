@@ -415,6 +415,14 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'a conformance test method_ref names a process to be realized — bare in-package, or scoped <package>:<id> resolved read-only through the locator; never a bibliographic standard id',
   ),
+  R(
+    'C169',
+    'provenance-clause-resolves',
+    'base',
+    'error',
+    'normal',
+    'a provenance binding citing a shipped document lands on a real fragment or sentence of that document — nothing linked to air',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',
