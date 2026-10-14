@@ -612,6 +612,59 @@ export function computeTextCoverage(
     SentenceRecord[]
   >();
 
+  // C169 — provenance-clause-resolves: a provenance binding citing a
+  // SHIPPED document must land on a real fragment or sentence of that
+  // document's manifest. A binding pointing at a clause the shipped
+  // source does not contain is linked to air — the model asserts
+  // provenance the record cannot honor. Bindings citing documents this
+  // package does not ship stay out of scope here (their structures live
+  // in the citing corpora — the cross-package harvest is a later ask).
+  for (const manifest of manifests) {
+    const urn = manifest.document.urn;
+    const fragments = new Set<string>();
+    const addresses = new Set<string>();
+    for (const s of manifest.sentences) {
+      fragments.add(s.fragment);
+      addresses.add(s.address);
+    }
+    for (const b of bindings) {
+      if (b.doc !== urn) {
+        continue;
+      }
+      if (fragments.has(b.fragmentPath) || addresses.has(b.fragmentPath)) {
+        continue;
+      }
+      // A cited PARENT clause resolves when the document ships content
+      // under its subtree — the harvest may keep only the leaves; the
+      // clause exists. No subtree, no exact fragment: linked to air.
+      const prefix = b.fragmentPath + '.';
+      let resolved = false;
+      for (const f of fragments) {
+        // subtree: the harvest keeps only the leaves under a cited parent;
+        // enclosure: the binding names a table/fragment inside a shipped
+        // clause the manifest models as one fragment. Either way the
+        // citation lands on shipped content.
+        if (f.startsWith(prefix) || b.fragmentPath.startsWith(f + '/')) {
+          resolved = true;
+          break;
+        }
+      }
+      if (resolved) {
+        continue;
+      }
+      // A bare subpart citation (table-N, figure-N — no clause prefix)
+      // is unverifiable against a clause-only harvest: visible debt, a
+      // warning. A clause-qualified citation that lands nowhere is air:
+      // an error.
+      const subpart = /^(table|figure|annex)-/.test(b.fragmentPath);
+      configIssues.push({
+        check: 'C169',
+        severity: subpart ? 'warning' : 'error',
+        message: `provenance binding ${b.doc}#${b.fragmentPath} (${b.element}, ${b.kind}) names no fragment or sentence of the shipped document — ${subpart ? 'a bare subpart citation the clause-only harvest cannot verify' : 'linked to air'} (provenance-clause-resolves)`,
+      });
+    }
+  }
+
   for (const manifest of manifests) {
     const urn = manifest.document.urn;
     const sentences = manifest.sentences;
