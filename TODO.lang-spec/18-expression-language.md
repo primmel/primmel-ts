@@ -87,10 +87,10 @@ own **applicability guard**, its own assertion:
 
 ```prl
 requirement /req/metrological/mpe-ranges {
-  limit mpe_low_range {
+  limit "mpe-low-range" {
     args {
-      e  <- observable:e
-      mu <- table:vehicle_mpe.mpe_low
+      e  <- oiml-r134:observable:e
+      mu <- oiml-r134:table:vehicle_mpe.mpe_low
     }
     when {
       e <= 5000
@@ -98,10 +98,10 @@ requirement /req/metrological/mpe-ranges {
     abs(e) <= mu
   }
 
-  limit mpe_high_range {
+  limit "mpe-high-range" {
     args {
-      e  <- observable:e
-      mu <- table:vehicle_mpe.mpe_high
+      e  <- oiml-r134:observable:e
+      mu <- oiml-r134:table:vehicle_mpe.mpe_high
     }
     when {
       e > 5000
