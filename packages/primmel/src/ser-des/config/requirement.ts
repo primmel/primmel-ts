@@ -560,7 +560,11 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
     guidance: '',
     dependencies: [],
     referenceIds: [],
+    limit: null,
+    members: [],
   };
+  const nestedParsers: ((ctx: unknown) => unknown)[] = [];
+  const members: string[] = [];
 
   const t = tokenizePackage(data);
   let i = 0;
@@ -585,12 +589,30 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
       result.dependencies = readIdList(t[i++]);
     } else if (cmd === 'reference') {
       result.referenceIds = readIdList(t[i++]);
+    } else if (cmd === 'limit') {
+      result.limit = readLimit(unwrapBlock(t[i++]));
+    } else if (cmd === 'requirement') {
+      // Containment is conjunction: a requirement declared inside its
+      // class is a member; the law's identifiers name the members.
+      const childId = stripWrapping(t[i++]);
+      const childBlock = t[i++];
+      const childParse = parseRequirement(
+        childId,
+        unwrapBlock(childBlock),
+      ) as (ctx: unknown) => unknown;
+      nestedParsers.push(childParse);
+      members.push(childId);
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
   }
 
   return ctx => {
+    const c = ctx as unknown as Record<string, unknown>;
+    for (const parse of nestedParsers) {
+      parse(c);
+    }
+    result.members = members;
     ctx.requirementClasses[id] = result;
     return ctx;
   };
@@ -618,6 +640,9 @@ const dumpRequirementClass = function (rc: RequirementClass): string {
   }
   if (rc.referenceIds.length > 0) {
     out += '  reference { ' + rc.referenceIds.join(' ') + ' }\n';
+  }
+  if (rc.limit) {
+    out += dumpLimit(rc.limit);
   }
   out += '}\n';
   return out;

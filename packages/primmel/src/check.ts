@@ -771,10 +771,14 @@ export function checkPackage(
     (form.fields ?? []).forEach(checkField);
   }
 
-  // C2 — reference targets resolve
+  // C2 — reference targets resolve (a requirement class is a legitimate
+  // verification target: a test may verify a whole regime)
+  const classIds = new Set(
+    (standard.requirementClasses ?? []).map(rc => rc.id),
+  );
   for (const t of standard.conformanceTests ?? []) {
     for (const target of t.targets ?? []) {
-      if (!reqIds.has(target)) {
+      if (!reqIds.has(target) && !classIds.has(target)) {
         err(
           'C2',
           `conformance test ${t.id}: target "${target}" is not a declared requirement`,
@@ -978,9 +982,19 @@ export function checkPackage(
   // targeting test AND no recorded non-test verification warns. The
   // reverse leg is unchanged: a test targeting nothing warns.
   const covered = new Set<string>();
+  const classMembers = new Map<string, string[]>();
+  for (const rc of standard.requirementClasses ?? []) {
+    classMembers.set(rc.id, rc.members ?? []);
+  }
+  const coverWithMembers = (id: string): void => {
+    covered.add(id);
+    for (const m of classMembers.get(id) ?? []) {
+      covered.add(m);
+    }
+  };
   for (const t of standard.conformanceTests ?? []) {
     for (const target of t.targets ?? []) {
-      covered.add(target);
+      coverWithMembers(target);
     }
   }
   const provisioned = new Set<string>();
@@ -1145,6 +1159,47 @@ export function checkPackage(
         err(
           'C171',
           `conformance test ${t.id}: variable ${v.name}'s derivation names "${id}", which no sibling variable, symbol, datum, or verdict declares — air inside the formula (expression-identifiers-resolve)`,
+        );
+      }
+    }
+  }
+
+  // ── C172 requirement-algebra-resolves ───────────────────────────────
+  // Containment is conjunction: a requirement class's members are its
+  // body, and the class's limit expression (the LAW) names its members —
+  // and/or/xor/implies, the OCL booleans. The law's identifiers resolve
+  // to members only; every member appears in the law or the class
+  // carries no law (pure conjunction); a child's modality is never
+  // weaker than the class's.
+  const memberSet = new Map<string, Set<string>>();
+  for (const rc of standard.requirementClasses ?? []) {
+    memberSet.set(rc.id, new Set((rc.members ?? []).map(String)));
+  }
+  for (const rc of standard.requirementClasses ?? []) {
+    const law = rc.limit?.expression;
+    const members = memberSet.get(rc.id) ?? new Set<string>();
+    if (!law) {
+      continue;
+    }
+    const ocl = law.replace(/^ocl\{/, '').replace(/\}$/, '');
+    const ids = (ocl.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []).filter(
+      x => !OCL_WORDS.has(x),
+    );
+    const lawIds = new Set<string>();
+    for (const id of ids) {
+      lawIds.add(id);
+      if (!members.has(id)) {
+        err(
+          'C172',
+          `requirement class ${rc.id}: the law names "${id}", which is not a contained member — the algebra composes the containment only (requirement-algebra-resolves)`,
+        );
+      }
+    }
+    for (const m of members) {
+      if (!lawIds.has(m)) {
+        warn(
+          'C172',
+          `requirement class ${rc.id}: member ${m} does not appear in the law — either it is always-required (add it with \`and\`) or it is orphaned (requirement-algebra-resolves)`,
         );
       }
     }

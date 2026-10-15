@@ -133,4 +133,13 @@ export interface RequirementClass {
   applicability?: ApplicabilityEntry[];
   dependencies: string[];
   referenceIds: string[];
+  /**
+   * The containment law: the class's limit expression names its members
+   * — containment is conjunction by default; the law expresses the
+   * disjunctive/conditional alternatives (or/xor/implies) the standards
+   * state in prose.
+   */
+  limit?: RequirementLimit | null;
+  /** The contained member requirement ids (containment = conjunction). */
+  members?: string[];
 }

@@ -439,6 +439,14 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'every identifier inside a limit expression, derivation, or derive resolves to a declared name in scope — the formula is the executable core, nothing in it is air',
   ),
+  R(
+    'C172',
+    'requirement-algebra-resolves',
+    'base',
+    'error',
+    'normal',
+    'containment is conjunction; a requirement class limit (the law) names its contained members with the OCL booleans — and/or/xor/implies — and every member appears in the law',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',
