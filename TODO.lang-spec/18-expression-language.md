@@ -133,6 +133,13 @@ requirement /req/metrological/mpe-ranges {
 - Phase 3: the corpus migrates mechanically (the `ocl{X}` strings → the
   inline form); the string form deprecates to Annex D.
 - checker2 inherits the expression grammar as its parity target.
+- **The evaluation engine is plurimath** — the mandate issued
+  (plurimath#488, docs/MANDATE-semantic-math.md): the QuantityValue type
+  system with the unit algebra and the dimension vectors, the GUM
+  uncertainty propagation, the series aggregations, and the constraint
+  evaluation with the residuals. The kernel parses the model, builds the
+  scope, and delegates the evaluation; the test vectors are the
+  cross-implementation contract.
 
 
 
