@@ -34,6 +34,45 @@ export default function dump(
     }
   }
   const processMap = new Map(model.processes.map(p => [p.id, p]));
+  // Containment: the requirements a class declares as members dump
+  // nested inside it, never standalone.
+  const memberIds = new Set<string>();
+  for (const rc of model.requirementClasses ?? []) {
+    for (const m of rc.members ?? []) {
+      memberIds.add(m);
+    }
+  }
+  const requirementMap = new Map(
+    (model.requirements ?? []).map(r => [r.id, r]),
+  );
+  const classMap = new Map(
+    (model.requirementClasses ?? []).map(rc => [rc.id, rc]),
+  );
+  const dumpersRef = dumpers as unknown as Record<
+    string,
+    (item: unknown) => string
+  >;
+  const dumpClassTree = (rcId: string): string => {
+    const rc = classMap.get(rcId);
+    if (!rc) {
+      return '';
+    }
+    const base = dumpersRef.requirementClasses(rc);
+    if (!rc.members || rc.members.length === 0) {
+      return base;
+    }
+    const inner = rc.members
+      .map(m => {
+        const body = dumpersRef.requirements(requirementMap.get(m));
+        return body
+          .split('\n')
+          .filter(l => l !== '')
+          .map(l => '  ' + l)
+          .join('\n');
+      })
+      .join('\n');
+    return base.slice(0, base.lastIndexOf('}')) + inner + '\n}\n';
+  };
 
   (Object.keys(dumpers) as Array<keyof DumperConfiguration>).forEach(field => {
     if (field === 'processes') {
@@ -41,6 +80,20 @@ export default function dump(
         if (!childIds.has(p.id)) {
           out += dumpProcessTree(p, processMap);
         }
+      }
+      return;
+    }
+    if (field === 'requirements') {
+      for (const r of model.requirements ?? []) {
+        if (!memberIds.has(r.id)) {
+          out += dumpersRef.requirements(r);
+        }
+      }
+      return;
+    }
+    if (field === 'requirementClasses') {
+      for (const rc of model.requirementClasses ?? []) {
+        out += dumpClassTree(rc.id);
       }
       return;
     }
