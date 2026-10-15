@@ -137,7 +137,7 @@ requirement /req/metrological/mpe-ranges {
   (plurimath#488, docs/MANDATE-semantic-math.md): the QuantityValue type
   system with the unit algebra and the dimension vectors, the GUM
   uncertainty propagation, the series aggregations, and the constraint
-  evaluation with the residuals — and the expression GRAMMAAR is
+  evaluation with the residuals — and the expression grammar is
   formalized in PARG (expressions.parg in plurimath, per the mandate):
   one compiled artifact, every runtime (the Ruby reference, the
   plurimath-js/ts wasm, and this kernel's limit blocks embed the same
