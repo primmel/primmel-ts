@@ -50,6 +50,13 @@ export interface PackageManifest {
   id: string;
   title: string;
   version: string;
+  /**
+   * The language generation this package targets (e.g. "v3.3"). When
+   * declared, the package parses STRICTLY: unknown keywords are errors,
+   * not silently skipped (the forward-compat lenient skip remains the
+   * default for undeclared packages and for reading older corpora).
+   */
+  language?: string;
   /** Available editions, newest first (e.g. [2021, 2017, 2000]). */
   editions: string[];
   baseUrn: string;
