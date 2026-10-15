@@ -13,22 +13,39 @@ The consequences, all verified this session:
 4. No highlighting, no editor support, no parse-time errors.
 
 ## The design
-The expression is FIRST-CLASS SYNTAX — the block content:
+The expression is FIRST-CLASS SYNTAX — and the limit is a FUNCTION: it takes
+**declarative arguments**, and the scope is passed into it. Every name in the
+body is a declared argument bound to its qualified source — the local scope is
+explicit, never ambient, never global:
 
 ```prl
 requirement /req/metrological/mpe-vehicle-mass {
   limit {
-    abs(e_vehicle) <= mpe_class
+    args {
+      e_vehicle  <- oiml-r134:symbol:e_vehicle
+      mpe_class  <- oiml-r134:table:two_axle_mpe.mpe
+      d          <- oiml-r134:symbol:d
+      n_axles    <- oiml-r134:symbol:n_axles
+    }
+    abs(e_vehicle) <= max(mpe_class, d * n_axles)
   }
 }
 
 requirement_class /req/electronic/software-protection {
   limit {
+    args {
+      sealing    <- member:sealing
+      signalling <- member:signalling
+    }
     sealing or signalling
   }
 }
 
 verdict drift_error {
+  args {
+    indication         <- observable:indication
+    cgm_certified_value <- observable:cgm_certified_value
+  }
   derive {
     indication - cgm_certified_value
   }
@@ -39,17 +56,25 @@ verdict drift_error {
 The grammar (PARG rules, the precedence climbing):
 `implies` < `or` < `xor` < `and` < comparison (`<= >= < > = ≠`) <
 additive (`+ -`) < multiplicative (`* /`) < unary (`- not`) <
-primary (the dotted paths, the calls `abs/max/min/floor/…`, the literals,
+primary (the bound names, the calls `abs/max/min/floor/…`, the literals,
 the parenthesised groups).
 
 ## The semantics
-- The identifiers resolve at PARSE TIME against the scope: the expression's
-  `uses`/`inputs` entries, the test's variables, the package's symbols,
-  datums, verdicts, tables, the contained members (the algebra). The air is a
-  parse error — C171's check becomes the parser's name resolution; the rule
+- **`args { name <- qualified-source }` is the scope**: the local name binds
+  to the package-scoped declaration (`package:kind:id` — the same
+  scoped-reference grammar as the locator-qualified imports and the scoped
+  requires). `member:` names the containment's own members (the algebra law).
+- **The body's identifiers are the args and nothing else**: the resolution is
+  exact at parse time — a name outside the args is a parse error, the air
+  cannot even be written. C171 becomes the parser's binding check; the rule
   remains as the checker's restatement for the legacy string form.
-- C172's law check walks the AST: the identifiers ⊆ the contained members;
-  the top-level connectives are the algebra.
+- **The provenance is in the expression's own header**: the reader sees where
+  every name comes from; two imported packages declaring the same id
+  disambiguate by their qualified sources; the closure report names the
+  packages an expression's scope actually reaches.
+- **The legacy string form** (`"ocl{…}"`) is accepted through the transition
+  with its `uses { }` list as the (ambient, deprecated) scope, and deprecates
+  to Annex D with the corpus migration.
 - plurimath stays on the PRESENTATION plane: the render hints (§12) carry the
   display math; the semantic expressions are Primmel's own.
 
