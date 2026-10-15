@@ -1205,6 +1205,25 @@ export function checkPackage(
     }
   }
 
+  // ── C176 language-declared-wellformed ───────────────────────────────
+  // A declared language generation must be well-formed (v<digit>[.digit])
+  // — the strict-parse contract's key. The unknown-keyword errors come
+  // from the parse itself (the strict mode); this rule only checks the
+  // declaration's shape.
+  try {
+    const mf = readPackageManifest(dir);
+    if (mf.language !== undefined) {
+      if (!/^v\d+(\.\d+)?$/.test(mf.language)) {
+        err(
+          'C176',
+          `the declared language "${mf.language}" is not a generation (v<major>[.<minor>]) (language-declared-wellformed)`,
+        );
+      }
+    }
+  } catch {
+    // the manifest unreadable — the load errors own that
+  }
+
   // ── C170 edition-lineage-declared ───────────────────────────────────
   // A package declaring more than one edition carries a declarative
   // edition mapping (edition-mapping.json, primmel-edition-mapping/1)

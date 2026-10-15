@@ -447,6 +447,14 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'containment is conjunction; a requirement class limit (the law) names its contained members with the OCL booleans — and/or/xor/implies — and every member appears in the law',
   ),
+  R(
+    'C176',
+    'language-declared-wellformed',
+    'base',
+    'error',
+    'normal',
+    'a declared language generation is well-formed (v<major>[.<minor>]); the declaration makes the package parse strictly — unknown keywords are errors',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',

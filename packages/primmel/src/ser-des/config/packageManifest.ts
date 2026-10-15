@@ -127,6 +127,8 @@ export const parsePackage: Parser = function (data) {
       manifest.title = stripWrapping(t[i++]);
     } else if (cmd === 'version') {
       manifest.version = stripWrapping(t[i++]);
+    } else if (cmd === 'language') {
+      manifest.language = stripWrapping(t[i++]);
     } else if (cmd === 'editions') {
       manifest.editions = readList(t[i++]);
     } else if (cmd === 'baseUrn' || cmd === 'base_urn') {

@@ -358,6 +358,13 @@ function loadPackageInternal(
   const parseOptions = withProvenance
     ? { ...options, withProvenance: true }
     : options;
+  // The declared language generation makes the parse STRICT: a package
+  // that declares what it targets gets unknown keywords as errors, not
+  // the lenient skip (the declared-generation contract, the language
+  // critique §1).
+  if (manifest?.language) {
+    parseOptions.strict = true;
+  }
   const ctx = parse(joinChunks(chunks), PARSER_CONFIG, parseOptions);
   if (manifest) {
     ctx.packageManifest = manifest;
@@ -822,7 +829,15 @@ function composePackage(
   const ctxs = new Map<string, ParseContext>();
   const pkgChunks = new Map<string, FileChunk[]>();
   for (const id of order) {
-    const parsed = parsePackageContent(dirs.get(id)!, parseOptions);
+    // The declared language generation makes THAT package's parse strict
+    // (per-package contracts: the root's declaration does not bind the
+    // dependencies, and vice versa).
+    const pkgOptions = { ...parseOptions };
+    const pkgManifest = manifests.get(id);
+    if (pkgManifest?.language) {
+      pkgOptions.strict = true;
+    }
+    const parsed = parsePackageContent(dirs.get(id)!, pkgOptions);
     ctxs.set(id, parsed.ctx);
     pkgChunks.set(id, parsed.chunks);
   }
