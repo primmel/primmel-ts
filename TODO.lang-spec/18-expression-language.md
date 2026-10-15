@@ -78,15 +78,63 @@ the parenthesised groups).
 - plurimath stays on the PRESENTATION plane: the render hints (§12) carry the
   display math; the semantic expressions are Primmel's own.
 
+## Multiple limits — the list, the guard, and the domain coverage
+
+A requirement carries a LIST of limits: real standards bound different
+sub-domains differently (R 60's MPE varies across the weighing range — one
+bound per e-interval). Each limit is a complete function: its own args, its
+own **applicability guard**, its own assertion:
+
+```prl
+requirement /req/metrological/mpe-ranges {
+  limit mpe_low_range {
+    args {
+      e  <- observable:e
+      mu <- table:vehicle_mpe.mpe_low
+    }
+    when {
+      e <= 5000
+    }
+    abs(e) <= mu
+  }
+
+  limit mpe_high_range {
+    args {
+      e  <- observable:e
+      mu <- table:vehicle_mpe.mpe_high
+    }
+    when {
+      e > 5000
+    }
+    abs(e) <= mu
+  }
+}
+```
+
+- **The limits are named** — the name is the public handle: the tests
+  target it, the coverage/retrieval/diff/mappings cite it, the
+  diagnostics name the failing limit. Multiple limits are a conjunction:
+  every limit whose guard holds must hold. `when { … }` is an expression over the same args (the domain guard —
+  not prose, not a comment).
+- **No guard** = the limit applies over the whole domain (the simple case
+  stays one-line writable).
+- **The domain-coverage check** (the SOTA payoff, phased): when the bound
+  args declare their domains (the symbol's range — the D 11 class bounds, the
+  R 60 e-axis), the checker verifies the guards PARTITION the domain — no
+  gap where no limit applies, no overlap where two do (an error, because the
+  assertion is ambiguous there). Phase 1: the parse + the guard resolution;
+  phase 2: the partition check once the args' domains carry declared ranges.
+
 ## The migration
 - Phase 1: the expression grammar + the AST + the parse — the inline form is
-  accepted EVERYWHERE an `ocl{}` string is accepted today (limit, derive,
+  accepted everywhere an `ocl{}` string is accepted today (limit, derive,
   derivation, constraint, invariant, check completion).
 - Phase 2: C171/C172 walk the AST; the string form still parses (the legacy).
 - Phase 3: the corpus migrates mechanically (the `ocl{X}` strings → the
-  inline `X` — a dumper-side rewrite plus the model transform); the string
-  form deprecates to Annex D.
+  inline form); the string form deprecates to Annex D.
 - checker2 inherits the expression grammar as its parity target.
+
+
 
 ## The sizing
 The grammar rules + the AST + the checker walk: ~3–4 kernel days; the corpus
