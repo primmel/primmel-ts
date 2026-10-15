@@ -1434,9 +1434,16 @@ export const dumpProcess: (
   // pass-1 re-emits the raw blocks (the step plane types them later).
   for (const st of (process as { steps?: { signatureBlock?: string }[] }).steps ?? []) {
     if (st.signatureBlock) {
+      // The canonical re-emission: the raw block trimmed to its content
+      // lines, each indented uniformly — dump(parse(x)) is a fixed point
+      // (the parse stores wrapper whitespace; the dump never replays it).
+      const lines = st.signatureBlock
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l !== '');
       out += '  step ' + (st as unknown as { id: string }).id + ' {\n';
-      for (const line of st.signatureBlock.split('\n')) {
-        out += line === '' ? '\n' : '  ' + line + '\n';
+      for (const line of lines) {
+        out += '   ' + line + '\n';
       }
       out += '  }\n';
     }
