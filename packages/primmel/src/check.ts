@@ -413,7 +413,8 @@ import type {
 } from './types/Subject';
 import type { DataClass } from './types/data';
 import type { ProcessParameter, ProcessStep } from './types/process';
-import type { Requirement } from './types/Requirement';
+import type { Requirement, RequirementLimit } from './types/Requirement';
+import { freeIdentifiers, parseExpression } from './expressions';
 import type ConformanceTest from './types/ConformanceTest';
 import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
@@ -1061,6 +1062,11 @@ export function checkPackage(
     // the lookup tables: a dotted helper call's OBJECT is declared here —
     // the method name rides the declared object
     ...(standard.tables ?? []).map(v => v.id),
+    // the subject anatomy: a declared attribute is a declaration
+    ...(standard.attributeDefinitions ?? []).map(a => a.id),
+    ...(standard.attributeDefinitions ?? []).map(
+      a => a.id.split('/').pop() ?? '',
+    ),
   ].filter(x => x !== ''));
   const bare = (q: string): string => q.split(':').pop() ?? q;
   const usesCovers = (uses: string[], id: string): boolean =>
@@ -1121,7 +1127,163 @@ export function checkPackage(
     }
     return out;
   };
+  // The v3.3 inline limit: the AST walked against the args scope. The
+  // body's identifiers are the args and nothing else (plus `self`-rooted
+  // paths — the dispatch context — and the closed function vocabulary);
+  // `memberScope` (a class law) adds the containment to the scope.
+  const INLINE_FUNCTION_WORDS = new Set([
+    'abs', 'max', 'min', 'floor', 'ceil', 'round', 'sqrt', 'exp', 'ln',
+    'log', 'mod', 'sum', 'count', 'exists', 'forall',
+  ]);
+  const DECLARATION_KINDS = new Set([
+    'symbol', 'table', 'datum', 'verdict', 'attribute',
+  ]);
+  // the dispatch-context roots: the chain the expression reads the
+  // subject through — allowed as PATH roots, never as bare scalars
+  const CONTEXT_ROOTS = new Set([
+    'sample', 'family', 'group', 'model', 'instrument', 'specimen',
+  ]);
+  const checkInlineLimit = (
+    ownerKind: string,
+    ownerId: string,
+    limit: RequirementLimit,
+    memberScope: Set<string> | null,
+  ): void => {
+    let ids;
+    try {
+      ids = freeIdentifiers(parseExpression(limit.expression));
+    } catch (e) {
+      err(
+        'C171',
+        `${ownerKind} ${ownerId}: the inline limit expression does not parse — ${String((e as Error).message ?? e)} (expression-identifiers-resolve)`,
+      );
+      return;
+    }
+    const args = limit.args ?? [];
+    const argNames = new Set(args.map(a => a.name));
+    if (memberScope === null && args.length === 0) {
+      err(
+        'C171',
+        `${ownerKind} ${ownerId}: the inline limit declares no arguments — every identifier must bind explicitly, args { name <- <declaration> } (expression-identifiers-resolve)`,
+      );
+    }
+    for (const call of new Set(ids.calls)) {
+      if (INLINE_FUNCTION_WORDS.has(call)) {
+        continue;
+      }
+      if (call.includes('.')) {
+        const root = call.split('.')[0];
+        if (
+          argNames.has(root) ||
+          root === 'self' ||
+          CONTEXT_ROOTS.has(root)
+        ) {
+          // the method rides its declared object — the root is the check
+          continue;
+        }
+      }
+      if (argNames.has(call)) {
+        // an arg-bound callable — the table lookup the args declare
+        continue;
+      }
+      err(
+        'C171',
+        `${ownerKind} ${ownerId}: the limit calls "${call}(…)", which no argument binds and which is not in the expression function vocabulary (abs max min floor ceil round sqrt exp ln log mod sum count exists forall) — air inside the formula (expression-identifiers-resolve)`,
+      );
+    }
+    for (const id of new Set(ids.names)) {
+      const root = id.split('.')[0];
+      if (
+        id.includes('.') &&
+        (root === 'self' || argNames.has(root) || CONTEXT_ROOTS.has(root))
+      ) {
+        continue;
+      }
+      if (argNames.has(id)) {
+        continue;
+      }
+      if (memberScope !== null && memberScope.has(id)) {
+        continue;
+      }
+      const lawScoped = memberScope !== null;
+      const fix = lawScoped
+        ? 'the law composes the containment only — its identifiers are the members'
+        : 'add args { ' + id + ' <- <declaration> } or remove it';
+      err(
+        lawScoped ? 'C172' : 'C171',
+        `${ownerKind} ${ownerId}: the limit expression names "${id}", which no argument binds — ${fix} (${lawScoped ? 'requirement-algebra-resolves' : 'expression-identifiers-resolve'})`,
+      );
+    }
+    for (const a of args) {
+      if (a.source.includes(':')) {
+        const segs = a.source.split(':');
+        if (segs.some(s => s.length === 0)) {
+          err(
+            'C171',
+            `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — a binding is <kind>:<id> in this package or <package>:<kind>:<id> across a uses edge (expression-identifiers-resolve)`,
+          );
+          continue;
+        }
+        if (segs.length === 2) {
+          const [kind, id] = segs;
+          if (kind !== 'observable') {
+            if (!DECLARATION_KINDS.has(kind)) {
+              err(
+                'C171',
+                `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — "${kind}" is not a declaration kind (symbol table datum verdict attribute observable) (expression-identifiers-resolve)`,
+              );
+              continue;
+            }
+            const idRoot = id.split('.')[0];
+            const idTail = id.split('.').pop() ?? id;
+            if (
+              !globalExprNames.has(id) &&
+              !globalExprNames.has(idRoot) &&
+              !globalExprNames.has(idTail)
+            ) {
+              err(
+                'C171',
+                `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no declared ${kind} names — air inside the formula (expression-identifiers-resolve)`,
+              );
+            }
+          }
+          continue;
+        }
+        // <package>:<kind>:<id> across a uses edge — the composed gate
+        // resolves it against the closure.
+        continue;
+      }
+      if (a.source === 'self' || a.source.startsWith('self.')) {
+        continue;
+      }
+      const bare = (q: string): string => q.split(':').pop() ?? q;
+      const sourceBare = bare(a.source.replace(/\./g, ':'));
+      if (memberScope !== null) {
+        if (!memberScope.has(a.source) && !memberScope.has(sourceBare)) {
+          err(
+            'C172',
+            `requirement class ${ownerId}: the law binds "${a.name}" to "${a.source}", which is not a contained member (requirement-algebra-resolves)`,
+          );
+        }
+        continue;
+      }
+      if (
+        !globalExprNames.has(a.source) &&
+        !globalExprNames.has(sourceBare) &&
+        !usesCovers(limit.uses, sourceBare)
+      ) {
+        err(
+          'C171',
+          `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no symbol, datum, verdict, attribute, or uses entry declares — air inside the formula (expression-identifiers-resolve)`,
+        );
+      }
+    }
+  };
   for (const r of standard.requirements ?? []) {
+    if (r.limit?.argsBound) {
+      checkInlineLimit('requirement', r.id, r.limit, null);
+      continue;
+    }
     const expr = r.limit?.expression;
     if (!expr) {
       continue;
@@ -1179,6 +1341,30 @@ export function checkPackage(
     const law = rc.limit?.expression;
     const members = memberSet.get(rc.id) ?? new Set<string>();
     if (!law) {
+      continue;
+    }
+    if (rc.limit?.argsBound) {
+      checkInlineLimit('requirement class', rc.id, rc.limit, members);
+      const covered = new Set<string>();
+      try {
+        for (const n of freeIdentifiers(parseExpression(law)).names) {
+          covered.add(n);
+        }
+      } catch {
+        // already reported inside checkInlineLimit
+      }
+      for (const a of rc.limit.args ?? []) {
+        covered.add(a.name);
+        covered.add(a.source);
+      }
+      for (const m of members) {
+        if (!covered.has(m)) {
+          warn(
+            'C172',
+            `requirement class ${rc.id}: member ${m} does not appear in the law — either it is always-required (add it with \`and\`) or it is orphaned (requirement-algebra-resolves)`,
+          );
+        }
+      }
       continue;
     }
     const ocl = law.replace(/^ocl\{/, '').replace(/\}$/, '');

@@ -1,5 +1,15 @@
 # 18 — The Primmel expression language: first-class expressions, not OCL strings
 
+**Status: LANDED (2026-10-16, phase 1+2 on limits and class laws).**
+`src/expressions/` — the lexer, the precedence-climbing parser, the AST,
+`freeIdentifiers`/`renderExpression`; the limit parses the inline
+`expression { … }` block (parse-time syntax gate, canonical render, dump
+fixpoint); C171/C172 walk the AST. The r134 corpus carries the pilot (8
+limits migrated). Remaining: the derive/derivation/constraint/invariant
+carriers (phase 1's rest), the named multiple limits with `when { }`
+guards (below), the PARG artifact handoff to plurimath, the legacy-string
+deprecation.
+
 ## The gap
 Every machine-executable expression in the language — requirement limits, the
 class laws, derivations, derives — is a QUOTED STRING: `"ocl{abs(e) <= mpe}"`.
@@ -13,61 +23,70 @@ The consequences, all verified this session:
 4. No highlighting, no editor support, no parse-time errors.
 
 ## The design
+
 The expression is FIRST-CLASS SYNTAX — and the limit is a FUNCTION: it takes
-**declarative arguments**, and the scope is passed into it. Every name in the
-body is a declared argument bound to its qualified source — the local scope is
-explicit, never ambient, never global:
+**declarative arguments**, and the scope is passed into it. The formula is
+wrapped in an **`expression { … }` block** (the owner's ruling, 2026-10-16):
+the body is delimited, never floating between the args and the facets —
+which also makes the parse unambiguous (no head-detection heuristics; the
+legacy carrier is `expression "ocl{…}"` — a STRING, the v3.3 carrier is
+`expression { … }` — a BLOCK; string-vs-block is the whole decision):
 
 ```prl
 requirement /req/metrological/mpe-vehicle-mass {
   limit {
     args {
-      e_vehicle  <- oiml-r134:symbol:e_vehicle
-      mpe_class  <- oiml-r134:table:two_axle_mpe.mpe
-      d          <- oiml-r134:symbol:d
-      n_axles    <- oiml-r134:symbol:n_axles
+      e_vehicle  <- symbol:e_vehicle
+      mpe_class  <- table:vehicle_mpe.mpe_initial
+      d          <- attribute:scale_interval
+      n_axles    <- observable:n_axles
     }
-    abs(e_vehicle) <= max(mpe_class, d * n_axles)
+    expression {
+      abs(e_vehicle) <= max(mpe_class, 1 * d * n_axles)
+    }
+    notes "Table 2 percentage of the conventional value (6.7)."
   }
 }
 
-requirement_class /req/electronic/software-protection {
+requirement_class /req/c {
   limit {
-    args {
-      sealing    <- member:sealing
-      signalling <- member:signalling
+    # no args: the CONTAINMENT is the scope (C172 names members only)
+    expression {
+      mpe_mass or d_floor
     }
-    sealing or signalling
   }
-}
-
-verdict drift_error {
-  args {
-    indication         <- observable:indication
-    cgm_certified_value <- observable:cgm_certified_value
-  }
-  derive {
-    indication - cgm_certified_value
-  }
-  inputs { indication cgm_certified_value }
+  requirement mpe_mass { … }
+  requirement d_floor { … }
 }
 ```
+
+The binding forms (as shipped, r134-verified):
+`<kind>:<id>` in-package (`symbol:` `table:` `datum:` `verdict:`
+`attribute:`, resolved against the package's own registries; a dotted id
+rides the declared object — `table:vehicle_mpe.mpe_initial`), `observable:`
+(the dispatch context), `self.<path>` (the subject aspect), and
+`<package>:<kind>:<id>` across a `uses` edge (the composed gate resolves
+it). The dispatch-context roots (`sample family group model instrument
+specimen`) are allowed as PATH roots — the pronouns of the dispatch —
+never as bare scalars.
 
 The grammar (PARG rules, the precedence climbing):
 `implies` < `or` < `xor` < `and` < comparison (`<= >= < > = ≠`) <
 additive (`+ -`) < multiplicative (`* /`) < unary (`- not`) <
-primary (the bound names, the calls `abs/max/min/floor/…`, the literals,
-the parenthesised groups).
+primary (the bound names, the calls `abs/max/min/floor/…`, the dotted
+table calls `table.method(a, b)`, the literals, the parenthesised groups).
+The call vocabulary is CLOSED (C171 flags unknown callees; an arg bound to
+a table is a callable). `renderExpression` canonicalizes (the unary over
+a binary re-parenthesizes) — the dump emits the canonical source and the
+re-parse is a fixpoint.
 
 ## The semantics
-- **`args { name <- qualified-source }` is the scope**: the local name binds
-  to the package-scoped declaration (`package:kind:id` — the same
-  scoped-reference grammar as the locator-qualified imports and the scoped
-  requires). `member:` names the containment's own members (the algebra law).
-- **The body's identifiers are the args and nothing else**: the resolution is
-  exact at parse time — a name outside the args is a parse error, the air
-  cannot even be written. C171 becomes the parser's binding check; the rule
-  remains as the checker's restatement for the legacy string form.
+- **`args { name <- source }` is the scope**: the local name binds to a
+  declared source (the binding forms above). The body's identifiers are
+  the args and nothing else — plus `self`-rooted paths and the
+  dispatch-context path roots. The SYNTAX gate is parse-time (a malformed
+  body fails the load); the BINDING is C171/C172 walking the AST — the
+  exact-resolution contract, the air cannot hide.
 - **The provenance is in the expression's own header**: the reader sees where
   every name comes from; two imported packages declaring the same id
   disambiguate by their qualified sources; the closure report names the
@@ -95,7 +114,9 @@ requirement /req/metrological/mpe-ranges {
     when {
       e <= 5000
     }
-    abs(e) <= mu
+    expression {
+      abs(e) <= mu
+    }
   }
 
   limit "mpe-high-range" {
@@ -106,7 +127,9 @@ requirement /req/metrological/mpe-ranges {
     when {
       e > 5000
     }
-    abs(e) <= mu
+    expression {
+      abs(e) <= mu
+    }
   }
 }
 ```
