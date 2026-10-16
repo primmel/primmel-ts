@@ -32,6 +32,10 @@ import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { readSource, stripColon } from './field-parser';
+import {
+  readExpressionCarrier,
+  dumpExpressionBlock,
+} from '../expression-carrier';
 import { parseAcceptance, dumpAcceptance } from './acceptance';
 import {
   parseRefFromReaders,
@@ -97,7 +101,11 @@ export const parseVerdict: Parser = function (id, data) {
       } else if (keyword === 'behavior') {
         result.behavior = value();
       } else if (keyword === 'derive' || keyword === 'expression') {
-        result.derive = unwrapped(value);
+        // Two carriers: the legacy quoted ocl{…} string and the v3.3
+        // inline block — the value's shape decides.
+        const c = readExpressionCarrier(value(), 'verdict derive');
+        result.derive = c.source;
+        result.deriveBound = c.inline || undefined;
       } else if (keyword === 'inputs' || keyword === 'uses') {
         result.inputs = readIdList(value());
       } else if (keyword === 'series_reduction') {
@@ -160,7 +168,11 @@ export const dumpVerdict: Dumper<Verdict> = function (v) {
     out += ' }\n';
   }
   if (v.derive) {
-    out += '  derive "' + escapeString(v.derive) + '"\n';
+    if (v.deriveBound) {
+      out += dumpExpressionBlock('derive', v.derive, '  ');
+    } else {
+      out += '  derive "' + escapeString(v.derive) + '"\n';
+    }
   }
   if (v.inputs.length > 0) {
     out += '  inputs { ' + v.inputs.join(' ') + ' }\n';

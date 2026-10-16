@@ -414,7 +414,12 @@ import type {
 import type { DataClass } from './types/data';
 import type { ProcessParameter, ProcessStep } from './types/process';
 import type { Requirement, RequirementLimit } from './types/Requirement';
-import { freeIdentifiers, parseExpression } from './expressions';
+import {
+  freeIdentifiers,
+  parseExpression,
+  renderExpression,
+} from './expressions';
+import type { ExprAst } from './expressions';
 import type ConformanceTest from './types/ConformanceTest';
 import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
@@ -1044,30 +1049,112 @@ export function checkPackage(
   // the formula. Dotted paths (the subject-chain binds) and the OCL
   // keywords are not identifiers for this purpose.
   const OCL_WORDS = new Set([
-    'and', 'or', 'not', 'xor', 'implies', 'if', 'then', 'else', 'endif',
-    'true', 'false', 'null', 'invalid', 'abs', 'max', 'min', 'floor',
-    'ceil', 'mod', 'div', 'round', 'sqrt', 'exp', 'ln', 'log', 'sum',
-    'count', 'exists', 'forall', 'oclIsUndefined', 'oclIsKindOf',
-    'oclIsTypeOf', 'String', 'Integer', 'Real', 'Boolean', 'Set',
-    'Bag', 'Sequence', 'Collection',
+    'and',
+    'or',
+    'not',
+    'xor',
+    'implies',
+    'if',
+    'then',
+    'else',
+    'endif',
+    'true',
+    'false',
+    'null',
+    'invalid',
+    'abs',
+    'max',
+    'min',
+    'floor',
+    'ceil',
+    'mod',
+    'div',
+    'round',
+    'sqrt',
+    'exp',
+    'ln',
+    'log',
+    'sum',
+    'count',
+    'exists',
+    'forall',
+    'oclIsUndefined',
+    'oclIsKindOf',
+    'oclIsTypeOf',
+    'String',
+    'Integer',
+    'Real',
+    'Boolean',
+    'Set',
+    'Bag',
+    'Sequence',
+    'Collection',
     // the subject-chain roots: every expression reads the dispatch
     // context through them — context, never air
-    'sample', 'family', 'group', 'model', 'instrument', 'specimen',
+    'sample',
+    'family',
+    'group',
+    'model',
+    'instrument',
+    'specimen',
   ]);
-  const globalExprNames = new Set<string>([
-    ...(standard.symbols ?? []).map(s => s.id),
-    ...(standard.symbols ?? []).map(s => s.id.split('/').pop() ?? ''),
-    ...(standard.datums ?? []).map(d => d.id),
-    ...(standard.verdicts ?? []).map(v => v.id),
-    // the lookup tables: a dotted helper call's OBJECT is declared here —
-    // the method name rides the declared object
-    ...(standard.tables ?? []).map(v => v.id),
-    // the subject anatomy: a declared attribute is a declaration
-    ...(standard.attributeDefinitions ?? []).map(a => a.id),
-    ...(standard.attributeDefinitions ?? []).map(
-      a => a.id.split('/').pop() ?? '',
-    ),
-  ].filter(x => x !== ''));
+  const globalExprNames = new Set<string>(
+    [
+      ...(standard.symbols ?? []).map(s => s.id),
+      ...(standard.symbols ?? []).map(s => s.id.split('/').pop() ?? ''),
+      ...(standard.datums ?? []).map(d => d.id),
+      ...(standard.verdicts ?? []).map(v => v.id),
+      // the lookup tables: a dotted helper call's OBJECT is declared here —
+      // the method name rides the declared object
+      ...(standard.tables ?? []).map(v => v.id),
+      // the subject anatomy: a declared attribute is a declaration
+      ...(standard.attributeDefinitions ?? []).map(a => a.id),
+      ...(standard.attributeDefinitions ?? []).map(
+        a => a.id.split('/').pop() ?? '',
+      ),
+      // the calculations: a derivation may call a declared calculation
+      // (twin-cert's lookupMPE) — the callable registry
+      ...(standard.calculations ?? []).map(c => c.id),
+      ...(standard.calculations ?? []).map(c => c.id.split('/').pop() ?? ''),
+    ].filter(x => x !== ''),
+  );
+
+  // The declared quantity kinds (C177 kind-coherence): only the
+  // declarations that STATE a kind participate; everything else is
+  // unknown and never conflicts.
+  const symbolKinds = new Map<string, string>();
+  for (const s of standard.symbols ?? []) {
+    if (s.quantityKind) {
+      symbolKinds.set(s.id, s.quantityKind);
+      symbolKinds.set(s.id.split('/').pop() ?? '', s.quantityKind);
+    }
+  }
+  const attributeKinds = new Map<string, string>();
+  for (const a of standard.attributeDefinitions ?? []) {
+    if ((a as { quantityKind?: string }).quantityKind) {
+      attributeKinds.set(a.id, (a as { quantityKind?: string }).quantityKind!);
+      attributeKinds.set(
+        a.id.split('/').pop() ?? '',
+        (a as { quantityKind?: string }).quantityKind!,
+      );
+    }
+  }
+  const verdictKinds = new Map<string, string>();
+  for (const v of standard.verdicts ?? []) {
+    if (v.quantityKind) {
+      verdictKinds.set(v.id, v.quantityKind);
+    }
+  }
+  const tableColumnTypes = new Map<string, Map<string, string>>();
+  for (const t of standard.tables ?? []) {
+    const cols = new Map<string, string>();
+    for (const c of t.columnDefs ?? []) {
+      cols.set(c.name, (c.type || '').toLowerCase());
+    }
+    if (cols.size > 0) {
+      tableColumnTypes.set(t.id, cols);
+    }
+  }
   const bare = (q: string): string => q.split(':').pop() ?? q;
   const usesCovers = (uses: string[], id: string): boolean =>
     uses.some(u => {
@@ -1079,8 +1166,7 @@ export function checkPackage(
     // chain's structure — only the final segment names the datum, and
     // usesCovers judges the path against the uses entries.
     const paths =
-      expr.match(/[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/g) ??
-      [];
+      expr.match(/[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/g) ?? [];
     const out: string[] = [];
     const seen = new Set<string>();
     for (const p of paths) {
@@ -1132,16 +1218,38 @@ export function checkPackage(
   // paths — the dispatch context — and the closed function vocabulary);
   // `memberScope` (a class law) adds the containment to the scope.
   const INLINE_FUNCTION_WORDS = new Set([
-    'abs', 'max', 'min', 'floor', 'ceil', 'round', 'sqrt', 'exp', 'ln',
-    'log', 'mod', 'sum', 'count', 'exists', 'forall',
+    'abs',
+    'max',
+    'min',
+    'floor',
+    'ceil',
+    'round',
+    'sqrt',
+    'exp',
+    'ln',
+    'log',
+    'mod',
+    'sum',
+    'count',
+    'exists',
+    'forall',
   ]);
   const DECLARATION_KINDS = new Set([
-    'symbol', 'table', 'datum', 'verdict', 'attribute',
+    'symbol',
+    'table',
+    'datum',
+    'verdict',
+    'attribute',
   ]);
   // the dispatch-context roots: the chain the expression reads the
   // subject through — allowed as PATH roots, never as bare scalars
   const CONTEXT_ROOTS = new Set([
-    'sample', 'family', 'group', 'model', 'instrument', 'specimen',
+    'sample',
+    'family',
+    'group',
+    'model',
+    'instrument',
+    'specimen',
   ]);
   const checkInlineLimit = (
     ownerKind: string,
@@ -1149,9 +1257,9 @@ export function checkPackage(
     limit: RequirementLimit,
     memberScope: Set<string> | null,
   ): void => {
-    let ids;
+    let ast: ExprAst;
     try {
-      ids = freeIdentifiers(parseExpression(limit.expression));
+      ast = parseExpression(limit.expression);
     } catch (e) {
       err(
         'C171',
@@ -1159,6 +1267,7 @@ export function checkPackage(
       );
       return;
     }
+    const ids = freeIdentifiers(ast);
     const args = limit.args ?? [];
     const argNames = new Set(args.map(a => a.name));
     if (memberScope === null && args.length === 0) {
@@ -1173,11 +1282,7 @@ export function checkPackage(
       }
       if (call.includes('.')) {
         const root = call.split('.')[0];
-        if (
-          argNames.has(root) ||
-          root === 'self' ||
-          CONTEXT_ROOTS.has(root)
-        ) {
+        if (argNames.has(root) || root === 'self' || CONTEXT_ROOTS.has(root)) {
           // the method rides its declared object — the root is the check
           continue;
         }
@@ -1278,6 +1383,155 @@ export function checkPackage(
         );
       }
     }
+    // ── C177 kind-coherence ──────────────────────────────────────────
+    // The comparisons compare operands of the same declared quantity
+    // kind. The kinds come from the args' declared sources; an operand
+    // of unknown kind or a bare number never conflicts — the check is
+    // exact where the declarations are, silent everywhere else.
+    const kindLabel = (k: string | null | 'TEXT' | undefined): string =>
+      k === undefined
+        ? 'an operand of unknown kind'
+        : k === 'TEXT'
+          ? 'text'
+          : k === null
+            ? 'a bare number'
+            : `the "${k}" quantity`;
+    const argKindOf = (source: string): string | null | 'TEXT' | undefined => {
+      if (source.includes(':')) {
+        const segs = source.split(':');
+        if (segs.length !== 2) {
+          return undefined;
+        }
+        const [kind, id] = segs;
+        if (kind === 'symbol') {
+          return symbolKinds.get(id.split('.').pop() ?? id);
+        }
+        if (kind === 'attribute') {
+          return attributeKinds.get(id.split('.').pop() ?? id);
+        }
+        if (kind === 'verdict') {
+          return verdictKinds.get(id.split('.')[0]);
+        }
+        if (kind === 'table') {
+          const segs2 = id.split('.');
+          const colType =
+            segs2.length === 2
+              ? tableColumnTypes.get(segs2[0])?.get(segs2[1])
+              : undefined;
+          return colType === 'string' ? 'TEXT' : undefined;
+        }
+        return undefined;
+      }
+      if (source === 'self' || source.startsWith('self.')) {
+        return undefined;
+      }
+      return symbolKinds.get(source) ?? attributeKinds.get(source) ?? undefined;
+    };
+    const kindConflicts = new Set<string>();
+    const kindMixErr = (
+      node: ExprAst,
+      l: string | null | 'TEXT' | undefined,
+      r: string | null | 'TEXT' | undefined,
+    ): void => {
+      const key = renderExpression(node);
+      if (kindConflicts.has(key)) {
+        return;
+      }
+      kindConflicts.add(key);
+      err(
+        'C177',
+        `${ownerKind} ${ownerId}: ${kindLabel(l)} is set against ${kindLabel(r)} in "${renderExpression(node)}" — the operands must share the quantity kind (kind-coherence)`,
+      );
+    };
+    const kindOf = (node: ExprAst): string | null | 'TEXT' | undefined => {
+      switch (node.type) {
+        case 'num':
+          return null;
+        case 'name': {
+          const root = node.path[0];
+          if (
+            node.path.length > 1 &&
+            (root === 'self' || CONTEXT_ROOTS.has(root))
+          ) {
+            return undefined;
+          }
+          const arg = args.find(a => a.name === root);
+          return arg ? argKindOf(arg.source) : undefined;
+        }
+        case 'call': {
+          if (node.callee.includes('.')) {
+            return undefined;
+          }
+          const kinded = [
+            'abs',
+            'max',
+            'min',
+            'floor',
+            'ceil',
+            'round',
+            'sqrt',
+            'exp',
+            'ln',
+            'log',
+            'mod',
+          ];
+          if (!kinded.includes(node.callee)) {
+            return null;
+          }
+          let acc: string | null | 'TEXT' | undefined = undefined;
+          for (const a of node.args) {
+            const k = kindOf(a);
+            if (k === undefined) {
+              continue;
+            }
+            if (acc === undefined || acc === null) {
+              acc = k;
+              continue;
+            }
+            if (k !== undefined && k !== null && k !== acc) {
+              kindMixErr(node, acc, k);
+            }
+          }
+          return acc;
+        }
+        case 'unop':
+          return node.op === 'not' ? null : kindOf(node.operand);
+        case 'binop': {
+          if (['<=', '>=', '<', '>', '=', '!=', '≠'].includes(node.op)) {
+            const l = kindOf(node.left);
+            const r = kindOf(node.right);
+            if (
+              l !== undefined &&
+              r !== undefined &&
+              l !== null &&
+              r !== null &&
+              l !== r
+            ) {
+              kindMixErr(node, l, r);
+            }
+            return null;
+          }
+          if (['and', 'or', 'xor', 'implies'].includes(node.op)) {
+            kindOf(node.left);
+            kindOf(node.right);
+            return null;
+          }
+          const l = kindOf(node.left);
+          const r = kindOf(node.right);
+          if (
+            l !== undefined &&
+            r !== undefined &&
+            l !== null &&
+            r !== null &&
+            l !== r
+          ) {
+            kindMixErr(node, l, r);
+          }
+          return l !== undefined && l !== null ? l : r;
+        }
+      }
+    };
+    kindOf(ast);
   };
   for (const r of standard.requirements ?? []) {
     if (r.limit?.argsBound) {
@@ -1297,13 +1551,87 @@ export function checkPackage(
       );
     }
   }
+  // The inline carriers (derive / derivation / check blocks): the
+  // AST-exact resolution — the free names against the carrier's declared
+  // scope plus the package's declared registries; the calls against the
+  // function vocabulary and the declared callables.
+  const resolveInlineCarrier = (
+    ownerKind: string,
+    ownerId: string,
+    what: string,
+    src: string,
+    scope: Set<string>,
+  ): void => {
+    let ast: ExprAst;
+    try {
+      ast = parseExpression(src);
+    } catch (e) {
+      err(
+        'C171',
+        `${ownerKind} ${ownerId}: the ${what} does not parse — ${String((e as Error).message ?? e)} (expression-identifiers-resolve)`,
+      );
+      return;
+    }
+    const ids = freeIdentifiers(ast);
+    for (const call of new Set(ids.calls)) {
+      if (INLINE_FUNCTION_WORDS.has(call)) {
+        continue;
+      }
+      if (call.includes('.')) {
+        const root = call.split('.')[0];
+        if (
+          scope.has(root) ||
+          globalExprNames.has(root) ||
+          root === 'self' ||
+          CONTEXT_ROOTS.has(root)
+        ) {
+          continue;
+        }
+      }
+      if (scope.has(call) || globalExprNames.has(call)) {
+        continue;
+      }
+      err(
+        'C171',
+        `${ownerKind} ${ownerId}: the ${what} calls "${call}(…)", which nothing declares and which is not in the expression function vocabulary — air inside the formula (expression-identifiers-resolve)`,
+      );
+    }
+    for (const id of new Set(ids.names)) {
+      const root = id.split('.')[0];
+      if (
+        id.includes('.') &&
+        (scope.has(root) || root === 'self' || CONTEXT_ROOTS.has(root))
+      ) {
+        continue;
+      }
+      if (scope.has(id)) {
+        continue;
+      }
+      if (
+        globalExprNames.has(id) ||
+        globalExprNames.has(id.split('.').pop() ?? id)
+      ) {
+        continue;
+      }
+      err(
+        'C171',
+        `${ownerKind} ${ownerId}: the ${what} names "${id}", which nothing in scope declares — air inside the formula (expression-identifiers-resolve)`,
+      );
+    }
+  };
   for (const v of standard.verdicts ?? []) {
     const expr = (v as unknown as { derive?: string }).derive;
     if (!expr) {
       continue;
     }
     const inputs = (v as unknown as { inputs?: string[] }).inputs ?? [];
-    for (const id of unresolvedIn(expr, inputs, [])) {
+    if ((v as unknown as { deriveBound?: boolean }).deriveBound) {
+      resolveInlineCarrier('verdict', v.id, 'derive', expr, new Set(inputs));
+      continue;
+    }
+    // the legacy leg: the ocl{…} wrapper strips before the regex walk
+    const ocl = expr.replace(/^ocl\{/, '').replace(/\}$/, '');
+    for (const id of unresolvedIn(ocl, inputs, [])) {
       err(
         'C171',
         `verdict ${v.id}: the derive expression names "${id}", which no input declares — air inside the formula (expression-identifiers-resolve)`,
@@ -1316,6 +1644,16 @@ export function checkPackage(
       if (!v.derivation) {
         continue;
       }
+      if (v.derivationBound) {
+        resolveInlineCarrier(
+          'conformance test',
+          t.id,
+          `variable ${v.name}'s derivation`,
+          v.derivation,
+          new Set(scope),
+        );
+        continue;
+      }
       const ocl = v.derivation.replace(/^ocl\{/, '').replace(/\}$/, '');
       for (const id of unresolvedIn(ocl, scope, [])) {
         err(
@@ -1323,6 +1661,39 @@ export function checkPackage(
           `conformance test ${t.id}: variable ${v.name}'s derivation names "${id}", which no sibling variable, symbol, datum, or verdict declares — air inside the formula (expression-identifiers-resolve)`,
         );
       }
+    }
+  }
+  for (const c of standard.constraints ?? []) {
+    if (!c.checkBound || !c.check) {
+      continue;
+    }
+    resolveInlineCarrier('constraint', c.id, 'check', c.check, new Set());
+    // C84's inline restatement: the check is one BOOLEAN expression
+    try {
+      const ast = parseExpression(c.check);
+      const booleanTop =
+        ast.type === 'binop' &&
+        [
+          '<=',
+          '>=',
+          '<',
+          '>',
+          '=',
+          '!=',
+          '≠',
+          'and',
+          'or',
+          'xor',
+          'implies',
+        ].includes(ast.op);
+      if (!booleanTop) {
+        err(
+          'C84',
+          `constraint ${c.id}: the check does not evaluate to a boolean — an invariant is one comparison or logical composition (constraint-shape)`,
+        );
+      }
+    } catch {
+      // already reported by resolveInlineCarrier
     }
   }
 
@@ -1433,8 +1804,12 @@ export function checkPackage(
           `edition-mapping.json: kind "${String(map.kind)}" is not primmel-edition-mapping/1 (edition-lineage-declared)`,
         );
       } else {
-        const fromEd = map.from?.edition === undefined ? undefined : String(map.from.edition);
-        const toEd = map.to?.edition === undefined ? undefined : String(map.to.edition);
+        const fromEd =
+          map.from?.edition === undefined
+            ? undefined
+            : String(map.from.edition);
+        const toEd =
+          map.to?.edition === undefined ? undefined : String(map.to.edition);
         for (const [side, ed] of [
           ['from', fromEd],
           ['to', toEd],
@@ -1453,7 +1828,9 @@ export function checkPackage(
     if (code === 'ENOENT') {
       const eds = ((): string[] => {
         try {
-          return ((readPackageManifest(dir).editions ?? []) as unknown[]).map(String);
+          return ((readPackageManifest(dir).editions ?? []) as unknown[]).map(
+            String,
+          );
         } catch {
           return [];
         }
@@ -1534,7 +1911,9 @@ export function checkPackage(
   // The process bodies' call edges ride the same resolution: a step's
   // `calls <p>` (typed or raw-plane) names a process to be realized.
   for (const pr of standard.processes ?? []) {
-    const raw = pr as unknown as { steps?: { id?: string; calls?: string; signatureBlock?: string }[] };
+    const raw = pr as unknown as {
+      steps?: { id?: string; calls?: string; signatureBlock?: string }[];
+    };
     for (const st of raw.steps ?? []) {
       const call =
         st.calls || st.signatureBlock?.match(/\bcalls +([\w:/.-]+)/)?.[1];
@@ -2746,7 +3125,7 @@ export function checkPackage(
           `constraint ${c.id}: stereotype "${c.stereotype || '(none)'}" — a constraint is always «inv», the subject's declaration-level invariant (constraint-shape)`,
         );
       }
-      if (!OCL_CHECK.test(c.check)) {
+      if (!c.checkBound && !OCL_CHECK.test(c.check)) {
         err(
           'C84',
           `constraint ${c.id}: check is not one OCL boolean expression ocl{…} over the subject's declared anatomy (constraint-shape)`,

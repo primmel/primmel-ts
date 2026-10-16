@@ -73,7 +73,10 @@ describe('the expression parser', () => {
 
   it('errors on trailing tokens, unbalanced parens, bad characters', () => {
     assert.throws(() => parseExpression('a b'), /trailing tokens/);
-    assert.throws(() => parseExpression('(a + b'), /unexpected end|closing parenthesis/);
+    assert.throws(
+      () => parseExpression('(a + b'),
+      /unexpected end|closing parenthesis/,
+    );
     assert.throws(() => parseExpression('a # b'), /unexpected character/);
   });
 });
@@ -81,7 +84,10 @@ describe('the expression parser', () => {
 describe('the args-bound limit form', () => {
   const make = (body: string): string => {
     const dir = mkdtempSync(join(tmpdir(), 'primmel-expr-'));
-    writeFileSync(join(dir, 'package.primmel'), 'package {\n id pkg\n language v3.3\n}');
+    writeFileSync(
+      join(dir, 'package.primmel'),
+      'package {\n id pkg\n language v3.3\n}',
+    );
     mkdirSync(join(dir, 'specification'), { recursive: true });
     writeFileSync(join(dir, 'specification', 'r.prl'), body);
     return dir;
@@ -163,7 +169,9 @@ describe('C171/C172 on the AST', () => {
     );
     const msgs = ids(dir, 'C171');
     assert.ok(
-      msgs.some(m => m.includes('"ghost_limit"') && m.includes('args { ghost_limit')),
+      msgs.some(
+        m => m.includes('"ghost_limit"') && m.includes('args { ghost_limit'),
+      ),
     );
     rmSync(dir, { recursive: true, force: true });
   });
@@ -192,7 +200,9 @@ describe('C171/C172 on the AST', () => {
     );
     const msgs = ids(dir, 'C171');
     assert.ok(
-      msgs.some(m => m.includes('no_such_table') && m.includes('no declared table')),
+      msgs.some(
+        m => m.includes('no_such_table') && m.includes('no declared table'),
+      ),
     );
     rmSync(dir, { recursive: true, force: true });
   });
@@ -210,9 +220,127 @@ describe('C171/C172 on the AST', () => {
     const msgs = ids(air, 'C172');
     assert.ok(
       msgs.some(
-        m => m.includes('"ghost_regime"') && m.includes('composes the containment'),
+        m =>
+          m.includes('"ghost_regime"') &&
+          m.includes('composes the containment'),
       ),
     );
     rmSync(air, { recursive: true, force: true });
+  });
+});
+
+describe('the inline carriers: derive, derivation, check', () => {
+  const make = (body: string): string => {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-carrier-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'specification'), { recursive: true });
+    writeFileSync(join(dir, 'specification', 'r.prl'), body);
+    return dir;
+  };
+
+  it('parses the verdict derive block and fixes the dump', () => {
+    const body = `verdict delta {
+ quantity { kind mass unit "kg" }
+ derive {
+  abs(served - reference)
+ }
+ inputs { served reference }
+}
+`;
+    const dir = make(body);
+    const m = loadPackage(dir);
+    const v = m.verdicts[0] as unknown as Record<string, unknown>;
+    assert.equal(v.deriveBound, true);
+    assert.equal(v.derive, 'abs(served - reference)');
+    const dir2 = make(dump(m));
+    const m2 = loadPackage(dir2);
+    const v2 = m2.verdicts[0] as unknown as Record<string, unknown>;
+    assert.deepEqual(v2.derive, v.derive);
+    assert.equal(v2.deriveBound, true);
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir2, { recursive: true, force: true });
+  });
+
+  it('names the input, never "ocl", on a legacy derive with air', () => {
+    const dir = make(
+      'verdict delta {\n derive "ocl{abs(served - ghost)}"\n inputs { served }\n}\n',
+    );
+    const msgs = checkPackage(dir)
+      .filter(i => i.check === 'C171')
+      .map(i => i.message);
+    assert.ok(msgs.some(m => m.includes('"ghost"')));
+    assert.ok(!msgs.some(m => m.includes('"ocl"')));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('resolves a derivation calling a declared calculation', () => {
+    const body = `conformance test /conf/t {
+ method inspection
+ variables {
+  variable load { type number source declared description "L" }
+  variable allow { type number source computed
+   derivation {
+    lookupMPE(load)
+   }
+   description "A"
+  }
+ }
+}
+calculation lookupMPE {
+ name "lookupMPE"
+ inputs {
+  load : number { description "the load" }
+ }
+ output : number { name "mpe" }
+ expression "ocl{1.0 * load}"
+}
+`;
+    const dir = make(body);
+    const msgs = checkPackage(dir)
+      .filter(i => i.check === 'C171')
+      .map(i => i.message);
+    assert.deepEqual(msgs, []);
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('C177 kind coherence', () => {
+  const make = (body: string): string => {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-kind-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'specification'), { recursive: true });
+    writeFileSync(join(dir, 'specification', 'r.prl'), body);
+    return dir;
+  };
+  const kinds = (dir: string): string[] =>
+    checkPackage(dir)
+      .filter(i => i.check === 'C177')
+      .map(i => i.message);
+
+  it('errors when a comparison mixes declared kinds', () => {
+    const dir = make(
+      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   l <- symbol:the_length\n  }\n  expression {\n   m <= l\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nsymbol the_length { label "l" quantity_kind length }\n',
+    );
+    const msgs = kinds(dir);
+    assert.ok(
+      msgs.some(m => m.includes('"mass"') && m.includes('"length"')),
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('never conflicts on kindless or unknown operands', () => {
+    const dir = make(
+      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   n <- observable:n\n  }\n  expression {\n   m <= n and m <= 5\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\n',
+    );
+    assert.deepEqual(kinds(dir), []);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('keeps the kind through arithmetic and picks it up from attributes', () => {
+    const dir = make(
+      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   cap <- attribute:the_capacity\n  }\n  expression {\n   m <= 0.5 * cap\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nattribute_definition the_capacity { name "cap" quantity_kind mass }\n',
+    );
+    assert.deepEqual(kinds(dir), []);
+    rmSync(dir, { recursive: true, force: true });
   });
 });

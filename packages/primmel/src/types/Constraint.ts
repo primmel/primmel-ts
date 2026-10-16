@@ -19,8 +19,11 @@ export default interface Constraint {
   /** Human label (e.g. "Dead-load maximum geometry"). */
   name: string;
   /** Machine-checkable invariant as OCL over the subject's declared
-   *  anatomy (model.parameters.*, sample.test_context.*, …). */
+   *  anatomy (model.parameters.*, sample.test_context.*, …) — or the
+   *  v3.3 inline block. */
   check: string;
+  /** The check is the v3.3 inline block — the checker walks the AST. */
+  checkBound?: boolean;
   /** REQUIRED: what a violation MEANS — recorded on the invalidated
    *  judgment (e.g. "the test setup does not realize the measuring range
    *  the type evaluation claims"). */

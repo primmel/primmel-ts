@@ -46,6 +46,8 @@ export interface TestVariable {
   unit: string;
   source: string;
   derivation: string;
+  /** The derivation is the v3.3 inline block — the checker walks the AST. */
+  derivationBound?: boolean;
   description: string;
   itemType: string;
   /** Series shape (axes + cell) when the variable holds a series of readings. */
@@ -88,8 +90,10 @@ export interface AcceptanceCriterion {
  */
 export interface TestPrecondition {
   id: string;
-  /** OCL run-validity check expression. */
+  /** OCL run-validity check expression — or the v3.3 inline block. */
   check: string;
+  /** The check is the v3.3 inline block — the checker walks the AST. */
+  checkBound?: boolean;
   description: string;
   /** Verdict outcome when the check is violated — 'invalid' (void run). */
   onViolation: string;

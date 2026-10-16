@@ -35,6 +35,10 @@ import {
 } from './field-parser';
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import {
+  readExpressionCarrier,
+  dumpExpressionBlock,
+} from '../expression-carrier';
+import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
 } from './sourceDiscrepancy';
@@ -102,7 +106,9 @@ function parseTestVariables(block: string): TestVariable[] {
         } else if (vc === 'source') {
           v.source = stripWrapping(vt[j++]);
         } else if (vc === 'derivation') {
-          v.derivation = stripWrapping(vt[j++]);
+          const c = readExpressionCarrier(vt[j++], 'test variable derivation');
+          v.derivation = c.source;
+          v.derivationBound = c.inline || undefined;
         } else if (vc === 'description') {
           v.description = stripWrapping(vt[j++]);
         } else if (vc === 'item_type') {
@@ -166,7 +172,9 @@ function parsePreconditions(block: string): TestPrecondition[] {
           break;
         }
         if (pc === 'check') {
-          p.check = stripWrapping(pt[j++]);
+          const c = readExpressionCarrier(pt[j++], 'precondition check');
+          p.check = c.source;
+          p.checkBound = c.inline || undefined;
         } else if (pc === 'description') {
           p.description = stripWrapping(pt[j++]);
         } else if (pc === 'on_violation') {
@@ -1076,8 +1084,17 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       if (v.source) {
         line += 'source ' + v.source + ' ';
       }
+      let derivationBlock = '';
       if (v.derivation) {
-        line += 'derivation "' + escapeString(v.derivation) + '" ';
+        if (v.derivationBound) {
+          derivationBlock = dumpExpressionBlock(
+            'derivation',
+            v.derivation,
+            '      ',
+          );
+        } else {
+          line += 'derivation "' + escapeString(v.derivation) + '" ';
+        }
       }
       if (v.description) {
         line += 'description "' + escapeString(v.description) + '" ';
@@ -1104,7 +1121,11 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
         }
         line += pv + '} ';
       }
-      out += line + '}\n';
+      if (derivationBlock) {
+        out += line + '\n' + derivationBlock + '    }\n';
+      } else {
+        out += line + '}\n';
+      }
     }
     out += '  }\n';
   }
@@ -1133,8 +1154,13 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     out += '  preconditions {\n';
     for (const p of ct.preconditions) {
       let line = '    precondition ' + p.id + ' { ';
+      let checkBlock = '';
       if (p.check) {
-        line += 'check "' + escapeString(p.check) + '" ';
+        if (p.checkBound) {
+          checkBlock = dumpExpressionBlock('check', p.check, '      ');
+        } else {
+          line += 'check "' + escapeString(p.check) + '" ';
+        }
       }
       if (p.description) {
         line += 'description "' + escapeString(p.description) + '" ';
@@ -1143,7 +1169,11 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       if (p.onUnresolvable) {
         line += 'on_unresolvable ' + p.onUnresolvable + ' ';
       }
-      out += line + '}\n';
+      if (checkBlock) {
+        out += line + '\n' + checkBlock + '    }\n';
+      } else {
+        out += line + '}\n';
+      }
     }
     out += '  }\n';
   }

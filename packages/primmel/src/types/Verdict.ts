@@ -31,8 +31,10 @@ export default interface Verdict {
   quantityKind: string;
   /** Measurement unit of the derived value; empty for dimensionless. */
   unit: string;
-  /** The single canonical derivation, ocl{...}. */
+  /** The single canonical derivation, ocl{...} or the inline block. */
   derive: string;
+  /** The derivation is the v3.3 inline block — the checker walks the AST. */
+  deriveBound?: boolean;
   /** Symbol ids the derivation reads (its free identifiers). */
   inputs: string[];
   /** Series→scalar reduction; null for scalar (single-measurement) verdicts. */

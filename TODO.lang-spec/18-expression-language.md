@@ -1,14 +1,17 @@
 # 18 — The Primmel expression language: first-class expressions, not OCL strings
 
-**Status: LANDED (2026-10-16, phase 1+2 on limits and class laws).**
+**Status: LANDED (2026-10-16, phase 1+2 on limits and class laws; the carriers — derive, derivation, check — landed the same day).**
 `src/expressions/` — the lexer, the precedence-climbing parser, the AST,
 `freeIdentifiers`/`renderExpression`; the limit parses the inline
 `expression { … }` block (parse-time syntax gate, canonical render, dump
 fixpoint); C171/C172 walk the AST. The r134 corpus carries the pilot (8
-limits migrated). Remaining: the derive/derivation/constraint/invariant
-carriers (phase 1's rest), the named multiple limits with `when { }`
-guards (below), the PARG artifact handoff to plurimath, the legacy-string
-deprecation.
+limits migrated; the twin-cert derives/derivations/checks migrated — the
+carriers are `derive { … }`, `derivation { … }`, `check { … }` blocks, the
+same string-vs-block decision; C177 kind-coherence landed with them,
+register 22). Remaining: the invariant/check-completion carriers, the
+named multiple limits with `when { }` guards (below), the PARG artifact
+handoff to plurimath, the acceptance-plane `pass_if`/`accepts` idiom, the
+legacy-string deprecation.
 
 ## The gap
 Every machine-executable expression in the language — requirement limits, the
