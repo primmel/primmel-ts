@@ -1465,6 +1465,8 @@ export function checkPackage(
       switch (node.type) {
         case 'num':
           return null;
+        case 'str':
+          return null;
         case 'name': {
           const root = node.path[0];
           if (
@@ -1514,6 +1516,11 @@ export function checkPackage(
         }
         case 'unop':
           return node.op === 'not' ? null : kindOf(node.operand);
+        case 'nav':
+          // the iteration predicate's truth over the collection: the
+          // boolean iterators; select keeps the source's kind — its
+          // element kind is the collection's, unknown here
+          return node.op === 'select' ? undefined : null;
         case 'binop': {
           if (['<=', '>=', '<', '>', '=', '!=', '≠'].includes(node.op)) {
             const l = kindOf(node.left);
@@ -1685,25 +1692,69 @@ export function checkPackage(
     if (!c.checkBound || !c.check) {
       continue;
     }
-    resolveInlineCarrier('constraint', c.id, 'check', c.check, new Set());
+    const cArgs = c.args ?? [];
+    const cScope = new Set(cArgs.map(a => a.name));
+    for (const a of cArgs) {
+      if (a.source.includes(':')) {
+        const segs = a.source.split(':');
+        if (segs.length === 2 && segs[0] !== 'observable') {
+          const [kind, id] = segs;
+          if (!DECLARATION_KINDS.has(kind)) {
+            err(
+              'C171',
+              `constraint ${c.id}: argument "${a.name}" binds to "${a.source}" — "${kind}" is not a declaration kind (expression-identifiers-resolve)`,
+            );
+          } else {
+            const idRoot = id.split('.')[0]!;
+            const idTail = id.split('.').pop() ?? id;
+            if (
+              !globalExprNames.has(id) &&
+              !globalExprNames.has(idRoot) &&
+              !globalExprNames.has(idTail)
+            ) {
+              err(
+                'C171',
+                `constraint ${c.id}: argument "${a.name}" binds to "${a.source}", which no declared ${kind} names — air inside the formula (expression-identifiers-resolve)`,
+              );
+            }
+          }
+        }
+        continue;
+      }
+      if (a.source === 'self' || a.source.startsWith('self.')) {
+        continue;
+      }
+      const bare = a.source.split(':').pop() ?? a.source;
+      if (
+        !globalExprNames.has(a.source) &&
+        !globalExprNames.has(bare)
+      ) {
+        err(
+          'C171',
+          `constraint ${c.id}: argument "${a.name}" binds to "${a.source}", which nothing declares — air inside the formula (expression-identifiers-resolve)`,
+        );
+      }
+    }
+    resolveInlineCarrier('constraint', c.id, 'check', c.check, cScope);
     // C84's inline restatement: the check is one BOOLEAN expression
     try {
       const ast = parseExpression(c.check);
       const booleanTop =
-        ast.type === 'binop' &&
-        [
-          '<=',
-          '>=',
-          '<',
-          '>',
-          '=',
-          '!=',
-          '≠',
-          'and',
-          'or',
-          'xor',
-          'implies',
-        ].includes(ast.op);
+        (ast.type === 'binop' &&
+          [
+            '<=',
+            '>=',
+            '<',
+            '>',
+            '=',
+            '!=',
+            '≠',
+            'and',
+            'or',
+            'xor',
+            'implies',
+          ].includes(ast.op)) ||
+        (ast.type === 'nav' && ['forAll', 'exists'].includes(ast.op));
       if (!booleanTop) {
         err(
           'C84',

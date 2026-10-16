@@ -1,6 +1,14 @@
 # 24 — The collection navigation in the expression grammar
 
-**Status: OPEN — the arming blocker.** The scheme-lifecycle completion
+**Status: LANDED (2026-10-16).** `source -> forAll(v | body)` /
+`-> exists` / `-> select` — the lexer's `->` and the single-quoted
+strings, the nav AST node, the lambda parameter binding its body (the
+same resolution doctrine as `args`), the canonical render, the
+constraint's `args` plane, C84's boolean-top, checker2's mirror. The
+five completion constraints migrated; oiml-r134 ARMED `language v3.4`
+— 0 errors under the strict audit, the whole closure inline.
+
+**The original finding:** The scheme-lifecycle completion
 constraints (oiml-smart-core `constraints.prl`: `completion_fees_settled`,
 `completion_custody_closed`, `completion_threads_resolved`,
 `completion_reports_finalized`, `completion_certificate_registered`)

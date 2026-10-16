@@ -7,10 +7,12 @@
 
 export type ExprToken =
   | { kind: 'num'; value: number }
+  | { kind: 'str'; value: string }
   | { kind: 'name'; value: string }
   | { kind: 'op'; value: string };
 
 const OPERATORS = [
+  '->',
   '<=',
   '>=',
   '!=',
@@ -26,7 +28,10 @@ const OPERATORS = [
   ')',
   ',',
   '.',
+  '|',
 ];
+
+const NAV_OPS = new Set(['forAll', 'exists', 'select']);
 
 export function lex(src: string): ExprToken[] {
   const tokens: ExprToken[] = [];
@@ -35,6 +40,18 @@ export function lex(src: string): ExprToken[] {
     const c = src[i];
     if (/\s/.test(c)) {
       i += 1;
+      continue;
+    }
+    if (c === "'") {
+      let j = i + 1;
+      while (j < src.length && src[j] !== "'") {
+        j += 1;
+      }
+      if (j >= src.length) {
+        throw new Error(`expression: unterminated string at offset ${i}`);
+      }
+      tokens.push({ kind: 'str', value: src.slice(i + 1, j) });
+      i = j + 1;
       continue;
     }
     if (/[0-9]/.test(c)) {
@@ -75,10 +92,23 @@ export function lex(src: string): ExprToken[] {
 
 export type ExprAst =
   | { type: 'num'; value: number }
+  | { type: 'str'; value: string }
   | { type: 'name'; path: string[] }
   | { type: 'call'; callee: string; args: ExprAst[] }
   | { type: 'binop'; op: string; left: ExprAst; right: ExprAst }
-  | { type: 'unop'; op: string; operand: ExprAst };
+  | { type: 'unop'; op: string; operand: ExprAst }
+  /**
+   * The collection navigation (register 24): `source -> op(v | body)` —
+   * the OCL iterator heritage; the lambda parameter scopes the body
+   * exactly like an argument binds a limit's.
+   */
+  | {
+      type: 'nav';
+      source: string;
+      op: string;
+      var: string;
+      body: ExprAst;
+    };
 
 // ── the precedence-climbing parser ─────────────────────────────────────
 
@@ -164,6 +194,9 @@ class ExprParser {
     if (tok.kind === 'num') {
       return { type: 'num', value: tok.value };
     }
+    if (tok.kind === 'str') {
+      return { type: 'str', value: tok.value };
+    }
     if (tok.kind === 'op' && tok.value === '(') {
       const inner = this.parseLevel(0);
       const close = this.take();
@@ -212,6 +245,51 @@ class ExprParser {
         }
         return { type: 'call', callee: segs.join('.'), args };
       }
+      // the collection navigation (register 24):
+      // source -> forAll(v | body) / exists / select
+      const arrow = this.peek();
+      if (arrow?.kind === 'op' && arrow.value === '->') {
+        this.take();
+        const opTok = this.take();
+        if (
+          opTok.kind !== 'name' ||
+          !NAV_OPS.has(opTok.value)
+        ) {
+          throw new Error(
+            'expression: expected a collection iterator (forAll | exists | select)',
+          );
+        }
+        if (
+          this.peek()?.kind !== 'op' ||
+          this.peek()!.value !== '('
+        ) {
+          throw new Error('expression: expected ( after the iterator');
+        }
+        this.take();
+        const varTok = this.take();
+        if (varTok.kind !== 'name') {
+          throw new Error('expression: expected the lambda parameter');
+        }
+        if (
+          this.peek()?.kind !== 'op' ||
+          this.peek()!.value !== '|'
+        ) {
+          throw new Error('expression: expected | after the parameter');
+        }
+        this.take();
+        const body = this.parseLevel(0);
+        const close = this.take();
+        if (close.kind !== 'op' || close.value !== ')') {
+          throw new Error('expression: expected closing parenthesis');
+        }
+        return {
+          type: 'nav',
+          source: segs.join('.'),
+          op: opTok.value,
+          var: varTok.value,
+          body,
+        };
+      }
       return { type: 'name', path: segs };
     }
     throw new Error(`expression: unexpected token "${String(tok.value)}"`);
@@ -244,32 +322,49 @@ export interface ExprIdentifiers {
   calls: string[];
 }
 
-/** The named leaves and the call targets of the AST. */
+/** The named leaves and the call targets of the AST. The lambda
+ *  parameters bind their bodies: a name rooted at a bound parameter is
+ *  the navigation's own, never free. */
 export function freeIdentifiers(ast: ExprAst): ExprIdentifiers {
   const out: ExprIdentifiers = { names: [], calls: [] };
-  const walk = (node: ExprAst): void => {
+  const walk = (node: ExprAst, bound: Set<string>): void => {
     switch (node.type) {
       case 'num':
         return;
-      case 'name':
+      case 'str':
+        return;
+      case 'name': {
+        // the lexer's name token carries its dots whole — the root is
+        // the token's first dot-segment, not the path array's
+        if (bound.has(node.path[0]!.split('.')[0]!)) {
+          return;
+        }
         out.names.push(node.path.join('.'));
         return;
+      }
       case 'call':
         out.calls.push(node.callee);
         for (const a of node.args) {
-          walk(a);
+          walk(a, bound);
         }
         return;
       case 'unop':
-        walk(node.operand);
+        walk(node.operand, bound);
         return;
       case 'binop':
-        walk(node.left);
-        walk(node.right);
+        walk(node.left, bound);
+        walk(node.right, bound);
         return;
+      case 'nav': {
+        const inner = new Set(bound);
+        inner.add(node['var']);
+        walk({ type: 'name', path: [node.source] }, bound);
+        walk(node.body, inner);
+        return;
+      }
     }
   };
-  walk(ast);
+  walk(ast, new Set());
   return out;
 }
 
@@ -278,6 +373,8 @@ export function renderExpression(ast: ExprAst): string {
   switch (ast.type) {
     case 'num':
       return String(ast.value);
+    case 'str':
+      return "'" + ast.value + "'";
     case 'name':
       return ast.path.join('.');
     case 'call':
@@ -291,6 +388,17 @@ export function renderExpression(ast: ExprAst): string {
         (ast.operand.type === 'binop' ? ' (' + inner + ')' : ' ' + inner)
       );
     }
+    case 'nav':
+      return (
+        ast.source +
+        ' -> ' +
+        ast.op +
+        '(' +
+        ast['var'] +
+        ' | ' +
+        renderExpression(ast.body) +
+        ')'
+      );
     case 'binop':
       return (
         renderExpression(ast.left) +

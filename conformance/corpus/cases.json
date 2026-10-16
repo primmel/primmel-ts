@@ -3218,6 +3218,30 @@
     ]
    },
    "summary": "A Type B component without its half-width is C179 — the distribution spans a half-width."
+  },
+  {
+   "id": "chk-171-pos-collection",
+   "clause": "CHK-171",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/collection-constraint-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "The collection navigation (register 24): a constraint's inline check over an arg-bound collection with a lambda parameter resolves — the parameter binds its body."
+  },
+  {
+   "id": "chk-171-neg-collection",
+   "clause": "CHK-171",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/collection-constraint-violation",
+   "expect": {
+    "rules": [
+     "C171"
+    ]
+   },
+   "summary": "A second check-line naming a collection nothing declares is air — C171 (and the one-boolean invariant shape)."
   }
  ]
 }

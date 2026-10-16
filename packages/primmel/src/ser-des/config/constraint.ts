@@ -26,6 +26,7 @@ import {
 } from '../tokenize';
 import { readSource, dumpBareSafe } from './field-parser';
 import {
+  readArgsBlock,
   readExpressionCarrier,
   dumpExpressionBlock,
 } from '../expression-carrier';
@@ -70,6 +71,12 @@ export const parseConstraint: Parser = function (id, data) {
       result.stereotype = stripWrapping(t[i++]);
     } else if (keyword === 'name') {
       result.name = readValue(t[i++]);
+    } else if (keyword === 'args') {
+      // register 24: the inline check's scope — name <- source per line
+      if (!result.args) {
+        result.args = [];
+      }
+      result.args.push(...readArgsBlock(unwrapBlock(t[i++])));
     } else if (keyword === 'check') {
       const c = readExpressionCarrier(t[i++], 'constraint check');
       result.check = c.source;
@@ -110,6 +117,13 @@ export const dumpConstraint: Dumper<Constraint> = function (c) {
   }
   if (c.name) {
     out += '  name "' + escapeString(c.name) + '"\n';
+  }
+  if ((c.args ?? []).length > 0) {
+    out += '  args {\n';
+    for (const a of c.args ?? []) {
+      out += '    ' + a.name + ' <- ' + a.source + '\n';
+    }
+    out += '  }\n';
   }
   if (c.check) {
     if (c.checkBound) {
