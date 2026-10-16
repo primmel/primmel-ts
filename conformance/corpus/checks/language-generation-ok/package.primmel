@@ -1,0 +1,4 @@
+package {
+  id corpus-checks-language-generation-ok
+  language v3.3
+}

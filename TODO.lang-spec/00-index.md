@@ -25,5 +25,19 @@ freeze.
 - [17 — The SDU SMART superset: two verification items](17-sdu-superset-verification.md)
 - [The Primmel expression language: first-class expressions, not OCL strings](18-expression-language.md)
 - [Namespace: the two senses — the package is the model namespace; the namespace construct is the wire plane](20-namespaces-two-senses.md
-22-kind-coherence.md)
+22-kind-coherence.md
+23-formatter.md)
 - [The step plane: the process steps and their ios, accessed and resolved](19-step-plane.md)
+
+## The external queue — what needs other hands (2026-10-16)
+
+| Item | Owner | Blocks |
+|---|---|---|
+| The evaluation engine: the quantity type system, the GUM propagation, the series aggregations, the constraint residuals | the plurimath team (the mandate, plurimath#488); the grammar formalizes as `expressions.parg` — the PARG artifact handoff is the kernel's next step once the vectors exist | the limits/derives stay parse-checked, never evaluated; the C177 kind strings stay strings |
+| twin-cert's `lookupMPE` acceptance computation: a local `calculation` with its class-table profile, or extending the closure | the twin-cert model owner | the composed gate's last red (68 packages, fail=1) |
+| The `v3.4` release bump — the constant in C178 activates the legacy-carrier ratchet; the corpus migration follows | the release owner (never mine) | the deprecation stays inert; the legacy ocl{…} strings persist |
+| The npm publish — the estate's round-trip floor reads the published kernel; the corpus runs ahead of the release | the release owner | the round-trip script red on the inline-carrier packages until the bump |
+| The `model-library-spike` worktree's unresolved merge conflicts (`.primmel-allowlist.prl` lines 60/75) | the worktree's owner | the shape-front-end slice test red locally (proven identical without any kernel work) |
+| checker2 parity for the expression rules (C171/C172/C177 walk the AST) | checker2's maintainers | the two-implementation guarantee for the new rules |
+| The C169/C170 dedicated fixtures (the sources-prd sentence payloads; the edition-mapping negative) | the conformance corpus maintainer | the clause registry's CHK-169/CHK-170 rows |
+| The uncertainty budget construct (W5's language side): the components, the type-A/type-B links, the coverage factor — designed against the twin-cert U:MPE discipline and the load-cell evaluation report | the next kernel session, with the owner's construct review | the GUM plane stays plurimath-internal; no budget artifact in the models |

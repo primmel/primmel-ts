@@ -355,7 +355,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "A bare numeric calculation-input default is canonical bare \u2014 `default 500` serializes to itself byte-for-byte (the value never mangles to \"0\")."
+   "summary": "A bare numeric calculation-input default is canonical bare — `default 500` serializes to itself byte-for-byte (the value never mangles to \"0\")."
   },
   {
    "id": "ser-02-pos-term-overlay",
@@ -367,7 +367,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "A term's `overlay true` marker survives the canonical emission \u2014 the serializer never drops it."
+   "summary": "A term's `overlay true` marker survives the canonical emission — the serializer never drops it."
   },
   {
    "id": "ser-01-pos-symbol-values",
@@ -378,7 +378,7 @@
    "expect": {
     "roundtrip": "ok"
    },
-   "summary": "An enum symbol's values list re-serializes to a fixed point \u2014 the dump never drops the braces (the editor window-2 pin: an unbraced dump reparsed to one char-stripped entry)."
+   "summary": "An enum symbol's values list re-serializes to a fixed point — the dump never drops the braces (the editor window-2 pin: an unbraced dump reparsed to one char-stripped entry)."
   },
   {
    "id": "ser-02-pos-symbol-values",
@@ -390,7 +390,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "The values list is canonical braced \u2014 `values { DRAFT ISSUED \"with conditions\" }` serializes to itself byte-for-byte, whitespace-carrying entries quoted."
+   "summary": "The values list is canonical braced — `values { DRAFT ISSUED \"with conditions\" }` serializes to itself byte-for-byte, whitespace-carrying entries quoted."
   },
   {
    "id": "ser-01-pos-attribute-definition-vocabulary",
@@ -413,7 +413,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "The attribute definition's vocabulary facets are canonical \u2014 the note, the braced enum_values (whitespace entries quoted), and the cites ref line serialize to themselves byte-for-byte."
+   "summary": "The attribute definition's vocabulary facets are canonical — the note, the braced enum_values (whitespace entries quoted), and the cites ref line serialize to themselves byte-for-byte."
   },
   {
    "id": "ser-01-pos-form-field-bind",
@@ -436,7 +436,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "The bind path is canonical on the field line \u2014 `bind model.parameters.e_max` serializes to itself byte-for-byte, never dropped."
+   "summary": "The bind path is canonical on the field line — `bind model.parameters.e_max` serializes to itself byte-for-byte, never dropped."
   },
   {
    "id": "ser-01-pos-limit-quantity-unit",
@@ -459,7 +459,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "The quantity unit is canonical quoted \u2014 `unit \"counts/v\"` serializes to itself byte-for-byte, the string-facet spelling every other unit site (the verdict quantity, clause 11.3) already emits."
+   "summary": "The quantity unit is canonical quoted — `unit \"counts/v\"` serializes to itself byte-for-byte, the string-facet spelling every other unit site (the verdict quantity, clause 11.3) already emits."
   },
   {
    "id": "ser-01-pos-view-profile-layer-reference",
@@ -470,7 +470,7 @@
    "expect": {
     "roundtrip": "ok"
    },
-   "summary": "A view_profile read against a layer namespace re-serializes to a fixed point (the #79 pin: the unbraced list dump desynced the pairwise parse walk and the trailing against facet died value-less \u2014 \"Expecting value for qms-ref\")."
+   "summary": "A view_profile read against a layer namespace re-serializes to a fixed point (the #79 pin: the unbraced list dump desynced the pairwise parse walk and the trailing against facet died value-less — \"Expecting value for qms-ref\")."
   },
   {
    "id": "ser-02-pos-view-profile-layer-reference",
@@ -482,7 +482,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "The view_profile list facets are canonical braced \u2014 `roles { qms-manager }` and `visible { \u2026 }` serialize to themselves byte-for-byte; the serializer never emits the value-less bare form."
+   "summary": "The view_profile list facets are canonical braced — `roles { qms-manager }` and `visible { … }` serialize to themselves byte-for-byte; the serializer never emits the value-less bare form."
   },
   {
    "id": "ser-02-pos-note-source",
@@ -494,7 +494,7 @@
     "roundtrip": "ok",
     "outputEqualsInput": true
    },
-   "summary": "A note carrying clause-site provenance serializes canonically: the `source { doc clause }` facet folds to `ref derives-from \"urn:\u2026#clause-N\"` and back byte-for-byte."
+   "summary": "A note carrying clause-site provenance serializes canonically: the `source { doc clause }` facet folds to `ref derives-from \"urn:…#clause-N\"` and back byte-for-byte."
   },
   {
    "id": "chk-01-pos",
@@ -649,7 +649,7 @@
    "expect": {
     "roundtrip": "ok"
    },
-   "summary": "An initial-less machine still serializes to parseable text \u2014 the serializer omits the keyword rather than emitting it value-less (the reparse never mangles)."
+   "summary": "An initial-less machine still serializes to parseable text — the serializer omits the keyword rather than emitting it value-less (the reparse never mangles)."
   },
   {
    "id": "chk-06-neg",
@@ -662,7 +662,7 @@
      "C109"
     ]
    },
-   "summary": "A state machine without an initial state is flagged C109 \u2014 the language refuses at its own validation layer."
+   "summary": "A state machine without an initial state is flagged C109 — the language refuses at its own validation layer."
   },
   {
    "id": "chk-90-pos-lutaml-clean",
@@ -673,7 +673,7 @@
    "expect": {
     "clean": true
    },
-   "summary": "A clean package authored wholly in the LutaML surface \u2014 class attributes with facets, instance assignments with quantity units \u2014 stays clean under both implementations: the false-positive detector on the new surface."
+   "summary": "A clean package authored wholly in the LutaML surface — class attributes with facets, instance assignments with quantity units — stays clean under both implementations: the false-positive detector on the new surface."
   },
   {
    "id": "pkg-01-pos",
@@ -1125,7 +1125,7 @@
    "expect": {
     "clean": true
    },
-   "summary": "The resolution contract, pinned: a trust_ref naming an organization no package declares is not a finding \u2014 the checker never resolves the trust plane."
+   "summary": "The resolution contract, pinned: a trust_ref naming an organization no package declares is not a finding — the checker never resolves the trust plane."
   },
   {
    "id": "dat-03-neg-shape",
@@ -1219,7 +1219,7 @@
      "absent": []
     }
    },
-   "summary": "The browser runtime surface carries the five enumerated vocabularies \u2014 the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes (the editor window-2 pin: the browser bundle dropped them)."
+   "summary": "The browser runtime surface carries the five enumerated vocabularies — the passport content classes, access classes, and UPI levels, and the endpoint operation kinds and access scopes (the editor window-2 pin: the browser bundle dropped them)."
   },
   {
    "id": "sur-01-neg-no-phantom-vocabularies",
@@ -1236,7 +1236,7 @@
      ]
     }
    },
-   "summary": "Names the language does not declare are reported absent \u2014 the probe is never rubber-stamped."
+   "summary": "Names the language does not declare are reported absent — the probe is never rubber-stamped."
   },
   {
    "id": "con-01-pos",
@@ -1463,7 +1463,7 @@
    "expect": {
     "parse": "ok"
    },
-   "summary": "The three participant kinds \u2014 the competence and approval blocks, the designating edge, the Declaration edge, the subkinds with the MTL facets \u2014 parse."
+   "summary": "The three participant kinds — the competence and approval blocks, the designating edge, the Declaration edge, the subkinds with the MTL facets — parse."
   },
   {
    "id": "fwk-01-neg",
@@ -1486,7 +1486,7 @@
    "expect": {
     "parse": "ok"
    },
-   "summary": "The three organs \u2014 the mandates and the sub-committee/independence edges \u2014 parse."
+   "summary": "The three organs — the mandates and the sub-committee/independence edges — parse."
   },
   {
    "id": "fwk-02-neg",
@@ -1601,7 +1601,7 @@
    "expect": {
     "clean": true
    },
-   "summary": "A coherent framework \u2014 every cross-register edge resolved \u2014 checks clean."
+   "summary": "A coherent framework — every cross-register edge resolved — checks clean."
   },
   {
    "id": "fwk-07-neg",
@@ -1630,7 +1630,7 @@
      "C28"
     ]
    },
-   "summary": "A redeclared upstream comment identifier is flagged C28 \u2014 the comment register composes through uses like every id-keyed collection (the composition closure)."
+   "summary": "A redeclared upstream comment identifier is flagged C28 — the comment register composes through uses like every id-keyed collection (the composition closure)."
   },
   {
    "id": "ser-01-pos-framework",
@@ -1664,7 +1664,7 @@
    "expect": {
     "parse": "ok"
    },
-   "summary": "The framework-binding facets \u2014 summary, the roles/organs/participant_kinds lists, evidence, decision, declaration, discharges_gate, realized_by/approved_by, and both calendar windows \u2014 parse."
+   "summary": "The framework-binding facets — summary, the roles/organs/participant_kinds lists, evidence, decision, declaration, discharges_gate, realized_by/approved_by, and both calendar windows — parse."
   },
   {
    "id": "fwk-08-neg",
@@ -1733,7 +1733,7 @@
    "expect": {
     "clean": true
    },
-   "summary": "A coherent framework and abstract-process pipeline \u2014 every facet edge resolved \u2014 checks clean."
+   "summary": "A coherent framework and abstract-process pipeline — every facet edge resolved — checks clean."
   },
   {
    "id": "fwk-12-neg",
@@ -1781,7 +1781,7 @@
    "expect": {
     "clean": true
    },
-   "summary": "A document module whose sequence, register maintainer, and namespace all resolve \u2014 and an annex whose applies_to resolves through the locator \u2014 checks clean.",
+   "summary": "A document module whose sequence, register maintainer, and namespace all resolve — and an annex whose applies_to resolves through the locator — checks clean.",
    "with": {
     "iso-iec-17065": "checks/document-module-casco"
    }
@@ -2417,7 +2417,7 @@
    "expect": {
     "parse": "ok"
    },
-   "summary": "A full verification_pathway \u2014 tests, assessment, limits, marking, validity window and triggers \u2014 parses."
+   "summary": "A full verification_pathway — tests, assessment, limits, marking, validity window and triggers — parses."
   },
   {
    "id": "evl-09-parse-neg",
@@ -2739,7 +2739,7 @@
    "expect": {
     "clean": true
    },
-   "summary": "A coherent cascade \u2014 targets resolve, exactly one default, default last \u2014 checks clean."
+   "summary": "A coherent cascade — targets resolve, exactly one default, default last — checks clean."
   },
   {
    "id": "wf-02-check-neg-defaults",
@@ -2875,7 +2875,7 @@
    "expect": {
     "parse": "ok"
    },
-   "summary": "An instance whose of names another instance parses \u2014 the power-type chain is language surface."
+   "summary": "An instance whose of names another instance parses — the power-type chain is language surface."
   },
   {
    "id": "pwt-01-pos",
@@ -2899,7 +2899,7 @@
      "C155"
     ]
    },
-   "summary": "An instance instantiating another instance while carrying an upward model link fires C155 \u2014 the two chain spellings do not mix."
+   "summary": "An instance instantiating another instance while carrying an upward model link fires C155 — the two chain spellings do not mix."
   },
   {
    "id": "pwt-01-neg-cycle",
@@ -2912,7 +2912,7 @@
      "C155"
     ]
    },
-   "summary": "A cyclic of-chain fires C155 \u2014 the generalized delegation walk must terminate."
+   "summary": "A cyclic of-chain fires C155 — the generalized delegation walk must terminate."
   },
   {
    "id": "pwt-01-pos-prototype",
@@ -2923,7 +2923,7 @@
    "expect": {
     "clean": true
    },
-   "summary": "A class extending an INSTANCE (the prototype) checks clean: the production unit instantiates the product line, whose prototype is the characterized family instance \u2014 the delegation walk crosses the class plane."
+   "summary": "A class extending an INSTANCE (the prototype) checks clean: the production unit instantiates the product line, whose prototype is the characterized family instance — the delegation walk crosses the class plane."
   },
   {
    "id": "pwt-02-neg-lutaml-cycle",
@@ -2936,7 +2936,7 @@
      "C155"
     ]
    },
-   "summary": "An of-chain cycle authored in the LutaML surface (assignment-form instances, a class with attribute name, Type facets) fires C155 \u2014 the second implementation reads the new surface through the grammar's shape tree (assignment items, comma-separated idents)."
+   "summary": "An of-chain cycle authored in the LutaML surface (assignment-form instances, a class with attribute name, Type facets) fires C155 — the second implementation reads the new surface through the grammar's shape tree (assignment items, comma-separated idents)."
   },
   {
    "id": "syn-12-pos-lutaml-class",
@@ -3098,6 +3098,102 @@
     "errorMatch": "string_format"
    },
    "summary": "A string_format without the colon sigil is a parse error."
+  },
+  {
+   "id": "chk-171-pos-carriers",
+   "clause": "CHK-171",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/expression-carriers-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "The inline carriers (the args-bound limit expression block, the verdict derive block) resolve: every identifier binds to a declared argument or input."
+  },
+  {
+   "id": "chk-171-neg-air",
+   "clause": "CHK-171",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/expression-air-violation",
+   "expect": {
+    "rules": [
+     "C171"
+    ]
+   },
+   "summary": "An inline limit naming an identifier no argument binds is air — C171 names it and the fix."
+  },
+  {
+   "id": "chk-172-pos-law",
+   "clause": "CHK-172",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/class-law-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "The class law takes the inline form with no args: the containment is the scope, the law's identifiers are the members."
+  },
+  {
+   "id": "chk-172-neg-nonmember",
+   "clause": "CHK-172",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/class-law-nonmember-violation",
+   "expect": {
+    "rules": [
+     "C172"
+    ]
+   },
+   "summary": "The law naming a non-member is the algebra violation — C172."
+  },
+  {
+   "id": "chk-176-neg-generation",
+   "clause": "CHK-176",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/language-generation-malformed",
+   "expect": {
+    "rules": [
+     "C176"
+    ]
+   },
+   "summary": "A declared language that is not a generation (v<major>[.<minor>]) is C176."
+  },
+  {
+   "id": "chk-177-pos-kinds",
+   "clause": "CHK-177",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/kind-coherence-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A comparison over operands of the same declared quantity kind passes — the kind rides the arithmetic."
+  },
+  {
+   "id": "chk-177-neg-mixed",
+   "clause": "CHK-177",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/kind-coherence-violation",
+   "expect": {
+    "rules": [
+     "C177"
+    ]
+   },
+   "summary": "A comparison mixing two declared quantity kinds (mass against length) is C177 kind-coherence."
+  },
+  {
+   "id": "chk-176-pos-generation",
+   "clause": "CHK-176",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/language-generation-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A well-formed declared generation (v3.3) is C176-clean and parses strictly."
   }
  ]
 }

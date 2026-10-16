@@ -322,9 +322,7 @@ describe('C177 kind coherence', () => {
       'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   l <- symbol:the_length\n  }\n  expression {\n   m <= l\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nsymbol the_length { label "l" quantity_kind length }\n',
     );
     const msgs = kinds(dir);
-    assert.ok(
-      msgs.some(m => m.includes('"mass"') && m.includes('"length"')),
-    );
+    assert.ok(msgs.some(m => m.includes('"mass"') && m.includes('"length"')));
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -341,6 +339,88 @@ describe('C177 kind coherence', () => {
       'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   cap <- attribute:the_capacity\n  }\n  expression {\n   m <= 0.5 * cap\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nattribute_definition the_capacity { name "cap" quantity_kind mass }\n',
     );
     assert.deepEqual(kinds(dir), []);
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('the series aggregations (W4)', () => {
+  const make = (body: string): string => {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-series-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'specification'), { recursive: true });
+    writeFileSync(join(dir, 'specification', 'r.prl'), body);
+    return dir;
+  };
+
+  it('resolves the aggregation vocabulary and the series index access', () => {
+    const body = `requirement /req/x {
+ name "X"
+ statement "S"
+ limit {
+  args {
+   readings <- observable:dwell_samples
+  }
+  expression {
+   stddev_of(readings) / sqrt(count_of(readings)) <= 1
+  }
+ }
+}
+`;
+    const dir = make(body);
+    const msgs = checkPackage(dir)
+      .filter(i => i.check === 'C171')
+      .map(i => i.message);
+    assert.deepEqual(msgs, []);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('keeps unknown aggregations as air', () => {
+    const dir = make(
+      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args { r <- observable:readings }\n  expression {\n   median_of(r) >= 0\n  }\n }\n}\n',
+    );
+    const msgs = checkPackage(dir)
+      .filter(i => i.check === 'C171')
+      .map(i => i.message);
+    assert.ok(msgs.some(m => m.includes('"median_of(…)"')));
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('C178 legacy-carrier-deprecated (W6)', () => {
+  const make = (manifest: string, body: string): string => {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-dep-'));
+    writeFileSync(join(dir, 'package.primmel'), manifest);
+    mkdirSync(join(dir, 'specification'), { recursive: true });
+    writeFileSync(join(dir, 'specification', 'r.prl'), body);
+    return dir;
+  };
+  const LEGACY =
+    'requirement /req/r {\n name "R"\n statement "S"\n limit {\n  expression "ocl{1 <= 2}"\n }\n}\n';
+  const ids = (dir: string): string[] =>
+    checkPackage(dir)
+      .filter(i => i.check === 'C178')
+      .map(i => i.message);
+
+  it('warns once the package declares the deprecation generation', () => {
+    const dir = make('package {\n id test\n language v3.4\n}', LEGACY);
+    const msgs = ids(dir);
+    assert.equal(msgs.length, 1);
+    assert.ok(msgs[0].includes('deprecated'));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('is inert on the current generation', () => {
+    const dir = make('package {\n id test\n language v3.3\n}', LEGACY);
+    assert.deepEqual(ids(dir), []);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('does not count the inline carriers', () => {
+    const dir = make(
+      'package {\n id test\n language v3.4\n}',
+      'requirement /req/r {\n name "R"\n statement "S"\n limit {\n  expression {\n   1 <= 2\n  }\n }\n}\n',
+    );
+    assert.deepEqual(ids(dir), []);
     rmSync(dir, { recursive: true, force: true });
   });
 });

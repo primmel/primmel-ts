@@ -1,0 +1,25 @@
+requirement /req/carriers {
+  name "Carriers"
+  statement "The error shall not exceed the mpe."
+  limit {
+    args {
+      e <- symbol:e_vehicle
+      mpe <- symbol:mpe
+    }
+    expression {
+      abs(e) <= mpe
+    }
+  }
+}
+verdict delta {
+  quantity { kind mass unit "kg" }
+  derive {
+    abs(served - reference)
+  }
+  inputs { served reference }
+}
+symbol e_vehicle { label "e" }
+symbol mpe { label "mpe" }
+
+symbol served { label "s" }
+symbol reference { label "r" }

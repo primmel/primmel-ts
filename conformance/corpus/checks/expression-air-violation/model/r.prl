@@ -1,0 +1,13 @@
+requirement /req/air {
+  name "Air"
+  statement "S"
+  limit {
+    args {
+      e <- symbol:e_vehicle
+    }
+    expression {
+      e <= ghost_limit
+    }
+  }
+}
+symbol e_vehicle { label "e" }

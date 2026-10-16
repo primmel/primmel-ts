@@ -1,0 +1,16 @@
+requirement_class /req/c {
+  name "C"
+  limit {
+    expression {
+      mpe_mass or d_floor
+    }
+  }
+  requirement mpe_mass {
+    name "M"
+    statement "S"
+  }
+  requirement d_floor {
+    name "D"
+    statement "S"
+  }
+}
