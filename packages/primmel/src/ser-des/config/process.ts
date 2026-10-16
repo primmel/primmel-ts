@@ -185,6 +185,7 @@ import tokenize, {
   tokenizePackage,
 } from '../tokenize';
 import { forEachEntry, unwrapped, skipUnknownValue } from '../parse-block';
+import { readExpressionCarrier } from '../expression-carrier';
 import {
   parseRefFromReaders,
   foldRefIntoLegacy,
@@ -678,6 +679,17 @@ const STEP_KINDS = new Set<ProcessStepKind>([
   'signal_event',
 ]);
 
+/** The calls bindings of one `with { in {…} out {…} }` block: the
+ *  callee parameter ← the caller name (`in`), the callee parameter →
+ *  the caller name (`out`). Shared by the flow dialect and the
+ *  signature steps (register 19). */
+function parseCallBindings(block: string): ProcessCallBinding[] {
+  return parseParamList(unwrapBlock(block)).map(pr => ({
+    param: pr.name,
+    bind: pr.type,
+  }));
+}
+
 /** Read one step body (the `{ … }` after `<kind> <id>`). */
 function parseStepBody(
   id: string,
@@ -690,6 +702,9 @@ function parseStepBody(
     id,
     kind,
     signatureBlock: '',
+    sigInputs: [],
+    sigOutputs: [],
+    completion: '',
     executor: '',
     role: '',
     capture: '',
@@ -1026,7 +1041,15 @@ export const parseProcess: Parser = function (id, data) {
         const sid = stripWrapping(value());
         const blockTok = value();
         if (keyword === 'step') {
-          (result.steps ??= []).push({
+          const raw =
+            blockTok !== undefined && blockTok.startsWith('{')
+              ? unwrapBlock(blockTok)
+              : (blockTok ?? '');
+          // register 19: the signature step types in place — the named
+          // ios, the completion carrier, the calls bindings (C76's
+          // machinery then covers them like any flow step). The raw
+          // block stays the serialization truth.
+          const st: ProcessStep = {
             id: sid,
             kind: 'action',
             executor: '',
@@ -1036,9 +1059,63 @@ export const parseProcess: Parser = function (id, data) {
             writes: [],
             fires: '',
             calls: '',
-            signatureBlock:
-              blockTok !== undefined && blockTok.startsWith('{') ? unwrapBlock(blockTok) : blockTok ?? '',
-          } as never);
+            callIn: [],
+            callOut: [],
+            wait: '',
+            period: '',
+            signal: '',
+            signatureBlock: raw,
+            sigInputs: [],
+            sigOutputs: [],
+            completion: '',
+            description: '',
+          };
+          const tt = tokenizePackage(raw);
+          let ti = 0;
+          while (ti < tt.length) {
+            const tc = tt[ti++];
+            if (ti >= tt.length) {
+              break;
+            }
+            if (tc === 'inputs' || tc === 'outputs') {
+              const ids = tokenizePackage(unwrapBlock(tt[ti++]))
+                .map(stripWrapping)
+                .filter(x => x.length > 0);
+              if (tc === 'inputs') {
+                st.sigInputs = ids;
+              } else {
+                st.sigOutputs = ids;
+              }
+            } else if (tc === 'completion') {
+              const c = readExpressionCarrier(tt[ti++], 'step completion');
+              st.completion = c.source;
+              st.completionBound = c.inline || undefined;
+            } else if (tc === 'calls') {
+              st.calls = stripWrapping(tt[ti++]);
+              if (ti < tt.length && tt[ti] === 'with') {
+                const wt = tokenize(unwrapBlock(tt[ti++]));
+                let wk = 0;
+                while (wk < wt.length) {
+                  const wc = wt[wk++];
+                  if (wk >= wt.length) {
+                    break;
+                  }
+                  if (wc === 'in') {
+                    st.callIn.push(...parseCallBindings(wt[wk++]));
+                  } else if (wc === 'out') {
+                    st.callOut.push(...parseCallBindings(wt[wk++]));
+                  } else {
+                    unwrapBlock(wt[wk++]);
+                  }
+                }
+              }
+            } else if (tc === 'description') {
+              st.description = stripWrapping(tt[ti++]);
+            } else {
+              ti = skipUnknownEntry(tt, ti);
+            }
+          }
+          (result.steps ??= []).push(st);
         } else {
           (result.bindings ??= []).push({
             id: sid,

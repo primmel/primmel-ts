@@ -1,0 +1,20 @@
+process scale {
+  name "Scaling"
+  step scale {
+    inputs { filtered_counts e_lim }
+    outputs { indication overload_flag }
+    completion "overload_flag = filtered_counts > e_lim"
+  }
+}
+requirement /req/addresses {
+  name "Addresses"
+  statement "The scaling step's output is addressable."
+  limit {
+    args {
+      ind <- process:scale.scale.indication
+    }
+    expression {
+      ind >= 0
+    }
+  }
+}

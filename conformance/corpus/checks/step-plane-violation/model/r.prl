@@ -1,0 +1,8 @@
+process scale {
+  name "Scaling"
+  step scale {
+    inputs { filtered_counts e_lim }
+    outputs { indication overload_flag }
+    completion "overload_flag = ghost_counts > e_lim"
+  }
+}

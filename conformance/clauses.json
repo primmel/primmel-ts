@@ -813,6 +813,12 @@
    "area": "checking",
    "title": "Uncertainty budget resolves",
    "statement": "An uncertainty budget targets a declared verdict; a Type A component names a declared captured series, a Type B component states its distribution and half-width; the coverage factor is a positive number (C179). The propagation law is the evaluation plane's — the checker resolves the declaration, it never computes the uncertainty."
+  },
+  {
+   "id": "CHK-173",
+   "area": "checking",
+   "title": "Step-plane references resolve",
+   "statement": "A signature step's completion is one expression over the step's own declared ios; the calls bindings resolve the callee's declared signature; the dot-descent (process:step.io) resolves to a declared io of that step — nothing linked to air (C173)."
   }
  ]
 }

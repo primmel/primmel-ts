@@ -56,6 +56,11 @@ export const ALLOWLIST_FILENAME = '.primmel-allowlist.prl';
 export interface AllowlistEntry {
   rule: string;
   match: string;
+  /** The structured element key (register W9): a glob matched against
+   *  the issue's leading element identity (`requirement /req/x: …` →
+   *  `/req/x`) — the entry pins its element, not its prose. Optional;
+   *  absent, the message glob alone decides. */
+  id?: string;
   reason: string;
   auditRef: string;
 }
@@ -79,6 +84,32 @@ const EMPTY: PackageAllowlist = {
   textCoverageBudgetReason: null,
   entries: [],
 };
+
+/** The issue's leading element identity: `requirement /req/x: …` →
+ *  `/req/x`; '' when the message carries no element prefix. */
+export function issueElementId(message: string): string {
+  const m = message.match(/^[a-z_]+ ([^:\s][^:]*):/);
+  return m ? m[1]! : '';
+}
+
+/** W9: an entry matches an issue when the rule agrees, the message glob
+ *  holds, and — when the entry carries the structured key — the
+ *  element-id glob holds too. */
+export function entryMatches(
+  entry: AllowlistEntry,
+  issue: CheckIssue,
+): boolean {
+  if (issue.check !== entry.rule) {
+    return false;
+  }
+  if (!globMatch(entry.match, issue.message)) {
+    return false;
+  }
+  if (entry.id !== undefined) {
+    return globMatch(entry.id, issueElementId(issue.message));
+  }
+  return true;
+}
 
 /** True when the glob (`*` wildcard, full-string match) matches `text`. */
 export function globMatch(glob: string, text: string): boolean {
@@ -194,6 +225,8 @@ function parseEntry(block: string): AllowlistEntry {
       entry.rule = value;
     } else if (key === 'match') {
       entry.match = value;
+    } else if (key === 'id') {
+      entry.id = value;
     } else if (key === 'reason') {
       entry.reason = value;
     } else if (key === 'audit_ref') {
@@ -212,6 +245,13 @@ function validateEntry(entry: AllowlistEntry): CheckIssue[] {
       check: 'C56',
       severity: 'error',
       message: `${ALLOWLIST_FILENAME}: entry${label} names ${entry.rule ? `unknown rule "${entry.rule}"` : 'no rule'} — every allowlist entry names a real rule id (allowlist-malformed)`,
+    });
+  }
+  if (entry.id !== undefined && entry.id === '') {
+    issues.push({
+      check: 'C56',
+      severity: 'error',
+      message: `${ALLOWLIST_FILENAME}: entry for rule "${entry.rule}" has an empty id glob — the structured key pins the element identity or is absent (allowlist-malformed)`,
     });
   }
   if (!entry.match) {
@@ -278,7 +318,7 @@ export function applyAllowlist(
     }
     let matched = false;
     for (const issue of out) {
-      if (issue.check === entry.rule && globMatch(entry.match, issue.message)) {
+      if (entryMatches(entry, issue)) {
         issue.known = true;
         matched = true;
       }
@@ -378,11 +418,7 @@ export function applyProviderAllowlists(
       }
       let matched = false;
       for (const issue of out) {
-        if (
-          !issue.known &&
-          issue.check === entry.rule &&
-          globMatch(entry.match, issue.message)
-        ) {
+        if (!issue.known && entryMatches(entry, issue)) {
           issue.known = true;
           matched = true;
         }
