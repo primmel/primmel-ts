@@ -456,6 +456,14 @@ export const CHECK_RULES: CheckRule[] = [
     'a declared language generation is well-formed (v<major>[.<minor>]); the declaration makes the package parse strictly — unknown keywords are errors',
   ),
   R(
+    'C179',
+    'uncertainty-budget-resolves',
+    'base',
+    'error',
+    'normal',
+    'an uncertainty budget targets a declared verdict; a Type A component names a declared captured series, a Type B component states its distribution and half-width; the coverage factor is a positive number',
+  ),
+  R(
     'C178',
     'legacy-carrier-deprecated',
     'base',

@@ -52,6 +52,47 @@ export interface Construct {
   items: Item[];
 }
 
+/** The source text a positioned node's span covers — the raw payload
+ *  of the expression carriers' block values. */
+let CURRENT_SOURCE = '';
+
+function spanText(node: unknown): string | null {
+  let min = Infinity;
+  let max = -Infinity;
+  const walk = (n: unknown): void => {
+    if (n === null || typeof n !== 'object') {
+      return;
+    }
+    const rec = n as Record<string, unknown>;
+    if (
+      typeof rec['value'] === 'string' &&
+      typeof rec['offset'] === 'number' &&
+      typeof rec['length'] === 'number'
+    ) {
+      const off = rec['offset'] as number;
+      const len = rec['length'] as number;
+      if (off < min) {
+        min = off;
+      }
+      if (off + len > max) {
+        max = off + len;
+      }
+    }
+    for (const v of Object.values(rec)) {
+      if (Array.isArray(v)) {
+        v.forEach(walk);
+      } else if (v !== null && typeof v === 'object') {
+        walk(v);
+      }
+    }
+  };
+  walk(node);
+  if (min === Infinity || max === -Infinity || CURRENT_SOURCE === '') {
+    return null;
+  }
+  return CURRENT_SOURCE.slice(min, max);
+}
+
 function positionText(node: unknown): string | null {
   if (
     node !== null &&
@@ -117,7 +158,17 @@ function runItems(run: unknown): { tokens: string[]; blocks: Item[][] } {
     ) {
       const inner = (node as ShapeNode)['blockvalue'];
       const innerArr = Array.isArray(inner) ? inner : [inner];
-      blocks.push(innerArr.map(toItem).filter((x): x is Item => x !== null));
+      const items = innerArr.map(toItem).filter((x): x is Item => x !== null);
+      if (items.length === 0) {
+        // an unparsed block value (the expression carriers): the raw
+        // span is the payload — the rules read its tokens
+        const raw = positionText(inner);
+        blocks.push([
+          { kind: 'raw', tokens: raw ? splitRaw(raw) : [], blocks: [] },
+        ]);
+      } else {
+        blocks.push(items);
+      }
       continue;
     }
     const t = tokenText(node);
@@ -145,6 +196,24 @@ function toItem(node: unknown): Item | null {
   for (const key of ['kwline', 'entry', 'assignment'] as const) {
     if (key in n) {
       const line = n[key] as ShapeNode;
+      if ('blockvalue' in line) {
+        // the expression carrier (register 18): keyword + block — the
+        // block's RAW span is the payload, the rules read its tokens
+        const inner = line['blockvalue'];
+        const raw = spanText(inner);
+        const rawItem: Item = {
+          kind: 'raw',
+          tokens: raw ? splitRaw(raw) : [],
+          blocks: [],
+        };
+        const lineItem: Item = {
+          kind: 'line',
+          key: tokenText(line['key']),
+          tokens: [],
+          blocks: [[rawItem]],
+        };
+        return lineItem;
+      }
       const run = runItems(line['value']);
       return {
         kind: 'line',
@@ -174,6 +243,13 @@ export function toConstruct(node: unknown): Construct | null {
   const items: Item[] = [];
   if (Array.isArray(body)) {
     for (const b of body) {
+      if (process.env.C2_DEBUG && b !== null && typeof b === 'object') {
+        console.error(
+          'BODY NODE KEYS:',
+          Object.keys(b as object),
+          JSON.stringify(b).slice(0, 150),
+        );
+      }
       const i = toItem(b);
       if (i !== null) {
         items.push(i);
@@ -217,7 +293,9 @@ export function readPackage(
 ): ParsedPackage {
   const constructs: Construct[] = [];
   for (const f of files) {
-    constructs.push(...documentConstructs(runtime.parseShape(read(f))));
+    const src = read(f);
+    CURRENT_SOURCE = src;
+    constructs.push(...documentConstructs(runtime.parseShape(src)));
   }
   return { constructs };
 }

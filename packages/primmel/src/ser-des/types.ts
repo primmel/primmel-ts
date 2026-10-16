@@ -232,6 +232,10 @@ export interface ParseContext {
   /** The relation registry (docs/primmel/18): declared ref predicates. */
   predicates: Record<string, import('../types/RefPredicate').RefPredicate>;
   constraints: Record<string, Constraint>;
+  uncertaintyBudgets: Record<
+    string,
+    import('../types/UncertaintyBudget').default
+  >;
   discrepancyRecords: Record<string, DiscrepancyRecord>;
   stateMachines: Record<string, StateMachine>;
   conformanceTests: Record<string, ConformanceTest>;

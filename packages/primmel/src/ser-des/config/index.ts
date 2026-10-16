@@ -115,6 +115,10 @@ import {
 import { dumpPredicate, parsePredicate } from './predicate';
 import { dumpConstraint, parseConstraint } from './constraint';
 import {
+  dumpUncertaintyBudget,
+  parseUncertaintyBudget,
+} from './uncertaintyBudget';
+import {
   dumpDiscrepancyRecord,
   parseDiscrepancyRecord,
 } from './discrepancyRecord';
@@ -633,6 +637,14 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseConstraint,
     dump: dumpConstraint as never,
+  }),
+  // The uncertainty budgets (register W5 — the GUM plane's language side)
+  defineConstruct({
+    keyword: 'uncertainty_budget',
+    field: 'uncertaintyBudgets',
+    takesID: true,
+    parse: parseUncertaintyBudget,
+    dump: dumpUncertaintyBudget as never,
   }),
   // Corpus-level source-discrepancy records (TODO.roadmap/54 — gap 13's
   // corpus-level extension of the source_discrepancy facet)

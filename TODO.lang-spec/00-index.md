@@ -26,7 +26,8 @@ freeze.
 - [The Primmel expression language: first-class expressions, not OCL strings](18-expression-language.md)
 - [Namespace: the two senses — the package is the model namespace; the namespace construct is the wire plane](20-namespaces-two-senses.md
 22-kind-coherence.md
-23-formatter.md)
+23-formatter.md
+24-collection-navigation.md)
 - [The step plane: the process steps and their ios, accessed and resolved](19-step-plane.md)
 
 ## The external queue — what needs other hands (2026-10-16)
@@ -40,4 +41,4 @@ freeze.
 | The `model-library-spike` worktree's unresolved merge conflicts (`.primmel-allowlist.prl` lines 60/75) | the worktree's owner | the shape-front-end slice test red locally (proven identical without any kernel work) |
 | checker2 parity for the expression rules (C171/C172/C177 walk the AST) | checker2's maintainers | the two-implementation guarantee for the new rules |
 | The C169/C170 dedicated fixtures (the sources-prd sentence payloads; the edition-mapping negative) | the conformance corpus maintainer | the clause registry's CHK-169/CHK-170 rows |
-| The uncertainty budget construct (W5's language side): the components, the type-A/type-B links, the coverage factor — designed against the twin-cert U:MPE discipline and the load-cell evaluation report | the next kernel session, with the owner's construct review | the GUM plane stays plurimath-internal; no budget artifact in the models |
+| ~~The uncertainty budget construct~~ — LANDED 2026-10-16 (`uncertainty_budget`, C179, the twin-cert pilot; register W5) | — | the propagation law stays plurimath's |

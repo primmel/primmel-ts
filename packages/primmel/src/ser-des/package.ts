@@ -537,6 +537,7 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'schemeActivityKinds',
   'schemeTypes',
   'constraints',
+  'uncertaintyBudgets',
   'discrepancyRecords',
   'stateMachines',
   'conformanceTests',

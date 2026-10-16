@@ -807,6 +807,12 @@
    "area": "checking",
    "title": "Kind coherence",
    "statement": "A comparison in an inline expression sets operands of the same declared quantity kind; an operand of unknown kind or a bare number never conflicts (C177)."
+  },
+  {
+   "id": "CHK-179",
+   "area": "checking",
+   "title": "Uncertainty budget resolves",
+   "statement": "An uncertainty budget targets a declared verdict; a Type A component names a declared captured series, a Type B component states its distribution and half-width; the coverage factor is a positive number (C179). The propagation law is the evaluation plane's — the checker resolves the declaration, it never computes the uncertainty."
   }
  ]
 }

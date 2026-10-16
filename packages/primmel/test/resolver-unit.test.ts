@@ -53,6 +53,7 @@ function emptyContext(): ParseContext {
     schemeTypes: {},
     predicates: {},
     constraints: {},
+    uncertaintyBudgets: {},
     discrepancyRecords: {},
     requirements: {},
     requirementClasses: {},
