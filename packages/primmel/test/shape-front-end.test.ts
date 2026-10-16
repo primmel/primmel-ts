@@ -47,7 +47,7 @@ const SAMPLES = [
   // the carrying construct's item stream
   'requirement /req/x {\n  limit {\n    args {\n      e <- symbol:e_vehicle\n    }\n    expression {\n      abs(e) <= max(mpe, 1 * d)\n    }\n  }\n}\nsymbol e_vehicle { label "e" quantity_kind mass }\n',
   'verdict delta {\n  derive {\n    abs(served - reference)\n  }\n  inputs { served reference }\n}\n',
-  'conformance test /conf/t {\n  variables {\n    variable skew { type number source derived\n      derivation {\n        abs(served_at - observed_at)\n      }\n    }\n  }\n  preconditions {\n    precondition window { description "w"\n      check {\n        skew <= 5\n      }\n      on_violation invalid\n    }\n  }\n}\n',
+  'conformance_test /conf/t {\n  variables {\n    variable skew { type number source derived\n      derivation {\n        abs(served_at - observed_at)\n      }\n    }\n  }\n  preconditions {\n    precondition window { description "w"\n      check {\n        skew <= 5\n      }\n      on_violation invalid\n    }\n  }\n}\n',
   'constraint geom {\n  stereotype inv\n  check {\n    model.parameters.d_max >= 0.9 * model.parameters.e_max\n  }\n  violation_meaning "The geometry does not realize the range."\n}\n',
 ];
 
