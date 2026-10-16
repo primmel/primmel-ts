@@ -379,7 +379,9 @@ grammar Primmel version "0.1.0" {
   bad_common_test_condition = "description" gap &("}")
 
   c_conformance_test = ((kw_conformance_test as keyword) gap [(ident as ident) gap] (block_conformance_test as body)) as construct
-  kw_conformance_test = "conformance_test" !bare_next
+  # the corpus spells the space form (`conformance test /conf/...`) —
+  # the token front end's alias; one keyword, two spellings
+  kw_conformance_test = ("conformance_test" / "conformance test") !bare_next
   block_conformance_test = "{" *(gap (!bad_conformance_test block_item)) gap "}"
   bad_conformance_test = "name" gap &("}")
 
@@ -474,7 +476,18 @@ grammar Primmel version "0.1.0" {
   bad_process = "summary" gap &("}") / "phase" gap &("}")
   # ── blocks and their item streams ────────────────────────────────
   block = "{" *(gap block_item) gap "}"
-  block_item = construct / entry_line / kwline / string / block / bare
+  block_item = carrier_kv / construct / entry_line / kwline / string / block / bare
+
+  # The expression carriers (register 18): the machine-executable
+  # payloads take delimited blocks — `expression { … }`, `derive { … }`,
+  # `derivation { … }`, `check { … }`, `args { … }` — inside whatever
+  # construct carries them. The carrier keywords are the explicit
+  # exception to the construct reservation (next_is_block): a carrier
+  # keyword followed by a block is the key's block value, never a nested
+  # construct; a carrier keyword followed by a bare token (`check c1 {`)
+  # still falls through to the construct rules.
+  carrier_kv = ((carrier_kw as key) gap (block as blockvalue)) as kwline
+  carrier_kw = ("expression" / "derive" / "derivation" / "check" / "args") !bare_next
   entry_line = ((bare as key) gap ":" [gap (value_run as value)]) as entry
   kwline = ((bare as key) gap (value_run as value)) as kwline
   key = !next_is_block bare

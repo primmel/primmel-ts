@@ -25,6 +25,10 @@ import {
   unescapeString,
 } from '../tokenize';
 import { readSource, dumpBareSafe } from './field-parser';
+import {
+  readExpressionCarrier,
+  dumpExpressionBlock,
+} from '../expression-carrier';
 import { parseRef, foldRefIntoLegacy } from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import { skipUnknownValue } from '../parse-block';
@@ -67,7 +71,9 @@ export const parseConstraint: Parser = function (id, data) {
     } else if (keyword === 'name') {
       result.name = readValue(t[i++]);
     } else if (keyword === 'check') {
-      result.check = readValue(t[i++]);
+      const c = readExpressionCarrier(t[i++], 'constraint check');
+      result.check = c.source;
+      result.checkBound = c.inline || undefined;
     } else if (keyword === 'violation_meaning') {
       result.violationMeaning = readValue(t[i++]);
     } else if (keyword === 'on_violation') {
@@ -106,7 +112,11 @@ export const dumpConstraint: Dumper<Constraint> = function (c) {
     out += '  name "' + escapeString(c.name) + '"\n';
   }
   if (c.check) {
-    out += '  check "' + escapeString(c.check) + '"\n';
+    if (c.checkBound) {
+      out += dumpExpressionBlock('check', c.check, '  ');
+    } else {
+      out += '  check "' + escapeString(c.check) + '"\n';
+    }
   }
   if (c.violationMeaning) {
     out += '  violation_meaning "' + escapeString(c.violationMeaning) + '"\n';

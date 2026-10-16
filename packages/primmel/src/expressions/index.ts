@@ -11,8 +11,21 @@ export type ExprToken =
   | { kind: 'op'; value: string };
 
 const OPERATORS = [
-  '<=', '>=', '!=', '≠', '<', '>', '=',
-  '+', '-', '*', '/', '(', ')', ',', '.',
+  '<=',
+  '>=',
+  '!=',
+  '≠',
+  '<',
+  '>',
+  '=',
+  '+',
+  '-',
+  '*',
+  '/',
+  '(',
+  ')',
+  ',',
+  '.',
 ];
 
 export function lex(src: string): ExprToken[] {
@@ -26,14 +39,18 @@ export function lex(src: string): ExprToken[] {
     }
     if (/[0-9]/.test(c)) {
       let j = i;
-      while (j < src.length && /[0-9.]/.test(src[j])) j += 1;
+      while (j < src.length && /[0-9.]/.test(src[j])) {
+        j += 1;
+      }
       tokens.push({ kind: 'num', value: Number(src.slice(i, j)) });
       i = j;
       continue;
     }
     if (/[A-Za-z_]/.test(c)) {
       let j = i;
-      while (j < src.length && /[A-Za-z0-9_.]/.test(src[j])) j += 1;
+      while (j < src.length && /[A-Za-z0-9_.]/.test(src[j])) {
+        j += 1;
+      }
       tokens.push({ kind: 'name', value: src.slice(i, j) });
       i = j;
       continue;
@@ -49,9 +66,7 @@ export function lex(src: string): ExprToken[] {
       i += 1;
       continue;
     }
-    throw new Error(
-      `expression: unexpected character "${c}" at offset ${i}`,
-    );
+    throw new Error(`expression: unexpected character "${c}" at offset ${i}`);
   }
   return tokens;
 }
@@ -104,9 +119,7 @@ class ExprParser {
   parse(): ExprAst {
     const ast = this.parseLevel(0);
     if (this.pos !== this.tokens.length) {
-      throw new Error(
-        `expression: trailing tokens at position ${this.pos}`,
-      );
+      throw new Error(`expression: trailing tokens at position ${this.pos}`);
     }
     return ast;
   }
@@ -209,6 +222,19 @@ export function parseExpression(src: string): ExprAst {
   return new ExprParser(lex(src)).parse();
 }
 
+/**
+ * The inline-block carrier's canonical form: the raw block text parsed
+ * and re-rendered — every carrier stores this, and the canonical source
+ * reparses to the same tree (the dump fixpoint).
+ */
+export function canonicalizeExpression(raw: string): string {
+  const body = raw.trim();
+  if (body.length === 0) {
+    throw new Error('expression: the block is empty');
+  }
+  return renderExpression(parseExpression(body));
+}
+
 // ── the identifier extraction ──────────────────────────────────────────
 
 export interface ExprIdentifiers {
@@ -230,7 +256,9 @@ export function freeIdentifiers(ast: ExprAst): ExprIdentifiers {
         return;
       case 'call':
         out.calls.push(node.callee);
-        for (const a of node.args) walk(a);
+        for (const a of node.args) {
+          walk(a);
+        }
         return;
       case 'unop':
         walk(node.operand);
@@ -253,9 +281,7 @@ export function renderExpression(ast: ExprAst): string {
     case 'name':
       return ast.path.join('.');
     case 'call':
-      return (
-        ast.callee + '(' + ast.args.map(renderExpression).join(', ') + ')'
-      );
+      return ast.callee + '(' + ast.args.map(renderExpression).join(', ') + ')';
     case 'unop': {
       // a unary over a binary needs the parens back — the rendered
       // source must reparse to the same tree
@@ -267,7 +293,10 @@ export function renderExpression(ast: ExprAst): string {
     }
     case 'binop':
       return (
-        renderExpression(ast.left) + ' ' + ast.op + ' ' +
+        renderExpression(ast.left) +
+        ' ' +
+        ast.op +
+        ' ' +
         renderExpression(ast.right)
       );
   }

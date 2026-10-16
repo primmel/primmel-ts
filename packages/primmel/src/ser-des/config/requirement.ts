@@ -25,7 +25,7 @@
 
 import tokenize from '../tokenize';
 import { skipUnknownValue } from '../parse-block';
-import { parseExpression, renderExpression } from '../../expressions';
+import { canonicalizeExpression } from '../../expressions';
 import {
   escapeString,
   unwrapBlock,
@@ -120,11 +120,7 @@ function readLimit(block: string): RequirementLimit {
 
 /** The inline expression block: the raw formula source, canonicalized. */
 function readExpressionBlock(raw: string): string {
-  const body = raw.trim();
-  if (body.length === 0) {
-    throw new Error('limit: the expression block is empty');
-  }
-  return renderExpression(parseExpression(body));
+  return canonicalizeExpression(raw);
 }
 
 /** The legacy field walk: head-value pairs, forward-compatible. */
@@ -699,10 +695,9 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
       // class is a member; the law's identifiers name the members.
       const childId = stripWrapping(t[i++]);
       const childBlock = t[i++];
-      const childParse = parseRequirement(
-        childId,
-        unwrapBlock(childBlock),
-      ) as (ctx: unknown) => unknown;
+      const childParse = parseRequirement(childId, unwrapBlock(childBlock)) as (
+        ctx: unknown,
+      ) => unknown;
       nestedParsers.push(childParse);
       members.push(childId);
     } else {

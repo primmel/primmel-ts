@@ -24,5 +24,6 @@ freeze.
 - [16 — The conformance corpus carries the new rules](16-conformance-fixtures.md)
 - [17 — The SDU SMART superset: two verification items](17-sdu-superset-verification.md)
 - [The Primmel expression language: first-class expressions, not OCL strings](18-expression-language.md)
-- [Namespace: the two senses — the package is the model namespace; the namespace construct is the wire plane](20-namespaces-two-senses.md)
+- [Namespace: the two senses — the package is the model namespace; the namespace construct is the wire plane](20-namespaces-two-senses.md
+22-kind-coherence.md)
 - [The step plane: the process steps and their ios, accessed and resolved](19-step-plane.md)
