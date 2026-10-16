@@ -3194,6 +3194,30 @@
     "clean": true
    },
    "summary": "A well-formed declared generation (v3.3) is C176-clean and parses strictly."
+  },
+  {
+   "id": "chk-179-pos-budget",
+   "clause": "CHK-179",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/uncertainty-budget-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "A budget targeting a declared verdict with a Type B component stating its distribution and half-width passes."
+  },
+  {
+   "id": "chk-179-neg-budget",
+   "clause": "CHK-179",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/uncertainty-budget-violation",
+   "expect": {
+    "rules": [
+     "C179"
+    ]
+   },
+   "summary": "A Type B component without its half-width is C179 — the distribution spans a half-width."
   }
  ]
 }

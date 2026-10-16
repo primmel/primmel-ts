@@ -1,0 +1,15 @@
+verdict mpe_error {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { }
+}
+uncertainty_budget u_ref {
+  target mpe_error
+  coverage k 2
+  component u_cal {
+    type B
+    distribution rectangular
+    half_width 0.5
+    unit "kg"
+  }
+}

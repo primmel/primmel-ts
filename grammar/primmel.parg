@@ -379,9 +379,7 @@ grammar Primmel version "0.1.0" {
   bad_common_test_condition = "description" gap &("}")
 
   c_conformance_test = ((kw_conformance_test as keyword) gap [(ident as ident) gap] (block_conformance_test as body)) as construct
-  # the corpus spells the space form (`conformance test /conf/...`) —
-  # the token front end's alias; one keyword, two spellings
-  kw_conformance_test = ("conformance_test" / "conformance test") !bare_next
+  kw_conformance_test = "conformance_test" !bare_next
   block_conformance_test = "{" *(gap (!bad_conformance_test block_item)) gap "}"
   bad_conformance_test = "name" gap &("}")
 

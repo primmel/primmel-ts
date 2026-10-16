@@ -160,6 +160,10 @@ export default interface Standard {
    *  subject's own intrinsic validity rules (stereotype «inv») — the
    *  Recommendation-level counterpart of the metamodel invariants. */
   constraints: Constraint[];
+  /** The uncertainty budgets (register W5): the GUM components of one
+   *  measured quantity's standard uncertainty and the coverage factor
+   *  of the expansion — declarations, never arithmetic. */
+  uncertaintyBudgets: import('./UncertaintyBudget').default[];
   /** Corpus-level source-discrepancy records (TODO.roadmap/54 — gap 13's
    *  corpus-level extension of the source_discrepancy facet): conflicts
    *  between source fragments that no model node owns (document-vs-

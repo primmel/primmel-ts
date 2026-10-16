@@ -199,6 +199,7 @@ export function parseDeclarations(
     schemeTypes: {},
     predicates: {},
     constraints: {},
+    uncertaintyBudgets: {},
     discrepancyRecords: {},
     stateMachines: {},
     conformanceTests: {},

@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import type { Construct, Item, ParsedPackage } from './front-end.ts';
+import { readExpression, X_FUNCS, X_CONTEXT_ROOTS } from './expressions.ts';
 
 export interface Issue {
   rule: string;
@@ -1498,6 +1499,363 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           'C109',
           `state_machine ${c.ident}: no initial state declared (state-machine-no-initial)`,
         );
+      }
+    }
+  }
+
+  // ── the expression plane (register 18): C171, C172, C177 ──────────
+  // The second implementation of the inline carriers' resolution: the
+  // blocks read through this implementation's own expression reader
+  // (src/expressions.ts), the identifiers resolved against the args'
+  // declarations and the package's registries. The legacy ocl{…} string
+  // form is outside this slice (the register documents the reach).
+  {
+    const tail = (id: string): string => id.split('/').pop() ?? id;
+    const kindsOf = (kw: string): Map<string, string> => {
+      const m = new Map<string, string>();
+      for (const c of closureConstructs.filter(x => x.keyword === kw)) {
+        const k = facetTokens(c.items, 'quantity_kind')[0];
+        if (k) {
+          m.set(c.ident, k);
+          m.set(tail(c.ident), k);
+        }
+      }
+      return m;
+    };
+    const symbolKinds = kindsOf('symbol');
+    const attributeKinds = kindsOf('attribute_definition');
+    const verdictKinds = kindsOf('verdict');
+    // the declared-name registries: every declaration participates in
+    // the resolution (the kinds only feed C177)
+    const declaredNames = new Set<string>();
+    for (const kw of [
+      'symbol',
+      'datum',
+      'verdict',
+      'table',
+      'attribute_definition',
+    ]) {
+      for (const c of closureConstructs.filter(x => x.keyword === kw)) {
+        if (c.ident) {
+          declaredNames.add(c.ident);
+          declaredNames.add(tail(c.ident));
+        }
+      }
+    }
+    const tableIds = new Set(
+      closureConstructs.filter(c => c.keyword === 'table').map(c => c.ident),
+    );
+    const seriesVars = new Set<string>();
+    for (const t of pkg.constructs.filter(
+      x => x.keyword === 'conformance_test',
+    )) {
+      const vars = nested(t).find(n => n.keyword === 'variables');
+      for (const v of vars ? nested(vars) : []) {
+        if (v.keyword !== 'variable' || !v.ident) {
+          continue;
+        }
+        if (v.items.some(i => i.kind === 'line' && i.key === 'series')) {
+          seriesVars.add(v.ident);
+        }
+      }
+    }
+    const DECLARATION_KINDS = new Set([
+      'symbol',
+      'table',
+      'datum',
+      'verdict',
+      'attribute',
+    ]);
+    const rawTokens = (l: { blocks: Item[][] }): string[] | null => {
+      const first = l.blocks[0]?.[0];
+      return first !== undefined && first.kind === 'raw' ? first.tokens : null;
+    };
+    const inlineOf = (
+      limit: Construct,
+    ): { args: { name: string; source: string }[]; src: string } | null => {
+      let args: { name: string; source: string }[] = [];
+      const argsLine = lines(limit).find(l => l.key === 'args');
+      if (argsLine) {
+        const t = rawTokens(argsLine);
+        if (t) {
+          args = [];
+          for (let i = 0; i + 2 < t.length; i += 3) {
+            if (t[i + 1] === '<-') {
+              args.push({ name: t[i]!, source: t[i + 2]! });
+            }
+          }
+        }
+      }
+      const exprLine = lines(limit).find(l => l.key === 'expression');
+      if (!exprLine) {
+        return null;
+      }
+      const t = rawTokens(exprLine);
+      if (!t) {
+        return null;
+      }
+      return { args, src: t.join(' ') };
+    };
+    const argKindOf = (
+      args: { name: string; source: string }[],
+      name: string,
+    ): string | null | undefined => {
+      const a = args.find(x => x.name === name);
+      if (!a) {
+        return undefined;
+      }
+      const source = a.source;
+      if (source.includes(':')) {
+        const segs = source.split(':');
+        if (segs.length !== 2) {
+          return undefined;
+        }
+        const [kind, id] = segs;
+        if (kind === 'symbol') {
+          return symbolKinds.get(tail(id));
+        }
+        if (kind === 'attribute') {
+          return attributeKinds.get(tail(id));
+        }
+        if (kind === 'verdict') {
+          return verdictKinds.get(id.split('.')[0]!);
+        }
+        return undefined;
+      }
+      if (source === 'self' || source.startsWith('self.')) {
+        return undefined;
+      }
+      return symbolKinds.get(source) ?? attributeKinds.get(source) ?? undefined;
+    };
+    const walkLimit = (
+      ownerKind: string,
+      ownerId: string,
+      limit: Construct,
+      memberScope: Set<string> | null,
+    ): void => {
+      const inline = inlineOf(limit);
+      if (!inline) {
+        return;
+      }
+      const { args, src } = inline;
+      const argNames = new Set(args.map(a => a.name));
+      let ids;
+      try {
+        ids = readExpression(src, path => argKindOf(args, path.join('.')));
+      } catch (e) {
+        err(
+          'C171',
+          `${ownerKind} ${ownerId}: the inline expression does not parse — ${String((e as Error).message)} (expression-identifiers-resolve)`,
+        );
+        return;
+      }
+      if (
+        memberScope === null &&
+        args.length === 0 &&
+        ids.names.some(n => !n.includes('.'))
+      ) {
+        err(
+          'C171',
+          `${ownerKind} ${ownerId}: the inline limit declares no arguments — every identifier must bind explicitly (expression-identifiers-resolve)`,
+        );
+      }
+      for (const call of new Set(ids.calls)) {
+        if (X_FUNCS.has(call) || argNames.has(call)) {
+          continue;
+        }
+        if (call.includes('.')) {
+          const root = call.split('.')[0]!;
+          if (
+            argNames.has(root) ||
+            root === 'self' ||
+            X_CONTEXT_ROOTS.has(root)
+          ) {
+            continue;
+          }
+        }
+        err(
+          'C171',
+          `${ownerKind} ${ownerId}: the expression calls "${call}(…)", which nothing declares and which is not in the function vocabulary (expression-identifiers-resolve)`,
+        );
+      }
+      for (const name of new Set(ids.names)) {
+        const root = name.split('.')[0]!;
+        if (
+          name.includes('.') &&
+          (root === 'self' || X_CONTEXT_ROOTS.has(root) || argNames.has(root))
+        ) {
+          continue;
+        }
+        if (argNames.has(name)) {
+          continue;
+        }
+        if (memberScope !== null && memberScope.has(name)) {
+          continue;
+        }
+        err(
+          memberScope !== null ? 'C172' : 'C171',
+          `${ownerKind} ${ownerId}: the expression names "${name}", which no argument binds${memberScope !== null ? ' — the law composes the containment only' : ''} (expression-identifiers-resolve)`,
+        );
+      }
+      for (const a of args) {
+        if (a.source.includes(':')) {
+          const segs = a.source.split(':');
+          if (segs.length === 2) {
+            const [kind, id] = segs;
+            if (kind !== 'observable') {
+              if (!DECLARATION_KINDS.has(kind)) {
+                err(
+                  'C171',
+                  `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — "${kind}" is not a declaration kind (expression-identifiers-resolve)`,
+                );
+              } else {
+                const reg =
+                  kind === 'symbol'
+                    ? symbolKinds
+                    : kind === 'attribute'
+                      ? attributeKinds
+                      : kind === 'verdict'
+                        ? verdictKinds
+                        : null;
+                const tableOk =
+                  kind === 'table' && tableIds.has(id.split('.')[0]!);
+                const declared =
+                  declaredNames.has(id) ||
+                  declaredNames.has(tail(id)) ||
+                  declaredNames.has(id.split('.')[0]!);
+                if (reg && !declared && !tableOk) {
+                  err(
+                    'C171',
+                    `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no declared ${kind} names (expression-identifiers-resolve)`,
+                  );
+                }
+              }
+            }
+          }
+          continue;
+        }
+        if (a.source === 'self' || a.source.startsWith('self.')) {
+          continue;
+        }
+        const bare = a.source.split(':').pop() ?? a.source;
+        if (memberScope !== null) {
+          if (!memberScope.has(a.source) && !memberScope.has(bare)) {
+            err(
+              'C172',
+              `requirement class ${ownerId}: the law binds "${a.name}" to "${a.source}", which is not a contained member (requirement-algebra-resolves)`,
+            );
+          }
+          continue;
+        }
+        if (!declaredNames.has(bare)) {
+          err(
+            'C171',
+            `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which nothing declares (expression-identifiers-resolve)`,
+          );
+        }
+      }
+      // C177 kind-coherence
+      for (const mix of ids.mixes) {
+        const l = mix.leftKind === 'TEXT' ? 'text' : mix.leftKind;
+        const r = mix.rightKind === 'TEXT' ? 'text' : mix.rightKind;
+        err(
+          'C177',
+          `${ownerKind} ${ownerId}: the "${l}" quantity is set against the "${r}" quantity — the operands must share the quantity kind (kind-coherence)`,
+        );
+      }
+      // the class law's member coverage
+      if (memberScope !== null) {
+        const covered = new Set<string>(ids.names);
+        for (const a of args) {
+          covered.add(a.name);
+          covered.add(a.source);
+        }
+        for (const m of memberScope) {
+          if (!covered.has(m)) {
+            issues.push({
+              rule: 'C172',
+              severity: 'warning',
+              message: `requirement class ${ownerId}: member ${m} does not appear in the law (requirement-algebra-resolves)`,
+            });
+          }
+        }
+      }
+    };
+    for (const c of pkg.constructs.filter(x => x.keyword === 'requirement')) {
+      const limit = nested(c).find(n => n.keyword === 'limit');
+      if (limit) {
+        walkLimit('requirement', c.ident, limit, null);
+      }
+    }
+    for (const c of pkg.constructs.filter(
+      x => x.keyword === 'requirement_class',
+    )) {
+      const limit = nested(c).find(n => n.keyword === 'limit');
+      const members = new Set(
+        nested(c)
+          .filter(n => n.keyword === 'requirement' && n.ident)
+          .map(n => n.ident),
+      );
+      if (limit) {
+        walkLimit('requirement class', c.ident, limit, members);
+      }
+    }
+    // C179 uncertainty-budget-resolves
+    const verdictIds = new Set(
+      closureConstructs
+        .filter(x => x.keyword === 'verdict' && x.ident)
+        .map(x => x.ident),
+    );
+    for (const b of pkg.constructs.filter(
+      x => x.keyword === 'uncertainty_budget',
+    )) {
+      const target = facetTokens(b.items, 'target')[0];
+      if (!target) {
+        err(
+          'C179',
+          `uncertainty_budget ${b.ident}: declares no target — the budget backs a declared verdict's measured quantity (uncertainty-budget-resolves)`,
+        );
+      } else if (!verdictIds.has(target)) {
+        err(
+          'C179',
+          `uncertainty_budget ${b.ident}: target "${target}" is not a declared verdict (uncertainty-budget-resolves)`,
+        );
+      }
+      const covRun = facetTokens(b.items, 'coverage');
+      const coverage =
+        covRun.length >= 2 && covRun[0] === 'k' ? covRun[1] : undefined;
+      if (coverage !== undefined && !(Number(coverage) > 0)) {
+        err(
+          'C179',
+          `uncertainty_budget ${b.ident}: coverage k "${coverage}" is not a positive number (uncertainty-budget-resolves)`,
+        );
+      }
+      for (const comp of nested(b).filter(
+        x => x.keyword === 'component',
+      )) {
+        const type = facetTokens(comp.items, 'type')[0];
+        if (type === 'A') {
+          const series = facetTokens(comp.items, 'series')[0];
+          if (!series || !seriesVars.has(series)) {
+            err(
+              'C179',
+              `uncertainty_budget ${b.ident}: component ${comp.ident}'s series "${series ?? '(none)'}" is not a declared captured series (uncertainty-budget-resolves)`,
+            );
+          }
+        } else if (type === 'B') {
+          if (!facetTokens(comp.items, 'distribution')[0]) {
+            err(
+              'C179',
+              `uncertainty_budget ${b.ident}: component ${comp.ident} is Type B but states no distribution (uncertainty-budget-resolves)`,
+            );
+          }
+          if (!facetTokens(comp.items, 'half_width')[0]) {
+            err(
+              'C179',
+              `uncertainty_budget ${b.ident}: component ${comp.ident} is Type B but states no half_width (uncertainty-budget-resolves)`,
+            );
+          }
+        }
       }
     }
   }
