@@ -240,6 +240,19 @@ export interface ProcessStep {
    * '' = a plain flow step (the v2 dialect).
    */
   signatureBlock: string;
+  /**
+   * The signature steps' typed plane (register 19): the declared ios —
+   * the structural-descent leaves (`process.step.name`) the completion
+   * reads and the dot-descent addresses.
+   */
+  sigInputs: string[];
+  sigOutputs: string[];
+  /**
+   * The completion carrier: the step's one expression over its own ios
+   * — the legacy quoted form or the v3.3 inline block.
+   */
+  completion: string;
+  completionBound?: boolean;
   /** IN bindings of the call (callee param ← caller name; the caller READS). */
   callIn: ProcessCallBinding[];
   /** OUT mappings of the call (callee param → caller name; the caller WRITES). */
@@ -280,6 +293,12 @@ export interface ProcessFlow {
 }
 
 export default interface Process {
+  /**
+   * The signature steps (register 19): the typed plane — the named ios,
+   * the completion carrier, the calls bindings — filled by the parse's
+   * pass-1; the dumper re-emits the raw block verbatim.
+   */
+  steps?: ProcessStep[];
   id: string;
   name: string;
   modality: string;
@@ -470,11 +489,11 @@ export type ResolvableProcess = Resolvable<
   'actor' | 'output' | 'input' | 'provision' | 'page'
 > & {
   /**
-   * Pass-1 raw plane: nested `step <id> { inputs … }` / `binding { … }`
-   * blocks awaiting the kernel's step-plane typing (C160); the dumper
-   * re-emits them verbatim.
+   * The signature steps (register 19): the typed plane — the named ios,
+   * the completion carrier, the calls bindings — filled by the parse's
+   * pass-1; the dumper re-emits the raw block verbatim.
    */
-  steps?: unknown[];
+  steps?: ProcessStep[];
   bindings?: { id: string; block: string }[];
   /** Pass-1 raw plane: a step's `requires { … }` names, resolved with
    *  the signature plane in the kernel's step plane. */

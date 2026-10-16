@@ -1,5 +1,16 @@
 # 19 — The step plane: the process steps and their inputs/outputs, accessed
 
+**Status: LANDED (2026-10-17, the core).** The signature steps type in
+place — the named ios, the completion carrier (the same string-vs-block
+doctrine), the calls bindings into C76's existing machinery. C173
+`step-plane-refs-resolve`: the completion reads the step's own ios, the
+dot-descent `process:<p>.<step>.<io>` resolves against the declared
+structure (the limits' args, the carriers' args). CHK-173 fixtures;
+both implementations judge them (checker2's process-kind resolution).
+**Remaining:** the retrieval unit addresses (`process:step.io`), the
+calls-binding callee-side leg for the SIGNATURE steps' `with` blocks
+(the flow dialect's ride C76), the coverage addresses.
+
 ## The access grammar (the name grammar composes)
 
 The `.` = structural descent within one declared thing; the `:` hops land on

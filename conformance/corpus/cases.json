@@ -3242,6 +3242,30 @@
     ]
    },
    "summary": "A second check-line naming a collection nothing declares is air — C171 (and the one-boolean invariant shape)."
+  },
+  {
+   "id": "chk-173-pos-step",
+   "clause": "CHK-173",
+   "polarity": "positive",
+   "kind": "check",
+   "path": "checks/step-plane-ok",
+   "expect": {
+    "clean": true
+   },
+   "summary": "The step plane (register 19): a signature step's completion reads its own declared ios, and a limit arg descends the declared structure — process:step.io resolves."
+  },
+  {
+   "id": "chk-173-neg-step",
+   "clause": "CHK-173",
+   "polarity": "negative",
+   "kind": "check",
+   "path": "checks/step-plane-violation",
+   "expect": {
+    "rules": [
+     "C173"
+    ]
+   },
+   "summary": "A completion naming an undeclared io is air — C173 names it against the step's declared inputs and outputs."
   }
  ]
 }

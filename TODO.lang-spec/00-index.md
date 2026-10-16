@@ -27,7 +27,8 @@ freeze.
 - [Namespace: the two senses — the package is the model namespace; the namespace construct is the wire plane](20-namespaces-two-senses.md
 22-kind-coherence.md
 23-formatter.md
-24-collection-navigation.md)
+24-collection-navigation.md
+26-allowlist-keys.md)
 - [The step plane: the process steps and their ios, accessed and resolved](19-step-plane.md)
 
 ## The external queue — what needs other hands (2026-10-16)

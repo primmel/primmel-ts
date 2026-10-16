@@ -1252,6 +1252,7 @@ export function checkPackage(
     'datum',
     'verdict',
     'attribute',
+    'process',
   ]);
   // the dispatch-context roots: the chain the expression reads the
   // subject through — allowed as PATH roots, never as bare scalars
@@ -1349,6 +1350,43 @@ export function checkPackage(
         }
         if (segs.length === 2) {
           const [kind, id] = segs;
+          if (kind === 'process') {
+            // register 19: `process:<p>[.<step>[.<io>]]` — the dot
+            // descends the declared structure, the leaf names a
+            // declared io
+            const segs2 = id.split('.');
+            const proc = (standard.processes ?? []).find(
+              pp => pp.id === segs2[0],
+            );
+            if (!proc) {
+              err(
+                'C171',
+                `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no declared process names — air inside the formula (expression-identifiers-resolve)`,
+              );
+            } else if (segs2.length >= 2) {
+              const stp = (proc.steps ?? []).find(
+                ss => ss.id === segs2[1],
+              );
+              if (!stp) {
+                err(
+                  'C171',
+                  `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — the process declares no step "${segs2[1]}" (expression-identifiers-resolve)`,
+                );
+              } else if (segs2.length >= 3) {
+                const io = segs2.slice(2).join('.');
+                if (
+                  !(stp.sigInputs ?? []).includes(io) &&
+                  !(stp.sigOutputs ?? []).includes(io)
+                ) {
+                  err(
+                    'C171',
+                    `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — the step declares no io "${io}" (expression-identifiers-resolve)`,
+                  );
+                }
+              }
+            }
+            continue;
+          }
           if (kind !== 'observable') {
             if (!DECLARATION_KINDS.has(kind)) {
               err(
@@ -1977,6 +2015,59 @@ export function checkPackage(
             );
           }
         }
+      }
+    }
+  }
+
+  // ── C173 step-plane-refs-resolve (register 19) ──────────────────────
+  // A signature step's completion is one expression over the step's own
+  // declared ios: the identifiers resolve to `inputs`/`outputs`, the
+  // calls stay in the closed vocabulary, and nothing in the completion
+  // is air. The calls bindings ride C76's machinery (the typed pass-1
+  // fills the same fields the flow dialect uses).
+  for (const p of standard.processes ?? []) {
+    for (const st of p.steps ?? []) {
+      if (!st.completion) {
+        continue;
+      }
+      const ios = new Set([...st.sigInputs, ...st.sigOutputs]);
+      let ids;
+      try {
+        ids = freeIdentifiers(
+          parseExpression(
+            st.completion.replace(/^ocl\{/, '').replace(/\}$/, ''),
+          ),
+        );
+      } catch (e) {
+        err(
+          'C173',
+          `process ${p.id}: step "${st.id}" completion does not parse — ${String((e as Error).message ?? e)} — the completion is one expression over the step's ios (step-plane-refs-resolve)`,
+        );
+        continue;
+      }
+      for (const call of new Set(ids.calls)) {
+        if (!INLINE_FUNCTION_WORDS.has(call)) {
+          err(
+            'C173',
+            `process ${p.id}: step "${st.id}" completion calls "${call}(…)", which is not in the expression function vocabulary (step-plane-refs-resolve)`,
+          );
+        }
+      }
+      for (const id of new Set(ids.names)) {
+        const root = id.split('.')[0]!;
+        if (
+          id.includes('.') &&
+          (root === 'self' || CONTEXT_ROOTS.has(root))
+        ) {
+          continue;
+        }
+        if (ios.has(id) || ios.has(root)) {
+          continue;
+        }
+        err(
+          'C173',
+          `process ${p.id}: step "${st.id}" completion names "${id}", which is not a declared io of the step — the completion reads the step's own inputs and outputs (step-plane-refs-resolve)`,
+        );
       }
     }
   }

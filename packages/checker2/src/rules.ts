@@ -1702,7 +1702,64 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           const segs = a.source.split(':');
           if (segs.length === 2) {
             const [kind, id] = segs;
-            if (kind !== 'observable') {
+            if (kind === 'process') {
+              // register 19: process:<p>[.<step>[.<io>]] — the dot
+              // descends the declared structure
+              const segs2 = id.split('.');
+              const proc = pkg.constructs.find(
+                x => x.keyword === 'process' && x.ident === segs2[0],
+              );
+              if (!proc) {
+                err(
+                  'C171',
+                  `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no declared process names (expression-identifiers-resolve)`,
+                );
+              } else if (segs2.length >= 2) {
+                const stp = nested(proc).find(
+                  x => x.keyword === 'step' && x.ident === segs2[1],
+                );
+                if (!stp) {
+                  err(
+                    'C171',
+                    `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — the process declares no step "${segs2[1]}" (expression-identifiers-resolve)`,
+                  );
+                } else if (segs2.length >= 3) {
+                  const io = segs2.slice(2).join('.');
+                  const ios = new Set<string>();
+                  for (const key of ['inputs', 'outputs']) {
+                    // the io block: a nested construct whose greedy run
+                    // puts the first name in the line key, the rest in
+                    // the tokens
+                    const blk = nested(stp).find(x => x.keyword === key);
+                    if (!blk) {
+                      continue;
+                    }
+                    for (const it of blk.items) {
+                      if (it.kind === 'line') {
+                        if (it.key) {
+                          ios.add(it.key);
+                        }
+                        for (const tok of it.tokens) {
+                          ios.add(tok);
+                        }
+                      } else if (it.kind === 'raw') {
+                        for (const tok of it.tokens) {
+                          ios.add(tok);
+                        }
+                      }
+                    }
+                  }
+                  if (!ios.has(io)) {
+                    err(
+                      'C171',
+                      `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — the step declares no io "${io}" (expression-identifiers-resolve)`,
+                    );
+                  }
+                }
+              }
+              continue;
+            }
+          if (kind !== 'observable') {
               if (!DECLARATION_KINDS.has(kind)) {
                 err(
                   'C171',
