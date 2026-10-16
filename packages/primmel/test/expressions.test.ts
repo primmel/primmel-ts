@@ -176,13 +176,21 @@ describe('C171/C172 on the AST', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('requires args on a requirement inline limit', () => {
-    const dir = make(
+  it('requires args when a bare identifier would be ambient', () => {
+    // a body over pure literals and dispatch-context paths binds
+    // nothing and is legal; a bare identifier is ambient air
+    const pure = make(
       'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  expression {\n   1 <= 2\n  }\n }\n}\n',
     );
-    const msgs = ids(dir, 'C171');
+    assert.equal(ids(pure, 'C171').length, 0);
+    rmSync(pure, { recursive: true, force: true });
+    const air = make(
+      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  expression {\n   ghost_limit <= 2\n  }\n }\n}\n',
+    );
+    const msgs = ids(air, 'C171');
     assert.ok(msgs.some(m => m.includes('declares no arguments')));
-    rmSync(dir, { recursive: true, force: true });
+    assert.ok(msgs.some(m => m.includes('"ghost_limit"')));
+    rmSync(air, { recursive: true, force: true });
   });
 
   it('holds the calls to the function vocabulary', () => {
@@ -422,5 +430,62 @@ describe('C178 legacy-carrier-deprecated (W6)', () => {
     );
     assert.deepEqual(ids(dir), []);
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('the collection navigation (register 24)', () => {
+  it('parses, binds the lambda parameter, and renders canonically', () => {
+    const src = "fees -> forAll(f | f.status = 'MARKED_PAID')";
+    const ast = parseExpression(src);
+    assert.equal(ast.type, 'nav');
+    if (ast.type === 'nav') {
+      assert.equal(ast.source, 'fees');
+      assert.equal(ast.op, 'forAll');
+      assert.equal(ast['var'], 'f');
+    }
+    const ids = freeIdentifiers(ast);
+    assert.deepEqual(ids.names, ['fees']);
+    assert.deepEqual(ids.calls, []);
+    const canonical = renderExpression(ast);
+    const twice = parseExpression(canonical);
+    assert.deepEqual(twice, ast);
+  });
+
+  it('keeps the or-chain and the string literals', () => {
+    const src =
+      "samples -> forAll(s | s.status = 'RETURNED' or s.status = 'RETAINED')";
+    const ast = parseExpression(src);
+    const ids = freeIdentifiers(ast);
+    assert.deepEqual(ids.names, ['samples']);
+    const canonical = renderExpression(ast);
+    assert.ok(canonical.includes("s.status = 'RETURNED' or s.status = 'RETAINED'"));
+    assert.deepEqual(parseExpression(canonical), ast);
+  });
+
+  it('reports an unbound collection as air through the checker', () => {
+    const mk = (body: string): string => {
+      const dir = mkdtempSync(join(tmpdir(), 'primmel-nav-'));
+      writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+      mkdirSync(join(dir, 'model'), { recursive: true });
+      writeFileSync(join(dir, 'model', 'r.prl'), body);
+      return dir;
+    };
+    const ok = mk(
+      'constraint done {\n stereotype inv\n name "D"\n args {\n  fees <- observable:fees\n }\n check {\n  fees -> forAll(f | f.status = \'MARKED_PAID\')\n }\n violation_meaning "An unpaid fee stands."\n}\n',
+    );
+    const msgs = checkPackage(ok)
+      .filter(i => i.check === 'C171')
+      .map(i => i.message);
+    assert.deepEqual(msgs, []);
+    rmSync(ok, { recursive: true, force: true });
+
+    const air = mk(
+      'constraint done {\n stereotype inv\n name "D"\n check {\n  fees -> forAll(f | f.status = \'MARKED_PAID\')\n }\n violation_meaning "An unpaid fee stands."\n}\n',
+    );
+    const airMsgs = checkPackage(air)
+      .filter(i => i.check === 'C171')
+      .map(i => i.message);
+    assert.ok(airMsgs.some(m => m.includes('"fees"')));
+    rmSync(air, { recursive: true, force: true });
   });
 });

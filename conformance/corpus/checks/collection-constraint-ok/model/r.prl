@@ -1,0 +1,10 @@
+constraint fees_settled {
+  stereotype inv
+  args {
+    fees <- observable:fees
+  }
+  check {
+    fees -> forAll(f | f.status = 'MARKED_PAID')
+  }
+  violation_meaning "An unpaid fee stands."
+}

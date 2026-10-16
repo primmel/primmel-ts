@@ -24,6 +24,9 @@ export default interface Constraint {
   check: string;
   /** The check is the v3.3 inline block — the checker walks the AST. */
   checkBound?: boolean;
+  /** The inline check's scope (register 24): `name <- source` — the
+   *  collections and quantities the invariant reads. */
+  args?: { name: string; source: string }[];
   /** REQUIRED: what a violation MEANS — recorded on the invalidated
    *  judgment (e.g. "the test setup does not realize the measuring range
    *  the type evaluation claims"). */

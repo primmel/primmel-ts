@@ -7,10 +7,13 @@
 // ─────────────────────────────────────────────────────────────────────
 
 export interface XNode {
-  kind: 'num' | 'name' | 'call' | 'bin' | 'un';
+  kind: 'num' | 'name' | 'call' | 'bin' | 'un' | 'nav';
   op?: string;
   path?: string[];
   callee?: string;
+  /** The navigation: the source name and the lambda parameter. */
+  source?: string;
+  lambda?: string;
   kids: XNode[];
 }
 
@@ -52,11 +55,23 @@ export const X_CONTEXT_ROOTS = CONTEXT_ROOTS;
 
 function tokenizeX(src: string): string[] {
   // the identifiers carry dots, the operators split — the kernel's
-  // lexer contract, independently implemented
-  const out = src.match(
-    /[A-Za-z_][\w.]*|\d+(?:\.\d+)?|<=|>=|!=|≠|[<>=()+\-*,./]/g,
-  );
-  return out ?? [];
+  // lexer contract, independently implemented; the single-quoted
+  // strings and the navigation tokens ride their own alternatives
+  const out: string[] = [];
+  const re = /[A-Za-z_][\w.]*|\d+(?:\.\d+)?|'[^']*'|->|<=|>=|!=|≠|[<>=()+\-*,./|]/g;
+  let m: RegExpExecArray | null;
+  let last = 0;
+  while ((m = re.exec(src)) !== null) {
+    if (m.index > last && src.slice(last, m.index).trim() !== '') {
+      return []; // an unlexable gap — the parse fails on it
+    }
+    out.push(m[0]!);
+    last = m.index + m[0].length;
+  }
+  if (src.slice(last).trim() !== '') {
+    return [];
+  }
+  return out;
 }
 
 class XParser {
@@ -136,6 +151,9 @@ class XParser {
     if (/^[0-9]/.test(t)) {
       return { kind: 'num', kids: [] };
     }
+    if (t.startsWith("'")) {
+      return { kind: 'num', kids: [] }; // a string: kindless, leaf
+    }
     if (t === '(') {
       const inner = this.binary(0);
       if (this.toks[this.i++] !== ')') {
@@ -174,6 +192,30 @@ class XParser {
         throw new Error('unbalanced parenthesis');
       }
       return { kind: 'call', callee: segs.join('.'), kids };
+    }
+    if (this.peek() === '->') {
+      this.i++;
+      const op = this.toks[this.i++];
+      if (op !== 'forAll' && op !== 'exists' && op !== 'select') {
+        throw new Error('expected a collection iterator');
+      }
+      if (this.peek() !== '(') {
+        throw new Error('expected ( after the iterator');
+      }
+      this.i++;
+      const lambda = this.toks[this.i++];
+      if (lambda === undefined || !/^[A-Za-z_]/.test(lambda)) {
+        throw new Error('expected the lambda parameter');
+      }
+      if (this.peek() !== '|') {
+        throw new Error('expected | after the parameter');
+      }
+      this.i++;
+      const body = this.binary(0);
+      if (this.toks[this.i++] !== ')') {
+        throw new Error('unbalanced parenthesis');
+      }
+      return { kind: 'nav', source: segs.join('.'), op, lambda, kids: [body] };
     }
     return { kind: 'name', path: segs, kids: [] };
   }
@@ -251,6 +293,8 @@ export function readExpression(
       }
       case 'un':
         return n.op === 'not' ? null : nodeKind(n.kids[0]!);
+      case 'nav':
+        return n.op === 'select' ? undefined : null;
       case 'bin': {
         if (CMP_OPS.includes(n.op!)) {
           comparisons.push({ op: n.op!, left: n.kids[0]!, right: n.kids[1]! });
@@ -288,17 +332,29 @@ export function readExpression(
     }
   };
 
-  const walkIds = (n: XNode): void => {
+  const walkIds = (n: XNode, bound: Set<string>): void => {
+    if (n.kind === 'nav') {
+      // the collection itself is free; the lambda parameter binds its
+      // body exactly like an argument binds a limit's
+      names.push(n.source!);
+      const inner = new Set(bound);
+      inner.add(n.lambda!.split('.')[0]!);
+      walkIds(n.kids[0]!, inner);
+      return;
+    }
     if (n.kind === 'name') {
-      names.push(n.path!.join('.'));
+      const root = n.path![0]!.split('.')[0]!;
+      if (!bound.has(root)) {
+        names.push(n.path!.join('.'));
+      }
     } else if (n.kind === 'call') {
       calls.push(n.callee!);
     }
     for (const k of n.kids) {
-      walkIds(k);
+      walkIds(k, bound);
     }
   };
-  walkIds(root);
+    walkIds(root, new Set());
   nodeKind(root);
   return { names, calls, comparisons, mixes };
 }

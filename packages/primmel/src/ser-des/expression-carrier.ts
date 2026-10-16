@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { canonicalizeExpression } from '../expressions';
+import tokenize from './tokenize';
 import { unescapeString, unwrapBlock } from './tokenize';
 
 export interface ExpressionCarrier {
@@ -51,4 +52,38 @@ export function dumpExpressionBlock(
     .map(l => indent + '  ' + l)
     .join('\n');
   return indent + keyword + ' {\n' + body + '\n' + indent + '}\n';
+}
+
+/** The args block's entry shape: `name <- source` per line — the scope
+ *  any expression carrier's body binds. Shared by the limit and the
+ *  constraint. */
+export function readArgsBlock(token: string): {
+  name: string;
+  source: string;
+}[] {
+  const at = tokenize(token);
+  const args: { name: string; source: string }[] = [];
+  let k = 0;
+  while (k < at.length) {
+    const name = unescapeStringOrBare(at[k++]);
+    if (k >= at.length) {
+      throw new Error(`limit args: "${name}" binds to nothing`);
+    }
+    if (at[k] !== '<-') {
+      throw new Error(`limit args: expected "<-" after "${name}" (name <- source)`);
+    }
+    k += 1;
+    if (k >= at.length) {
+      throw new Error(`limit args: "${name}" binds to nothing`);
+    }
+    args.push({ name, source: unescapeStringOrBare(at[k++]) });
+  }
+  return args;
+}
+
+function unescapeStringOrBare(t: string): string {
+  if (t.length >= 2 && t.charAt(0) === '"' && t.charAt(t.length - 1) === '"') {
+    return unescapeString(t.substr(1, t.length - 2));
+  }
+  return t;
 }

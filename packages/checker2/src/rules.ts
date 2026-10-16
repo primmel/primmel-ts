@@ -1788,6 +1788,63 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
     }
     for (const c of pkg.constructs.filter(
+      x => x.keyword === 'constraint',
+    )) {
+      const args: { name: string; source: string }[] = [];
+      const argsLine = lines(c).find(l => l.key === 'args');
+      if (argsLine) {
+        const t = rawTokens(argsLine);
+        if (t) {
+          for (let i = 0; i + 2 < t.length; i += 3) {
+            if (t[i + 1] === '<-') {
+              args.push({ name: t[i]!, source: t[i + 2]! });
+            }
+          }
+        }
+      }
+      // every check line walks — a doubled check is the last-wins
+      // parse's data, and each block is an invariant of its own
+      const argItems: Item[] =
+        args.length > 0
+          ? [
+              {
+                kind: 'line',
+                key: 'args',
+                tokens: [],
+                blocks: [
+                  [
+                    {
+                      kind: 'raw',
+                      tokens: args.flatMap(a => [a.name, '<-', a.source]),
+                      blocks: [],
+                    },
+                  ],
+                ],
+              },
+            ]
+          : [];
+      for (const checkLine of lines(c).filter(
+        l =>
+          l.key === 'check' &&
+          l.blocks.length > 0 &&
+          l.blocks[0]?.[0]?.kind === 'raw',
+      )) {
+        walkLimit(
+          'constraint',
+          c.ident,
+          {
+            keyword: 'limit',
+            ident: '',
+            items: [
+              ...argItems,
+              { kind: 'line', key: 'expression', tokens: [], blocks: checkLine.blocks },
+            ],
+          },
+          null,
+        );
+      }
+    }
+    for (const c of pkg.constructs.filter(
       x => x.keyword === 'requirement_class',
     )) {
       const limit = nested(c).find(n => n.keyword === 'limit');
