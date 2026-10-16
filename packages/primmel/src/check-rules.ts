@@ -455,6 +455,14 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'a declared language generation is well-formed (v<major>[.<minor>]); the declaration makes the package parse strictly — unknown keywords are errors',
   ),
+  R(
+    'C178',
+    'legacy-carrier-deprecated',
+    'base',
+    'warning',
+    'normal',
+    'a package declaring the deprecation generation carries quoted ocl{…} expression carriers — the inline blocks (expression { … }, derive { … }, derivation { … }, check { … }) are the only forward form',
+  ),
   // ── mapping (TODO.roadmap/04) ─────────────────────────────────────
   R(
     'C21',

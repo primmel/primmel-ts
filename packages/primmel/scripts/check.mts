@@ -8,6 +8,7 @@
 //   primmel export retrieval <package-dir> [--out <file>]
 //   primmel export impact <package-dir> [--out <file>]
 //   primmel export cddal <package-dir> [--out <file>]
+//   primmel fmt [--check] <package-dir>
 //
 // (The `check` token is optional for back-compatibility: `primmel
 // [--strict]… <package-dir>` runs check as before.)
@@ -101,6 +102,7 @@
 import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPackage } from '../src/check.ts';
+import { fmtPackage, type FmtResult } from '../src/fmt.ts';
 import { CHECK_RULES } from '../src/check-rules.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
 import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
@@ -474,6 +476,42 @@ function exportCli(args: string[]): void {
   process.exit(0);
 }
 
+function fmtCli(argv: string[]): void {
+  const check = argv.includes('--check');
+  const rest = argv.filter(a => a !== '--check');
+  const dir = rest[rest.length - 1];
+  if (!dir || !existsSync(dir)) {
+    console.error(`cannot read package at ${dir || '(none)'}: no such directory`);
+    process.exit(2);
+  }
+  let result: FmtResult;
+  try {
+    result = fmtPackage(dir, check);
+  } catch (e) {
+    console.error(`cannot format package at ${dir}: ${(e as Error).message}`);
+    process.exit(2);
+  }
+  for (const f of result.files) {
+    const label = f.file.startsWith(dir + '/') ? f.file.slice(dir.length + 1) : f.file;
+    const note =
+      f.status === 'formatted'
+        ? check
+          ? 'would reformat'
+          : 'formatted'
+        : f.status === 'unchanged'
+          ? 'ok'
+          : f.status === 'unstable'
+            ? 'UNSTABLE — does not round-trip; left as-is'
+            : 'skipped (includes)';
+    console.log(`  ${label}: ${note}`);
+  }
+  const unstable = result.files.filter(f => f.status === 'unstable').length;
+  console.log(
+    `fmt: ${result.files.length} files, ${check ? result.files.filter(f => f.status === 'formatted').length + ' would reformat' : result.written + ' written'}, ${unstable} unstable`,
+  );
+  process.exit(unstable > 0 ? 2 : check && result.files.some(f => f.status === 'formatted') ? 1 : 0);
+}
+
 const args = process.argv.slice(2);
 if (args[0] === 'diff') {
   diffCli(args.slice(1));
@@ -481,6 +519,8 @@ if (args[0] === 'diff') {
   checkCli(args.slice(1));
 } else if (args[0] === 'export') {
   exportCli(args.slice(1));
+} else if (args[0] === 'fmt') {
+  fmtCli(args.slice(1));
 } else {
   checkCli(args); // back-compat: `primmel [flags] <dir>`
 }

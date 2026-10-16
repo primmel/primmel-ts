@@ -1097,6 +1097,11 @@ export function checkPackage(
     'model',
     'instrument',
     'specimen',
+    'max_of',
+    'min_of',
+    'mean_of',
+    'stddev_of',
+    'count_of',
   ]);
   const globalExprNames = new Set<string>(
     [
@@ -1233,6 +1238,13 @@ export function checkPackage(
     'count',
     'exists',
     'forall',
+    // the series aggregations (register W4): the GUM type A vocabulary —
+    // the statistics of a captured series; the evaluation is plurimath's
+    'max_of',
+    'min_of',
+    'mean_of',
+    'stddev_of',
+    'count_of',
   ]);
   const DECLARATION_KINDS = new Set([
     'symbol',
@@ -1767,6 +1779,23 @@ export function checkPackage(
   // — the strict-parse contract's key. The unknown-keyword errors come
   // from the parse itself (the strict mode); this rule only checks the
   // declaration's shape.
+  // ── C178 legacy-carrier-deprecated ──────────────────────────────────
+  // The deprecation mechanism (register W6): the legacy quoted
+  // expression carriers (`expression "ocl{…}"`, the quoted derive /
+  // derivation / check) warn once a package declares the generation
+  // that deprecates them. The generation constant is INERT until the
+  // owner's release bump — no package declares it today, so nothing
+  // warns; flipping the constant (or packages declaring the newer
+  // generation) activates the ratchet. The inline blocks are the only
+  // forward form.
+  const DEPRECATION_GENERATION = 'v3.4';
+  const generationRank = (g: string): number => {
+    const m = g.match(/^v(\d+)(?:\.(\d+))?$/);
+    if (!m) {
+      return -1;
+    }
+    return Number(m[1]) * 1000 + Number(m[2] ?? '0');
+  };
   try {
     const mf = readPackageManifest(dir);
     if (mf.language !== undefined) {
@@ -1775,6 +1804,46 @@ export function checkPackage(
           'C176',
           `the declared language "${mf.language}" is not a generation (v<major>[.<minor>]) (language-declared-wellformed)`,
         );
+      } else if (
+        generationRank(mf.language) >= generationRank(DEPRECATION_GENERATION)
+      ) {
+        let legacy = 0;
+        for (const r of standard.requirements ?? []) {
+          if (r.limit && !r.limit.argsBound && r.limit.expression) {
+            legacy += 1;
+          }
+        }
+        for (const v of standard.verdicts ?? []) {
+          if (
+            (v as { derive?: string }).derive &&
+            !(v as { deriveBound?: boolean }).deriveBound
+          ) {
+            legacy += 1;
+          }
+        }
+        for (const t of standard.conformanceTests ?? []) {
+          for (const v of t.variables ?? []) {
+            if (v.derivation && !v.derivationBound) {
+              legacy += 1;
+            }
+          }
+          for (const p of t.preconditions ?? []) {
+            if (p.check && !p.checkBound) {
+              legacy += 1;
+            }
+          }
+        }
+        for (const c of standard.constraints ?? []) {
+          if (c.check && !c.checkBound) {
+            legacy += 1;
+          }
+        }
+        if (legacy > 0) {
+          warn(
+            'C178',
+            `${legacy} quoted expression carrier${legacy === 1 ? '' : 's'} — the ocl{…} string form is deprecated as of ${DEPRECATION_GENERATION}; migrate to the inline blocks (expression { … }, derive { … }, derivation { … }, check { … }) (legacy-carrier-deprecated)`,
+          );
+        }
       }
     }
   } catch {

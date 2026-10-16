@@ -1,0 +1,15 @@
+requirement /req/k {
+  name "K"
+  statement "S"
+  limit {
+    args {
+      m <- symbol:the_mass
+      l <- symbol:the_length
+    }
+    expression {
+      m <= l
+    }
+  }
+}
+symbol the_mass { label "m" quantity_kind mass }
+symbol the_length { label "l" quantity_kind length }

@@ -1,0 +1,4 @@
+package {
+  id corpus-checks-language-generation-malformed
+  language tomorrow
+}
