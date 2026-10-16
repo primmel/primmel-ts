@@ -22,8 +22,33 @@ export interface RequirementLimitAccepts {
   sourceDiscrepancy: SourceDiscrepancy | null;
 }
 
+/**
+ * One argument binding of an inline limit expression (v3.3): the local
+ * name the body binds, and the declaration it binds to — a bare local
+ * id, a `self.<path>` subject aspect, or `<package>:<kind>:<id>` across
+ * a `uses` edge. The body's identifiers are the args and nothing else;
+ * the resolution is exact.
+ */
+export interface RequirementLimitArg {
+  name: string;
+  source: string;
+}
+
 export interface RequirementLimit {
+  /**
+   * The machine-executable predicate. Two carriers: the legacy quoted
+   * OCL string (`expression "ocl{…}"`) and the v3.3 inline
+   * `expression { … }` block — the delimited raw formula, parsed at
+   * load, carried here as the canonical rendered source.
+   */
   expression: string;
+  /** The expression is the v3.3 inline block form. */
+  argsBound?: boolean;
+  /**
+   * The scope the body binds. Required on a requirement's inline limit;
+   * a class law may omit it — the containment is the scope.
+   */
+  args?: RequirementLimitArg[];
   uses: string[];
   /** shall (default) | should — a failed should-limit is an observation. */
   modality: string;

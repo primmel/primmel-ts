@@ -25,6 +25,7 @@
 
 import tokenize from '../tokenize';
 import { skipUnknownValue } from '../parse-block';
+import { parseExpression, renderExpression } from '../../expressions';
 import {
   escapeString,
   unwrapBlock,
@@ -91,8 +92,8 @@ function readAccepts(block: string): RequirementLimitAccepts {
   return accepts;
 }
 
-function readLimit(block: string): RequirementLimit {
-  const limit: RequirementLimit = {
+function blankLimit(): RequirementLimit {
+  return {
     expression: '',
     uses: [],
     modality: '',
@@ -103,15 +104,72 @@ function readLimit(block: string): RequirementLimit {
     acceptance: null,
     sourceDiscrepancy: null,
   };
-  const t = tokenize(block);
-  let i = 0;
+}
+
+/**
+ * The limit block: field walk. Two expression carriers — the legacy
+ * quoted OCL string (`expression "ocl{…}"`) and the v3.3 inline
+ * `expression { … }` BLOCK: the raw formula, delimited, parsed at load.
+ * `args { name <- source … }` is the scope the inline body binds.
+ */
+function readLimit(block: string): RequirementLimit {
+  const limit: RequirementLimit = blankLimit();
+  readLegacyLimitFields(tokenize(block), limit, 0);
+  return limit;
+}
+
+/** The inline expression block: the raw formula source, canonicalized. */
+function readExpressionBlock(raw: string): string {
+  const body = raw.trim();
+  if (body.length === 0) {
+    throw new Error('limit: the expression block is empty');
+  }
+  return renderExpression(parseExpression(body));
+}
+
+/** The legacy field walk: head-value pairs, forward-compatible. */
+function readLegacyLimitFields(
+  t: string[],
+  limit: RequirementLimit,
+  start: number,
+): void {
+  let i = start;
   while (i < t.length) {
     const cmd = t[i++];
     if (i >= t.length) {
       break;
     }
-    if (cmd === 'expression') {
-      limit.expression = stripWrapping(t[i++]);
+    if (cmd === 'args') {
+      // v3.3: the inline body's scope — name <- source per line.
+      if (!limit.args) {
+        limit.args = [];
+      }
+      const at = tokenize(unwrapBlock(t[i++]));
+      let k = 0;
+      while (k < at.length) {
+        const name = stripWrapping(at[k++]);
+        const arrow = at[k];
+        if (arrow !== '<-') {
+          throw new Error(
+            `limit args: expected "<-" after "${name}" (name <- source)`,
+          );
+        }
+        k += 1;
+        if (k >= at.length) {
+          throw new Error(`limit args: "${name}" binds to nothing`);
+        }
+        const source = stripWrapping(at[k++]);
+        limit.args.push({ name, source });
+      }
+    } else if (cmd === 'expression') {
+      const value = t[i++];
+      if (value.startsWith('{')) {
+        // v3.3 inline: the raw formula, never quoted
+        limit.argsBound = true;
+        limit.expression = readExpressionBlock(unwrapBlock(value));
+      } else {
+        limit.expression = stripWrapping(value);
+      }
     } else if (cmd === 'uses') {
       limit.uses = readIdList(t[i++]);
     } else if (cmd === 'modality') {
@@ -150,7 +208,6 @@ function readLimit(block: string): RequirementLimit {
       i = skipUnknownValue(t, i, cmd);
     }
   }
-  return limit;
 }
 
 function readSubjects(block: string): RequirementSubject[] {
@@ -374,6 +431,52 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
 };
 
 function dumpLimit(limit: RequirementLimit): string {
+  if (limit.argsBound) {
+    let out = '  limit {\n';
+    if ((limit.args ?? []).length > 0) {
+      out += '    args {\n';
+      for (const a of limit.args ?? []) {
+        out += '      ' + a.name + ' <- ' + a.source + '\n';
+      }
+      out += '    }\n';
+    }
+    out += '    expression {\n';
+    for (const line of limit.expression.split('\n')) {
+      out += '      ' + line + '\n';
+    }
+    out += '    }\n';
+    if (limit.modality) {
+      out += '    modality ' + limit.modality + '\n';
+    }
+    if (limit.relativeTo) {
+      out += '    relative_to ' + limit.relativeTo + '\n';
+    }
+    if (limit.notes) {
+      out += '    notes "' + escapeString(limit.notes) + '"\n';
+    }
+    if (limit.accepts) {
+      const a = limit.accepts;
+      let line = '    accepts { verdict ' + a.verdict;
+      if (a.op) {
+        line += ' op ' + a.op;
+      }
+      if (a.limit) {
+        line += ' limit "' + escapeString(a.limit) + '"';
+      }
+      if (a.sourceDiscrepancy) {
+        line += ' ' + dumpSourceDiscrepancy(a.sourceDiscrepancy, '');
+      }
+      out += line + ' }\n';
+    }
+    if (limit.acceptance) {
+      out += dumpAcceptance(limit.acceptance, '    ') + '\n';
+    }
+    if (limit.sourceDiscrepancy) {
+      out += dumpSourceDiscrepancy(limit.sourceDiscrepancy, '    ') + '\n';
+    }
+    out += '  }\n';
+    return out;
+  }
   let out = '  limit {\n';
   if (limit.expression) {
     out += '    expression "' + escapeString(limit.expression) + '"\n';
