@@ -649,3 +649,48 @@ describe('v3 process parser robustness', () => {
     });
   });
 });
+
+describe('the step-precondition plane (the C160 hoist)', () => {
+  const STEP_REQUIRES = `process accreditation_application {
+  modality SHALL
+  signature {
+    in  { application : application_form }
+    out { application_complete : boolean }
+  }
+  step application_intake {
+    inputs { application : application_form }
+    outputs { application_complete : boolean }
+  }
+  step resource_review {
+    requires { application_complete }
+    inputs { application_complete }
+  }
+}
+`;
+
+  it('the hoisted plane serializes only through the steps (dump fixpoint)', () => {
+    const m1 = load(STEP_REQUIRES);
+    const dumped = dump(m1);
+    // the step's own line is the serialization truth
+    assert.ok(dumped.includes('step resource_review'));
+    assert.ok(dumped.includes('requires { application_complete }'));
+    const m2 = load(dumped);
+    assert.equal(dump(m2), dumped);
+  });
+
+  it('the plane still reaches the checker after a round-trip', () => {
+    const m1 = load(STEP_REQUIRES);
+    const dumped = dump(m1);
+    const m2 = load(dumped);
+    const p1 = m1.processes.find(x => x.id === 'accreditation_application')!;
+    const p2 = m2.processes.find(x => x.id === 'accreditation_application')!;
+    assert.deepEqual(
+      (p2 as unknown as { stepRequires?: string[] }).stepRequires,
+      (p1 as unknown as { stepRequires?: string[] }).stepRequires,
+    );
+    assert.deepEqual(
+      (p1 as unknown as { stepRequires?: string[] }).stepRequires,
+      ['application_complete'],
+    );
+  });
+});
