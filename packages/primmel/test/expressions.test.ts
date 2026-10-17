@@ -458,7 +458,9 @@ describe('the collection navigation (register 24)', () => {
     const ids = freeIdentifiers(ast);
     assert.deepEqual(ids.names, ['samples']);
     const canonical = renderExpression(ast);
-    assert.ok(canonical.includes("s.status = 'RETURNED' or s.status = 'RETAINED'"));
+    assert.ok(
+      canonical.includes("s.status = 'RETURNED' or s.status = 'RETAINED'"),
+    );
     assert.deepEqual(parseExpression(canonical), ast);
   });
 

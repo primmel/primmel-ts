@@ -469,7 +469,7 @@ export const CHECK_RULES: CheckRule[] = [
     'process',
     'error',
     'normal',
-    'a signature step\'s completion is one expression over the step\'s own declared ios; the calls bindings resolve the callee\'s declared signature; the dot-descent process:step.io resolves to a declared io',
+    "a signature step's completion is one expression over the step's own declared ios; the calls bindings resolve the callee's declared signature; the dot-descent process:step.io resolves to a declared io",
   ),
   R(
     'C177',
@@ -477,7 +477,7 @@ export const CHECK_RULES: CheckRule[] = [
     'base',
     'error',
     'normal',
-    'a comparison in an inline expression sets operands of the same declared quantity kind — the kinds from the args\' declared sources; unknown-kind and bare-number operands never conflict',
+    "a comparison in an inline expression sets operands of the same declared quantity kind — the kinds from the args' declared sources; unknown-kind and bare-number operands never conflict",
   ),
   R(
     'C178',

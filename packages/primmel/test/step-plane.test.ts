@@ -57,7 +57,10 @@ describe('the step plane (register 19)', () => {
     assert.equal(steps.length, 2);
     assert.deepEqual(steps[0]?.sigInputs, ['filtered_counts', 'e_lim']);
     assert.deepEqual(steps[0]?.sigOutputs, ['indication', 'overload_flag']);
-    assert.equal(steps[0]?.completion, 'overload_flag = filtered_counts > e_lim');
+    assert.equal(
+      steps[0]?.completion,
+      'overload_flag = filtered_counts > e_lim',
+    );
     // C173: the ghost io in the ghost step's completion names; the
     // ghost io in the requirement's args names
     const msgs = checkPackage(dir)
@@ -68,7 +71,7 @@ describe('the step plane (register 19)', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('holds the completion to the step\'s own ios', () => {
+  it("holds the completion to the step's own ios", () => {
     const dir = make(BODY.replace('ghost_counts > a', 'unrelated > a'));
     const msgs = checkPackage(dir)
       .filter(i => i.check === 'C173')

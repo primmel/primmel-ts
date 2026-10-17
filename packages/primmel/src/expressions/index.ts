@@ -251,18 +251,12 @@ class ExprParser {
       if (arrow?.kind === 'op' && arrow.value === '->') {
         this.take();
         const opTok = this.take();
-        if (
-          opTok.kind !== 'name' ||
-          !NAV_OPS.has(opTok.value)
-        ) {
+        if (opTok.kind !== 'name' || !NAV_OPS.has(opTok.value)) {
           throw new Error(
             'expression: expected a collection iterator (forAll | exists | select)',
           );
         }
-        if (
-          this.peek()?.kind !== 'op' ||
-          this.peek()!.value !== '('
-        ) {
+        if (this.peek()?.kind !== 'op' || this.peek()!.value !== '(') {
           throw new Error('expression: expected ( after the iterator');
         }
         this.take();
@@ -270,10 +264,7 @@ class ExprParser {
         if (varTok.kind !== 'name') {
           throw new Error('expression: expected the lambda parameter');
         }
-        if (
-          this.peek()?.kind !== 'op' ||
-          this.peek()!.value !== '|'
-        ) {
+        if (this.peek()?.kind !== 'op' || this.peek()!.value !== '|') {
           throw new Error('expression: expected | after the parameter');
         }
         this.take();

@@ -58,7 +58,8 @@ function tokenizeX(src: string): string[] {
   // lexer contract, independently implemented; the single-quoted
   // strings and the navigation tokens ride their own alternatives
   const out: string[] = [];
-  const re = /[A-Za-z_][\w.]*|\d+(?:\.\d+)?|'[^']*'|->|<=|>=|!=|≠|[<>=()+\-*,./|]/g;
+  const re =
+    /[A-Za-z_][\w.]*|\d+(?:\.\d+)?|'[^']*'|->|<=|>=|!=|≠|[<>=()+\-*,./|]/g;
   let m: RegExpExecArray | null;
   let last = 0;
   while ((m = re.exec(src)) !== null) {
@@ -354,7 +355,7 @@ export function readExpression(
       walkIds(k, bound);
     }
   };
-    walkIds(root, new Set());
+  walkIds(root, new Set());
   nodeKind(root);
   return { names, calls, comparisons, mixes };
 }
