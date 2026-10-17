@@ -49,16 +49,17 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // 2); C149-C153 are the typed kernel; C154 is the deprecation
     // report; C155-C156 are the power-type discipline (phase 8);
     // C158-C167 are the LML-aligned substrate (the spec's validation
-    // contract — language-v3 §16).
+    // contract — language-v3 §16); C168-C172, C176-C179 are the
+    // expression plane and its co-rules (C173-C175 reserved).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`),
-      ...Array.from({ length: 19 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 19 }, (_, i) => `C${i + 149}`),
+      ...Array.from({ length: 44 }, (_, i) => `C${i + 130}`),
+      ...Array.from({ length: 4 }, (_, i) => `C${i + 176}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128, C130-C148 (phase 2 retired C129), C149-C153 (the typed kernel), C154 (deprecation), C155-C156 (power type), C157 (registry pairing), C158-C167 (the LML-aligned substrate)',
+      'C1-C128, C130-C173 (phase 2 retired C129), C176-C179 (C174-C175 reserved)',
     );
   });
 

@@ -464,6 +464,22 @@ export const CHECK_RULES: CheckRule[] = [
     'an uncertainty budget targets a declared verdict; a Type A component names a declared captured series, a Type B component states its distribution and half-width; the coverage factor is a positive number',
   ),
   R(
+    'C173',
+    'step-plane-refs-resolve',
+    'process',
+    'error',
+    'normal',
+    'a signature step\'s completion is one expression over the step\'s own declared ios; the calls bindings resolve the callee\'s declared signature; the dot-descent process:step.io resolves to a declared io',
+  ),
+  R(
+    'C177',
+    'kind-coherence',
+    'base',
+    'error',
+    'normal',
+    'a comparison in an inline expression sets operands of the same declared quantity kind — the kinds from the args\' declared sources; unknown-kind and bare-number operands never conflict',
+  ),
+  R(
     'C178',
     'legacy-carrier-deprecated',
     'base',
