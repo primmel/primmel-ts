@@ -1078,18 +1078,54 @@ export const parseProcess: Parser = function (id, data) {
               break;
             }
             if (tc === 'inputs' || tc === 'outputs') {
+              // the typed ios: `name : type` pairs (the type optional —
+              // parseParamList takes both the corpus's typed form and
+              // the register's bare-list form); the names are the
+              // dot-descent's leaves
+              const pairs = parseParamList(unwrapBlock(tt[ti++]));
+              const names = pairs.map(pr => pr.name);
+              if (tc === 'inputs') {
+                st.sigInputs = names;
+              } else {
+                st.sigOutputs = names;
+              }
+            } else if (tc === 'requires') {
+              // the step's preconditions: named ios of the PRIOR steps
+              // (the C160 closure reads the process-level union)
               const ids = tokenizePackage(unwrapBlock(tt[ti++]))
                 .map(stripWrapping)
                 .filter(x => x.length > 0);
-              if (tc === 'inputs') {
-                st.sigInputs = ids;
-              } else {
-                st.sigOutputs = ids;
-              }
+              (result.stepRequires ??= []).push(...ids);
             } else if (tc === 'completion') {
-              const c = readExpressionCarrier(tt[ti++], 'step completion');
-              st.completion = c.source;
-              st.completionBound = c.inline || undefined;
+              if (tt[ti] === 'check') {
+                // the corpus's gate form: completion check <gate> {
+                // expression … … } — the gate names the completion's
+                // check; the expression is the carrier
+                ti += 1;
+                st.completionGate = stripWrapping(tt[ti++]);
+                const bt = tokenizePackage(unwrapBlock(tt[ti++]));
+                let bi = 0;
+                while (bi < bt.length) {
+                  const bc = bt[bi++];
+                  if (bi >= bt.length) {
+                    break;
+                  }
+                  if (bc === 'expression') {
+                    const c = readExpressionCarrier(
+                      bt[bi++],
+                      'step completion',
+                    );
+                    st.completion = c.source;
+                    st.completionBound = c.inline || undefined;
+                  } else {
+                    bi = skipUnknownEntry(bt, bi);
+                  }
+                }
+              } else {
+                const c = readExpressionCarrier(tt[ti++], 'step completion');
+                st.completion = c.source;
+                st.completionBound = c.inline || undefined;
+              }
             } else if (tc === 'calls') {
               st.calls = stripWrapping(tt[ti++]);
               if (ti < tt.length && tt[ti] === 'with') {

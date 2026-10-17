@@ -1218,6 +1218,41 @@ export function checkPackage(
     }
     return out;
   };
+  // The mapped computations (register: the mapped-callee plane): a
+  // certification program maps to its Recommendations (`maps_to`), and
+  // its derivations invoke the mapped Recommendation's declared
+  // computations — by reference, never restated. The ids join the
+  // callable registry, locator-gated like C168's scoped leg.
+  const mappedCalcIds = new Set<string>();
+  {
+    const mapsTo = standard.packageManifest?.mapsTo ?? [];
+    for (const target of mapsTo) {
+      if (!options.resolvePackage) {
+        continue;
+      }
+      try {
+        const depDir = options.resolvePackage(target);
+        if (!depDir) {
+          continue;
+        }
+        const dep = loadPackageWithIssues(depDir);
+        for (const c of dep.standard?.calculations ?? []) {
+          mappedCalcIds.add(c.id);
+          mappedCalcIds.add(c.id.split('/').pop() ?? '');
+        }
+      } catch {
+        // Unreadable mapped package — C27 reports the resolution
+        // failure; this registry stays silent rather than
+        // double-reporting.
+      }
+    }
+    for (const x of mappedCalcIds) {
+      if (x !== '') {
+        globalExprNames.add(x);
+      }
+    }
+  }
+
   // The v3.3 inline limit: the AST walked against the args scope. The
   // body's identifiers are the args and nothing else (plus `self`-rooted
   // paths — the dispatch context — and the closed function vocabulary);
