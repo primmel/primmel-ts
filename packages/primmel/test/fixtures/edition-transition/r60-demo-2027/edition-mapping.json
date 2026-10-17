@@ -1,0 +1,16 @@
+{
+ "kind": "primmel-edition-mapping/1",
+ "package": { "id": "oiml-r60-demo-2027", "path": "." },
+ "from": {
+  "edition": "2021",
+  "model_state": null,
+  "note": "the didactic pair models both editions as ENTIRELY NEW models; the mapping records the declared lineage"
+ },
+ "to": {
+  "edition": "2027",
+  "model_state": { "git_commit": "fixture", "path": ".", "note": "the shipped edition state this fixture maps into" }
+ },
+ "summary": { "added": 0, "removed": 0, "changed": 0, "moved": 0, "unchanged": 0 },
+ "lineage": ["2027", "2021"],
+ "clauses": []
+}

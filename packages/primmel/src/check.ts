@@ -2213,49 +2213,6 @@ export function checkPackage(
       }
     }
   }
-  for (const t of standard.conformanceTests ?? []) {
-    const ref = t.methodRef;
-    if (!ref) {
-      continue;
-    }
-    const colon = ref.indexOf(':');
-    if (colon <= 0) {
-      if (!localMethodIds.has(ref)) {
-        err(
-          'C168',
-          `conformance test ${t.id}: method_ref "${ref}" names no process or conformance test declared in this package (method-ref-resolves)`,
-        );
-      }
-      continue;
-    }
-    if (!options.resolvePackage) {
-      continue;
-    }
-    const pkgId = ref.slice(0, colon);
-    const localId = ref.slice(colon + 1);
-    let ids = scopedMethodIds.get(pkgId);
-    if (!ids) {
-      ids = new Set<string>();
-      try {
-        const depDir = options.resolvePackage(pkgId);
-        if (depDir) {
-          const dep = loadPackageWithIssues(depDir);
-          ids = methodTargetIds(dep.standard);
-        }
-      } catch {
-        // Unreadable dependency — C27 reports the resolution failure;
-        // this rule stays silent rather than double-reporting.
-      }
-      scopedMethodIds.set(pkgId, ids);
-    }
-    if (!ids.has(localId)) {
-      err(
-        'C168',
-        `conformance test ${t.id}: method_ref "${ref}" names no process or conformance test declared in package "${pkgId}" (method-ref-resolves)`,
-      );
-    }
-  }
-
   // C6 — subject anatomy: every aspect declared under exactly one family
   // (anatomy-family). The parser records wrong-family and undeclared
   // aspect keys on Subject.misplacedAspects; value-level markers catch
