@@ -249,9 +249,12 @@ export interface ProcessStep {
   sigOutputs: string[];
   /**
    * The completion carrier: the step's one expression over its own ios
-   * — the legacy quoted form or the v3.3 inline block.
+   * — the legacy quoted form or the v3.3 inline block. The corpus's
+   * gate form (`completion check <gate> { expression … }`) carries the
+   * gate's id here.
    */
   completion: string;
+  completionGate?: string;
   completionBound?: boolean;
   /** IN bindings of the call (callee param ← caller name; the caller READS). */
   callIn: ProcessCallBinding[];
