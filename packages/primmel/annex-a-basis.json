@@ -382,5 +382,29 @@
  "document_precedence": {
   "basis": "The edition lineage (which document governs)",
   "mode": "extension"
+ },
+ "uncertainty_budget": {
+  "basis": "The GUM plane's declaration — the components and the coverage, never the arithmetic",
+  "mode": "extension"
+ },
+ "check": {
+  "basis": "Evaluate-and-compare — the consolidated surface forms over one construct",
+  "mode": "composition"
+ },
+ "mapping": {
+  "basis": "The LML mapping surface — one class's declared wire form per format",
+  "mode": "composition"
+ },
+ "namespace": {
+  "basis": "The LML namespacing surface — named uri + prefix pairs",
+  "mode": "composition"
+ },
+ "datum": {
+  "basis": "The duality's registry face — one typed, unit-bearing declared value",
+  "mode": "composition"
+ },
+ "string_format": {
+  "basis": "The grammar-backed string form of one artifact class",
+  "mode": "composition"
  }
 }
