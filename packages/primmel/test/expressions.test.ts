@@ -568,3 +568,65 @@ describe('the boolean literals (register 18)', () => {
     assert.deepEqual(parseExpression(renderExpression(ast)), ast);
   });
 });
+
+describe('the named-multiple limits with when-guards (register 18)', () => {
+  const SRC = `requirement /req/metrological/mpe-ranges {
+  name "MPE ranges"
+  limit "mpe-low-range" {
+    args { e <- observable:e mu <- table:vehicle_mpe.mpe_low }
+    when {
+      e <= 5000
+    }
+    expression {
+      abs(e) <= mu
+    }
+  }
+  limit "mpe-high-range" {
+    args { e <- observable:e mu <- table:vehicle_mpe.mpe_high }
+    when {
+      e > 5000
+    }
+    expression {
+      abs(e) <= mu
+    }
+  }
+}
+`;
+  it('parses the named list with guards and dump-fixpoints', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-when-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'model'), { recursive: true });
+    writeFileSync(join(dir, 'model', 'r.prl'), SRC);
+    const m = loadPackage(dir);
+    const r = m.requirements.find(
+      x => x.id === '/req/metrological/mpe-ranges',
+    )!;
+    assert.equal(r.limit, null);
+    assert.equal((r.limits ?? []).length, 2);
+    assert.equal(r.limits![0]?.name, 'mpe-low-range');
+    assert.equal(r.limits![0]?.when, 'e <= 5000');
+    assert.equal(r.limits![1]?.when, 'e > 5000');
+    const d1 = dump(m);
+    writeFileSync(join(dir, 'model', 'r.prl'), d1);
+    const m2 = loadPackage(dir);
+    assert.equal(dump(m2), d1);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('the guard resolves against the limit args; an unbound name is air', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-when2-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'model'), { recursive: true });
+    writeFileSync(
+      join(dir, 'model', 'r.prl'),
+      SRC.replace('e <= 5000', 'e <= ghost_limit'),
+    );
+    const msgs = checkPackage(dir)
+      .filter(i => i.check === 'C171')
+      .map(i => i.message);
+    assert.ok(
+      msgs.some(m => m.includes('when-guard') && m.includes('ghost_limit')),
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
