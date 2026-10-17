@@ -1314,9 +1314,7 @@ function processUnit(pr: Process): UnitContent {
     .map(s => {
       const st = s as { calls?: string; id?: string; signatureBlock?: string };
       const call =
-        st.calls ||
-        st.signatureBlock?.match(/\bcalls +([\w:/.-]+)/)?.[1] ||
-        '';
+        st.calls || st.signatureBlock?.match(/\bcalls +([\w:/.-]+)/)?.[1] || '';
       return call ? { id: st.id ?? '', calls: call } : null;
     })
     .filter((s): s is { id: string; calls: string } => s !== null);

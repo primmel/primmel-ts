@@ -991,7 +991,8 @@ function composePackage(
       // doctrine): resolve its MANIFEST through the locator for this
       // check, without merging content.
       const at = req.indexOf(':');
-      const scoped = at > 0 ? { pkg: req.slice(0, at), token: req.slice(at + 1) } : null;
+      const scoped =
+        at > 0 ? { pkg: req.slice(0, at), token: req.slice(at + 1) } : null;
       let scopedProvides: string[] | null = null;
       if (scoped && !order.includes(scoped.pkg)) {
         try {
@@ -1008,9 +1009,9 @@ function composePackage(
         }
       }
       const satisfied = scoped
-        ? (order.includes(scoped.pkg)
-            ? (manifests.get(scoped.pkg)!.provides ?? []).includes(scoped.token)
-            : (scopedProvides ?? []).includes(scoped.token))
+        ? order.includes(scoped.pkg)
+          ? (manifests.get(scoped.pkg)!.provides ?? []).includes(scoped.token)
+          : (scopedProvides ?? []).includes(scoped.token)
         : order.some(
             other =>
               other !== id &&
