@@ -1661,9 +1661,89 @@ export function checkPackage(
     };
     kindOf(ast);
   };
+  // the applicability guard: a boolean expression over the limit's own
+  // args — the same resolution, plus the boolean top (C84's shape, the
+  // guard is a predicate)
+  const checkGuard = (rid: string, name: string, lim: RequirementLimit) => {
+    if (!lim.when) {
+      return;
+    }
+    const args = new Set((lim.args ?? []).map(a => a.name));
+    try {
+      const ast = parseExpression(lim.when);
+      const ids = freeIdentifiers(ast);
+      for (const call of new Set(ids.calls)) {
+        if (!INLINE_FUNCTION_WORDS.has(call)) {
+          err(
+            'C171',
+            `requirement ${rid}: limit ${name}'s when-guard calls "${call}(…)", which no argument binds and which is not in the expression function vocabulary (expression-identifiers-resolve)`,
+          );
+        }
+      }
+      for (const id of new Set(ids.names)) {
+        const root = id.split('.')[0];
+        if (
+          args.has(id) ||
+          (id.includes('.') &&
+            (root === 'self' || CONTEXT_ROOTS.has(root) || args.has(root)))
+        ) {
+          continue;
+        }
+        err(
+          'C171',
+          `requirement ${rid}: limit ${name}'s when-guard names "${id}", which no argument binds (expression-identifiers-resolve)`,
+        );
+      }
+      const top = ast.type;
+      if (!(
+        (top === 'binop' &&
+          [
+            '<=',
+            '>=',
+            '<',
+            '>',
+            '=',
+            '!=',
+            '≠',
+            'and',
+            'or',
+            'xor',
+            'implies',
+          ].includes((ast as { op: string }).op)) ||
+        (top === 'unop' && (ast as { op: string }).op === 'not')
+      )) {
+        err(
+          'C84',
+          `requirement ${rid}: limit ${name}'s when-guard does not evaluate to a boolean — the guard is one comparison or logical composition (constraint-shape)`,
+        );
+      }
+    } catch (e) {
+      err(
+        'C171',
+        `requirement ${rid}: limit ${name}'s when-guard does not parse — ${String((e as Error).message ?? e)} (expression-identifiers-resolve)`,
+      );
+    }
+  };
   for (const r of standard.requirements ?? []) {
     if (r.limit?.argsBound) {
       checkInlineLimit('requirement', r.id, r.limit, null);
+      checkGuard(r.id, '(the unnamed limit)', r.limit);
+    }
+    for (const lim of r.limits ?? []) {
+      const label = lim.name ? `"${lim.name}"` : '(an unnamed limit)';
+      if (lim.argsBound) {
+        checkInlineLimit('requirement', r.id, lim, null);
+      } else if (lim.expression) {
+        // the named limits carry the inline carrier (the guard needs
+        // the args scope; a legacy string in the list form is air)
+        err(
+          'C171',
+          `requirement ${r.id}: limit ${label} must carry the inline carrier — args { … } and expression { … } (expression-identifiers-resolve)`,
+        );
+      }
+      checkGuard(r.id, label, lim);
+    }
+    if (r.limit?.argsBound || (r.limits ?? []).length > 0) {
       continue;
     }
     const expr = r.limit?.expression;

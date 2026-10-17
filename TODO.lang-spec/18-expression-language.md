@@ -9,9 +9,17 @@ limits migrated; the twin-cert derives/derivations/checks migrated — the
 carriers are `derive { … }`, `derivation { … }`, `check { … }` blocks, the
 same string-vs-block decision; C177 kind-coherence landed with them,
 register 22). Remaining: the invariant/check-completion carriers, the
-named multiple limits with `when { }` guards (below), the PARG artifact
+acceptance-plane pass_if/accepts blocks, the PARG artifact
 handoff to plurimath, the acceptance-plane `pass_if`/`accepts` idiom, the
 legacy-string deprecation.
+
+**LANDED (2026-10-17, later): the named-multiple limits with `when { }`
+guards** — `limit "name" { args { … } when { guard } expression { … } }`;
+the guard is a boolean expression over the limit's own args (C171 walks
+it, C84's boolean-top judges its shape), multiple limits are a
+conjunction, the unnamed single stays the one-element shorthand, the
+dump fixpoints, and the spec's example now carries the delimited
+expression blocks (the carrier ruling).
 
 **2026-10-17 additions:** the conditional `if c then a else b endif`
 (delimited by endif, no parens ever needed around a branch), the

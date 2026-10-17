@@ -50,6 +50,19 @@ export interface RequirementLimit {
    */
   args?: RequirementLimitArg[];
   uses: string[];
+  /**
+   * The limit's public handle (the named-multiple form): a conformance
+   * test targets it, the coverage and the retrieval projection emit it
+   * (`/req/x:limit/<name>`), the checker's diagnostics name it.
+   */
+  name?: string;
+  /**
+   * The applicability guard (`when { … }`): a boolean expression over
+   * the limit's own arguments — the sub-domain the limit applies to.
+   * Multiple limits are a conjunction: every limit whose guard holds
+   * must hold; a limit with no guard applies over the whole domain.
+   */
+  when?: string;
   /** shall (default) | should — a failed should-limit is an observation. */
   modality: string;
   /** Declared base of a relative (ratio) limit. */
@@ -107,6 +120,12 @@ export interface Requirement {
   bindsTo: string[];
   /** Machine-checkable limit as OCL (quantitative requirements). */
   limit: RequirementLimit | null;
+  /**
+   * The named-multiple form: further limits beyond the one-element
+   * shorthand (`limit`). A named limit always lands here; the unnamed
+   * single stays `limit`.
+   */
+  limits?: RequirementLimit[];
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];
   /**

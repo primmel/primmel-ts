@@ -110,11 +110,24 @@ function blankLimit(): RequirementLimit {
  * The limit block: field walk. Two expression carriers — the legacy
  * quoted OCL string (`expression "ocl{…}"`) and the v3.3 inline
  * `expression { … }` BLOCK: the raw formula, delimited, parsed at load.
- * `args { name <- source … }` is the scope the inline body binds.
+ * `args { name <- source … }` is the scope the inline body binds, and
+ * `when { … }` is the limit's applicability guard over the same args.
  */
 function readLimit(block: string): RequirementLimit {
   const limit: RequirementLimit = blankLimit();
-  readLegacyLimitFields(tokenize(block), limit, 0);
+  const lt = tokenize(block);
+  readLegacyLimitFields(lt, limit, 0);
+  // the guard rides the same walk's unknown-skip — read it here where
+  // the carrier machinery is in scope
+  let i = 0;
+  while (i < lt.length) {
+    if (lt[i] === 'when' && lt[i + 1]?.startsWith('{')) {
+      limit.when = canonicalizeExpression(unwrapBlock(lt[i + 1]));
+      i += 2;
+    } else {
+      i += 1;
+    }
+  }
   return limit;
 }
 
@@ -363,7 +376,22 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'parameters') {
       result.parameters = readParameters(unwrapBlock(t[i++]));
     } else if (cmd === 'limit') {
-      result.limit = readLimit(unwrapBlock(t[i++]));
+      // the named-multiple form: `limit "name" { … }` (or a bare-id
+      // name) — the named handle is the token between the keyword and
+      // the block; the unnamed single is the one-element shorthand.
+      let name = '';
+      if (t[i] !== undefined && !t[i].startsWith('{')) {
+        name = stripWrapping(t[i++]);
+      }
+      const lim = readLimit(unwrapBlock(t[i++]));
+      if (name) {
+        lim.name = name;
+        (result.limits ??= []).push(lim);
+      } else if (result.limit) {
+        (result.limits ??= []).push(lim);
+      } else {
+        result.limit = lim;
+      }
     } else if (cmd === 'applicability') {
       result.applicability = parseApplicability(unwrapBlock(t[i++]));
     } else if (cmd === 'channel') {
@@ -428,11 +456,21 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
 
 function dumpLimit(limit: RequirementLimit): string {
   if (limit.argsBound) {
-    let out = '  limit {\n';
+    const head = limit.name
+      ? '  limit ' + JSON.stringify(limit.name) + ' {\n'
+      : '  limit {\n';
+    let out = head;
     if ((limit.args ?? []).length > 0) {
       out += '    args {\n';
       for (const a of limit.args ?? []) {
         out += '      ' + a.name + ' <- ' + a.source + '\n';
+      }
+      out += '    }\n';
+    }
+    if (limit.when) {
+      out += '    when {\n';
+      for (const line of limit.when.split('\n')) {
+        out += '      ' + line + '\n';
       }
       out += '    }\n';
     }
@@ -590,6 +628,9 @@ const dumpRequirement = function (r: Requirement): string {
   }
   if (r.limit) {
     out += dumpLimit(r.limit);
+    for (const lim of r.limits ?? []) {
+      out += dumpLimit(lim);
+    }
   }
   if (r.applicability.length > 0) {
     out +=
