@@ -13,6 +13,16 @@ named multiple limits with `when { }` guards (below), the PARG artifact
 handoff to plurimath, the acceptance-plane `pass_if`/`accepts` idiom, the
 legacy-string deprecation.
 
+**2026-10-17 additions:** the conditional `if c then a else b endif`
+(delimited by endif, no parens ever needed around a branch), the
+boolean literals `true`/`false`, and `collect` (register 24) — the
+three forms the corpus's own requirement limits use; both
+implementations (kernel + checker2) with kind-coherence walking the
+branches and the projection's element kind. The C171 args-bound limit
+path now accepts calls rooted in the declared registry (calculations,
+tables) — `relative_error(Vi, Va)` and `table.binds(key)` ride the same
+resolution the legacy path granted.
+
 ## The gap
 Every machine-executable expression in the language — requirement limits, the
 class laws, derivations, derives — is a QUOTED STRING: `"ocl{abs(e) <= mpe}"`.

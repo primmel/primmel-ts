@@ -491,3 +491,80 @@ describe('the collection navigation (register 24)', () => {
     rmSync(air, { recursive: true, force: true });
   });
 });
+
+describe('the projection iterator (register 24)', () => {
+  it('parses collect as a navigation and binds its lambda', () => {
+    const src =
+      'measurements -> collect(m | m.indicated_speed - m.reference_speed)';
+    const ast = parseExpression(src);
+    assert.equal(ast.type, 'nav');
+    if (ast.type === 'nav') {
+      assert.equal(ast.source, 'measurements');
+      assert.equal(ast.op, 'collect');
+      assert.equal(ast['var'], 'm');
+    }
+    const ids = freeIdentifiers(ast);
+    assert.deepEqual(ids.names, ['measurements']);
+    const canonical = renderExpression(ast);
+    assert.deepEqual(parseExpression(canonical), ast);
+  });
+});
+
+describe('the conditional expression (register 18)', () => {
+  it('parses if-then-else-endif and renders canonically', () => {
+    const src = 'if t_water <= 30 then 1 else 2 endif';
+    const ast = parseExpression(src);
+    assert.equal(ast.type, 'ifelse');
+    if (ast.type === 'ifelse') {
+      assert.equal(ast.cond.type, 'binop');
+      assert.equal(ast.then.type, 'num');
+      assert.equal(ast.else.type, 'num');
+    }
+    const ids = freeIdentifiers(ast);
+    assert.deepEqual(ids.names, ['t_water']);
+    const canonical = renderExpression(ast);
+    assert.equal(canonical, 'if t_water <= 30 then 1 else 2 endif');
+    assert.deepEqual(parseExpression(canonical), ast);
+  });
+
+  it('delimits without parentheses — a branch may be a full expression', () => {
+    const src =
+      'if family.classification.accuracy_class = 1 then (if t_water <= 30 then 1 else 2 endif) else 0 endif';
+    const ast = parseExpression(src);
+    assert.equal(ast.type, 'ifelse');
+    const canonical = renderExpression(ast);
+    assert.deepEqual(parseExpression(canonical), ast);
+  });
+});
+
+describe('the boolean literals (register 18)', () => {
+  it('parses true and false as leaves that bind nothing', () => {
+    for (const [src, value] of [
+      ['true', true],
+      ['false', false],
+    ] as const) {
+      const ast = parseExpression(src);
+      assert.equal(ast.type, 'bool');
+      if (ast.type === 'bool') {
+        assert.equal(ast.value, value);
+      }
+      const ids = freeIdentifiers(ast);
+      assert.deepEqual(ids.names, []);
+      assert.deepEqual(parseExpression(renderExpression(ast)), ast);
+    }
+  });
+
+  it('accepts the conditional gate shape in a limit with args', () => {
+    const src =
+      'if model.attributes.mat >= 50 then overload_passed else true endif';
+    const ast = parseExpression(src);
+    const ids = freeIdentifiers(ast);
+    // the reader is declaration-blind: the model path rides the
+    // checker's CONTEXT_ROOTS filter, so it surfaces here
+    assert.deepEqual(ids.names.sort(), [
+      'model.attributes.mat',
+      'overload_passed',
+    ]);
+    assert.deepEqual(parseExpression(renderExpression(ast)), ast);
+  });
+});
