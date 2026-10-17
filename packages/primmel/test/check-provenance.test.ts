@@ -12,8 +12,22 @@ const PRD = {
     prd_sentences: '0.1.0',
     document: { urn: 'urn:x:doc:1', short: 'X' },
     sentences: [
-      { address: 'clause-3/s1', fragment: 'clause-3', kind: 'content', fragment_normative: true, modality: 'normative', text: 'The instrument shall bear markings.' },
-      { address: 'clause-3.1/s1', fragment: 'clause-3.1', kind: 'content', fragment_normative: true, modality: 'normative', text: 'The markings shall be legible.' },
+      {
+        address: 'clause-3/s1',
+        fragment: 'clause-3',
+        kind: 'content',
+        fragment_normative: true,
+        modality: 'normative',
+        text: 'The instrument shall bear markings.',
+      },
+      {
+        address: 'clause-3.1/s1',
+        fragment: 'clause-3.1',
+        kind: 'content',
+        fragment_normative: true,
+        modality: 'normative',
+        text: 'The markings shall be legible.',
+      },
     ],
   }),
 };
@@ -48,7 +62,10 @@ describe('C169 provenance-clause-resolves', () => {
         req('urn:x:doc:1#clause-3.1') +
         req('urn:x:doc:1#clause-3/table-1'),
     });
-    assert.deepEqual(msgs.filter(i => i.severity === 'error'), []);
+    assert.deepEqual(
+      msgs.filter(i => i.severity === 'error'),
+      [],
+    );
   });
 
   it('rejects a clause-qualified citation that lands nowhere', () => {

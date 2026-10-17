@@ -28,7 +28,10 @@ describe('the declared language generation', () => {
   });
 
   it('stays lenient when the language is not declared', () => {
-    const dir = make('package {\n id pkg\n}', REQ + '\ntotally_fake_construct X {\n}\n');
+    const dir = make(
+      'package {\n id pkg\n}',
+      REQ + '\ntotally_fake_construct X {\n}\n',
+    );
     const m = loadPackage(dir);
     assert.ok(m);
   });
