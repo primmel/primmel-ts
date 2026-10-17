@@ -11,6 +11,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { documentConstructs, resolveParsanolTs } from '../src/front-end.ts';
 import { check } from '../src/rules.ts';
+import { readExpression } from '../src/expressions.ts';
 import type { ParsedPackage } from '../src/front-end.ts';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
@@ -100,5 +101,43 @@ describe('the second checker rules', () => {
       check(pkg).map(i => i.rule),
       ['C96'],
     );
+  });
+});
+
+describe('the second expression reader: the register-18 completions', () => {
+  const kindless = (): undefined => undefined;
+  const ids = (src: string) => readExpression(src, kindless);
+
+  it('parses collect as a navigation and binds its lambda', () => {
+    const r = ids(
+      'measurements -> collect(m | m.indicated_speed - m.reference_speed)',
+    );
+    assert.deepEqual(r.names, ['measurements']);
+    assert.deepEqual(r.calls, []);
+  });
+
+  it('parses the conditional and reports only its free names', () => {
+    const r = ids('if mat >= 50 then overload_passed else true endif');
+    assert.deepEqual(r.names.sort(), ['mat', 'overload_passed']);
+    assert.ok(!r.names.includes('true'));
+  });
+
+  it('parses boolean literals as kindless leaves', () => {
+    assert.deepEqual(ids('true').names, []);
+    assert.deepEqual(ids('false').names, []);
+  });
+
+  it('parses the nested conditional the corpus limits use', () => {
+    const r = ids(
+      'abs(e_rel) <= (if family.classification.accuracy_class = 1 then (if t_water <= 30 then 1 else 2 endif) else 0 endif) and abs(e_rel_lower) <= 3',
+    );
+    // the reader is declaration-blind: the family path rides the rules'
+    // CONTEXT_ROOTS filter, so it surfaces here and resolves there
+    assert.deepEqual(r.names.sort(), [
+      'e_rel',
+      'e_rel_lower',
+      'family.classification.accuracy_class',
+      't_water',
+    ]);
   });
 });

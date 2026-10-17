@@ -31,7 +31,7 @@ const OPERATORS = [
   '|',
 ];
 
-const NAV_OPS = new Set(['forAll', 'exists', 'select']);
+const NAV_OPS = new Set(['forAll', 'exists', 'select', 'collect']);
 
 export function lex(src: string): ExprToken[] {
   const tokens: ExprToken[] = [];
@@ -93,10 +93,17 @@ export function lex(src: string): ExprToken[] {
 export type ExprAst =
   | { type: 'num'; value: number }
   | { type: 'str'; value: string }
+  | { type: 'bool'; value: boolean }
   | { type: 'name'; path: string[] }
   | { type: 'call'; callee: string; args: ExprAst[] }
   | { type: 'binop'; op: string; left: ExprAst; right: ExprAst }
   | { type: 'unop'; op: string; operand: ExprAst }
+  /**
+   * The conditional (the OCL if-then-else heritage): the branches share
+   * the expression's kind discipline; endif delimits, so no parens are
+   * ever needed around a branch.
+   */
+  | { type: 'ifelse'; cond: ExprAst; then: ExprAst; else: ExprAst }
   /**
    * The collection navigation (register 24): `source -> op(v | body)` —
    * the OCL iterator heritage; the lambda parameter scopes the body
@@ -206,6 +213,31 @@ class ExprParser {
       return inner;
     }
     if (tok.kind === 'name') {
+      // the boolean and conditional keywords — reserved literals and
+      // the OCL conditional form, never call targets
+      if (tok.value === 'true' || tok.value === 'false') {
+        return { type: 'bool', value: tok.value === 'true' };
+      }
+      if (tok.value === 'if') {
+        const cond = this.parseLevel(0);
+        const thenTok = this.take();
+        if (thenTok.kind !== 'name' || thenTok.value !== 'then') {
+          throw new Error('expression: expected "then" in the conditional');
+        }
+        const whenTrue = this.parseLevel(0);
+        const elseTok = this.take();
+        if (elseTok.kind !== 'name' || elseTok.value !== 'else') {
+          throw new Error('expression: expected "else" in the conditional');
+        }
+        const whenFalse = this.parseLevel(0);
+        const endTok = this.take();
+        if (endTok.kind !== 'name' || endTok.value !== 'endif') {
+          throw new Error(
+            'expression: expected "endif" to close the conditional',
+          );
+        }
+        return { type: 'ifelse', cond, then: whenTrue, else: whenFalse };
+      }
       // the dotted path first — its segments join; a following '(' makes
       // it a call (the table-as-object idiom: table.permits(a, b))
       const segs = [tok.value];
@@ -253,7 +285,7 @@ class ExprParser {
         const opTok = this.take();
         if (opTok.kind !== 'name' || !NAV_OPS.has(opTok.value)) {
           throw new Error(
-            'expression: expected a collection iterator (forAll | exists | select)',
+            'expression: expected a collection iterator (forAll | exists | select | collect)',
           );
         }
         if (this.peek()?.kind !== 'op' || this.peek()!.value !== '(') {
@@ -324,6 +356,13 @@ export function freeIdentifiers(ast: ExprAst): ExprIdentifiers {
         return;
       case 'str':
         return;
+      case 'bool':
+        return;
+      case 'ifelse':
+        walk(node.cond, bound);
+        walk(node.then, bound);
+        walk(node.else, bound);
+        return;
       case 'name': {
         // the lexer's name token carries its dots whole — the root is
         // the token's first dot-segment, not the path array's
@@ -366,6 +405,18 @@ export function renderExpression(ast: ExprAst): string {
       return String(ast.value);
     case 'str':
       return "'" + ast.value + "'";
+    case 'bool':
+      return ast.value ? 'true' : 'false';
+    case 'ifelse':
+      return (
+        'if ' +
+        renderExpression(ast.cond) +
+        ' then ' +
+        renderExpression(ast.then) +
+        ' else ' +
+        renderExpression(ast.else) +
+        ' endif'
+      );
     case 'name':
       return ast.path.join('.');
     case 'call':

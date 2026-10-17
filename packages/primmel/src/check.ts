@@ -1334,9 +1334,19 @@ export function checkPackage(
       if (INLINE_FUNCTION_WORDS.has(call)) {
         continue;
       }
+      if (globalExprNames.has(call)) {
+        // a declared callable — the calculation registry (twin-cert's
+        // mpe(…), R 49's relative_error(…))
+        continue;
+      }
       if (call.includes('.')) {
         const root = call.split('.')[0];
-        if (argNames.has(root) || root === 'self' || CONTEXT_ROOTS.has(root)) {
+        if (
+          argNames.has(root) ||
+          globalExprNames.has(root) ||
+          root === 'self' ||
+          CONTEXT_ROOTS.has(root)
+        ) {
           // the method rides its declared object — the root is the check
           continue;
         }
@@ -1538,6 +1548,23 @@ export function checkPackage(
           return null;
         case 'str':
           return null;
+        case 'bool':
+          return null;
+        case 'ifelse': {
+          kindOf(node.cond);
+          const l = kindOf(node.then);
+          const r = kindOf(node.else);
+          if (
+            l !== undefined &&
+            r !== undefined &&
+            l !== null &&
+            r !== null &&
+            l !== r
+          ) {
+            kindMixErr(node, l, r);
+          }
+          return l !== undefined && l !== null ? l : r;
+        }
         case 'name': {
           const root = node.path[0];
           if (
@@ -1590,8 +1617,13 @@ export function checkPackage(
         case 'nav':
           // the iteration predicate's truth over the collection: the
           // boolean iterators; select keeps the source's kind — its
-          // element kind is the collection's, unknown here
-          return node.op === 'select' ? undefined : null;
+          // element kind is the collection's, unknown here; collect
+          // projects to a collection of the body's element kind
+          return node.op === 'select'
+            ? undefined
+            : node.op === 'collect'
+              ? kindOf(node.body)
+              : null;
         case 'binop': {
           if (['<=', '>=', '<', '>', '=', '!=', '≠'].includes(node.op)) {
             const l = kindOf(node.left);

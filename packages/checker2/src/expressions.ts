@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 export interface XNode {
-  kind: 'num' | 'name' | 'call' | 'bin' | 'un' | 'nav';
+  kind: 'num' | 'name' | 'call' | 'bin' | 'un' | 'nav' | 'if';
   op?: string;
   path?: string[];
   callee?: string;
@@ -155,6 +155,24 @@ class XParser {
     if (t.startsWith("'")) {
       return { kind: 'num', kids: [] }; // a string: kindless, leaf
     }
+    if (t === 'true' || t === 'false') {
+      return { kind: 'num', kids: [] }; // a boolean literal: kindless
+    }
+    if (t === 'if') {
+      const cond = this.binary(0);
+      if (this.toks[this.i++] !== 'then') {
+        throw new Error('expected then in the conditional');
+      }
+      const whenTrue = this.binary(0);
+      if (this.toks[this.i++] !== 'else') {
+        throw new Error('expected else in the conditional');
+      }
+      const whenFalse = this.binary(0);
+      if (this.toks[this.i++] !== 'endif') {
+        throw new Error('expected endif to close the conditional');
+      }
+      return { kind: 'if', kids: [cond, whenTrue, whenFalse] };
+    }
     if (t === '(') {
       const inner = this.binary(0);
       if (this.toks[this.i++] !== ')') {
@@ -197,7 +215,12 @@ class XParser {
     if (this.peek() === '->') {
       this.i++;
       const op = this.toks[this.i++];
-      if (op !== 'forAll' && op !== 'exists' && op !== 'select') {
+      if (
+        op !== 'forAll' &&
+        op !== 'exists' &&
+        op !== 'select' &&
+        op !== 'collect'
+      ) {
         throw new Error('expected a collection iterator');
       }
       if (this.peek() !== '(') {
@@ -294,8 +317,27 @@ export function readExpression(
       }
       case 'un':
         return n.op === 'not' ? null : nodeKind(n.kids[0]!);
+      case 'if': {
+        nodeKind(n.kids[0]!);
+        const l = nodeKind(n.kids[1]!);
+        const r = nodeKind(n.kids[2]!);
+        if (
+          l !== undefined &&
+          r !== undefined &&
+          l !== null &&
+          r !== null &&
+          l !== r
+        ) {
+          mixes.push({ node: n, leftKind: l, rightKind: r });
+        }
+        return l !== undefined && l !== null ? l : r;
+      }
       case 'nav':
-        return n.op === 'select' ? undefined : null;
+        return n.op === 'select'
+          ? undefined
+          : n.op === 'collect'
+            ? nodeKind(n.kids[0]!)
+            : null;
       case 'bin': {
         if (CMP_OPS.includes(n.op!)) {
           comparisons.push({ op: n.op!, left: n.kids[0]!, right: n.kids[1]! });
