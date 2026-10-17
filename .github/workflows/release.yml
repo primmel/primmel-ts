@@ -42,7 +42,11 @@ jobs:
         run: |
           current=$(node -p "require('./package.json').version")
           if [ "$current" != "${{ inputs.version }}" ]; then
-            npm version ${{ inputs.version }} --no-git-tag-version
+            # node writes the version directly: `npm version` rewrites the
+            # detected lockfiles, and on the current runner npm it mangles
+            # yarn.lock (the workspace entries vanish, the following yarn
+            # build fails) — the 1.21.16 release failed on exactly that.
+            node -e "const fs=require('fs');const p='./package.json';const j=JSON.parse(fs.readFileSync(p));j.version='${{ inputs.version }}';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
           fi
       - name: Verify version matches the tag
         if: github.event_name == 'push'
