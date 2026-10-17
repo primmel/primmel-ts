@@ -1526,7 +1526,9 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     const attributeKinds = kindsOf('attribute_definition');
     const verdictKinds = kindsOf('verdict');
     // the declared-name registries: every declaration participates in
-    // the resolution (the kinds only feed C177)
+    // the resolution (the kinds only feed C177); calculations join the
+    // callable registry the way the kernel's globalExprNames carries
+    // them (a derivation calls a declared calculation)
     const declaredNames = new Set<string>();
     for (const kw of [
       'symbol',
@@ -1534,6 +1536,7 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       'verdict',
       'table',
       'attribute_definition',
+      'calculation',
     ]) {
       for (const c of closureConstructs.filter(x => x.keyword === kw)) {
         if (c.ident) {
@@ -1663,13 +1666,20 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         if (X_FUNCS.has(call) || argNames.has(call)) {
           continue;
         }
+        if (declaredNames.has(call)) {
+          // a declared callable — the calculation registry (the mapped
+          // mpe(…), R 49's relative_error(…))
+          continue;
+        }
         if (call.includes('.')) {
           const root = call.split('.')[0]!;
           if (
             argNames.has(root) ||
+            declaredNames.has(root) ||
             root === 'self' ||
             X_CONTEXT_ROOTS.has(root)
           ) {
+            // the method rides its declared object — the root is the check
             continue;
           }
         }
