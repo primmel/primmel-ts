@@ -1573,10 +1573,13 @@ export const dumpProcess: (
     }
     out += '  }\n';
   }
-  for (const req of (process as { stepRequires?: string[] }).stepRequires ??
-    []) {
-    out += '  requires { ' + req + ' }\n';
-  }
+  // the C160 plane (stepRequires) is DERIVED: the pass-1 parse hoists
+  // the steps' own `requires` facets into it, and the parse rebuilds it
+  // from those lines on every load — serializing it would re-ingest as
+  // a fresh process-level `requires` on the next parse and grow the
+  // document every round (the fixpoint the corpus round-trip gate
+  // caught on 1.21.14). The steps' own lines are the serialization
+  // truth.
   // reference_data_registry dumps from the RAW ids (inputRefs): OIML
   // SMART names entity-class stores here, which never resolve to
   // data_registry constructs — the resolved list alone would silently
