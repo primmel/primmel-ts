@@ -1119,7 +1119,10 @@ export const parseProcess: Parser = function (id, data) {
         } else {
           (result.bindings ??= []).push({
             id: sid,
-            block: blockTok !== undefined && blockTok.startsWith('{') ? unwrapBlock(blockTok) : blockTok ?? '',
+            block:
+              blockTok !== undefined && blockTok.startsWith('{')
+                ? unwrapBlock(blockTok)
+                : (blockTok ?? ''),
           });
         }
       } else if (keyword === 'requires') {
@@ -1509,7 +1512,8 @@ export const dumpProcess: (
   }
   // The LML-aligned signature steps + bindings (TODO.lang-gaps 01):
   // pass-1 re-emits the raw blocks (the step plane types them later).
-  for (const st of (process as { steps?: { signatureBlock?: string }[] }).steps ?? []) {
+  for (const st of (process as { steps?: { signatureBlock?: string }[] })
+    .steps ?? []) {
     if (st.signatureBlock) {
       // The canonical re-emission: the raw block trimmed to its content
       // lines, each indented uniformly — dump(parse(x)) is a fixed point
@@ -1525,14 +1529,16 @@ export const dumpProcess: (
       out += '  }\n';
     }
   }
-  for (const b of (process as { bindings?: { id: string; block: string }[] }).bindings ?? []) {
+  for (const b of (process as { bindings?: { id: string; block: string }[] })
+    .bindings ?? []) {
     out += '  binding ' + b.id + ' {\n';
     for (const line of b.block.split('\n')) {
       out += line === '' ? '\n' : '  ' + line + '\n';
     }
     out += '  }\n';
   }
-  for (const req of (process as { stepRequires?: string[] }).stepRequires ?? []) {
+  for (const req of (process as { stepRequires?: string[] }).stepRequires ??
+    []) {
     out += '  requires { ' + req + ' }\n';
   }
   // reference_data_registry dumps from the RAW ids (inputRefs): OIML

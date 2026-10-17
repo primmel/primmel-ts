@@ -39,23 +39,42 @@ describe('the structured allowlist keys (W9)', () => {
 
   it('pins the entry to its element', () => {
     const e = entry({ id: '/req/x' });
-    assert.equal(entryMatches(e, issue('requirement /req/x: air inside the formula')), true);
-    assert.equal(entryMatches(e, issue('requirement /req/y: air inside the formula')), false);
+    assert.equal(
+      entryMatches(e, issue('requirement /req/x: air inside the formula')),
+      true,
+    );
+    assert.equal(
+      entryMatches(e, issue('requirement /req/y: air inside the formula')),
+      false,
+    );
   });
 
   it('stays prose-matched without the key', () => {
     const e = entry({});
-    assert.equal(entryMatches(e, issue('requirement /req/y: air inside the formula')), true);
+    assert.equal(
+      entryMatches(e, issue('requirement /req/y: air inside the formula')),
+      true,
+    );
   });
 
   it('the key and the glob compose', () => {
     const e = entry({ id: 'fees_*', match: '*not a declared verdict*' });
     assert.equal(
-      entryMatches(e, issue('uncertainty_budget fees_budget: target "ghost" is not a declared verdict')),
+      entryMatches(
+        e,
+        issue(
+          'uncertainty_budget fees_budget: target "ghost" is not a declared verdict',
+        ),
+      ),
       true,
     );
     assert.equal(
-      entryMatches(e, issue('uncertainty_budget other_budget: target "ghost" is not a declared verdict')),
+      entryMatches(
+        e,
+        issue(
+          'uncertainty_budget other_budget: target "ghost" is not a declared verdict',
+        ),
+      ),
       false,
     );
   });

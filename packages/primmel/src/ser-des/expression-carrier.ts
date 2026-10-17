@@ -70,7 +70,9 @@ export function readArgsBlock(token: string): {
       throw new Error(`limit args: "${name}" binds to nothing`);
     }
     if (at[k] !== '<-') {
-      throw new Error(`limit args: expected "<-" after "${name}" (name <- source)`);
+      throw new Error(
+        `limit args: expected "<-" after "${name}" (name <- source)`,
+      );
     }
     k += 1;
     if (k >= at.length) {

@@ -1364,9 +1364,7 @@ export function checkPackage(
                 `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no declared process names — air inside the formula (expression-identifiers-resolve)`,
               );
             } else if (segs2.length >= 2) {
-              const stp = (proc.steps ?? []).find(
-                ss => ss.id === segs2[1],
-              );
+              const stp = (proc.steps ?? []).find(ss => ss.id === segs2[1]);
               if (!stp) {
                 err(
                   'C171',
@@ -1763,10 +1761,7 @@ export function checkPackage(
         continue;
       }
       const bare = a.source.split(':').pop() ?? a.source;
-      if (
-        !globalExprNames.has(a.source) &&
-        !globalExprNames.has(bare)
-      ) {
+      if (!globalExprNames.has(a.source) && !globalExprNames.has(bare)) {
         err(
           'C171',
           `constraint ${c.id}: argument "${a.name}" binds to "${a.source}", which nothing declares — air inside the formula (expression-identifiers-resolve)`,
@@ -2055,10 +2050,7 @@ export function checkPackage(
       }
       for (const id of new Set(ids.names)) {
         const root = id.split('.')[0]!;
-        if (
-          id.includes('.') &&
-          (root === 'self' || CONTEXT_ROOTS.has(root))
-        ) {
+        if (id.includes('.') && (root === 'self' || CONTEXT_ROOTS.has(root))) {
           continue;
         }
         if (ios.has(id) || ios.has(root)) {

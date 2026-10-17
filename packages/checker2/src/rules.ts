@@ -1759,7 +1759,7 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
               }
               continue;
             }
-          if (kind !== 'observable') {
+            if (kind !== 'observable') {
               if (!DECLARATION_KINDS.has(kind)) {
                 err(
                   'C171',
@@ -1844,9 +1844,7 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         walkLimit('requirement', c.ident, limit, null);
       }
     }
-    for (const c of pkg.constructs.filter(
-      x => x.keyword === 'constraint',
-    )) {
+    for (const c of pkg.constructs.filter(x => x.keyword === 'constraint')) {
       const args: { name: string; source: string }[] = [];
       const argsLine = lines(c).find(l => l.key === 'args');
       if (argsLine) {
@@ -1894,7 +1892,12 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
             ident: '',
             items: [
               ...argItems,
-              { kind: 'line', key: 'expression', tokens: [], blocks: checkLine.blocks },
+              {
+                kind: 'line',
+                key: 'expression',
+                tokens: [],
+                blocks: checkLine.blocks,
+              },
             ],
           },
           null,
@@ -1944,9 +1947,7 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           `uncertainty_budget ${b.ident}: coverage k "${coverage}" is not a positive number (uncertainty-budget-resolves)`,
         );
       }
-      for (const comp of nested(b).filter(
-        x => x.keyword === 'component',
-      )) {
+      for (const comp of nested(b).filter(x => x.keyword === 'component')) {
         const type = facetTokens(comp.items, 'type')[0];
         if (type === 'A') {
           const series = facetTokens(comp.items, 'series')[0];
