@@ -107,12 +107,7 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // output carries every catalog rule.
     const out = execFileSync(
       process.execPath,
-      [
-        '--import',
-        'tsx',
-        join(pkgRoot, 'scripts', 'check.mts'),
-        '--rules',
-      ],
+      ['--import', 'tsx', join(pkgRoot, 'scripts', 'check.mts'), '--rules'],
       {
         encoding: 'utf8',
         env: { ...process.env, npm_config_yes: '' },
