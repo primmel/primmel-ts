@@ -323,3 +323,29 @@ describe('the composition family (C31/C52/C79-graph/C81)', () => {
     );
   });
 });
+
+describe('the run plane (C180/C181)', () => {
+  it('an unknown store fires C180; the agreement leg stays silent', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'conformance_test /conf/x {\n name "X"\n result_forms { probe }\n run {\n  performed_by laboratory\n  store ghost\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C180').map(i => i.rule),
+      ['C180'],
+    );
+  });
+
+  it('a store/form data-class mismatch fires C181', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'class Other#data {\n a: string { modality SHALL }\n}\nform probe {\n data_class Other#data\n}\ndata_registry recs {\n data_class Probe#data\n}\nconformance_test /conf/x {\n name "X"\n result_forms { probe }\n run {\n  performed_by laboratory\n  store recs\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C181').map(i => i.rule),
+      ['C181'],
+    );
+  });
+});

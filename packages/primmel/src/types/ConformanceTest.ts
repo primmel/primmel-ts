@@ -178,6 +178,21 @@ export interface TestProgram<TStep> {
   sourceRefs: { doc: string; clause: string; fragment?: string }[];
 }
 
+/**
+ * One conformance test's declared execution shape: the run is the
+ * INPUT (who performs it, against which trajectory), the test's
+ * result forms are the OUTPUT records, and the store names the data
+ * registry they land in.
+ */
+export interface ConformanceRun {
+  /** laboratory | manufacturer — the closed performer vocabulary. */
+  performedBy: string;
+  /** The data registry the run's collected records land in. */
+  store: string;
+  /** The operational state machine the run's trajectory folds. */
+  trajectory: string;
+}
+
 export default interface ConformanceTest {
   id: string;
   name: string;
@@ -276,6 +291,14 @@ export default interface ConformanceTest {
   instances: TestInstances | null;
   inheritsFrom: string;
   resultForms: string[];
+  /**
+   * The run plane (input ⇒ output ⇒ store): the execution's declared
+   * shape — who performs it, the data registry the collected records
+   * land in, and the operational machine the run's trajectory folds.
+   * The lifecycle (performed | completed | invalid | aborted) is the
+   * language's own closed vocabulary, not a facet.
+   */
+  run?: ConformanceRun;
   /**
    * Artifact definitions a run of this test produces via the instrument
    * under test (TODO.roadmap/09 — model/artifacts.yaml ids; e.g. R 91's

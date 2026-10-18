@@ -7,6 +7,7 @@ import ConformanceTest, {
   PreparationStep,
   StimulusPoint,
   TestProgram,
+  ConformanceRun,
 } from '../../types/ConformanceTest';
 import tokenize from '../tokenize';
 import {
@@ -935,6 +936,45 @@ export const parseConformanceTest: Parser = function (id, data) {
         result.inheritsFrom = stripWrapping(value());
       } else if (keyword === 'result_forms') {
         result.resultForms = readStringList(value());
+      } else if (keyword === 'run') {
+        // The run plane (input ⇒ output ⇒ store): the execution's
+        // declared shape. performed_by is the closed performer
+        // vocabulary; store names the data registry the collected
+        // records land in; trajectory names the operational machine
+        // the run folds. The lifecycle (performed | completed |
+        // invalid | aborted) is the language's own, not a facet.
+        const runBlock = unwrapBlock(value());
+        const rt = tokenizePackage(runBlock);
+        const run: ConformanceRun = {
+          performedBy: '',
+          store: '',
+          trajectory: '',
+        };
+        let ri = 0;
+        while (ri < rt.length) {
+          const rk = rt[ri++];
+          if (ri >= rt.length) {
+            throw new Error(
+              `Parsing error: conformance_test. ID ${id}: run expects a value for ${rk}`,
+            );
+          }
+          if (rk === 'performed_by') {
+            const who = stripWrapping(rt[ri++]);
+            if (who !== 'laboratory' && who !== 'manufacturer') {
+              throw new Error(
+                `Parsing error: conformance_test. ID ${id}: Unknown run performer ${who} (valid: laboratory, manufacturer)`,
+              );
+            }
+            run.performedBy = who;
+          } else if (rk === 'store') {
+            run.store = stripWrapping(rt[ri++]);
+          } else if (rk === 'trajectory') {
+            run.trajectory = stripWrapping(rt[ri++]);
+          } else {
+            ri = skipUnknownValue(rt, ri, rk);
+          }
+        }
+        result.run = run;
       } else if (keyword === 'produces_artifacts') {
         result.producesArtifacts = readStringList(value());
       } else if (keyword === 'report_rows') {
@@ -1266,6 +1306,19 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   }
   if (ct.resultForms.length > 0) {
     out += '  result_forms { ' + ct.resultForms.join(' ') + ' }\n';
+  }
+  if (ct.run) {
+    out += '  run {\n';
+    if (ct.run.performedBy) {
+      out += '    performed_by ' + ct.run.performedBy + '\n';
+    }
+    if (ct.run.store) {
+      out += '    store ' + ct.run.store + '\n';
+    }
+    if (ct.run.trajectory) {
+      out += '    trajectory ' + ct.run.trajectory + '\n';
+    }
+    out += '  }\n';
   }
   if (ct.producesArtifacts && ct.producesArtifacts.length > 0) {
     out += '  produces_artifacts { ' + ct.producesArtifacts.join(' ') + ' }\n';
