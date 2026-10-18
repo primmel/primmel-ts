@@ -378,3 +378,74 @@ describe('the run plane (the applied-input contract)', () => {
     );
   });
 });
+
+describe('the corpus trio (C157/C176/C173 — the register reaches 73)', () => {
+  it('C157: a data_class naming no declared class fires; the pairing stays silent', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs(
+        'data_registry samples {\n title "Samples"\n data_class Missing#data\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(bad)
+        .filter(i => i.rule === 'C157')
+        .map(i => i.rule),
+      ['C157'],
+    );
+    const ok: ParsedPackage = {
+      constructs: constructs(
+        'class Probe#data {\n meter_id: string\n}\ndata_registry samples {\n title "Samples"\n data_class Probe#data\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(ok)
+        .filter(i => i.rule === 'C157')
+        .map(i => i.rule),
+      [],
+    );
+  });
+
+  it('C176: a declared language that is not a generation fires; v3.4 stays silent', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs('package {\n id p\n language tomorrow\n}\n'),
+    };
+    assert.deepEqual(
+      check(bad)
+        .filter(i => i.rule === 'C176')
+        .map(i => i.rule),
+      ['C176'],
+    );
+    const ok: ParsedPackage = {
+      constructs: constructs('package {\n id p\n language v3.4\n}\n'),
+    };
+    assert.deepEqual(
+      check(ok)
+        .filter(i => i.rule === 'C176')
+        .map(i => i.rule),
+      [],
+    );
+  });
+
+  it('C173: a completion naming an undeclared io fires; the declared completion stays silent', () => {
+    const base =
+      'process scale {\n name "Scaling"\n step scale {\n  inputs { filtered_counts e_lim }\n  outputs { indication overload_flag }\n  completion "overload_flag = COUNTS > e_lim"\n }\n}\n';
+    const bad: ParsedPackage = {
+      constructs: constructs(base.replace('COUNTS', 'ghost_counts')),
+    };
+    assert.deepEqual(
+      check(bad)
+        .filter(i => i.rule === 'C173')
+        .map(i => i.rule),
+      ['C173'],
+    );
+    const ok: ParsedPackage = {
+      constructs: constructs(base.replace('COUNTS', 'filtered_counts')),
+    };
+    assert.deepEqual(
+      check(ok)
+        .filter(i => i.rule === 'C173')
+        .map(i => i.rule),
+      [],
+    );
+  });
+});
