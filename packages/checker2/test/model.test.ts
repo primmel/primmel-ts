@@ -141,3 +141,41 @@ describe('the second expression reader: the register-18 completions', () => {
     ]);
   });
 });
+
+describe('C178 legacy-carrier-deprecated (the register grows)', () => {
+  it('a v3.4 package counting its legacy ocl strings fires C178', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n language v3.4\n}\n\nrequirement /req/x {\n name "X"\n limit {\n  expression "ocl{e <= m}"\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C178').map(i => i.rule),
+      ['C178'],
+    );
+  });
+
+  it('a block carrier under the same declaration stays silent', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n language v3.4\n}\n\nrequirement /req/x {\n name "X"\n limit {\n  expression {\n   e <= m\n  }\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C178').map(i => i.rule),
+      [],
+    );
+  });
+
+  it('inert below the armed revision', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n language v3.3\n}\n\nrequirement /req/x {\n name "X"\n limit {\n  expression "ocl{e <= m}"\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C178').map(i => i.rule),
+      [],
+    );
+  });
+});
