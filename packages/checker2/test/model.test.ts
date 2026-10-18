@@ -179,3 +179,78 @@ describe('C178 legacy-carrier-deprecated (the register grows)', () => {
     );
   });
 });
+
+describe('the edition/composition family grows (the register reaches 65)', () => {
+  it('C170: two editions without the mapping artifact fire', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n editions { 2020 2019 }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C170').map(i => i.rule),
+      ['C170'],
+    );
+  });
+
+  it('C78: a backwards validity window fires; a good one stays silent', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n validity { from 2020-01-01 to 2019-01-01 }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(bad).filter(i => i.rule === 'C78').map(i => i.rule),
+      ['C78'],
+    );
+    const good: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n validity { from 2019-01-01 to 2020-01-01 }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(good).filter(i => i.rule === 'C78').map(i => i.rule),
+      [],
+    );
+  });
+
+  it('C85: a baseUrn without a scheme fires; C79 a self-supersede fires', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n baseUrn "no scheme here"\n supersedes { urn:x:self }\n}\n',
+      ),
+    };
+    const rules = check(bad).map(i => i.rule);
+    assert.ok(rules.includes('C85'));
+    const self: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n baseUrn "urn:example:t"\n supersedes { urn:example:t }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(self).filter(i => i.rule === 'C79').map(i => i.rule),
+      ['C79'],
+    );
+  });
+
+  it('C51: an unrecorded conformance test warns; result_forms stays silent', () => {
+    const bare: ParsedPackage = {
+      constructs: constructs(
+        'conformance_test /conf/x {\n name "X"\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(bare).filter(i => i.rule === 'C51').map(i => i.rule),
+      ['C51'],
+    );
+    const recorded: ParsedPackage = {
+      constructs: constructs(
+        'conformance_test /conf/x {\n name "X"\n result_forms { x-record }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(recorded).filter(i => i.rule === 'C51').map(i => i.rule),
+      [],
+    );
+  });
+});
