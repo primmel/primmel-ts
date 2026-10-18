@@ -1907,6 +1907,26 @@ export const CHECK_RULES: CheckRule[] = [
 const byId = new Map(CHECK_RULES.map(r => [r.id, r]));
 
 /** The catalog entry for a rule id, or undefined for an unknown id. */
+/** The `--rules` catalog page: the single source the CLI prints and the
+ *  specs assert — the catalog's publication IS this string. */
+export function formatRules(): string {
+  const fam = (f: string) => f.padEnd(15);
+  const lines: string[] = [];
+  lines.push('primmel check — rule catalog (TODO.roadmap/17)\n');
+  lines.push('id   family          level   severity  name (docs)');
+  for (const r of CHECK_RULES) {
+    lines.push(
+      `${r.id.padEnd(4)} ${fam(r.family)} ${r.level.padEnd(7)} ${r.severity.padEnd(9)} ${r.name} (${r.docs})`,
+    );
+  }
+  lines.push(
+    `\n${CHECK_RULES.length} rules. Default level runs the normal rules; ` +
+      '--audit adds the audit rules + the coverage budgets (C55/C72); --strict ' +
+      'promotes warnings to errors (KNOWN/budgeted issues excepted).',
+  );
+  return lines.join('\n');
+}
+
 export function checkRule(id: string): CheckRule | undefined {
   return byId.get(id);
 }
