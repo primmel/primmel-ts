@@ -421,10 +421,7 @@ import {
 } from './expressions';
 import type { ExprAst } from './expressions';
 import type ConformanceTest from './types/ConformanceTest';
-import type {
-  TestPrecondition,
-  ConformanceRun,
-} from './types/ConformanceTest';
+import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
 import type { FormField } from './types/Form';
 import {
