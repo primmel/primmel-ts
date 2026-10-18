@@ -956,10 +956,7 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
 
   // ── the edition/composition family grows (the register's reach) ────
   {
-    const manifests = [
-      pkg,
-      ...(pkg.siblings ?? []),
-    ]
+    const manifests = [pkg, ...(pkg.siblings ?? [])]
       .map(x => x.constructs.find(c => c.keyword === 'package'))
       .filter((m): m is Construct => !!m);
 
@@ -973,9 +970,10 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       if (editions.length < 2) {
         continue;
       }
-      const dirEntry = pkg.dir === undefined || pkg.files === undefined
-        ? null
-        : (pkg.files ?? []).find(f => f === 'edition-mapping.json');
+      const dirEntry =
+        pkg.dir === undefined || pkg.files === undefined
+          ? null
+          : (pkg.files ?? []).find(f => f === 'edition-mapping.json');
       const siblingFiles = (pkg.siblings ?? []).flatMap(s => s.files ?? []);
       const carried =
         dirEntry !== null || siblingFiles.includes('edition-mapping.json');
@@ -994,10 +992,13 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       const validity = nested(m).find(n => n.keyword === 'validity');
       // the greedy run carries both pairs on one line (`from X to Y`) —
       // facetTokens walks the key/value stream
-      const from = (facetTokens(validity?.items ?? [], 'from')[0] ?? '')
-        .replace(/^"|"$/g, '');
-      const to = (facetTokens(validity?.items ?? [], 'to')[0] ?? '')
-        .replace(/^"|"$/g, '');
+      const from = (
+        facetTokens(validity?.items ?? [], 'from')[0] ?? ''
+      ).replace(/^"|"$/g, '');
+      const to = (facetTokens(validity?.items ?? [], 'to')[0] ?? '').replace(
+        /^"|"$/g,
+        '',
+      );
       if (from === '' && to === '') {
         continue;
       }
@@ -1084,10 +1085,8 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     // evidence — no result_forms, no report_rows, and no form binds its
     // process (warning; the audit family's leg).
     const boundProcesses = new Set(
-      [
-        pkg,
-        ...(pkg.siblings ?? []),
-      ].flatMap(x => x.constructs)
+      [pkg, ...(pkg.siblings ?? [])]
+        .flatMap(x => x.constructs)
         .filter(c => c.keyword === 'form')
         .flatMap(f => tokensOf(f, 'conformance_process')),
     );
@@ -2099,7 +2098,11 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           'check',
         ]);
         const owners: { keyword: string; ident: string; items: Item[] }[] = [];
-        const gather = (keyword: string, ident: string, items: Item[]): void => {
+        const gather = (
+          keyword: string,
+          ident: string,
+          items: Item[],
+        ): void => {
           owners.push({ keyword, ident, items });
           for (const it of items) {
             if (it.kind === 'construct' && it.construct) {
