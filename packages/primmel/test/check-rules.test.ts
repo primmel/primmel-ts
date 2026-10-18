@@ -55,12 +55,12 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`),
       ...Array.from({ length: 44 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 4 }, (_, i) => `C${i + 176}`),
+      ...Array.from({ length: 6 }, (_, i) => `C${i + 176}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128, C130-C173 (phase 2 retired C129), C176-C179 (C174-C175 reserved)',
+      'C1-C128, C130-C173 (phase 2 retired C129), C176-C181 (C174-C175 reserved)',
     );
   });
 

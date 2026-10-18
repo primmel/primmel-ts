@@ -2218,6 +2218,76 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         walkLimit('requirement class', c.ident, limit, members);
       }
     }
+    // The run plane (input ⇒ output ⇒ store): C180/C181 — the run
+    // facet's performer vocabulary, the store's registry, the
+    // trajectory's machine, and the store↔form data-class agreement.
+    {
+      const registryIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'data_registry' && x.ident)
+          .map(x => x.ident),
+      );
+      const machineNames = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'state_machine')
+          .map(x => x.ident),
+      );
+      const registryData = new Map<string, string>();
+      for (const x of closureConstructs.filter(
+        c => c.keyword === 'data_registry' && c.ident,
+      )) {
+        const dc = facetTokens(x.items, 'data_class')[0];
+        if (dc) {
+          registryData.set(x.ident!, dc);
+        }
+      }
+      for (const c of pkg.constructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        const run = nested(c).find(n => n.keyword === 'run');
+        if (!run) {
+          continue;
+        }
+        const who = facetTokens(run.items, 'performed_by')[0];
+        if (who && who !== 'laboratory' && who !== 'manufacturer') {
+          err(
+            'C180',
+            `conformance test ${c.ident}: run performer "${who}" is outside the closed vocabulary (laboratory | manufacturer) (run-plane-shape)`,
+          );
+        }
+        const store = facetTokens(run.items, 'store')[0];
+        if (store && !registryIds.has(store)) {
+          err(
+            'C180',
+            `conformance test ${c.ident}: run store "${store}" names no declared data_registry — the collected records land in a declared store (run-plane-shape)`,
+          );
+        }
+        const trajectory = facetTokens(run.items, 'trajectory')[0];
+        if (trajectory && !machineNames.has(trajectory)) {
+          err(
+            'C180',
+            `conformance test ${c.ident}: run trajectory "${trajectory}" names no declared state_machine — the run folds a declared trajectory (run-plane-shape)`,
+          );
+        }
+        if (store && registryData.has(store)) {
+          const held = registryData.get(store)!;
+          const records = tokensOf(c, 'result_forms');
+          for (const formId of records) {
+            const form = closureConstructs.find(
+              x => x.keyword === 'form' && (x.ident === formId || x.ident === formId.replace(/^\//, '')),
+            );
+            const dc = form ? facetTokens(form.items, 'data_class')[0] : undefined;
+            if (dc && dc !== held) {
+              err(
+                'C181',
+                `conformance test ${c.ident}: the run's store "${store}" holds ${held}, but its record form ${formId} captures ${dc} — the output records and the store must agree on the data class (run-store-binds)`,
+              );
+            }
+          }
+        }
+      }
+    }
+
     // C178 legacy-carrier-deprecated: a package declaring the language
     // revision that arms the deprecation counts its legacy ocl{…} string
     // carriers — the register's reach grows here (the kernel judges the

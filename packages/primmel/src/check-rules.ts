@@ -464,6 +464,22 @@ export const CHECK_RULES: CheckRule[] = [
     'an uncertainty budget targets a declared verdict; a Type A component names a declared captured series, a Type B component states its distribution and half-width; the coverage factor is a positive number',
   ),
   R(
+    'C180',
+    'run-plane-shape',
+    'coverage',
+    'error',
+    'normal',
+    'the run facet of a conformance test declares the execution: the performer is in the closed vocabulary (laboratory | manufacturer), the store names a declared data_registry, the trajectory names a declared state_machine',
+  ),
+  R(
+    'C181',
+    'run-store-binds',
+    'coverage',
+    'error',
+    'normal',
+    'the run store registry and the record forms of the test agree on the data class — the output records and the store hold the same shape',
+  ),
+  R(
     'C173',
     'step-plane-refs-resolve',
     'process',

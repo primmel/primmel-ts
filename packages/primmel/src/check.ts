@@ -421,7 +421,10 @@ import {
 } from './expressions';
 import type { ExprAst } from './expressions';
 import type ConformanceTest from './types/ConformanceTest';
-import type { TestPrecondition } from './types/ConformanceTest';
+import type {
+  TestPrecondition,
+  ConformanceRun,
+} from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
 import type { FormField } from './types/Form';
 import {
@@ -1846,8 +1849,55 @@ export function checkPackage(
       );
     }
   }
+  // ── the run plane (input ⇒ output ⇒ store) ─────────────────────────
+  const runChecks = (t: ConformanceTest): void => {
+    const run = t.run;
+    if (!run) {
+      return;
+    }
+    if (
+      run.performedBy !== 'laboratory' &&
+      run.performedBy !== 'manufacturer'
+    ) {
+      err(
+        'C180',
+        `conformance test ${t.id}: run performer "${run.performedBy}" is outside the closed vocabulary (laboratory | manufacturer) (run-plane-shape)`,
+      );
+    }
+    if (run.store) {
+      const reg = (standard.regs ?? []).find(r => r.id === run.store);
+      if (!reg) {
+        err(
+          'C180',
+          `conformance test ${t.id}: run store "${run.store}" names no declared data_registry — the collected records land in a declared store (run-plane-shape)`,
+        );
+      } else if (reg.data?.id) {
+        for (const formId of t.resultForms ?? []) {
+          const form = (standard.forms ?? []).find(f => f.id === formId);
+          if (form?.dataClassId && form.dataClassId !== reg.data.id) {
+            err(
+              'C181',
+              `conformance test ${t.id}: the run's store "${run.store}" holds ${reg.data.id}, but its record form ${formId} captures ${form.dataClassId} — the output records and the store must agree on the data class (run-store-binds)`,
+            );
+          }
+        }
+      }
+    }
+    if (run.trajectory) {
+      const machine = (standard.stateMachines ?? []).find(
+        m => (m as unknown as { entityName?: string }).entityName === run.trajectory,
+      );
+      if (!machine) {
+        err(
+          'C180',
+          `conformance test ${t.id}: run trajectory "${run.trajectory}" names no declared state_machine — the run folds a declared trajectory (run-plane-shape)`,
+        );
+      }
+    }
+  };
   for (const t of standard.conformanceTests ?? []) {
     const scope = (t.variables ?? []).map(v => v.name);
+    runChecks(t);
     for (const v of t.variables ?? []) {
       if (!v.derivation) {
         continue;
