@@ -100,10 +100,24 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
   });
 
   it('primmel check --rules prints the full catalog', () => {
+    // node + the tsx import hook directly: the npx layer truncates its
+    // child's piped stdout under runner load (a different middle rule
+    // went missing on each failing run — C110 once, C105 once), so the
+    // spawn bypasses it. The assertion is unchanged: the CLI's actual
+    // output carries every catalog rule.
     const out = execFileSync(
-      'npx',
-      ['tsx', join(pkgRoot, 'scripts', 'check.mts'), '--rules'],
-      { encoding: 'utf8' },
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        join(pkgRoot, 'scripts', 'check.mts'),
+        '--rules',
+      ],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, npm_config_yes: '' },
+        maxBuffer: 16 * 1024 * 1024,
+      },
     );
     for (const r of CHECK_RULES) {
       assert.ok(
