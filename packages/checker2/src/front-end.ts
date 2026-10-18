@@ -282,6 +282,9 @@ export interface ParsedPackage {
   constructs: Construct[];
   /** The package directory (absent for in-memory packages). */
   dir?: string;
+  /** The directory's top-level entries (the artifact inventory — C170's
+   *  edition-mapping.json check reads it; absent for in-memory packages). */
+  files?: string[];
   /** Sibling-directory packages (the lineage counterparties). */
   siblings?: ParsedPackage[];
 }

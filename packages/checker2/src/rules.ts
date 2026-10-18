@@ -954,6 +954,160 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     }
   }
 
+  // ── the edition/composition family grows (the register's reach) ────
+  {
+    const manifests = [
+      pkg,
+      ...(pkg.siblings ?? []),
+    ]
+      .map(x => x.constructs.find(c => c.keyword === 'package'))
+      .filter((m): m is Construct => !!m);
+
+    // C170 edition-lineage-declared: a package declaring more than one
+    // edition carries edition-mapping.json — the cross-edition linkage
+    // is an artifact, never implicit.
+    for (const m of manifests) {
+      const editions = tokensOf(m, 'editions').map(e =>
+        e.replace(/^"|"$/g, ''),
+      );
+      if (editions.length < 2) {
+        continue;
+      }
+      const dirEntry = pkg.dir === undefined || pkg.files === undefined
+        ? null
+        : (pkg.files ?? []).find(f => f === 'edition-mapping.json');
+      const siblingFiles = (pkg.siblings ?? []).flatMap(s => s.files ?? []);
+      const carried =
+        dirEntry !== null || siblingFiles.includes('edition-mapping.json');
+      if (!carried) {
+        err(
+          'C170',
+          `package "${m.ident}": declares ${editions.length} editions [${editions.join(', ')}] but ships no edition-mapping.json — the cross-edition linkage is an artifact, never implicit (edition-lineage-declared)`,
+        );
+      }
+    }
+
+    // C78 edition-validity-window: the validity window is well-formed
+    // ISO 8601, `to` not before `from` — the window is the nested
+    // validity construct's from/to lines.
+    for (const m of manifests) {
+      const validity = nested(m).find(n => n.keyword === 'validity');
+      // the greedy run carries both pairs on one line (`from X to Y`) —
+      // facetTokens walks the key/value stream
+      const from = (facetTokens(validity?.items ?? [], 'from')[0] ?? '')
+        .replace(/^"|"$/g, '');
+      const to = (facetTokens(validity?.items ?? [], 'to')[0] ?? '')
+        .replace(/^"|"$/g, '');
+      if (from === '' && to === '') {
+        continue;
+      }
+      const iso = /^\d{4}-\d{2}-\d{2}$/;
+      if (!iso.test(from) || !iso.test(to)) {
+        err(
+          'C78',
+          `package "${m.ident}": the validity window [${from} … ${to}] is not a pair of ISO 8601 dates (edition-validity-window)`,
+        );
+      } else if (to < from) {
+        err(
+          'C78',
+          `package "${m.ident}": the validity window closes (${to}) before it opens (${from}) (edition-validity-window)`,
+        );
+      }
+    }
+
+    // C79 edition-supersedes-resolves (the URN-shape leg): supersedes
+    // and replaces entries are well-formed URNs and never the package's
+    // own base URN.
+    for (const m of manifests) {
+      const selfUrn = (tokensOf(m, 'baseUrn')[0] ?? '').replace(/^"|"$/g, '');
+      for (const key of ['supersedes', 'replaces']) {
+        for (const raw of tokensOf(m, key)) {
+          const urn = raw.replace(/^"|"$/g, '');
+          if (!/^urn:\S+$/.test(urn)) {
+            err(
+              'C79',
+              `package "${m.ident}": ${key} entry "${urn}" is not a well-formed URN (edition-supersedes-resolves)`,
+            );
+          } else if (selfUrn !== '' && urn === selfUrn) {
+            err(
+              'C79',
+              `package "${m.ident}": ${key} names the package's own base URN — an edition never supersedes itself (edition-supersedes-resolves)`,
+            );
+          }
+        }
+      }
+    }
+
+    // C85 baseurn-wellformed: the manifest base URN carries a scheme and
+    // no whitespace or IRI delimiters — the free-string field grounds
+    // every downstream IRI.
+    for (const m of manifests) {
+      const baseUrn = (tokensOf(m, 'baseUrn')[0] ?? '').replace(/^"|"$/g, '');
+      if (baseUrn === '') {
+        continue;
+      }
+      if (!/^[A-Za-z][A-Za-z0-9+.-]*:\S+$/.test(baseUrn)) {
+        err(
+          'C85',
+          `package "${m.ident}": baseUrn "${baseUrn}" is not a well-formed IRI — a scheme, no whitespace (baseurn-wellformed)`,
+        );
+      }
+    }
+
+    // C30 provides-consumed-or-waived: every provides entry a closure
+    // package declares is required or waived downstream (warning — the
+    // deliberate non-consumption is declared, never silent).
+    const consume = new Set();
+    for (const m of manifests) {
+      for (const t of tokensOf(m, 'requires')) {
+        consume.add(t.replace(/^"|"$/g, ''));
+      }
+      for (const t of tokensOf(m, 'waives')) {
+        const tok = t.replace(/^"|"$/g, '');
+        consume.add(tok.includes(':') ? tok.split(':').pop()! : tok);
+      }
+    }
+    for (const m of manifests) {
+      for (const t of tokensOf(m, 'provides')) {
+        const tok = t.replace(/^"|"$/g, '');
+        if (tok !== '' && !consume.has(tok)) {
+          issues.push({
+            rule: 'C30',
+            severity: 'warning',
+            message: `package "${m.ident}" provides "${tok}", which no downstream package requires or waives (provides-consumed-or-waived)`,
+          });
+        }
+      }
+    }
+
+    // C51 coverage-test-evidence: a conformance test leaving no
+    // evidence — no result_forms, no report_rows, and no form binds its
+    // process (warning; the audit family's leg).
+    const boundProcesses = new Set(
+      [
+        pkg,
+        ...(pkg.siblings ?? []),
+      ].flatMap(x => x.constructs)
+        .filter(c => c.keyword === 'form')
+        .flatMap(f => tokensOf(f, 'conformance_process')),
+    );
+    for (const c of pkg.constructs.filter(
+      x => x.keyword === 'conformance_test' && x.ident,
+    )) {
+      const recorded =
+        tokensOf(c, 'result_forms').length > 0 ||
+        tokensOf(c, 'report_rows').length > 0 ||
+        boundProcesses.has(c.ident);
+      if (!recorded) {
+        issues.push({
+          rule: 'C51',
+          severity: 'warning',
+          message: `conformance test ${c.ident}: no form records its evidence — the run happens and nothing permanent records it (coverage-test-evidence)`,
+        });
+      }
+    }
+  }
+
   // C80: every instance's definition_versions pins resolve against the
   // edition register (editions ∪ version).
   const manifestPkg = pkg.constructs.find(c => c.keyword === 'package');

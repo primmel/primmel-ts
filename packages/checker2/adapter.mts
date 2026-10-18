@@ -118,7 +118,10 @@ async function main(): Promise<void> {
       const read = (p: string) => readFileSync(p, 'utf8');
       const loadDir = (d: string) => {
         const files = collectPrlFiles(d, p => readdirSync(p), p => statSync(p).isDirectory());
-        return readPackage(runtime, files, read);
+        const parsed = readPackage(runtime, files, read);
+        parsed.dir = d;
+        parsed.files = existsSync(d) ? readdirSync(d) : [];
+        return parsed;
       };
       const pkg = loadDir(target);
       pkg.dir = resolve(target);
