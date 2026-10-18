@@ -1107,6 +1107,138 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     }
   }
 
+  // ── the composition family (C31) and the coverage judgment (C52) ───
+  {
+    const manifestOf = (x: ParsedPackage): Construct | undefined =>
+      x.constructs.find(c => c.keyword === 'package');
+    const closurePkgs: { id: string; m: Construct; x: ParsedPackage }[] = [
+      pkg,
+      ...(pkg.siblings ?? []),
+      ...(located ? [...located.packages.values()] : []),
+    ]
+      .map(x => ({ x, m: manifestOf(x) }))
+      .filter((e): e is { id: string; m: Construct; x: ParsedPackage } => !!e.m)
+      .map(e => ({
+        // the manifest's id rides its `id` line — `package { … }` carries
+        // no head ident
+        id:
+          e.m.ident ||
+          (e.m.items.find(i => i.kind === 'line' && i.key === 'id')?.tokens[0] ??
+            ''),
+        m: e.m,
+        x: e.x,
+      }));
+
+    // C31 requires-satisfied: every requires entry names a closure
+    // package id or one of its provides entries. The id lists ride
+    // line blocks (`provides { a b }` — the bare words parse as the
+    // block's kwline keys), so read both the line runs and the blocks.
+    const listIds = (m: Construct, key: string): string[] => [
+      ...tokensOf(m, key),
+      ...m.items.flatMap(i =>
+        i.kind === 'line' && i.key === key
+          ? i.blocks.flat().flatMap(b =>
+              b.kind === 'line' && b.key !== undefined
+                ? [b.key, ...b.tokens]
+                : b.tokens,
+            )
+          : [],
+      ),
+    ];
+    for (const { id, m } of closurePkgs) {
+      const provides = new Set(
+        closurePkgs.flatMap(p => listIds(p.m, 'provides')),
+      );
+      for (const raw of listIds(m, 'requires')) {
+        const entry = raw.replace(/^"|"$/g, '');
+        if (entry === '') {
+          continue;
+        }
+        if (
+          closurePkgs.some(p => p.id === entry) ||
+          provides.has(entry)
+        ) {
+          continue;
+        }
+        err(
+          'C31',
+          `package "${id}": requires "${entry}", which no closure package provides and no closure package is — the composition's demands are declarable, never ambient (requires-satisfied)`,
+        );
+      }
+    }
+
+    // C52 coverage-form-judgment: a form binding a conformance process
+    // with no pass_fail judgment and no evaluated field (warning; the
+    // evidence gathered and never weighed).
+    for (const c of pkg.constructs.filter(x => x.keyword === 'form' && x.ident)) {
+      const binds = tokensOf(c, 'conformance_process').length > 0;
+      if (!binds) {
+        continue;
+      }
+      const judged =
+        tokensOf(c, 'pass_fail').length > 0 ||
+        nested(c).some(n => n.keyword === 'pass_fail') ||
+        facetTokens(c.items, 'measurement_method').includes('evaluated');
+      if (!judged) {
+        issues.push({
+          rule: 'C52',
+          severity: 'warning',
+          message: `form ${c.ident}: binds a conformance process with no pass/fail judgment and no evaluated field — evidence gathered and never weighed (coverage-form-judgment)`,
+        });
+      }
+    }
+
+    // C79 edition-supersedes-resolves (the graph leg): the supersedes /
+    // replaces edges over the closure manifests are acyclic. An edge
+    // lands on the closure package whose base URN (or edition register)
+    // carries the target URN.
+    const adj = new Map<string, string[]>();
+    for (const { id, m } of closurePkgs) {
+      const targets: string[] = [];
+      for (const key of ['supersedes', 'replaces']) {
+        for (const raw of tokensOf(m, key)) {
+          const urn = raw.replace(/^"|"$/g, '');
+          const owner = closurePkgs.find(
+            p =>
+              tokensOf(p.m, 'baseUrn').some(b => b.replace(/^"|"$/g, '') === urn) ||
+              tokensOf(p.m, 'editions').some(e => e.replace(/^"|"$/g, '') === urn),
+          );
+          if (owner && owner.id !== id) {
+            targets.push(owner.id);
+          }
+        }
+      }
+      adj.set(id, targets);
+    }
+    const cycle = findCycle(adj);
+    if (cycle) {
+      err(
+        'C79',
+        `the supersedes graph is cyclic: ${cycle.join(' -> ')} — an edition lineage never loops (edition-supersedes-resolves)`,
+      );
+    }
+
+    // C81 product-maps-resolves: a product reference's maps_to targets
+    // resolve against the closure's package ids (the abstract-import
+    // doctrine — the mapping is by reference, never by restatement).
+    for (const { id, m } of closurePkgs) {
+      const kind = (tokensOf(m, 'kind')[0] ?? '').replace(/^"|"$/g, '');
+      if (kind !== 'product_reference') {
+        continue;
+      }
+      const ids = new Set(closurePkgs.map(p => p.id));
+      for (const raw of tokensOf(m, 'maps_to')) {
+        const target = raw.replace(/^"|"$/g, '');
+        if (target !== '' && !ids.has(target)) {
+          err(
+            'C81',
+            `package "${id}": maps_to "${target}", which no closure package declares — the product maps by reference to a declared Recommendation (product-maps-resolves)`,
+          );
+        }
+      }
+    }
+  }
+
   // C80: every instance's definition_versions pins resolve against the
   // edition register (editions ∪ version).
   const manifestPkg = pkg.constructs.find(c => c.keyword === 'package');
