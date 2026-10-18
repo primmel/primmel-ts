@@ -1649,6 +1649,76 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
     }
 
+    // ── C173 step-plane-refs-resolve: a signature step's completion is
+    //     one expression over the step's own declared ios — the
+    //     identifiers resolve to inputs/outputs, the calls stay in the
+    //     closed vocabulary, and nothing in the completion is air.
+    if (c.keyword === 'process') {
+      const stepOf = (
+        st: Construct,
+      ): { ios: Set<string>; completion?: string } => {
+        const ios = new Set<string>();
+        for (const key of ['inputs', 'outputs'] as const) {
+          for (const io of nested(st).filter(n => n.keyword === key)) {
+            for (const i of io.items) {
+              if (i.kind === 'line' && i.key) {
+                for (const t of [i.key, ...i.tokens]) {
+                  ios.add(t);
+                }
+              } else {
+                for (const t of i.tokens) {
+                  ios.add(t);
+                }
+              }
+            }
+          }
+        }
+        return { ios, completion: facetTokens(st.items, 'completion')[0] };
+      };
+      for (const st of nested(c).filter(n => n.keyword === 'step')) {
+        const { ios, completion } = stepOf(st);
+        if (!completion) {
+          continue;
+        }
+        const stId = st.ident ?? '';
+        const src = completion.replace(/^ocl\{/, '').replace(/\}$/, '');
+        let ids;
+        try {
+          ids = readExpression(src, () => null);
+        } catch (e) {
+          err(
+            'C173',
+            `process ${c.ident}: step "${stId}" completion does not parse — ${String((e as Error).message ?? e)} — the completion is one expression over the step's ios (step-plane-refs-resolve)`,
+          );
+          continue;
+        }
+        for (const call of new Set(ids.calls)) {
+          if (!X_FUNCS.has(call)) {
+            err(
+              'C173',
+              `process ${c.ident}: step "${stId}" completion calls "${call}(…)", which is not in the expression function vocabulary (step-plane-refs-resolve)`,
+            );
+          }
+        }
+        for (const id of new Set(ids.names)) {
+          const root = id.split('.')[0]!;
+          if (
+            id.includes('.') &&
+            (root === 'self' || X_CONTEXT_ROOTS.has(root))
+          ) {
+            continue;
+          }
+          if (ios.has(id) || ios.has(root)) {
+            continue;
+          }
+          err(
+            'C173',
+            `process ${c.ident}: step "${stId}" completion names "${id}", which is not a declared io of the step — the completion reads the step's own inputs and outputs (step-plane-refs-resolve)`,
+          );
+        }
+      }
+    }
+
     // ── C122: a scheme type's determination list references declared
     //    scheme activity kinds.
     if (c.keyword === 'scheme_type') {
@@ -2325,6 +2395,45 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
               );
             }
           }
+        }
+      }
+    }
+
+    // C176 language-declared-wellformed: a declared language generation
+    // must be well-formed (v<major>[.<minor>]) — the strict-parse
+    // contract's key; this rule checks the declaration's shape.
+    {
+      const manifest = pkg.constructs.find(c => c.keyword === 'package');
+      const langLine = manifest?.items.find(
+        i => i.kind === 'line' && i.key === 'language',
+      );
+      const lang = (langLine?.tokens ?? []).join(' ');
+      if (lang && !/^v\d+(\.\d+)?$/.test(lang)) {
+        err(
+          'C176',
+          `the declared language "${lang}" is not a generation (v<major>[.<minor>]) (language-declared-wellformed)`,
+        );
+      }
+    }
+
+    // C157 registry-dataclass-resolves: an authored data_class that
+    // names no declared class leaves the registry's rows formless —
+    // the pairing the workspace forms and the pickers key on.
+    {
+      const classIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'class' && x.ident)
+          .map(x => x.ident),
+      );
+      for (const reg of closureConstructs.filter(
+        x => x.keyword === 'data_registry' && x.ident,
+      )) {
+        const dc = facetTokens(reg.items, 'data_class')[0];
+        if (dc && !classIds.has(dc)) {
+          err(
+            'C157',
+            `data_registry ${reg.ident}: the data_class resolves to no declared dataclass — the registry's rows are formless (the pairing the workspace forms and the pickers key on) (registry-dataclass-resolves)`,
+          );
         }
       }
     }
