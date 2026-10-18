@@ -353,3 +353,28 @@ describe('the run plane (C180/C181)', () => {
     );
   });
 });
+
+describe('the run plane (the applied-input contract)', () => {
+  it('C180: a measured variable as a run input fires; declared stays silent', () => {
+    const base =
+      'conformance_test /conf/x {\n name "X"\n variables {\n  variable applied_load { type number unit "kg" source SOURCE }\n }\n run {\n  performed_by laboratory\n  inputs { applied_load }\n }\n}\n';
+    const bad: ParsedPackage = {
+      constructs: constructs(base.replace('SOURCE', 'measured')),
+    };
+    assert.deepEqual(
+      check(bad)
+        .filter(i => i.rule === 'C180')
+        .map(i => i.rule),
+      ['C180'],
+    );
+    const ok: ParsedPackage = {
+      constructs: constructs(base.replace('SOURCE', 'declared')),
+    };
+    assert.deepEqual(
+      check(ok)
+        .filter(i => i.rule === 'C180')
+        .map(i => i.rule),
+      [],
+    );
+  });
+});

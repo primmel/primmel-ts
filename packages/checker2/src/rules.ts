@@ -2269,6 +2269,43 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
             `conformance test ${c.ident}: run trajectory "${trajectory}" names no declared state_machine — the run folds a declared trajectory (run-plane-shape)`,
           );
         }
+        // the applied-input contract: each input names a declared
+        // declared-source variable of the test — a measured variable is
+        // an output of the run, never an input
+        const declaredVars = new Map<string, string>();
+        for (const v of nested(c).filter(n => n.keyword === 'variables')) {
+          for (const vr of nested(v).filter(n => n.keyword === 'variable')) {
+            if (vr.ident) {
+              declaredVars.set(
+                vr.ident,
+                facetTokens(vr.items, 'source')[0] ?? '',
+              );
+            }
+          }
+        }
+        const runInputs: string[] = [];
+        for (const inp of nested(run).filter(n => n.keyword === 'inputs')) {
+          for (const i of inp.items) {
+            if (i.kind === 'line' && i.key) {
+              runInputs.push(i.key, ...i.tokens);
+            } else {
+              runInputs.push(...i.tokens);
+            }
+          }
+        }
+        for (const input of runInputs) {
+          if (!declaredVars.has(input)) {
+            err(
+              'C180',
+              `conformance test ${c.ident}: run input "${input}" names no declared variable — the applied-input contract binds the test's own declarations (run-plane-shape)`,
+            );
+          } else if (declaredVars.get(input) !== 'declared') {
+            err(
+              'C180',
+              `conformance test ${c.ident}: run input "${input}" is source ${declaredVars.get(input)} — an applied input is declared by the author; a measured variable is an output of the run, never an input (run-plane-shape)`,
+            );
+          }
+        }
         if (store && registryData.has(store)) {
           const held = registryData.get(store)!;
           const records = tokensOf(c, 'result_forms');

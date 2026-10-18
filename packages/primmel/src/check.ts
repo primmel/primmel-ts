@@ -1893,6 +1893,20 @@ export function checkPackage(
         );
       }
     }
+    for (const input of run.inputs ?? []) {
+      const v = (t.variables ?? []).find(x => x.name === input);
+      if (!v) {
+        err(
+          'C180',
+          `conformance test ${t.id}: run input "${input}" names no declared variable — the applied-input contract binds the test's own declarations (run-plane-shape)`,
+        );
+      } else if (v.source !== 'declared') {
+        err(
+          'C180',
+          `conformance test ${t.id}: run input "${input}" is source ${v.source} — an applied input is declared by the author; a measured variable is an output of the run, never an input (run-plane-shape)`,
+        );
+      }
+    }
   };
   for (const t of standard.conformanceTests ?? []) {
     const scope = (t.variables ?? []).map(v => v.name);

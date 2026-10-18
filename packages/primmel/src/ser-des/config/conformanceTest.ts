@@ -949,6 +949,7 @@ export const parseConformanceTest: Parser = function (id, data) {
           performedBy: '',
           store: '',
           trajectory: '',
+          inputs: [],
         };
         let ri = 0;
         while (ri < rt.length) {
@@ -970,6 +971,8 @@ export const parseConformanceTest: Parser = function (id, data) {
             run.store = stripWrapping(rt[ri++]);
           } else if (rk === 'trajectory') {
             run.trajectory = stripWrapping(rt[ri++]);
+          } else if (rk === 'inputs') {
+            run.inputs = readStringList(rt[ri++]);
           } else {
             ri = skipUnknownValue(rt, ri, rk);
           }
@@ -1317,6 +1320,9 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     }
     if (ct.run.trajectory) {
       out += '    trajectory ' + ct.run.trajectory + '\n';
+    }
+    if (ct.run.inputs.length > 0) {
+      out += '    inputs { ' + ct.run.inputs.join(' ') + ' }\n';
     }
     out += '  }\n';
   }

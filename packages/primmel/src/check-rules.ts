@@ -469,7 +469,7 @@ export const CHECK_RULES: CheckRule[] = [
     'coverage',
     'error',
     'normal',
-    'the run facet of a conformance test declares the execution: the performer is in the closed vocabulary (laboratory | manufacturer), the store names a declared data_registry, the trajectory names a declared state_machine',
+    'the run facet of a conformance test declares the execution: the performer is in the closed vocabulary (laboratory | manufacturer), the store names a declared data_registry, the trajectory names a declared state_machine, the applied inputs name the test\u2019s declared-source variables (a measured variable is an output, never an input)',
   ),
   R(
     'C181',
