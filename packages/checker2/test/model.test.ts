@@ -268,3 +268,50 @@ describe('the edition/composition family grows (the register reaches 65)', () =>
     );
   });
 });
+
+describe('the composition family (C31/C52/C79-graph/C81)', () => {
+  it('C31: an unsatisfiable requires fires; a provided one stays silent', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n requires { ghost-package }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(bad).filter(i => i.rule === 'C31').map(i => i.rule),
+      ['C31'],
+    );
+    const ok: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n requires { t-thing }\n provides { t-thing }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(ok).filter(i => i.rule === 'C31').map(i => i.rule),
+      [],
+    );
+  });
+
+  it('C52: a process-binding form with no judgment warns', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'form F {\n name "F"\n conformance_process /conf/x\n field a : number { measurement_method direct }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C52').map(i => i.rule),
+      ['C52'],
+    );
+  });
+
+  it('C81: a product reference mapping an unknown package fires', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'package {\n id t\n kind product_reference\n maps_to { ghost-rec }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(pkg).filter(i => i.rule === 'C81').map(i => i.rule),
+      ['C81'],
+    );
+  });
+});
