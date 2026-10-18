@@ -191,6 +191,10 @@ export interface ConformanceRun {
   store: string;
   /** The operational state machine the run's trajectory folds. */
   trajectory: string;
+  /** The applied-input contract: the test's declared-source variables
+   *  whose values the run applies. A measured variable is an output of
+   *  the run — it can never be an applied input (C180). */
+  inputs: string[];
 }
 
 export default interface ConformanceTest {

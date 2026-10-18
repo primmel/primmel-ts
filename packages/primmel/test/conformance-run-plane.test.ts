@@ -45,6 +45,10 @@ conformance_test /conf/x {
     performed_by laboratory
     store probe-records
     trajectory run_states
+    inputs { applied_load }
+  }
+  variables {
+    variable applied_load { type number unit "kg" source declared }
   }
   acceptance_criteria {
     type composite
@@ -112,6 +116,39 @@ describe('the run plane', () => {
       .map(i => i.message);
     assert.ok(msgs.some(m => m.includes('must agree on the data class')));
     rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('the applied-input contract: declared sources pass, measured fire', () => {
+    const dir = make(PKG);
+    const errors = checkPackage(dir)
+      .filter(i => i.severity === 'error' && i.check === 'C180')
+      .map(i => i.message);
+    assert.deepEqual(errors, []);
+    rmSync(dir, { recursive: true, force: true });
+
+    const measured = make(
+      PKG.replace(
+        'variable applied_load { type number unit "kg" source declared }',
+        'variable applied_load { type number unit "kg" source measured }',
+      ),
+    );
+    const msgs = checkPackage(measured)
+      .filter(i => i.check === 'C180')
+      .map(i => i.message);
+    assert.ok(
+      msgs.some(m => m.includes('never an input')),
+      'a measured variable cannot be an applied input',
+    );
+    rmSync(measured, { recursive: true, force: true });
+
+    const ghost = make(
+      PKG.replace('inputs { applied_load }', 'inputs { ghost_input }'),
+    );
+    const gmsgs = checkPackage(ghost)
+      .filter(i => i.check === 'C180')
+      .map(i => i.message);
+    assert.ok(gmsgs.some(m => m.includes('names no declared variable')));
+    rmSync(ghost, { recursive: true, force: true });
   });
 
   it('the performer vocabulary is parse-enforced (the executor pattern)', () => {
