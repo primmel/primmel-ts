@@ -332,7 +332,9 @@ describe('the run plane (C180/C181)', () => {
       ),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C180').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C180')
+        .map(i => i.rule),
       ['C180'],
     );
   });
@@ -344,7 +346,9 @@ describe('the run plane (C180/C181)', () => {
       ),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C181').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C181')
+        .map(i => i.rule),
       ['C181'],
     );
   });

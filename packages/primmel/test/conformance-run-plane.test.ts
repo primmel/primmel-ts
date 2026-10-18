@@ -105,10 +105,7 @@ describe('the run plane', () => {
       PKG.replace(
         'data_registry probe-records {',
         'class OtherRecord#data {\n  meter_id: string { modality SHALL definition "x" }\n}\ndata_registry probe-records {',
-      ).replace(
-        'data_class ProbeRecord#data',
-        'data_class OtherRecord#data',
-      ),
+      ).replace('data_class ProbeRecord#data', 'data_class OtherRecord#data'),
     );
     const msgs = checkPackage(dir)
       .filter(i => i.check === 'C181')

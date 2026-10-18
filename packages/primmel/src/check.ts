@@ -1882,7 +1882,9 @@ export function checkPackage(
     }
     if (run.trajectory) {
       const machine = (standard.stateMachines ?? []).find(
-        m => (m as unknown as { entityName?: string }).entityName === run.trajectory,
+        m =>
+          (m as unknown as { entityName?: string }).entityName ===
+          run.trajectory,
       );
       if (!machine) {
         err(
