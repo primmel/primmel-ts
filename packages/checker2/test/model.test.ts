@@ -150,7 +150,9 @@ describe('C178 legacy-carrier-deprecated (the register grows)', () => {
       ),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C178').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C178')
+        .map(i => i.rule),
       ['C178'],
     );
   });
@@ -162,7 +164,9 @@ describe('C178 legacy-carrier-deprecated (the register grows)', () => {
       ),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C178').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C178')
+        .map(i => i.rule),
       [],
     );
   });
@@ -174,7 +178,9 @@ describe('C178 legacy-carrier-deprecated (the register grows)', () => {
       ),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C178').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C178')
+        .map(i => i.rule),
       [],
     );
   });
@@ -183,12 +189,12 @@ describe('C178 legacy-carrier-deprecated (the register grows)', () => {
 describe('the edition/composition family grows (the register reaches 65)', () => {
   it('C170: two editions without the mapping artifact fire', () => {
     const pkg: ParsedPackage = {
-      constructs: constructs(
-        'package {\n id t\n editions { 2020 2019 }\n}\n',
-      ),
+      constructs: constructs('package {\n id t\n editions { 2020 2019 }\n}\n'),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C170').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C170')
+        .map(i => i.rule),
       ['C170'],
     );
   });
@@ -200,7 +206,9 @@ describe('the edition/composition family grows (the register reaches 65)', () =>
       ),
     };
     assert.deepEqual(
-      check(bad).filter(i => i.rule === 'C78').map(i => i.rule),
+      check(bad)
+        .filter(i => i.rule === 'C78')
+        .map(i => i.rule),
       ['C78'],
     );
     const good: ParsedPackage = {
@@ -209,7 +217,9 @@ describe('the edition/composition family grows (the register reaches 65)', () =>
       ),
     };
     assert.deepEqual(
-      check(good).filter(i => i.rule === 'C78').map(i => i.rule),
+      check(good)
+        .filter(i => i.rule === 'C78')
+        .map(i => i.rule),
       [],
     );
   });
@@ -228,19 +238,21 @@ describe('the edition/composition family grows (the register reaches 65)', () =>
       ),
     };
     assert.deepEqual(
-      check(self).filter(i => i.rule === 'C79').map(i => i.rule),
+      check(self)
+        .filter(i => i.rule === 'C79')
+        .map(i => i.rule),
       ['C79'],
     );
   });
 
   it('C51: an unrecorded conformance test warns; result_forms stays silent', () => {
     const bare: ParsedPackage = {
-      constructs: constructs(
-        'conformance_test /conf/x {\n name "X"\n}\n',
-      ),
+      constructs: constructs('conformance_test /conf/x {\n name "X"\n}\n'),
     };
     assert.deepEqual(
-      check(bare).filter(i => i.rule === 'C51').map(i => i.rule),
+      check(bare)
+        .filter(i => i.rule === 'C51')
+        .map(i => i.rule),
       ['C51'],
     );
     const recorded: ParsedPackage = {
@@ -249,7 +261,9 @@ describe('the edition/composition family grows (the register reaches 65)', () =>
       ),
     };
     assert.deepEqual(
-      check(recorded).filter(i => i.rule === 'C51').map(i => i.rule),
+      check(recorded)
+        .filter(i => i.rule === 'C51')
+        .map(i => i.rule),
       [],
     );
   });
