@@ -5,7 +5,6 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { join } from 'node:path';
 import {
   CHECK_RULES,
   activeRuleIds,
@@ -97,7 +96,7 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     assert.deepEqual(
       [...audit].filter(id => !normal.has(id)).sort(),
       ['C25', 'C51', 'C52', 'C55', 'C71', 'C72'],
-      'the audit-only rules (C71/C72 join with TODO.roadmap/26)',
+      'the audit-only rules (C71/C72 with TODO.roadmap/26)',
     );
   });
 
