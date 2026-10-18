@@ -1927,6 +1927,56 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         walkLimit('requirement class', c.ident, limit, members);
       }
     }
+    // C178 legacy-carrier-deprecated: a package declaring the language
+    // revision that arms the deprecation counts its legacy ocl{…} string
+    // carriers — the register's reach grows here (the kernel judges the
+    // same, inert below the declared revision).
+    {
+      const manifest = pkg.constructs.find(c => c.keyword === 'package');
+      const langLine = manifest?.items.find(
+        i => i.kind === 'line' && i.key === 'language',
+      );
+      const lang = (langLine?.tokens ?? []).join(' ');
+      if (/^v(3\.[4-9]|[4-9]|\d{2})/.test(lang)) {
+        const carriers = new Set([
+          'expression',
+          'derive',
+          'derivation',
+          'check',
+        ]);
+        const owners: { keyword: string; ident: string; items: Item[] }[] = [];
+        const gather = (keyword: string, ident: string, items: Item[]): void => {
+          owners.push({ keyword, ident, items });
+          for (const it of items) {
+            if (it.kind === 'construct' && it.construct) {
+              gather(
+                it.construct.keyword,
+                it.construct.ident ?? '',
+                it.construct.items,
+              );
+            }
+          }
+        };
+        for (const c of pkg.constructs) {
+          gather(c.keyword, c.ident ?? '', c.items);
+        }
+        for (const o of owners) {
+          for (const it of o.items) {
+            if (
+              it.kind === 'line' &&
+              carriers.has(it.key ?? '') &&
+              it.blocks.length === 0 &&
+              it.tokens.some(t => t.includes('ocl{'))
+            ) {
+              err(
+                'C178',
+                `${o.keyword} ${o.ident}: the legacy ocl{…} carrier is deprecated at ${lang} — migrate to the inline block (legacy-carrier-deprecated)`,
+              );
+            }
+          }
+        }
+      }
+    }
     // C179 uncertainty-budget-resolves
     const verdictIds = new Set(
       closureConstructs
