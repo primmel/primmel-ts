@@ -2274,9 +2274,13 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           const records = tokensOf(c, 'result_forms');
           for (const formId of records) {
             const form = closureConstructs.find(
-              x => x.keyword === 'form' && (x.ident === formId || x.ident === formId.replace(/^\//, '')),
+              x =>
+                x.keyword === 'form' &&
+                (x.ident === formId || x.ident === formId.replace(/^\//, '')),
             );
-            const dc = form ? facetTokens(form.items, 'data_class')[0] : undefined;
+            const dc = form
+              ? facetTokens(form.items, 'data_class')[0]
+              : undefined;
             if (dc && dc !== held) {
               err(
                 'C181',
