@@ -103,7 +103,7 @@ import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { fmtPackage, type FmtResult } from '../src/fmt.ts';
-import { CHECK_RULES } from '../src/check-rules.ts';
+import { CHECK_RULES, formatRules } from '../src/check-rules.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
 import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
 import { exportPackageRdf, type RdfExport } from '../src/export/rdf.ts';
