@@ -1123,7 +1123,8 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         // no head ident
         id:
           e.m.ident ||
-          (e.m.items.find(i => i.kind === 'line' && i.key === 'id')?.tokens[0] ??
+          (e.m.items.find(i => i.kind === 'line' && i.key === 'id')
+            ?.tokens[0] ??
             ''),
         m: e.m,
         x: e.x,
@@ -1137,11 +1138,13 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       ...tokensOf(m, key),
       ...m.items.flatMap(i =>
         i.kind === 'line' && i.key === key
-          ? i.blocks.flat().flatMap(b =>
-              b.kind === 'line' && b.key !== undefined
-                ? [b.key, ...b.tokens]
-                : b.tokens,
-            )
+          ? i.blocks
+              .flat()
+              .flatMap(b =>
+                b.kind === 'line' && b.key !== undefined
+                  ? [b.key, ...b.tokens]
+                  : b.tokens,
+              )
           : [],
       ),
     ];
@@ -1154,10 +1157,7 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         if (entry === '') {
           continue;
         }
-        if (
-          closurePkgs.some(p => p.id === entry) ||
-          provides.has(entry)
-        ) {
+        if (closurePkgs.some(p => p.id === entry) || provides.has(entry)) {
           continue;
         }
         err(
@@ -1170,7 +1170,9 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     // C52 coverage-form-judgment: a form binding a conformance process
     // with no pass_fail judgment and no evaluated field (warning; the
     // evidence gathered and never weighed).
-    for (const c of pkg.constructs.filter(x => x.keyword === 'form' && x.ident)) {
+    for (const c of pkg.constructs.filter(
+      x => x.keyword === 'form' && x.ident,
+    )) {
       const binds = tokensOf(c, 'conformance_process').length > 0;
       if (!binds) {
         continue;
@@ -1200,8 +1202,12 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           const urn = raw.replace(/^"|"$/g, '');
           const owner = closurePkgs.find(
             p =>
-              tokensOf(p.m, 'baseUrn').some(b => b.replace(/^"|"$/g, '') === urn) ||
-              tokensOf(p.m, 'editions').some(e => e.replace(/^"|"$/g, '') === urn),
+              tokensOf(p.m, 'baseUrn').some(
+                b => b.replace(/^"|"$/g, '') === urn,
+              ) ||
+              tokensOf(p.m, 'editions').some(
+                e => e.replace(/^"|"$/g, '') === urn,
+              ),
           );
           if (owner && owner.id !== id) {
             targets.push(owner.id);
