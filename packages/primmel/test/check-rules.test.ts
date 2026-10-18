@@ -5,7 +5,6 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import {
   CHECK_RULES,
@@ -15,8 +14,6 @@ import {
 } from '../src/check-rules';
 import { checkPackage } from '../src/check';
 import { R60, R60_AVAILABLE, R60_SKIP } from './helpers/corpus';
-
-const pkgRoot = join(__dirname, '..');
 
 // The corpus/R 60 resolution (env-first, repo-relative default, loud
 // skip) has one home — test/helpers/corpus.ts (TODO.v2/13 item 3c).
