@@ -277,7 +277,9 @@ describe('the composition family (C31/C52/C79-graph/C81)', () => {
       ),
     };
     assert.deepEqual(
-      check(bad).filter(i => i.rule === 'C31').map(i => i.rule),
+      check(bad)
+        .filter(i => i.rule === 'C31')
+        .map(i => i.rule),
       ['C31'],
     );
     const ok: ParsedPackage = {
@@ -286,7 +288,9 @@ describe('the composition family (C31/C52/C79-graph/C81)', () => {
       ),
     };
     assert.deepEqual(
-      check(ok).filter(i => i.rule === 'C31').map(i => i.rule),
+      check(ok)
+        .filter(i => i.rule === 'C31')
+        .map(i => i.rule),
       [],
     );
   });
@@ -298,7 +302,9 @@ describe('the composition family (C31/C52/C79-graph/C81)', () => {
       ),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C52').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C52')
+        .map(i => i.rule),
       ['C52'],
     );
   });
@@ -310,7 +316,9 @@ describe('the composition family (C31/C52/C79-graph/C81)', () => {
       ),
     };
     assert.deepEqual(
-      check(pkg).filter(i => i.rule === 'C81').map(i => i.rule),
+      check(pkg)
+        .filter(i => i.rule === 'C81')
+        .map(i => i.rule),
       ['C81'],
     );
   });
