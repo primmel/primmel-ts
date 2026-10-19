@@ -211,7 +211,6 @@ export function parseDeclarations(
     attributeDefinitions: {},
     capabilities: {},
     behaviors: {},
-    conditionSets: {},
     // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
     subjects: {},
     // The identity slots + aspect register (smart TODO.roadmap/40 batch 3)

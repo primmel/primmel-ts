@@ -133,9 +133,6 @@ import type Note from '../types/Note';
 import type Verdict from '../types/Verdict';
 import type { TestSequence } from '../types/TestSequence';
 import type StateMachine from '../types/StateMachine';
-import type { ConditionSet } from '../types/Subject';
-import type { QuantityRegister } from '../types/Quantity';
-import { loadUnitsDb, unitsDbEntryFor, type UnitsDb } from './unitsdb';
 import type { ApplicabilityEntry } from '../types/Form';
 import type { SpellingEntry } from '../types/Text';
 import type AcceptanceDecision from '../types/Acceptance';
@@ -189,7 +186,6 @@ export type RetrievalUnitKind =
   | 'note'
   | 'state_machine'
   | 'dimension'
-  | 'condition_set'
   | 'process';
 
 /**
@@ -1129,7 +1125,6 @@ const TEXT_ADDRESS_COLLECTIONS: (keyof Standard)[] = [
   'attributeDefinitions',
   'capabilities',
   'behaviors',
-  'conditionSets',
   'subjects',
   'referenceMaterials',
   'artifactDefinitions',
@@ -1666,96 +1661,6 @@ function sequenceUnit(s: TestSequence): UnitContent {
   );
 }
 
-function conditionSetUnit(
-  cs: ConditionSet,
-  registers?: QuantityRegister[],
-  db: UnitsDb | null = null,
-): UnitContent {
-  // One operating-condition tier (reference/rated/limiting — the IEC
-  // procedure packages' severity menus): the entries ride the payload
-  // as typed quantity values (value + unit inseparable, tolerance the
-  // SPECIFIED band per the quantity doctrine), resolved to SI through
-  // the package's own quantity register, so a consumer can evaluate
-  // membership and band checks without re-parsing prose.
-  const unitsBySymbol = new Map<
-    string,
-    { kind: string; factorToSI: number; offsetToSI: number; siUnit: string }
-  >();
-  for (const reg of registers ?? []) {
-    const siUnitByKind = new Map(reg.kinds.map(k => [k.id, k.siUnit]));
-    for (const u of reg.units ?? []) {
-      const siUnit = siUnitByKind.get(u.kind);
-      if (siUnit) {
-        unitsBySymbol.set(u.symbol, {
-          kind: u.kind,
-          factorToSI: u.factorToSI,
-          offsetToSI: u.offsetToSI,
-          siUnit,
-        });
-      }
-    }
-  }
-  const siOf = (
-    value: string | number,
-    unit: string,
-  ): { value: number; unit: string } | undefined => {
-    const def = unitsBySymbol.get(unit);
-    if (!def) {
-      return undefined;
-    }
-    const n = Number(String(value).replace(',', '.'));
-    if (!Number.isFinite(n)) {
-      return undefined;
-    }
-    return { value: n * def.factorToSI + def.offsetToSI, unit: def.siUnit };
-  };
-  const payload: Record<string, unknown> = {
-    role: cs.role,
-    ...(cs.subject ? { subject: cs.subject } : {}),
-    entries: cs.entries.map(e => {
-      const si = siOf(e.value, e.unit);
-      const ud = unitsDbEntryFor(db, e.unit);
-      return {
-        quantity_kind: e.quantityKind,
-        value: e.value,
-        unit: e.unit,
-        tolerance: e.tolerance,
-        ...(si ? { si } : {}),
-        ...(ud
-          ? {
-              unitsdb: {
-                unitsml: ud.unitsml,
-                ...(ud.scale ? { scale: ud.scale } : {}),
-              },
-            }
-          : {}),
-        ...(e.note ? { note: e.note } : {}),
-      };
-    }),
-  };
-  return assemble(
-    {
-      id: `/condition/${cs.id}`,
-      kind: 'condition_set',
-      name: cs.id,
-      statement: [
-        `${cs.role} condition set`,
-        ...(cs.description ? [cs.description] : []),
-        ...cs.entries.map(
-          e =>
-            `${e.quantityKind.replace(/_/g, ' ')}: ${e.value} ${e.unit} ±${e.tolerance}`,
-        ),
-      ].join(' — '),
-      payload,
-    },
-    collectClauses({
-      sourceRefs: cs.sources,
-      refs: cs.refs,
-      source: cs.source,
-    }),
-  );
-}
-
 function noteUnit(n: Note): UnitContent {
   return assemble(
     {
@@ -1906,7 +1811,6 @@ export function exportStandardRetrieval(
   // The UnitsDB binding is environmental: UNITSDB_DIR names a unitsdb
   // checkout (units.json), and condition-set entries enrich with the
   // DB's identifiers and measurement scales. Absent, no enrichment.
-  const unitsDb = loadUnitsDb(process.env.UNITSDB_DIR);
   const pkg = packageBlock(standard);
   // Build the unit contents paired with the KERNEL element id — the
   // address a `text` block targets (a term's variants address
@@ -1952,9 +1856,6 @@ export function exportStandardRetrieval(
   }
   for (const s of standard.testSequences ?? []) {
     push(sequenceUnit(s), s.id);
-  }
-  for (const cs of standard.conditionSets ?? []) {
-    push(conditionSetUnit(cs, standard.quantityRegisters, unitsDb), cs.id);
   }
   for (const n of standard.notes ?? []) {
     push(noteUnit(n), n.id);

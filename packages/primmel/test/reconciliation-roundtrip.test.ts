@@ -43,54 +43,6 @@ describe('dimension value label', () => {
   });
 });
 
-describe('calculation + condition_set source blocks', () => {
-  const SRC = `calculation conversionFactor {
-    name "conversionFactor"
-    identifier "/calc/conversion-factor"
-    category metrological
-    description "Computes the conversion factor f per R 60-3 2.1.2.4"
-    inputs {
-      avgIndicationAt75pct : number { unit "counts" }
-    }
-    output : number { unit "counts/v" name "conversion_factor_f" }
-    expression "ocl{(avgIndicationAt75pct - indicationAtDmin) / (0.75 * n)}"
-    source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.2.4" }
-  }
-
-  condition_set load-cell-reference {
-    role reference
-    entries {
-      temperature { value 20 unit "degC" tolerance 1 }
-    }
-    source { doc "urn:oiml:pub:r:60-2:2021" clause "1.2" }
-  }
-  `;
-
-  it('parses the structured source provenance', () => {
-    const m = load(SRC);
-    assert.deepEqual(m.calculations[0].sourceRef, {
-      doc: 'urn:oiml:pub:r:60-3:2021',
-      clause: '2.1.2.4',
-    });
-    assert.deepEqual(m.conditionSets[0].source, {
-      doc: 'urn:oiml:pub:r:60-2:2021',
-      clause: '1.2',
-    });
-  });
-
-  it('dump round-trips the source blocks (fixpoint)', () => {
-    const d1 = dump(load(SRC));
-    // The canonical spelling (docs/primmel/18 §18.4): URN-anchored
-    // provenance dumps as derives-from ref lines.
-    assert.match(
-      d1,
-      /ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2\.1\.2\.4"/,
-    );
-    assert.match(d1, /ref derives-from "urn:oiml:pub:r:60-2:2021#clause-1\.2"/);
-    assert.equal(dump(load(d1)), d1);
-  });
-});
-
 describe('sentence-level provenance on calculation + conformance_test (TODO.roadmap/26, review I1)', () => {
   // The two inline parsers (calculation `source`, conformance_test
   // `reference`) historically read only doc/clause while their dumpers

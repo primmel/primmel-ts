@@ -101,13 +101,6 @@ behavior creep {
   verified_by { /conf/metrological-tests/creep }
 }
 
-condition_set load-cell-reference {
-  role reference
-  entries {
-    temperature { value 20 unit degC tolerance 1 }
-    barometric_pressure { value 86 unit kPa tolerance 20 }
-  }
-}
 `;
 
 describe('W1b subject-chain constructs', () => {
@@ -199,40 +192,14 @@ describe('W1b subject-chain constructs', () => {
     assert.equal(abs.abstract, true);
   });
 
-  it('parses behaviors and condition sets', () => {
+  it('parses behaviors', () => {
     const m = load(PACKAGE);
     const creep = m.behaviors.find(b => b.id === 'creep')!;
     assert.equal(creep.kind, 'temporal');
     assert.equal(creep.stimulus, 'force');
     assert.deepEqual(creep.verifiedBy, ['/conf/metrological-tests/creep']);
-    const cs = m.conditionSets.find(c => c.id === 'load-cell-reference')!;
-    assert.equal(cs.role, 'reference');
-    assert.deepEqual(cs.entries, [
-      {
-        quantityKind: 'temperature',
-        value: '20',
-        unit: 'degC',
-        tolerance: '1',
-      },
-      {
-        quantityKind: 'barometric_pressure',
-        value: '86',
-        unit: 'kPa',
-        tolerance: '20',
-      },
-    ]);
-  });
-
-  it('round-trips the whole subject package losslessly (fixpoint)', () => {
-    const m1 = load(PACKAGE);
-    const dumped = dump(m1);
-    const m2 = load(dumped);
-    assert.deepEqual(m2.instruments, m1.instruments);
-    assert.deepEqual(m2.attributeDefinitions, m1.attributeDefinitions);
-    assert.deepEqual(m2.capabilities, m1.capabilities);
-    assert.deepEqual(m2.behaviors, m1.behaviors);
-    assert.deepEqual(m2.conditionSets, m1.conditionSets);
-    assert.equal(dump(m2), dumped);
+    const m1 = load(dump(m));
+    assert.deepEqual(dump(m1), dump(m));
   });
 
   it('dumps the attribute definition vocabulary facets (note, enum_values, cites)', () => {

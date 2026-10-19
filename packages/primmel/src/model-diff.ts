@@ -150,7 +150,6 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   attributeDefinitions: 'primary',
   capabilities: 'primary',
   behaviors: 'primary',
-  conditionSets: 'primary',
   instances: 'primary',
   duals: 'primary',
   artifactDefinitions: 'primary',

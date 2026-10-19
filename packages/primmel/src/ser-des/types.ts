@@ -26,7 +26,6 @@ import type {
   Behavior,
   Capability,
   ClassificationDimension,
-  ConditionSet,
   Instrument,
   Subject,
 } from '../types/Subject';
@@ -250,7 +249,6 @@ export interface ParseContext {
   attributeDefinitions: Record<string, AttributeDefinition>;
   capabilities: Record<string, Capability>;
   behaviors: Record<string, Behavior>;
-  conditionSets: Record<string, ConditionSet>;
 
   // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
   subjects: Record<string, Subject>;

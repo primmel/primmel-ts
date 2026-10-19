@@ -440,28 +440,6 @@ quantity_register b {
     assert.ok(c33.every(i => i.severity === 'error'));
   });
 
-  it('condition-set entry with a mismatched unit fails; unmapped units warn', () => {
-    const dir = makeTmpPackage({
-      'reg.prl': QREGISTER,
-      'cs.prl': `condition_set ref {
-  role reference
-  entries {
-    temperature { value 20 unit kg }
-    pressure { value 101.325 unit exotic }
-  }
-}
-`,
-    });
-    const issues = checkPackage(dir).filter(i => i.check === 'C33');
-    const errs = issues.filter(i => i.severity === 'error');
-    const warns = issues.filter(i => i.severity === 'warning');
-    assert.equal(errs.length, 1);
-    assert.ok(errs[0].message.includes('entry "temperature"'));
-    assert.ok(errs[0].message.includes('kind mass'));
-    assert.equal(warns.length, 1);
-    assert.ok(warns[0].message.includes('unit "exotic"'));
-  });
-
   it('symbol/verdict declared kind vs unit kind mismatch fails', () => {
     const dir = makeTmpPackage({
       'reg.prl': QREGISTER,
@@ -732,49 +710,6 @@ attribute_definition n_lc {
     // …and no stray "unmapped unit" warning for the empty token.
     const c33 = checkPackage(dir).filter(i => i.check === 'C33');
     assert.deepEqual(c33, []);
-  });
-});
-
-describe('primmel check — C32 condition-set bare values (INV-1)', () => {
-  it('a numeric entry value (with tolerance) without a unit is bare', () => {
-    const dir = makeTmpPackage({
-      'reg.prl': QREGISTER,
-      'cs.prl': `condition_set ref {
-  role reference
-  entries {
-    temperature { value 20 tolerance 1 }
-  }
-}
-`,
-    });
-    const c32 = checkPackage(dir).filter(i => i.check === 'C32');
-    assert.equal(c32.length, 1);
-    assert.equal(c32[0].severity, 'error');
-    assert.ok(c32[0].message.includes('condition_set ref'));
-    assert.ok(c32[0].message.includes('entry "temperature"'));
-    assert.ok(c32[0].message.includes('inv1-no-bare-quantity'));
-  });
-
-  it('numeric-with-unit and free-text values stay silent', () => {
-    const dir = makeTmpPackage({
-      'reg.prl': QREGISTER,
-      'cs.prl': `condition_set ref {
-  role reference
-  entries {
-    temperature { value 20 unit degC tolerance 1 }
-    humidity { value "local ambient" }
-  }
-}
-`,
-    });
-    const issues = checkPackage(dir).filter(
-      i => i.check === 'C32' || i.check === 'C33',
-    );
-    assert.deepEqual(
-      issues,
-      [],
-      `expected no issues, got:\n${issues.map(i => i.message).join('\n')}`,
-    );
   });
 });
 
