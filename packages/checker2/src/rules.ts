@@ -2744,6 +2744,62 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         const byUrn = new Map(docs.map(d => [d.urn, d]));
         const URN_HASH = /^(urn:[A-Za-z0-9:.-]+)#([A-Za-z0-9./-]+)$/;
         const bindings: { element: string; doc: string; path: string }[] = [];
+        const norm = (
+          doc: string,
+          clause: string,
+          fragment: string,
+        ): { doc: string; path: string } | null => {
+          let d = doc.trim();
+          let path = '';
+          const hash = d.indexOf('#');
+          if (hash >= 0) {
+            path = d.slice(hash + 1);
+            d = d.slice(0, hash);
+          }
+          if (path === '') {
+            const cl = clause.trim();
+            if (cl === '') {
+              return null;
+            }
+            path = /^(clause|table|figure|front)-/.test(cl)
+              ? cl
+              : 'clause-' + cl;
+          }
+          if (fragment.trim() !== '') {
+            path += '/' + fragment.trim();
+          }
+          return { doc: d, path };
+        };
+        // the doc/clause/fragment reader for a nested source/sourceRef block
+        const readDocBlock = (
+          block: Construct,
+        ): { doc: string; path: string } | null => {
+          let doc = '';
+          let clause = '';
+          let fragment = '';
+          for (const si of block.items) {
+            if (si.kind !== 'line') {
+              continue;
+            }
+            if (si.key === 'doc' && si.tokens.length > 0) {
+              doc = si.tokens[0]!;
+              for (let k = 1; k + 1 < si.tokens.length; k += 2) {
+                if (si.tokens[k] === 'clause') {
+                  clause = si.tokens[k + 1] ?? '';
+                } else if (si.tokens[k] === 'fragment') {
+                  fragment = si.tokens[k + 1] ?? '';
+                }
+              }
+            }
+            if (si.key === 'clause') {
+              clause = si.tokens[0] ?? '';
+            }
+            if (si.key === 'fragment') {
+              fragment = si.tokens[0] ?? '';
+            }
+          }
+          return norm(doc, clause, fragment);
+        };
         const harvest = (c: Construct, owner: string): void => {
           const element = c.ident || owner;
           for (const i of c.items) {
@@ -2753,7 +2809,12 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
                 bindings.push({ element, doc: m[1]!, path: m[2]! });
               }
             }
-            if (i.kind === 'line' && i.key === 'source') {
+            // term-style `source "urn#path …"` and `reference "urn#path"`
+            // string lines — the kernel's urnStringBindings channels
+            if (
+              i.kind === 'line' &&
+              (i.key === 'source' || i.key === 'reference')
+            ) {
               for (const t of i.tokens) {
                 const m = URN_HASH.exec(t);
                 if (m) {
@@ -2762,47 +2823,29 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
               }
             }
             if (i.kind === 'construct' && i.construct) {
-              if (i.construct.keyword === 'source') {
-                let doc = '';
-                let clause = '';
-                let fragment = '';
-                for (const si of i.construct.items) {
-                  if (si.kind !== 'line') {
-                    continue;
-                  }
-                  if (si.key === 'doc' && si.tokens.length > 0) {
-                    doc = si.tokens[0]!;
-                    for (let k = 1; k + 1 < si.tokens.length; k += 2) {
-                      if (si.tokens[k] === 'clause') {
-                        clause = si.tokens[k + 1] ?? '';
-                      } else if (si.tokens[k] === 'fragment') {
-                        fragment = si.tokens[k + 1] ?? '';
-                      }
-                    }
-                  }
-                  if (si.key === 'clause') {
-                    clause = si.tokens[0] ?? '';
-                  }
-                  if (si.key === 'fragment') {
-                    fragment = si.tokens[0] ?? '';
-                  }
+              // source { doc … clause … } / sourceRef { … } blocks — the
+              // kernel's isSourceRefLike channels (source, sourceRef,
+              // sources plural, sourceRefs)
+              if (
+                i.construct.keyword === 'source' ||
+                i.construct.keyword === 'sourceRef' ||
+                i.construct.keyword === 'sources' ||
+                i.construct.keyword === 'sourceRefs'
+              ) {
+                const b = readDocBlock(i.construct);
+                if (b) {
+                  bindings.push({ element, doc: b.doc, path: b.path });
                 }
-                let path = '';
-                const hash = doc.indexOf('#');
-                if (hash >= 0) {
-                  path = doc.slice(hash + 1);
-                  doc = doc.slice(0, hash);
-                }
-                if (path === '' && clause !== '') {
-                  path = /^(clause|table|figure|front)-/.test(clause)
-                    ? clause
-                    : 'clause-' + clause;
-                }
-                if (fragment !== '') {
-                  path += '/' + fragment;
-                }
-                if (doc !== '' && path !== '') {
-                  bindings.push({ element, doc, path });
+              }
+              // reference constructs with a urn facet (the structured
+              // citation registry) — the kernel's references[].urn channel
+              if (i.construct.keyword === 'reference') {
+                const urn = facetTokens(i.construct.items, 'urn')[0];
+                if (urn) {
+                  const m = URN_HASH.exec(urn);
+                  if (m) {
+                    bindings.push({ element, doc: m[1]!, path: m[2]! });
+                  }
                 }
               }
               harvest(i.construct, element);
@@ -2891,6 +2934,106 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
               `.primmel-allowlist.prl: ${b.key} "${raw}" is not a non-negative integer (allowlist-malformed)`,
             );
           }
+        }
+      }
+    }
+
+    // ── the state family: C37 (state-fires-resolve) and C40
+    //     (anatomy-state-resolve). C39's gate extraction queues on the
+    //     front-end delivering precondition check-block text; C95's
+    //     cascade routing contract is its own batch.
+    {
+      const machineById = new Map<
+        string,
+        { kind: string; actions: Set<string> }
+      >();
+      for (const sm of closureConstructs.filter(
+        x => x.keyword === 'state_machine' && x.ident,
+      )) {
+        const actions = new Set<string>();
+        for (const t of nested(sm).filter(n => n.keyword === 'transition')) {
+          const fromLine = t.items.find(
+            i2 => i2.kind === 'line' && i2.key === 'from',
+          );
+          if (fromLine) {
+            const ti = fromLine.tokens.indexOf('action');
+            if (ti !== -1 && fromLine.tokens[ti + 1]) {
+              actions.add(fromLine.tokens[ti + 1]!);
+            }
+          }
+        }
+        machineById.set(sm.ident!, {
+          kind: facetTokens(sm.items, 'kind')[0] ?? '',
+          actions,
+        });
+      }
+      // C37: a process bound to a machine (state <machineRef>) fires only
+      // that machine's declared transition actions; a step fires with no
+      // bound machine is air.
+      for (const c2 of pkg.constructs.filter(
+        x => x.keyword === 'process' && x.ident,
+      )) {
+        const bound = facetTokens(c2.items, 'state')[0];
+        const firedSteps: { id: string; fires: string }[] = [];
+        const doesBody = nested(c2).find(n => n.keyword === 'does');
+        for (const st of doesBody
+          ? nested(doesBody).filter(n => n.keyword === 'step')
+          : []) {
+          const fires = facetTokens(st.items, 'fires')[0];
+          if (fires) {
+            firedSteps.push({ id: st.ident ?? '', fires });
+          }
+        }
+        if (firedSteps.length === 0) {
+          continue;
+        }
+        if (!bound) {
+          for (const s2 of firedSteps) {
+            err(
+              'C37',
+              `process ${c2.ident}: step "${s2.id}" fires "${s2.fires}" but the process binds no state machine — declare state <machineRef> (state-fires-resolve)`,
+            );
+          }
+        } else {
+          const m = machineById.get(bound);
+          if (!m) {
+            err(
+              'C37',
+              `process ${c2.ident}: state machine "${bound}" is not declared — step fires cannot resolve (state-fires-resolve)`,
+            );
+          } else {
+            for (const s2 of firedSteps) {
+              if (!m.actions.has(s2.fires)) {
+                err(
+                  'C37',
+                  `process ${c2.ident}: step "${s2.id}" fires "${s2.fires}", which state machine "${bound}" does not declare as a transition action (state-fires-resolve)`,
+                );
+              }
+            }
+          }
+        }
+      }
+      // C40: a subject's HAS state binds a declared OPERATIONAL machine;
+      // a lifecycle machine is the cross-family reference (C38's message).
+      for (const c2 of pkg.constructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        const isBlock = nested(c2).find(n => n.keyword === 'is');
+        const st = isBlock ? facetTokens(isBlock.items, 'state')[0] : undefined;
+        if (!st) {
+          continue;
+        }
+        const m = machineById.get(st);
+        if (!m) {
+          err(
+            'C40',
+            `subject ${c2.ident}: has.state "${st}" is not a declared state machine — a subject's HAS state binds a declared operational machine (anatomy-state-resolves)`,
+          );
+        } else if (m.kind !== 'operational') {
+          err(
+            'C38',
+            `subject ${c2.ident}: has.state "${st}" is a lifecycle state machine — a subject's HAS state is its OPERATIONAL machine; workflow lifecycle state lives on entities (state-family-separation)`,
+          );
         }
       }
     }
