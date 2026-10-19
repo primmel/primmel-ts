@@ -306,9 +306,13 @@ export function tokenizeAllowlist(text: string): string[] {
   while (i < text.length) {
     const c = text[i]!;
     if (c === '#') {
-      while (i < text.length && text[i] !== '\n') i++;
+      while (i < text.length && text[i] !== '\n') {
+        i++;
+      }
     } else if (c === '/' && text[i + 1] === '/') {
-      while (i < text.length && text[i] !== '\n') i++;
+      while (i < text.length && text[i] !== '\n') {
+        i++;
+      }
     } else if (c === '\n' || c === ' ' || c === '\t' || c === '\r') {
       i++;
     } else if (c === '"') {
@@ -381,11 +385,17 @@ export function parseAllowlist(text: string): {
       while (i < t.length && t[i] !== '}') {
         const key = strip(t[i++]!);
         const value = strip(t[i++] ?? '');
-        if (key === 'rule') e.rule = value;
-        else if (key === 'match') e.match = value;
-        else if (key === 'id') e.id = value;
-        else if (key === 'reason') e.reason = value;
-        else if (key === 'audit_ref') e.auditRef = value;
+        if (key === 'rule') {
+          e.rule = value;
+        } else if (key === 'match') {
+          e.match = value;
+        } else if (key === 'id') {
+          e.id = value;
+        } else if (key === 'reason') {
+          e.reason = value;
+        } else if (key === 'audit_ref') {
+          e.auditRef = value;
+        }
       }
       i++;
       entries.push(e);
