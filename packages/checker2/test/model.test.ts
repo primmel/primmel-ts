@@ -700,3 +700,82 @@ describe('the process flow family (C16/C58/C12/C13 — the register reaches 80)'
     assert.equal(warned[0]!.severity, 'warning');
   });
 });
+
+describe('the state family (C37/C40/C38 — the register reaches 82)', () => {
+  const BASE =
+    'state_machine run_states {\n kind operational\n initial idle\n state idle\n state done\n transition finish { from idle to done action measured }\n}\nprocess scale {\n name "Scaling"\n state run_states\n does {\n  step weigh {\n   fires measured\n   inputs { raw }\n   outputs { out }\n  }\n }\n}\n';
+
+  it('C37: a fires naming no transition action fires; the declared action stays silent', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs(BASE.replace('fires measured', 'fires ghost')),
+    };
+    assert.deepEqual(
+      check(bad)
+        .filter(i => i.rule === 'C37')
+        .map(i => i.rule),
+      ['C37'],
+    );
+    assert.deepEqual(
+      check({ constructs: constructs(BASE) }).filter(i => i.rule === 'C37'),
+      [],
+    );
+    const unbound: ParsedPackage = {
+      constructs: constructs(BASE.replace(' state run_states\n', '')),
+    };
+    assert.deepEqual(
+      check(unbound)
+        .filter(i => i.rule === 'C37')
+        .map(i => i.rule),
+      ['C37'],
+    );
+    const noMachine: ParsedPackage = {
+      constructs: constructs(
+        BASE.replace('state_machine run_states {', 'state_machine other {'),
+      ),
+    };
+    assert.deepEqual(
+      check(noMachine)
+        .filter(i => i.rule === 'C37')
+        .map(i => i.rule),
+      ['C37'],
+    );
+  });
+
+  it('C40: a subject HAS state binds a declared operational machine; lifecycle is C38; unknown is C40', () => {
+    const base =
+      'state_machine run_states {\n kind operational\n initial idle\n state idle\n}\nstate_machine workflow {\n kind lifecycle\n initial open\n state open\n}\n';
+    const ok: ParsedPackage = {
+      constructs: constructs(
+        base + 'subject S {\n is {\n  state run_states\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(ok)
+        .filter(i => i.rule === 'C40' || i.rule === 'C38')
+        .map(i => i.rule),
+      [],
+    );
+    const lifecycle: ParsedPackage = {
+      constructs: constructs(
+        base + 'subject S {\n is {\n  state workflow\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(lifecycle)
+        .filter(i => i.rule === 'C38')
+        .map(i => i.rule),
+      ['C38'],
+    );
+    const unknown: ParsedPackage = {
+      constructs: constructs(
+        base + 'subject S {\n is {\n  state ghost\n }\n}\n',
+      ),
+    };
+    assert.deepEqual(
+      check(unknown)
+        .filter(i => i.rule === 'C40')
+        .map(i => i.rule),
+      ['C40'],
+    );
+  });
+});
