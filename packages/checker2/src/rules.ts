@@ -1724,6 +1724,188 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
     }
 
+    // ── the process flow family: C16, C58, C12, C13 (the batch after
+    //     C173's step-plane leg) ──
+    if (c.keyword === 'activity_archetype') {
+      const parent = facetTokens(c.items, 'parent')[0];
+      if (parent) {
+        const ids = new Set(
+          closureConstructs
+            .filter(x => x.keyword === 'activity_archetype' && x.ident)
+            .map(x => x.ident!),
+        );
+        if (!ids.has(parent)) {
+          err(
+            'C58',
+            `activity_archetype ${c.ident}: parent "${parent}" is not a declared activity archetype (activity-kind-resolves)`,
+          );
+        }
+      }
+    }
+    if (c.keyword === 'process' && c.ident) {
+      // The flow family applies only to the EXECUTABLE form: the steps
+      // live in a `does` body (the kernel's p.does gate — a process
+      // with bare signature-steps is the step plane, C173's, not this
+      // family's).
+      const doesBody = nested(c).find(n => n.keyword === 'does');
+      if (!doesBody) {
+        // fall through to the signature realization below? No — the
+        // kernel's C13 also reads p.does; without it the whole family
+        // is out of scope. Use the label jump via an else-less block.
+      } else {
+        const steps = nested(doesBody).filter(n => n.keyword === 'step');
+        // C16: step ids are unique within one does body.
+        const seenSteps = new Set<string>();
+        for (const st of steps) {
+          const id = st.ident ?? '';
+          if (seenSteps.has(id)) {
+            err(
+              'C16',
+              `process ${c.ident}: duplicate step id "${id}" in the does body (process-step-ids-unique)`,
+            );
+          }
+          seenSteps.add(id);
+        }
+        // C58: activity kinds resolve against the declared archetypes
+        // (register-gated — an empty register is out of scope, not air).
+        const archetypeIds = new Set(
+          closureConstructs
+            .filter(x => x.keyword === 'activity_archetype' && x.ident)
+            .map(x => x.ident!),
+        );
+        if (archetypeIds.size > 0) {
+          for (const kind of tokensOf(c, 'activity_kind')) {
+            if (!archetypeIds.has(kind)) {
+              err(
+                'C58',
+                `process ${c.ident}: activity_kind "${kind}" is not a declared activity archetype (activity-kind-resolves)`,
+              );
+            }
+          }
+        }
+        // C12: step io and gateway self-gates name declared registers or
+        // signature parameters (state is a declared HAS).
+        const declared = new Set<string>(['state']);
+        const regs = nested(c).find(n => n.keyword === 'registers');
+        for (const l of regs ? regs.items : []) {
+          if (l.kind === 'line' && l.key) {
+            declared.add(l.key);
+          }
+        }
+        const sig = nested(c).find(n => n.keyword === 'signature');
+        const sigOf = (key: 'inputs' | 'outputs'): string[] => {
+          const side = sig
+            ? nested(sig).find(n => n.keyword === key)
+            : undefined;
+          if (!side) {
+            return [];
+          }
+          return side.items.flatMap(i =>
+            i.kind === 'construct' && i.construct
+              ? i.construct.ident
+                ? [i.construct.ident]
+                : []
+              : i.kind === 'line' && i.key
+                ? [i.key, ...i.tokens]
+                : i.tokens,
+          );
+        };
+        for (const n of sigOf('inputs')) {
+          declared.add(n);
+        }
+        for (const n of sigOf('outputs')) {
+          declared.add(n);
+        }
+        const stepIo = (st: Construct, key: 'inputs' | 'outputs'): string[] => {
+          const out: string[] = [];
+          for (const io of nested(st).filter(n => n.keyword === key)) {
+            for (const i of io.items) {
+              if (i.kind === 'line' && i.key) {
+                out.push(i.key, ...i.tokens);
+              } else {
+                out.push(...i.tokens);
+              }
+            }
+          }
+          return out;
+        };
+        for (const st of steps) {
+          for (const n of stepIo(st, 'inputs')) {
+            if (!declared.has(n)) {
+              err(
+                'C12',
+                `process ${c.ident}: step "${st.ident}" names undeclared register "${n}" (process-flow-names-resolve)`,
+              );
+            }
+          }
+          for (const n of stepIo(st, 'outputs')) {
+            if (!declared.has(n)) {
+              err(
+                'C12',
+                `process ${c.ident}: step "${st.ident}" names undeclared register "${n}" (process-flow-names-resolve)`,
+              );
+            }
+          }
+        }
+        for (const g of nested(doesBody).filter(n => n.keyword === 'gateway')) {
+          for (const cond of tokensOf(g, 'condition')) {
+            for (const m of cond.matchAll(
+              /\bself\.([A-Za-z_][A-Za-z0-9_]*)/g,
+            )) {
+              if (!declared.has(m[1]!)) {
+                err(
+                  'C12',
+                  `process ${c.ident}: gateway "${g.ident}" edge condition references undeclared register "${m[1]}" (process-flow-names-resolve)`,
+                );
+              }
+            }
+          }
+        }
+        // C13: the executable steps realize the signature — every OUT
+        // parameter is written (error), every IN parameter is read
+        // (warning).
+        if (sig) {
+          const written = new Set<string>();
+          const read = new Set<string>();
+          for (const st of steps) {
+            for (const n of stepIo(st, 'outputs')) {
+              written.add(n);
+            }
+            for (const n of stepIo(st, 'inputs')) {
+              read.add(n);
+            }
+            for (const w of tokensOf(st, 'wait')) {
+              read.add(w);
+            }
+            for (const b of nested(st).filter(n => n.keyword === 'binding')) {
+              for (const t of b.items) {
+                if (t.kind === 'line' && t.key) {
+                  (t.key === 'to' ? written : read).add(t.tokens[0] ?? t.key);
+                }
+              }
+            }
+          }
+          for (const o of sigOf('outputs')) {
+            if (!written.has(o)) {
+              err(
+                'C13',
+                `process ${c.ident}: OUT parameter "${o}" is never written by any step (process-signature-realized)`,
+              );
+            }
+          }
+          for (const i of sigOf('inputs')) {
+            if (!read.has(i)) {
+              issues.push({
+                rule: 'C13',
+                severity: 'warning',
+                message: `process ${c.ident}: IN parameter "${i}" is never read by any step (process-signature-realized)`,
+              });
+            }
+          }
+        }
+      }
+    }
+
     // ── C122: a scheme type's determination list references declared
     //    scheme activity kinds.
     if (c.keyword === 'scheme_type') {

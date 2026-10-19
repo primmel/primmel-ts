@@ -603,3 +603,88 @@ describe('the manifest-input increment (C169 + C56 — the register reaches 76)'
     );
   });
 });
+
+describe('the process flow family (C16/C58/C12/C13 — the register reaches 80)', () => {
+  const BASE =
+    'activity_archetype verification { description "V" }\nprocess scale {\n name "Scaling"\n activity_kind verification\n signature {\n  inputs { raw }\n  outputs { indication }\n }\n registers { e_lim : number filtered : number }\n does {\n  step a {\n   inputs { raw e_lim }\n   outputs { filtered }\n  }\n  step b {\n   inputs { filtered e_lim }\n   outputs { indication }\n  }\n }\n}\n';
+
+  it('C16: a duplicate step id fires; unique ids stay silent', () => {
+    const dup = BASE.replace(
+      'step b {',
+      'step a {\n  outputs { x }\n }\n step b {',
+    );
+    assert.deepEqual(
+      check({ constructs: constructs(dup) }).filter(i => i.rule === 'C16'),
+      [
+        {
+          rule: 'C16',
+          severity: 'error',
+          message:
+            'process scale: duplicate step id "a" in the does body (process-step-ids-unique)',
+        },
+      ],
+    );
+    assert.deepEqual(
+      check({ constructs: constructs(BASE) }).filter(i => i.rule === 'C16'),
+      [],
+    );
+  });
+
+  it('C58: an unknown activity kind fires; the register-gate keeps archetype-less trees silent', () => {
+    const bad = BASE.replace('verification', 'ghosting');
+    assert.deepEqual(
+      check({ constructs: constructs(bad) })
+        .filter(i => i.rule === 'C58')
+        .map(i => i.rule),
+      ['C58'],
+    );
+    const ungated = 'process p {\n name "P"\n activity_kind anything\n}\n';
+    assert.deepEqual(
+      check({ constructs: constructs(ungated) }).filter(i => i.rule === 'C58'),
+      [],
+    );
+  });
+
+  it('C12: a step io naming no register or parameter fires; gateway self-gates too', () => {
+    const bad = BASE.replace(
+      'inputs { filtered e_lim }',
+      'inputs { ghost e_lim }',
+    );
+    assert.deepEqual(
+      check({ constructs: constructs(bad) })
+        .filter(i => i.rule === 'C12')
+        .map(i => i.rule),
+      ['C12'],
+    );
+    const gated = BASE.replace(
+      'step b {',
+      'gateway g {\n  condition "self.overload -> true"\n  to done\n }\n step b {',
+    );
+    assert.equal(
+      check({ constructs: constructs(gated) }).filter(i => i.rule === 'C12')
+        .length,
+      1,
+    );
+  });
+
+  it('C13: an unwritten OUT fires an error; an unread IN warns', () => {
+    const unwritten = BASE.replace(
+      'outputs { indication }\n  }',
+      'outputs { other }\n  }',
+    );
+    const found = check({ constructs: constructs(unwritten) }).filter(
+      i => i.rule === 'C13',
+    );
+    assert.equal(found.length, 1);
+    assert.equal(found[0]!.severity, 'error');
+    const unread = BASE.replace(
+      'step a {\n   inputs { raw e_lim }',
+      'step a {\n   inputs { e_lim }',
+    );
+    const warned = check({ constructs: constructs(unread) }).filter(
+      i => i.rule === 'C13',
+    );
+    assert.equal(warned.length, 1);
+    assert.equal(warned[0]!.severity, 'warning');
+  });
+});
