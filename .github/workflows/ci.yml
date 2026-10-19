@@ -45,12 +45,12 @@ jobs:
         run: yarn test:conformance
       - name: The second checker's corpus leg (parsanol from npm — no checkout needed)
         run: |
-          mkdir -p .ci-parsanol
-          cd .ci-parsanol
+          SCRATCH="$(mktemp -d)"
+          cd "$SCRATCH"
           npm init -y > /dev/null 2>&1
           npm install parsanol --no-audit --no-fund
-          cd ..
-          PRIMMEL_PARSANOL_TS="$PWD/.ci-parsanol/node_modules/parsanol" yarn test:conformance:checker2
+          cd "$GITHUB_WORKSPACE"
+          PRIMMEL_PARSANOL_TS="$SCRATCH/node_modules/parsanol" yarn test:conformance:checker2
       - name: Build package
         run: yarn build
       - name: Exports-map proof (the built package's subpaths)
