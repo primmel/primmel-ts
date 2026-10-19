@@ -19,7 +19,7 @@ import {
   readPackage,
   documentConstructs,
 } from './src/front-end.ts';
-import type { Item } from './src/front-end.ts';
+import { parseAllowlist } from './src/front-end.ts';
 import { resolve } from 'node:path';
 import { check } from './src/rules.ts';
 
@@ -145,20 +145,12 @@ async function main(): Promise<void> {
           // An unparseable manifest rides the kernel's C73, not C169.
         }
       }
+      // The allowlist is NOT package syntax — the package grammar does
+      // not capture it; the parser is checker2's own.
       const allowlistFiles = manifestFiles.filter(x => x.endsWith('.primmel-allowlist.prl'));
-      let allowlist: { entries: ReturnType<typeof documentConstructs>; lines: Item[] } | undefined;
+      let allowlist: ReturnType<typeof parseAllowlist> | undefined;
       if (allowlistFiles.length > 0) {
-        try {
-          const als = documentConstructs(runtime.parseShape(read(allowlistFiles[0]!)));
-          allowlist = {
-            entries: als.filter(c => c.keyword === 'allowlist_entry'),
-            lines: als
-              .filter(c => c.keyword !== 'allowlist_entry')
-              .flatMap(c => c.items),
-          };
-        } catch {
-          // An unparseable allowlist rides the kernel's C56 file-level leg.
-        }
+        allowlist = parseAllowlist(read(allowlistFiles[0]!));
       }
       const loadDir = (d: string) => {
         const files = collectPrlFiles(d, p => readdirSync(p), p => statSync(p).isDirectory());
