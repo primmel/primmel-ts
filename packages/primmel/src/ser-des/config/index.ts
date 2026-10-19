@@ -135,7 +135,6 @@ import {
   attributeDefinitionConstruct,
   capabilityConstruct,
   behaviorConstruct,
-  conditionSetConstruct,
   subjectConstruct,
 } from './subject';
 import { instanceConstruct } from './instance';
@@ -670,7 +669,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   attributeDefinitionConstruct as ConstructDefinition,
   capabilityConstruct as ConstructDefinition,
   behaviorConstruct as ConstructDefinition,
-  conditionSetConstruct as ConstructDefinition,
   conformanceClassConstruct as ConstructDefinition,
   defineConstruct({
     keyword: 'conformance_test',

@@ -541,9 +541,6 @@ const DIM_ALIASES: Record<string, string> = {
   humidity_class: 'humidity_symbol',
 };
 
-/** A bare numeric literal (same shape as ser-des/config/quantity.ts NUMERIC). */
-const NUMERIC_TOKEN = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
-
 function isIdentityPath(path: string): boolean {
   return IDENTITY_PREFIXES.some(p => path.startsWith(p));
 }
@@ -6101,34 +6098,6 @@ export function checkPackage(
   // C32/C33 — condition-set entries. C32: a NUMERIC entry value (with or
   // without tolerance) stated without a unit is a bare physical quantity —
   // INV-1 (free-text values like "local ambient" stay legal). C33: the
-  // entry's unit must measure the entry's declared quantity kind.
-  for (const cs of standard.conditionSets ?? []) {
-    for (const e of cs.entries ?? []) {
-      if (!e.unit) {
-        if (NUMERIC_TOKEN.test(e.value)) {
-          err(
-            'C32',
-            `condition_set ${cs.id}: entry "${e.quantityKind}" is a bare physical value — a numeric condition value carries a unit — INV-1: no bare numbers (inv1-no-bare-quantity)`,
-          );
-        }
-        continue;
-      }
-      const eKind = kindOfUnit(e.unit);
-      if (eKind === undefined) {
-        if (registersExist) {
-          warn(
-            'C33',
-            `condition_set ${cs.id}: entry "${e.quantityKind}" carries unit "${e.unit}", which no quantity_register declares (quantity-coherence)`,
-          );
-        }
-      } else if (kindDecl.has(e.quantityKind) && eKind !== e.quantityKind) {
-        err(
-          'C33',
-          `condition_set ${cs.id}: entry "${e.quantityKind}" carries unit "${e.unit}" (kind ${eKind}) — the unit does not measure the entry's quantity kind (quantity-coherence)`,
-        );
-      }
-    }
-  }
 
   // C33 — symbols and verdict quantities: a declared quantity_kind must
   // agree with the declared unit's kind.
@@ -8702,7 +8671,6 @@ export function checkPackage(
     collect('attribute_definition', standard.attributeDefinitions ?? []);
     collect('capability', standard.capabilities ?? []);
     collect('behavior', standard.behaviors ?? []);
-    collect('condition_set', standard.conditionSets ?? []);
     collect('requirement', standard.requirements ?? []);
     collect('conformance_test', standard.conformanceTests ?? []);
     collect('form', standard.forms ?? []);
@@ -9522,7 +9490,6 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
     'attributeDefinitions',
     'capabilities',
     'behaviors',
-    'conditionSets',
     'subjects',
     'referenceMaterials',
     'artifactDefinitions',
@@ -9806,9 +9773,6 @@ export function checkDeclaredPredicates(standard: Standard): CheckIssue[] {
   }
   for (const s of standard.testSequences ?? []) {
     visit(`test_sequence ${s.id}`, s.refs);
-  }
-  for (const c of standard.conditionSets ?? []) {
-    visit(`condition_set ${c.id}`, c.refs);
   }
   for (const i of standard.instruments ?? []) {
     visit(`instrument ${i.id}`, i.refs);

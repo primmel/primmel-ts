@@ -36,10 +36,10 @@ describe('phase 2 triage dispositions', () => {
     }
   });
 
-  it('the deprecation report carries exactly the armed register (condition_set)', () => {
+  it('no construct carries a deprecation note — the report is empty', () => {
     assert.deepEqual(
       CONSTRUCTS.filter(c => c.deprecated).map(c => c.keyword),
-      ['condition_set'],
+      [],
     );
     const issues = checkPackage(
       makePackage('instrument X { definition "X." }'),

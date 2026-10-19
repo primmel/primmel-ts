@@ -499,13 +499,9 @@ attribute_definition e_max {
       rmSync(dir, { recursive: true, force: true });
     }
   });
-  it('condition sets cover every repeated source block (the sources-plural surface)', () => {
-    const cond = `condition_set reference-conditions {
-  role reference
-  subject T
-  entries {
-    temperature { value 20 unit "degC" }
-  }
+  it('repeated source blocks on one element all bind (the sources-plural surface)', () => {
+    const cond = `requirement /req/reference-conditions {
+  name "Reference conditions"
   source { doc "${URN}" clause "2.12.1" }
   source { doc "${URN}" clause "2.2" }
 }

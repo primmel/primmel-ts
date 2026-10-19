@@ -25,7 +25,6 @@ import type {
   Behavior,
   Capability,
   ClassificationDimension,
-  ConditionSet,
   Instrument,
   Subject,
 } from './Subject';
@@ -182,7 +181,6 @@ export default interface Standard {
   attributeDefinitions: AttributeDefinition[];
   capabilities: Capability[];
   behaviors: Behavior[];
-  conditionSets: ConditionSet[];
 
   // Primmel v3 subject anatomy (is/has/does — TODO.roadmap/01)
   subjects: Subject[];

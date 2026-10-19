@@ -142,8 +142,6 @@ import type {
   Behavior,
   Capability,
   ClassificationDimension,
-  ConditionEntry,
-  ConditionSet,
   DimensionValue,
   Instrument,
   InstrumentComponent,
@@ -1420,175 +1418,6 @@ const dumpBehavior = function (b: Behavior): string {
 
 // ── condition_set ────────────────────────────────────────────────────
 
-const parseConditionSet: ConstructDefinition['parse'] = function (id, data) {
-  const result: ConditionSet = {
-    id,
-    role: '',
-    entries: [],
-    source: null,
-    sources: [],
-    referenceIds: [],
-  };
-
-  const t = tokenizePackage(data);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'role') {
-      result.role = stripWrapping(t[i++]);
-    } else if (cmd === 'subject') {
-      result.subject = stripWrapping(t[i++]);
-    } else if (cmd === 'description') {
-      result.description = stripWrapping(t[i++]);
-    } else if (cmd === 'entries') {
-      result.entries = parseConditionEntries(unwrapBlock(t[i++]));
-    } else if (cmd === 'source') {
-      // Repeated source blocks accumulate; `source` stays the first entry.
-      const src = readSource(unwrapBlock(t[i++]));
-      result.sources!.push(src);
-      if (!result.source) {
-        result.source = src;
-      }
-    } else if (cmd === 'ref') {
-      // The unified typed reference (docs/primmel/18): derives-from folds
-      // onto the source/sources provenance channel, cites onto
-      // referenceIds, the rest stay as refs.
-      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
-      i = rr.next;
-      if (rr.ref.predicate === 'derives-from') {
-        const b = refTargetToSourceRef(rr.ref.target);
-        if (b) {
-          result.sources!.push(b);
-          if (!result.source) {
-            result.source = b;
-          }
-        } else {
-          (result.refs ??= []).push(rr.ref);
-        }
-      } else if (rr.ref.predicate === 'cites') {
-        result.referenceIds.push(rr.ref.target);
-      } else {
-        (result.refs ??= []).push(rr.ref);
-      }
-    } else if (cmd === 'corresponds') {
-      // The per-node correspondence annotation (MN 114 clause 19.4).
-      const cc = parseCorresponds(t, i, stripWrapping);
-      (result.correspondences ??= []).push(cc.corr);
-      i = cc.next;
-    } else if (cmd === 'reference') {
-      result.referenceIds = readReference(t[i++]);
-    } else {
-      i = skipUnknownValue(t, i, cmd);
-    }
-  }
-
-  return ctx => {
-    ctx.conditionSets[id] = result;
-    return ctx;
-  };
-};
-
-function parseConditionEntries(block: string): ConditionEntry[] {
-  const out: ConditionEntry[] = [];
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const qk = stripColon(t[i++]);
-    if (!qk) {
-      break;
-    }
-    const entry: ConditionEntry = {
-      quantityKind: qk,
-      value: '',
-      unit: '',
-      tolerance: '',
-    };
-    if (i < t.length && t[i].startsWith('{')) {
-      const eblock = unwrapBlock(t[i++]);
-      const et = tokenize(eblock);
-      let j = 0;
-      while (j < et.length) {
-        const cmd = et[j++];
-        if (j >= et.length) {
-          break;
-        }
-        if (cmd === 'value') {
-          entry.value = stripWrapping(et[j++]);
-        } else if (cmd === 'unit') {
-          entry.unit = stripWrapping(et[j++]);
-        } else if (cmd === 'tolerance') {
-          entry.tolerance = stripWrapping(et[j++]);
-        } else if (cmd === 'note') {
-          entry.note = stripWrapping(et[j++]);
-        } else {
-          unwrapBlock(et[j++]);
-        }
-      }
-    }
-    out.push(entry);
-  }
-  return out;
-}
-
-const dumpConditionSet = function (cs: ConditionSet): string {
-  let out = 'condition_set ' + cs.id + ' {\n';
-  if (cs.role) {
-    out += '  role ' + cs.role + '\n';
-  }
-  if (cs.subject) {
-    out += '  subject ' + cs.subject + '\n';
-  }
-  if (cs.description) {
-    out += '  description "' + escapeString(cs.description) + '"\n';
-  }
-  if (cs.entries.length > 0) {
-    out += '  entries {\n';
-    for (const e of cs.entries) {
-      // Entry values may be free text ("nominal, per installation
-      // conditions") — quote whenever not a single safe token.
-      let line = '    ' + e.quantityKind + ' { value ' + dumpBareSafe(e.value);
-      if (e.unit) {
-        line += ' unit "' + escapeString(e.unit) + '"';
-      }
-      if (e.tolerance) {
-        line += ' tolerance ' + dumpBareSafe(e.tolerance);
-      }
-      if (e.note) {
-        line += ' note "' + escapeString(e.note) + '"';
-      }
-      out += line + ' }\n';
-    }
-    out += '  }\n';
-  }
-  const sources =
-    cs.sources && cs.sources.length > 0
-      ? cs.sources
-      : cs.source
-        ? [cs.source]
-        : [];
-  for (const s of sources) {
-    // The canonical provenance spelling (docs/primmel/18 §18.4): a
-    // URN-anchored block dumps as a derives-from ref line.
-    out += dumpSourceRefAsRef(s, '  ', escapeString);
-  }
-  out += dumpIdList('reference', cs.referenceIds, '  ');
-  out += dumpRefs(cs.refs, '  ', escapeString);
-  out += dumpCorrespondences(
-    cs.correspondences,
-    '  ',
-    escapeString,
-    dumpBareSafe,
-  );
-  out += '}\n';
-  return out;
-};
-
-// ── subject (v3 anatomy: is / has / does) ────────────────────────────
-
-/** Read `key value` / `key: value` pairs into a string map. */
 function readStringMap(block: string): Record<string, string> {
   const out: Record<string, string> = {};
   const t = tokenize(block);
@@ -2591,16 +2420,6 @@ export const behaviorConstruct = {
   takesID: true,
   parse: parseBehavior,
   dump: dumpBehavior,
-} as const;
-
-export const conditionSetConstruct = {
-  keyword: 'condition_set',
-  field: 'conditionSets',
-  takesID: true,
-  parse: parseConditionSet,
-  dump: dumpConditionSet,
-  deprecated:
-    'the severity/condition register is the legacy spelling — migrate to the typed table construct (typed columns, typed rows; the values that decide testing bind in limits via table:<id>.<column>); the legacy spelling keeps parsing as visible debt',
 } as const;
 
 export const subjectConstruct = {

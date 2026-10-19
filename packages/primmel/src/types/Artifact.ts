@@ -10,9 +10,8 @@
  *     content contract (named, typed fields + structure + media) and a
  *     produced-when rule (per measurement | per interval | on event).
  *     Referenced by id from the subject's `is.artifacts { … }` slot; the
- *     definition is a top-level construct (like condition_set, which
- *     `is.designed_conditions` references by id) so requirements can bind
- *     to it and instances can name it in `of`.
+ *     definition is a top-level construct so requirements can bind to it
+ *     and instances can name it in `of`.
  *
  *   artifact_instance  (HAS/evidence) — one produced output, checked
  *     against the contract: `of` names the definition, `by` the producing
