@@ -2550,6 +2550,178 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
     }
 
+    // ── C169 provenance-clause-resolves: a provenance binding citing a
+    //     SHIPPED document lands on a real fragment or sentence of that
+    //     document's harvest; a clause-qualified citation that lands
+    //     nowhere is linked to air (error), a bare subpart citation the
+    //     clause-only harvest cannot verify is visible debt (warning).
+    //     Bindings cite non-shipped documents stay out of scope here.
+    {
+      const docs = pkg.documents ?? [];
+      if (docs.length > 0) {
+        const byUrn = new Map(docs.map(d => [d.urn, d]));
+        const URN_HASH = /^(urn:[A-Za-z0-9:.-]+)#([A-Za-z0-9./-]+)$/;
+        const bindings: { element: string; doc: string; path: string }[] = [];
+        const harvest = (c: Construct, owner: string): void => {
+          const element = c.ident || owner;
+          for (const i of c.items) {
+            if (i.kind === 'line' && i.key === 'ref' && i.tokens.length >= 2) {
+              const m = URN_HASH.exec(i.tokens[1] ?? '');
+              if (m) {
+                bindings.push({ element, doc: m[1]!, path: m[2]! });
+              }
+            }
+            if (i.kind === 'line' && i.key === 'source') {
+              for (const t of i.tokens) {
+                const m = URN_HASH.exec(t);
+                if (m) {
+                  bindings.push({ element, doc: m[1]!, path: m[2]! });
+                }
+              }
+            }
+            if (i.kind === 'construct' && i.construct) {
+              if (i.construct.keyword === 'source') {
+                let doc = '';
+                let clause = '';
+                let fragment = '';
+                for (const si of i.construct.items) {
+                  if (si.kind !== 'line') {
+                    continue;
+                  }
+                  if (si.key === 'doc' && si.tokens.length > 0) {
+                    doc = si.tokens[0]!;
+                    for (let k = 1; k + 1 < si.tokens.length; k += 2) {
+                      if (si.tokens[k] === 'clause') {
+                        clause = si.tokens[k + 1] ?? '';
+                      } else if (si.tokens[k] === 'fragment') {
+                        fragment = si.tokens[k + 1] ?? '';
+                      }
+                    }
+                  }
+                  if (si.key === 'clause') {
+                    clause = si.tokens[0] ?? '';
+                  }
+                  if (si.key === 'fragment') {
+                    fragment = si.tokens[0] ?? '';
+                  }
+                }
+                let path = '';
+                const hash = doc.indexOf('#');
+                if (hash >= 0) {
+                  path = doc.slice(hash + 1);
+                  doc = doc.slice(0, hash);
+                }
+                if (path === '' && clause !== '') {
+                  path = /^(clause|table|figure|front)-/.test(clause)
+                    ? clause
+                    : 'clause-' + clause;
+                }
+                if (fragment !== '') {
+                  path += '/' + fragment;
+                }
+                if (doc !== '' && path !== '') {
+                  bindings.push({ element, doc, path });
+                }
+              }
+              harvest(i.construct, element);
+            }
+          }
+        };
+        for (const c of closureConstructs) {
+          harvest(c, '');
+        }
+        for (const b of bindings) {
+          const d = byUrn.get(b.doc);
+          if (!d) {
+            continue;
+          }
+          if (d.fragments.has(b.path) || d.addresses.has(b.path)) {
+            continue;
+          }
+          const prefix = b.path + '.';
+          let resolved = false;
+          for (const f of d.fragments) {
+            if (f.startsWith(prefix) || b.path.startsWith(f + '/')) {
+              resolved = true;
+              break;
+            }
+          }
+          if (resolved) {
+            continue;
+          }
+          const subpart = /^(table|figure|annex)-/.test(b.path);
+          const message = `provenance binding ${b.doc}#${b.path} (${b.element}) names no fragment or sentence of the shipped document — ${subpart ? 'a bare subpart citation the clause-only harvest cannot verify' : 'linked to air'} (provenance-clause-resolves)`;
+          if (subpart) {
+            issues.push({ rule: 'C169', severity: 'warning', message });
+          } else {
+            err('C169', message);
+          }
+        }
+      }
+    }
+
+    // ── C56 allowlist-malformed: every allowlist entry carries a rule,
+    //     a non-empty match glob, a reason, and an audit_ref; the
+    //     budgets are non-negative integers; the directives are the
+    //     closed vocabulary. (The unknown-rule leg rides the kernel's
+    //     registry — the shape legs are the mirror's own.)
+    {
+      const al = pkg.allowlist;
+      if (al) {
+        for (const e of al.entries) {
+          const read1 = (key: string): string | undefined => {
+            const l = e.items.find(i => i.kind === 'line' && i.key === key);
+            return l && l.tokens.length > 0 ? l.tokens[0] : undefined;
+          };
+          const rule = read1('rule');
+          const match = read1('match');
+          const id = read1('id');
+          const reason = read1('reason');
+          const auditRef = read1('audit_ref');
+          const label = match ? ` "${match}"` : '';
+          if (!match) {
+            err(
+              'C56',
+              `.primmel-allowlist.prl: entry for rule "${rule ?? ''}" has an empty match glob (allowlist-malformed)`,
+            );
+          }
+          if (id !== undefined && id === '') {
+            err(
+              'C56',
+              `.primmel-allowlist.prl: entry for rule "${rule ?? ''}" has an empty id glob — the structured key pins the element identity or is absent (allowlist-malformed)`,
+            );
+          }
+          if (!reason) {
+            err(
+              'C56',
+              `.primmel-allowlist.prl: entry${label} has no reason — known debt is recorded with its justification (allowlist-malformed)`,
+            );
+          }
+          if (!auditRef) {
+            err(
+              'C56',
+              `.primmel-allowlist.prl: entry${label} has no audit_ref — new allowlist entries require clause-referenced reasons (allowlist-malformed)`,
+            );
+          }
+        }
+        for (const l of al.lines) {
+          if (l.kind !== 'line') {
+            continue;
+          }
+          if (l.key === 'coverage_budget' || l.key === 'text_coverage_budget') {
+            const raw = l.tokens[0] ?? '';
+            const n = Number(raw);
+            if (raw === '' || !Number.isInteger(n) || n < 0) {
+              err(
+                'C56',
+                `.primmel-allowlist.prl: ${l.key} "${raw}" is not a non-negative integer (allowlist-malformed)`,
+              );
+            }
+          }
+        }
+      }
+    }
+
     // C178 legacy-carrier-deprecated: a package declaring the language
     // revision that arms the deprecation counts its legacy ocl{…} string
     // carriers — the register's reach grows here (the kernel judges the

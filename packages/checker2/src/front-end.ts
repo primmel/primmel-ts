@@ -278,8 +278,23 @@ export function documentConstructs(shape: unknown): Construct[] {
 
 // ── the package reader: every .prl under the directory ─────────────
 
+/** One shipped document's harvest index (sources-prd/*.sentences.json):
+ *  the fragment paths and sentence addresses the document actually
+ *  contains — C169 resolves bindings against it. */
+export interface ShippedDocument {
+  urn: string;
+  fragments: Set<string>;
+  addresses: Set<string>;
+}
+
 export interface ParsedPackage {
   constructs: Construct[];
+  /** The shipped documents' harvest indexes (absent when the package
+   *  ships none or the caller reads no artifacts). */
+  documents?: ShippedDocument[];
+  /** The parsed .primmel-allowlist.prl contents (absent when none):
+   *  the allowlist_entry constructs and the budget lines. */
+  allowlist?: { entries: Construct[]; lines: Item[] };
   /** The package directory (absent for in-memory packages). */
   dir?: string;
   /** The directory's top-level entries (the artifact inventory — C170's

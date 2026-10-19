@@ -483,3 +483,123 @@ describe('the variable↔subform type link (C182 — the register reaches 74)', 
     );
   });
 });
+
+describe('the manifest-input increment (C169 + C56 — the register reaches 76)', () => {
+  const SHIPPED = {
+    urn: 'urn:oiml:pub:r:129-1:2020',
+    fragments: new Set([
+      'clause-4.1.7',
+      'clause-4.2.1',
+      'clause-4.2.1/table-2',
+    ]),
+    addresses: new Set(['clause-4.1.7/s1']),
+  };
+
+  it('C169: exact, subtree, and enclosure landings stay silent', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'requirement /req/r {\n name "R"\n source { doc "urn:oiml:pub:r:129-1:2020" clause "4.1.7" }\n ref derives-from "urn:oiml:pub:r:129-1:2020#clause-4.2.1/table-2"\n ref cites "urn:oiml:pub:r:129-1:2020#clause-4.2.1"\n}\n',
+      ),
+      documents: [SHIPPED],
+    };
+    assert.deepEqual(
+      check(pkg)
+        .filter(i => i.rule === 'C169')
+        .map(i => i.rule),
+      [],
+    );
+  });
+
+  it('C169: a clause-qualified landing nowhere is air; a bare subpart is a warning', () => {
+    const air: ParsedPackage = {
+      constructs: constructs(
+        'requirement /req/r {\n name "R"\n ref derives-from "urn:oiml:pub:r:129-1:2020#clause-9.9"\n}\n',
+      ),
+      documents: [SHIPPED],
+    };
+    assert.deepEqual(
+      check(air)
+        .filter(i => i.rule === 'C169')
+        .map(i => i.rule),
+      ['C169'],
+    );
+    const subpart: ParsedPackage = {
+      constructs: constructs(
+        'requirement /req/r {\n name "R"\n ref cites "urn:oiml:pub:r:129-1:2020#table-7"\n}\n',
+      ),
+      documents: [SHIPPED],
+    };
+    const found = check(subpart).filter(i => i.rule === 'C169');
+    assert.equal(found.length, 1);
+    assert.equal(found[0]!.severity, 'warning');
+  });
+
+  it('C169: a binding citing a non-shipped document stays out of scope', () => {
+    const pkg: ParsedPackage = {
+      constructs: constructs(
+        'requirement /req/r {\n name "R"\n ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2"\n}\n',
+      ),
+      documents: [SHIPPED],
+    };
+    assert.deepEqual(
+      check(pkg)
+        .filter(i => i.rule === 'C169')
+        .map(i => i.rule),
+      [],
+    );
+  });
+
+  it('C56: an entry missing reason or audit_ref fires; the well-formed entry stays silent', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs('data_registry x { data_class Y#data }\n'),
+      allowlist: {
+        entries: constructs(
+          'allowlist_entry {\n rule C142\n match "dangling*"\n reason "the register wave holds these."\n}\nallowlist_entry {\n rule C142\n match "other*"\n audit_ref "TODO.wave"\n}\n',
+        ),
+        lines: [],
+      },
+    };
+    const found = check(bad).filter(i => i.rule === 'C56');
+    assert.equal(found.length, 2);
+    assert.ok(found.some(i => /audit_ref/.test(i.message)));
+    assert.ok(found.some(i => /no reason/.test(i.message)));
+    const ok: ParsedPackage = {
+      constructs: constructs('data_registry x { data_class Y#data }\n'),
+      allowlist: {
+        entries: constructs(
+          'allowlist_entry {\n rule C142\n match "dangling*"\n reason "the register wave holds these."\n audit_ref "TODO.wave"\n}\n',
+        ),
+        lines: [],
+      },
+    };
+    assert.deepEqual(
+      check(ok)
+        .filter(i => i.rule === 'C56')
+        .map(i => i.rule),
+      [],
+    );
+  });
+
+  it('C56: a negative budget fires', () => {
+    const pkg: ParsedPackage = {
+      constructs: [],
+      allowlist: {
+        entries: [],
+        lines: [
+          {
+            kind: 'line',
+            key: 'coverage_budget',
+            tokens: ['-3'],
+            blocks: [],
+          },
+        ],
+      },
+    };
+    assert.deepEqual(
+      check(pkg)
+        .filter(i => i.rule === 'C56')
+        .map(i => i.rule),
+      ['C56'],
+    );
+  });
+});

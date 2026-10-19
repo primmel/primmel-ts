@@ -19,6 +19,7 @@ import {
   readPackage,
   documentConstructs,
 } from './src/front-end.ts';
+import type { Item } from './src/front-end.ts';
 import { resolve } from 'node:path';
 import { check } from './src/rules.ts';
 
@@ -116,6 +117,49 @@ async function main(): Promise<void> {
         return;
       }
       const read = (p: string) => readFileSync(p, 'utf8');
+      // The shipped documents' harvest indexes (C169's counterpart
+      // inputs) and the parsed allowlist (C56's): artifacts the adapter
+      // reads so check() judges them without fs of its own.
+      const documents: { urn: string; fragments: Set<string>; addresses: Set<string> }[] = [];
+      for (const f of manifestFiles.filter(x => x.includes('sources-prd/') && x.endsWith('.sentences.json'))) {
+        try {
+          const raw = JSON.parse(read(f)) as {
+            document?: { urn?: string };
+            sentences?: { address?: string; fragment?: string }[];
+          };
+          if (typeof raw.document?.urn !== 'string' || !Array.isArray(raw.sentences)) {
+            continue;
+          }
+          const fragments = new Set<string>();
+          const addresses = new Set<string>();
+          for (const s2 of raw.sentences) {
+            if (typeof s2.fragment === 'string') {
+              fragments.add(s2.fragment);
+            }
+            if (typeof s2.address === 'string') {
+              addresses.add(s2.address);
+            }
+          }
+          documents.push({ urn: raw.document.urn, fragments, addresses });
+        } catch {
+          // An unparseable manifest rides the kernel's C73, not C169.
+        }
+      }
+      const allowlistFiles = manifestFiles.filter(x => x.endsWith('.primmel-allowlist.prl'));
+      let allowlist: { entries: ReturnType<typeof documentConstructs>; lines: Item[] } | undefined;
+      if (allowlistFiles.length > 0) {
+        try {
+          const als = documentConstructs(runtime.parseShape(read(allowlistFiles[0]!)));
+          allowlist = {
+            entries: als.filter(c => c.keyword === 'allowlist_entry'),
+            lines: als
+              .filter(c => c.keyword !== 'allowlist_entry')
+              .flatMap(c => c.items),
+          };
+        } catch {
+          // An unparseable allowlist rides the kernel's C56 file-level leg.
+        }
+      }
       const loadDir = (d: string) => {
         const files = collectPrlFiles(d, p => readdirSync(p), p => statSync(p).isDirectory());
         const parsed = readPackage(runtime, files, read);
@@ -125,6 +169,8 @@ async function main(): Promise<void> {
       };
       const pkg = loadDir(target);
       pkg.dir = resolve(target);
+      pkg.documents = documents;
+      pkg.allowlist = allowlist;
       // The lineage counterparties: the sibling package directories.
       pkg.siblings = readdirSync(resolve(target, '..'))
         .map(e => join(resolve(target, '..'), e))
