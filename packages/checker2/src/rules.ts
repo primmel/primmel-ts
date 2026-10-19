@@ -2851,15 +2851,11 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       const al = pkg.allowlist;
       if (al) {
         for (const e of al.entries) {
-          const read1 = (key: string): string | undefined => {
-            const l = e.items.find(i => i.kind === 'line' && i.key === key);
-            return l && l.tokens.length > 0 ? l.tokens[0] : undefined;
-          };
-          const rule = read1('rule');
-          const match = read1('match');
-          const id = read1('id');
-          const reason = read1('reason');
-          const auditRef = read1('audit_ref');
+          const rule = e.rule;
+          const match = e.match;
+          const id = e.id;
+          const reason = e.reason;
+          const auditRef = e.auditRef;
           const label = match ? ` "${match}"` : '';
           if (!match) {
             err(
@@ -2886,19 +2882,14 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
             );
           }
         }
-        for (const l of al.lines) {
-          if (l.kind !== 'line') {
-            continue;
-          }
-          if (l.key === 'coverage_budget' || l.key === 'text_coverage_budget') {
-            const raw = l.tokens[0] ?? '';
-            const n = Number(raw);
-            if (raw === '' || !Number.isInteger(n) || n < 0) {
-              err(
-                'C56',
-                `.primmel-allowlist.prl: ${l.key} "${raw}" is not a non-negative integer (allowlist-malformed)`,
-              );
-            }
+        for (const b of al.budgets) {
+          const raw = b.raw;
+          const n = Number(raw);
+          if (raw === '' || !Number.isInteger(n) || n < 0) {
+            err(
+              'C56',
+              `.primmel-allowlist.prl: ${b.key} "${raw}" is not a non-negative integer (allowlist-malformed)`,
+            );
           }
         }
       }

@@ -287,14 +287,131 @@ export interface ShippedDocument {
   addresses: Set<string>;
 }
 
+/** One parsed allowlist entry (the kernel's AllowlistEntry contract,
+ *  independently implemented — the allowlist is NOT package syntax and
+ *  the package grammar does not capture it). */
+export interface AllowlistEntry {
+  rule: string;
+  match: string;
+  id?: string;
+  reason: string;
+  auditRef: string;
+}
+
+/** The allowlist's own tokenizer: quoted strings (with \" escapes),
+ *  braces, comments (# to end of line, // to end of line), words. */
+export function tokenizeAllowlist(text: string): string[] {
+  const out: string[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i]!;
+    if (c === '#') {
+      while (i < text.length && text[i] !== '\n') i++;
+    } else if (c === '/' && text[i + 1] === '/') {
+      while (i < text.length && text[i] !== '\n') i++;
+    } else if (c === '\n' || c === ' ' || c === '\t' || c === '\r') {
+      i++;
+    } else if (c === '"') {
+      let j = i + 1;
+      let v = '';
+      while (j < text.length && text[j] !== '"') {
+        if (text[j] === '\\' && j + 1 < text.length) {
+          v += text[j + 1]!;
+          j += 2;
+        } else {
+          v += text[j]!;
+          j++;
+        }
+      }
+      out.push('"' + v + '"');
+      i = j + 1;
+    } else if (c === '{' || c === '}') {
+      out.push(c);
+      i++;
+    } else {
+      let j = i;
+      while (
+        j < text.length &&
+        !' \t\r\n{}#"'.includes(text[j]!) &&
+        !(text[j] === '/' && text[j + 1] === '/')
+      ) {
+        j++;
+      }
+      if (j === i) {
+        i++;
+      } else {
+        out.push(text.slice(i, j));
+        i = j;
+      }
+    }
+  }
+  return out;
+}
+
+/** Parse the allowlist text into entries and budget lines (the C56
+ *  counterpart's inputs; malformed entries ride C56 in the rules). */
+export function parseAllowlist(text: string): {
+  entries: AllowlistEntry[];
+  budgets: { key: string; raw: string }[];
+  directives: string[];
+} {
+  const t = tokenizeAllowlist(text);
+  const entries: AllowlistEntry[] = [];
+  const budgets: { key: string; raw: string }[] = [];
+  const directives: string[] = [];
+  let i = 0;
+  const strip = (tok: string): string =>
+    tok.startsWith('"') && tok.endsWith('"') && tok.length >= 2
+      ? tok.slice(1, -1)
+      : tok;
+  while (i < t.length) {
+    const cmd = t[i++]!;
+    if (cmd === 'allowlist_entry') {
+      if (t[i] !== '{') {
+        directives.push(cmd);
+        continue;
+      }
+      i++;
+      const e: AllowlistEntry = {
+        rule: '',
+        match: '',
+        reason: '',
+        auditRef: '',
+      };
+      while (i < t.length && t[i] !== '}') {
+        const key = strip(t[i++]!);
+        const value = strip(t[i++] ?? '');
+        if (key === 'rule') e.rule = value;
+        else if (key === 'match') e.match = value;
+        else if (key === 'id') e.id = value;
+        else if (key === 'reason') e.reason = value;
+        else if (key === 'audit_ref') e.auditRef = value;
+      }
+      i++;
+      entries.push(e);
+    } else if (cmd === 'coverage_budget' || cmd === 'text_coverage_budget') {
+      budgets.push({ key: cmd, raw: strip(t[i++] ?? '') });
+    } else {
+      directives.push(cmd);
+      if (t[i] === '{') {
+        i++;
+      }
+    }
+  }
+  return { entries, budgets, directives };
+}
+
 export interface ParsedPackage {
   constructs: Construct[];
   /** The shipped documents' harvest indexes (absent when the package
    *  ships none or the caller reads no artifacts). */
   documents?: ShippedDocument[];
-  /** The parsed .primmel-allowlist.prl contents (absent when none):
-   *  the allowlist_entry constructs and the budget lines. */
-  allowlist?: { entries: Construct[]; lines: Item[] };
+  /** The parsed .primmel-allowlist.prl contents (absent when none). */
+  allowlist?: {
+    entries: AllowlistEntry[];
+    budgets: { key: string; raw: string }[];
+    directives: string[];
+  };
   /** The package directory (absent for in-memory packages). */
   dir?: string;
   /** The directory's top-level entries (the artifact inventory — C170's

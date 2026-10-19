@@ -553,10 +553,22 @@ describe('the manifest-input increment (C169 + C56 — the register reaches 76)'
     const bad: ParsedPackage = {
       constructs: constructs('data_registry x { data_class Y#data }\n'),
       allowlist: {
-        entries: constructs(
-          'allowlist_entry {\n rule C142\n match "dangling*"\n reason "the register wave holds these."\n}\nallowlist_entry {\n rule C142\n match "other*"\n audit_ref "TODO.wave"\n}\n',
-        ),
-        lines: [],
+        entries: [
+          {
+            rule: 'C142',
+            match: 'dangling*',
+            reason: 'the register wave holds these.',
+            auditRef: '',
+          },
+          {
+            rule: 'C142',
+            match: 'other*',
+            reason: '',
+            auditRef: 'TODO.wave',
+          },
+        ],
+        budgets: [],
+        directives: [],
       },
     };
     const found = check(bad).filter(i => i.rule === 'C56');
@@ -566,10 +578,16 @@ describe('the manifest-input increment (C169 + C56 — the register reaches 76)'
     const ok: ParsedPackage = {
       constructs: constructs('data_registry x { data_class Y#data }\n'),
       allowlist: {
-        entries: constructs(
-          'allowlist_entry {\n rule C142\n match "dangling*"\n reason "the register wave holds these."\n audit_ref "TODO.wave"\n}\n',
-        ),
-        lines: [],
+        entries: [
+          {
+            rule: 'C142',
+            match: 'dangling*',
+            reason: 'the register wave holds these.',
+            auditRef: 'TODO.wave',
+          },
+        ],
+        budgets: [],
+        directives: [],
       },
     };
     assert.deepEqual(
@@ -585,14 +603,8 @@ describe('the manifest-input increment (C169 + C56 — the register reaches 76)'
       constructs: [],
       allowlist: {
         entries: [],
-        lines: [
-          {
-            kind: 'line',
-            key: 'coverage_budget',
-            tokens: ['-3'],
-            blocks: [],
-          },
-        ],
+        budgets: [{ key: 'coverage_budget', raw: '-3' }],
+        directives: [],
       },
     };
     assert.deepEqual(
