@@ -51,16 +51,17 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // report; C155-C156 are the power-type discipline (phase 8);
     // C158-C167 are the LML-aligned substrate (the spec's validation
     // contract — language-v3 §16); C168-C172, C176-C179 are the
-    // expression plane and its co-rules (C173-C175 reserved).
+    // expression plane and its co-rules; C180-C182 are the run plane
+    // and the series-record link (C173-C175 reserved).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`),
       ...Array.from({ length: 44 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 6 }, (_, i) => `C${i + 176}`),
+      ...Array.from({ length: 7 }, (_, i) => `C${i + 176}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128, C130-C173 (phase 2 retired C129), C176-C181 (C174-C175 reserved)',
+      'C1-C128, C130-C173 (phase 2 retired C129), C176-C182 (C174-C175 reserved)',
     );
   });
 

@@ -11,7 +11,12 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import type { Construct, Item, ParsedPackage } from './front-end.ts';
-import { readExpression, X_FUNCS, X_CONTEXT_ROOTS } from './expressions.ts';
+import {
+  readExpression,
+  readNavMembers,
+  X_FUNCS,
+  X_CONTEXT_ROOTS,
+} from './expressions.ts';
 
 export interface Issue {
   rule: string;
@@ -2434,6 +2439,113 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
             'C157',
             `data_registry ${reg.ident}: the data_class resolves to no declared dataclass — the registry's rows are formless (the pairing the workspace forms and the pickers key on) (registry-dataclass-resolves)`,
           );
+        }
+      }
+    }
+
+    // ── C182 series-record-fields (the variable↔subform type link):
+    //     a series variable's record form types its row members — a
+    //     collection derivation's lambda members resolve against the
+    //     record form's typed fields, never kind-silent.
+    {
+      // a form's field lines key by the FIELD NAME with the type as
+      // the first token (the shape tree drops the `field` head); the
+      // nested-construct spelling rides beside it
+      const FIELD_TYPES = new Set([
+        'string',
+        'number',
+        'boolean',
+        'integer',
+        'decimal',
+        'enum',
+        'date',
+        'datetime',
+        'collection',
+      ]);
+      const recordFormFields = new Map<string, Set<string>>();
+      for (const f of closureConstructs.filter(
+        x => x.keyword === 'form' && x.ident,
+      )) {
+        const names = new Set(
+          nested(f)
+            .filter(n => n.keyword === 'field')
+            .map(n => n.ident!)
+            .filter(Boolean),
+        );
+        for (const l of f.items) {
+          if (
+            l.kind === 'line' &&
+            l.key &&
+            FIELD_TYPES.has(l.tokens[0] ?? '')
+          ) {
+            names.add(l.key);
+          }
+        }
+        recordFormFields.set(f.ident!, names);
+      }
+      for (const t of pkg.constructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        const vars = nested(t).find(n => n.keyword === 'variables');
+        for (const v of vars
+          ? nested(vars).filter(n => n.keyword === 'variable' && n.ident)
+          : []) {
+          const series = nested(v).find(n => n.keyword === 'series');
+          const rec = series
+            ? facetTokens(series.items, 'record')[0]
+            : undefined;
+          if (!rec) {
+            continue;
+          }
+          const fields = recordFormFields.get(rec);
+          if (!fields) {
+            err(
+              'C182',
+              `conformance test ${t.ident}: variable "${v.ident}" series record "${rec}" names no declared form — the row members type by the record form's fields (series-record-fields)`,
+            );
+            continue;
+          }
+          const dline = v.items.find(
+            i => i.kind === 'line' && i.key === 'derivation',
+          );
+          const dblock = nested(v).find(n => n.keyword === 'derivation');
+          let expr = '';
+          if (dline && dline.tokens.length > 0) {
+            expr = dline.tokens.join(' ');
+          } else if (dblock) {
+            for (const i of dblock.items) {
+              if (i.kind === 'line' && i.key) {
+                expr += ' ' + [i.key, ...i.tokens].join(' ');
+              } else {
+                expr += ' ' + i.tokens.join(' ');
+              }
+            }
+          }
+          expr = expr.trim();
+          if (!expr) {
+            continue;
+          }
+          let members: ReturnType<typeof readNavMembers>;
+          try {
+            members = readNavMembers(
+              expr.replace(/^ocl\{/, '').replace(/\}$/, ''),
+            );
+          } catch {
+            continue; // parse errors ride the derivation's own rules
+          }
+          for (const m of members) {
+            if (m.source !== v.ident) {
+              continue;
+            }
+            for (const f of m.fields) {
+              if (!fields.has(f)) {
+                err(
+                  'C182',
+                  `conformance test ${t.ident}: variable "${v.ident}" derivation names "m.${f}" — the record form ${rec} declares no such field; the row members are its typed fields (series-record-fields)`,
+                );
+              }
+            }
+          }
         }
       }
     }

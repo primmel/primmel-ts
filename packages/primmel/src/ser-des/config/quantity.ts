@@ -43,15 +43,33 @@ export function readQuantityBlock(content: string): QuantityValue {
       break;
     }
     if (cmd === 'value') {
-      out.value = coerceValueToken(t[i++]);
+      const rawTok = t[i++];
+      out.value = coerceValueToken(rawTok);
+      const bare = stripWrapping(rawTok);
+      if (typeof out.value === 'number' && String(out.value) !== bare) {
+        out.valueLiteral = bare;
+      }
     } else if (cmd === 'unit') {
       out.unit = stripWrapping(t[i++]);
     } else if (cmd === 'kind' || cmd === 'quantity_kind') {
       out.quantityKind = stripWrapping(t[i++]);
     } else if (cmd === 'uncertainty') {
-      out.uncertainty = coerceValueToken(t[i++]);
+      const rawTok = t[i++];
+      out.uncertainty = coerceValueToken(rawTok);
+      const bare = stripWrapping(rawTok);
+      if (
+        typeof out.uncertainty === 'number' &&
+        String(out.uncertainty) !== bare
+      ) {
+        out.uncertaintyLiteral = bare;
+      }
     } else if (cmd === 'tolerance') {
-      out.tolerance = coerceValueToken(t[i++]);
+      const rawTok = t[i++];
+      out.tolerance = coerceValueToken(rawTok);
+      const bare = stripWrapping(rawTok);
+      if (typeof out.tolerance === 'number' && String(out.tolerance) !== bare) {
+        out.toleranceLiteral = bare;
+      }
     } else if (cmd === 'provenance') {
       out.provenance = readProvenanceBlock(unwrapBlock(t[i++]));
     } else {
@@ -142,7 +160,7 @@ export function dumpScalarToken(v: string | number): string {
  */
 export function dumpQuantityValue(v: QuantityValue): string {
   if (!needsQuantityBlock(v)) {
-    const val = dumpScalarToken(v.value);
+    const val = v.valueLiteral ?? dumpScalarToken(v.value);
     return v.unit === undefined ? val : val + ' ' + dumpBareSafe(v.unit);
   }
   return dumpQuantityBlock(v);
@@ -150,7 +168,9 @@ export function dumpQuantityValue(v: QuantityValue): string {
 
 /** Dump one QuantityValue in block form unconditionally (dual roles). */
 export function dumpQuantityBlock(v: QuantityValue): string {
-  const parts: string[] = ['value ' + dumpScalarToken(v.value)];
+  const parts: string[] = [
+    'value ' + (v.valueLiteral ?? dumpScalarToken(v.value)),
+  ];
   if (v.unit !== undefined) {
     parts.push('unit "' + escapeString(v.unit) + '"');
   }
@@ -158,10 +178,14 @@ export function dumpQuantityBlock(v: QuantityValue): string {
     parts.push('kind ' + dumpBareSafe(v.quantityKind));
   }
   if (v.uncertainty !== undefined) {
-    parts.push('uncertainty ' + dumpScalarToken(v.uncertainty));
+    parts.push(
+      'uncertainty ' + (v.uncertaintyLiteral ?? dumpScalarToken(v.uncertainty)),
+    );
   }
   if (v.tolerance !== undefined) {
-    parts.push('tolerance ' + dumpScalarToken(v.tolerance));
+    parts.push(
+      'tolerance ' + (v.toleranceLiteral ?? dumpScalarToken(v.tolerance)),
+    );
   }
   if (v.provenance !== undefined) {
     parts.push('provenance ' + dumpProvenanceBlock(v.provenance));

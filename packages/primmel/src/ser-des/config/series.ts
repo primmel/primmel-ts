@@ -27,6 +27,12 @@ export function parseSeriesDecl(block: string): SeriesDecl {
   let i = 0;
   while (i < t.length) {
     const cmd = t[i++];
+    if (cmd === 'record') {
+      // The variable↔subform type link: the form whose typed fields
+      // are the row's members (C182 resolves derivations against it).
+      decl.record = stripWrapping(t[i++]);
+      continue;
+    }
     if (cmd !== 'axis' && cmd !== 'cell') {
       if (i < t.length) {
         unwrapBlock(t[i - 1]);
@@ -109,6 +115,10 @@ export function dumpSeriesDecl(decl: SeriesDecl): string {
   if (decl.cellUnit) {
     out += 'unit "' + escapeString(decl.cellUnit) + '" ';
   }
-  out += '} }';
+  out += '} ';
+  if (decl.record !== undefined) {
+    out += 'record ' + decl.record + ' ';
+  }
+  out += '}';
   return out;
 }

@@ -29,4 +29,11 @@ export interface SeriesDecl {
   cellSymbol: string;
   /** Measurement unit of the cell values. */
   cellUnit: string;
+  /**
+   * The record form whose typed fields are the row's members — the
+   * variable↔subform type link. A derivation's lambda member
+   * (`m.<field>`) resolves against the record form's fields (C182),
+   * so a collection derivation is kind-checked, never kind-silent.
+   */
+  record?: string;
 }

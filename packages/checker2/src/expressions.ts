@@ -401,3 +401,58 @@ export function readExpression(
   nodeKind(root);
   return { names, calls, comparisons, mixes };
 }
+
+/** The collection-navigation members of one expression: for each
+ *  `source -> op(v | body)`, the dotted fields the lambda body reads
+ *  off the parameter (`m.served` → `served`). The variable↔subform
+ *  type link's mirror reads these (C182). */
+export function readNavMembers(
+  src: string,
+): { source: string; op: string; lambda: string; fields: string[] }[] {
+  const root = XParser.parse(src);
+  const out: {
+    source: string;
+    op: string;
+    lambda: string;
+    fields: string[];
+  }[] = [];
+  const walk = (n: XNode, bound: Map<string, string>): void => {
+    if (n.kind === 'nav') {
+      const fields: string[] = [];
+      const collect = (k: XNode, inner: Map<string, string>): void => {
+        if (k.kind === 'name' && k.path!.length > 0) {
+          const parts = [...k.path![0]!.split('.'), ...k.path!.slice(1)];
+          if (parts.length > 1) {
+            const srcName = inner.get(parts[0]!);
+            if (srcName === n.source) {
+              fields.push(parts.slice(1).join('.'));
+            }
+          }
+          return;
+        }
+        if (k.kind === 'nav') {
+          const deeper = new Map(inner);
+          deeper.set(k.lambda!.split('.')[0]!, k.source!);
+          collect(k.kids[0]!, deeper);
+          return;
+        }
+        for (const kk of k.kids) {
+          collect(kk, inner);
+        }
+      };
+      const inner = new Map(bound);
+      inner.set(n.lambda!.split('.')[0]!, n.source!);
+      collect(n.kids[0]!, inner);
+      out.push({ source: n.source!, op: n.op!, lambda: n.lambda!, fields });
+      const deeper = new Map(bound);
+      deeper.set(n.lambda!.split('.')[0]!, n.source!);
+      walk(n.kids[0]!, deeper);
+      return;
+    }
+    for (const k of n.kids) {
+      walk(k, bound);
+    }
+  };
+  walk(root, new Map());
+  return out;
+}
