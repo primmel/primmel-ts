@@ -27,6 +27,13 @@
  */
 export interface QuantityValue {
   value: string | number;
+  /**
+   * The authored decimal literal when its form carries information the
+   * number loses (trailing zeros — the significant-figure statement,
+   * `2.10` vs `2.1`). Preserved verbatim on the wire; absent when the
+   * authored form is the number's canonical form.
+   */
+  valueLiteral?: string;
   /** Unit id or symbol — resolves in a quantity_register (C33). */
   unit?: string;
   /**
@@ -36,8 +43,12 @@ export interface QuantityValue {
   quantityKind?: string;
   /** Dispersion of a MEASURED value (exhibited side; GUM-shaped). */
   uncertainty?: string | number;
+  /** The authored literal of `uncertainty` (see valueLiteral). */
+  uncertaintyLiteral?: string;
   /** Symmetric band of a SPECIFIED value (designed side). */
   tolerance?: string | number;
+  /** The authored literal of `tolerance` (see valueLiteral). */
+  toleranceLiteral?: string;
   /**
    * Per-entry provenance (the typed kernel, clause 10): where the value
    * was read from, in the register's own words when the wording

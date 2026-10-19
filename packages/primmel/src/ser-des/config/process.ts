@@ -305,6 +305,12 @@ function parseParamList(
           rawUnit === undefined
             ? { value }
             : { value, unit: stripWrapping(rawUnit) };
+        if (
+          typeof value === 'number' &&
+          String(value) !== stripWrapping(rawValue)
+        ) {
+          initial.valueLiteral = stripWrapping(rawValue);
+        }
         param.initial = initial;
       }
     }

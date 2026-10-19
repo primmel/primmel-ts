@@ -480,6 +480,14 @@ export const CHECK_RULES: CheckRule[] = [
     'the run store registry and the record forms of the test agree on the data class — the output records and the store hold the same shape',
   ),
   R(
+    'C182',
+    'series-record-fields',
+    'quantities',
+    'error',
+    'normal',
+    'a series variable whose series declares a record form types its row members by that form\u2019s typed fields — a collection derivation\u2019s lambda members resolve against them, never kind-silent',
+  ),
+  R(
     'C173',
     'step-plane-refs-resolve',
     'process',

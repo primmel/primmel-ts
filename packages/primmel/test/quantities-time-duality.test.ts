@@ -843,3 +843,48 @@ dual ok-kind {
     );
   });
 });
+
+describe('numeric semantics: the authored decimal literal (register 178-era)', () => {
+  const LITERALS = `
+attribute_definition e_max { symbol "E_max" origin design-fixed scope model unit t quantity_kind mass }
+dual e-max-literals {
+  attribute e_max
+  designed { value 2.10 unit t tolerance 0.50 }
+  exhibited { value 2.19980 unit t uncertainty 0.00020 }
+}
+`;
+
+  it('keeps the authored literal when the form carries the precision statement', () => {
+    const m = load(LITERALS);
+    const d = m.duals[0];
+    assert.equal(d.designed!.value, 2.1);
+    assert.equal(d.designed!.valueLiteral, '2.10');
+    assert.equal(d.designed!.toleranceLiteral, '0.50');
+    assert.equal(d.exhibited!.valueLiteral, '2.19980');
+    assert.equal(d.exhibited!.uncertaintyLiteral, '0.00020');
+  });
+
+  it('stays literal-free when the authored form is canonical', () => {
+    const m = load(`
+attribute_definition e_max { symbol "E_max" origin design-fixed scope model unit t quantity_kind mass }
+dual plain {
+  attribute e_max
+  designed { value 2.2 unit t tolerance 0.5 }
+}
+`);
+    const d = m.duals[0];
+    assert.equal(d.designed!.valueLiteral, undefined);
+    assert.equal(d.designed!.toleranceLiteral, undefined);
+  });
+
+  it('emits the authored literal verbatim and fixpoints', () => {
+    const m1 = load(LITERALS);
+    const dumped = dump(m1);
+    assert.match(dumped, /value 2\.10 /);
+    assert.match(dumped, /tolerance 0\.50/);
+    assert.match(dumped, /uncertainty 0\.00020/);
+    const m2 = load(dumped);
+    assert.deepEqual(m2.duals, m1.duals);
+    assert.equal(dump(m2), dumped);
+  });
+});

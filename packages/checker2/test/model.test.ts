@@ -449,3 +449,37 @@ describe('the corpus trio (C157/C176/C173 — the register reaches 73)', () => {
     );
   });
 });
+
+describe('the variable↔subform type link (C182 — the register reaches 74)', () => {
+  const REC =
+    'form error-run {\n name "One pairing row"\n field reference : number { unit "kg" }\n field served : number { unit "kg" }\n}\nconformance_test /conf/creep {\n name "Creep"\n type Testing\n variables {\n  variable pair_error {\n   type number\n   unit "kg"\n   source measured\n   series {\n    axis time { unit "s" role time }\n    cell { symbol pair_error unit "kg" }\n    record error-run\n   }\n   derivation "ocl{pair_error -> forAll(m | m.served - m.reference)}"\n  }\n }\n}\n';
+  it('C182: a lambda member naming no record field fires; declared members stay silent', () => {
+    const bad: ParsedPackage = {
+      constructs: constructs(REC.replace('m.reference', 'm.ghost')),
+    };
+    assert.deepEqual(
+      check(bad)
+        .filter(i => i.rule === 'C182')
+        .map(i => i.rule),
+      ['C182'],
+    );
+    const ok: ParsedPackage = { constructs: constructs(REC) };
+    assert.deepEqual(
+      check(ok)
+        .filter(i => i.rule === 'C182')
+        .map(i => i.rule),
+      [],
+    );
+    const noForm: ParsedPackage = {
+      constructs: constructs(
+        REC.replace('record error-run', 'record ghost-run'),
+      ),
+    };
+    assert.deepEqual(
+      check(noForm)
+        .filter(i => i.rule === 'C182')
+        .map(i => i.rule),
+      ['C182'],
+    );
+  });
+});

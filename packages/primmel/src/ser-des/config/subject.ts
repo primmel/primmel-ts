@@ -2599,6 +2599,8 @@ export const conditionSetConstruct = {
   takesID: true,
   parse: parseConditionSet,
   dump: dumpConditionSet,
+  deprecated:
+    'the severity/condition register is the legacy spelling — migrate to the typed table construct (typed columns, typed rows; the values that decide testing bind in limits via table:<id>.<column>); the legacy spelling keeps parsing as visible debt',
 } as const;
 
 export const subjectConstruct = {

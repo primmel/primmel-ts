@@ -1,6 +1,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { load, dump } from '../src/ser-des/index.js';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { checkPackage } from '../src/check.js';
+
+function make(model: string): string {
+  const dir = mkdtempSync(join(tmpdir(), 'primmel-series-'));
+  writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+  mkdirSync(join(dir, 'model'), { recursive: true });
+  writeFileSync(join(dir, 'model', 'r.prl'), model);
+  return dir;
+}
 
 // Series declarations (OIML SMART TODO.refactor/05): symbols, conformance
 // test variables, and form datalist fields declare their series shape
@@ -137,5 +149,61 @@ describe('series declarations', () => {
     ]);
     const m2 = load(dump(m));
     assert.deepEqual(m2.symbols, m.symbols);
+  });
+});
+
+describe('the variable↔subform type link (series record)', () => {
+  const REC = `
+form error-run {
+  name "One pairing row"
+  field reference : number { unit "kg" }
+  field served : number { unit "kg" }
+}
+conformance_test /conf/creep {
+  name "Creep"
+  type Testing
+  variables {
+    variable pair_error {
+      type number
+      unit "kg"
+      source measured
+      series {
+        axis time { unit "s" role time }
+        cell { symbol pair_error unit "kg" }
+        record error-run
+      }
+      derivation "ocl{pair_error -> forAll(m | m.served - m.reference)}"
+    }
+  }
+}
+`;
+
+  it('parses the record facet and fixpoints it', () => {
+    const m = load(REC);
+    const v = m.conformanceTests[0]!.variables[0]!;
+    assert.equal(v.series!.record, 'error-run');
+    const m1 = load(REC);
+    const dumped = dump(m1);
+    assert.match(dumped, /record error-run/);
+    const m2 = load(dumped);
+    assert.deepEqual(m2.conformanceTests, m1.conformanceTests);
+    assert.equal(dump(m2), dumped);
+  });
+
+  it('C182: a lambda member naming no record field fires; declared members stay silent', () => {
+    const bad = REC.replace('m.served - m.reference', 'm.served - m.ghost');
+    const badIssues = checkPackage(make(bad)).filter(i => i.check === 'C182');
+    assert.equal(badIssues.length, 1);
+    assert.match(badIssues[0]!.check, /C182/);
+    const ok = REC;
+    assert.equal(
+      checkPackage(make(ok)).filter(i => i.check === 'C182').length,
+      0,
+    );
+    const noForm = REC.replace('record error-run', 'record ghost-run');
+    assert.equal(
+      checkPackage(make(noForm)).filter(i => i.check === 'C182').length,
+      1,
+    );
   });
 });
