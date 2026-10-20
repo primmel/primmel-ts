@@ -1,5 +1,4 @@
 import type { Registry } from './data';
-import type Reference from './Reference';
 import Resolvable from './Resolvable';
 import type Role from './Role';
 import type { SourceRef } from './Subject';
@@ -18,12 +17,13 @@ export default interface Approval {
   actor: Role | null;
   approver: Role | null;
   records: Registry[];
-  ref: Reference[];
+  /** The v2 `reference { … }` id list (opaque ids, never resolved). */
+  referenceIds: string[];
   // Clause-URN provenance (free citation strings land in doc).
   source: SourceRef | null;
 }
 
 export type ResolvableApproval = Resolvable<
   Approval,
-  'actor' | 'approver' | 'records' | 'ref'
+  'actor' | 'approver' | 'records'
 >;

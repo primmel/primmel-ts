@@ -8,21 +8,26 @@
 // they name no declared construct — the process.provisionRefs
 // precedent — so the dump stays byte-faithful and C143
 // (approval-references-resolve) can check them; and the clause-URN
-// provenance facet `source { doc "…" clause "…" }` (free citation
-// strings land in doc — the YAML `reference: "PD-05 §4.2"` citation
-// folds here; the kernel `reference { <id>+ }` facet stays the
-// Reference-construct id list it always was).
+// provenance facet `ref derives-from "…#clause-…"` (free citation
+// strings land in the doc slot — the YAML `reference: "PD-05 §4.2"`
+// citation folds here; the kernel `reference { <id>+ }` facet is an
+// opaque id list (referenceIds), never resolved).
 // ─────────────────────────────────────────────────────────────────────
 
 import Approval, { ResolvableApproval } from '../../types/Approval';
 import { resolveFromContext } from '../resolve';
-import { escapeString, tokenizePackage, unwrapBlock } from '../tokenize';
+import {
+  escapeString,
+  stripWrapping,
+  tokenizePackage,
+  unwrapBlock,
+} from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
 import { readSource } from './field-parser';
 import { Dumper, Parser, Resolver } from '../types';
 import type { Registry } from '../../types/data';
-import type Reference from '../../types/Reference';
 import type Role from '../../types/Role';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 export const parseApproval: Parser = function (id, data) {
   const result: ResolvableApproval = {
@@ -35,13 +40,12 @@ export const parseApproval: Parser = function (id, data) {
     actor: null,
     approver: null,
     records: [],
-    ref: [],
+    referenceIds: [],
     source: null,
     _relations: {
       actor: '',
       approver: '',
       records: [],
-      ref: [],
     },
   };
 
@@ -59,10 +63,19 @@ export const parseApproval: Parser = function (id, data) {
       } else if (keyword === 'approval_record') {
         result._relations.records = tokenizePackage(value());
       } else if (keyword === 'reference') {
-        result._relations.ref = tokenizePackage(value());
+        result.referenceIds = tokenizePackage(value());
       } else if (keyword === 'source') {
         // Clause-URN provenance — citation strings land in doc.
         result.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            result.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -88,7 +101,6 @@ export const resolveApproval: Resolver<Approval, ResolvableApproval> =
       approverRef: _relations.approver,
       recordRefs: [..._relations.records],
       records: [],
-      ref: [],
     };
     if (_relations.actor !== '') {
       p.actor =
@@ -102,12 +114,6 @@ export const resolveApproval: Resolver<Approval, ResolvableApproval> =
       const r = resolveFromContext<Registry>(ctx, 'regs', id);
       if (r !== undefined) {
         p.records.push(r);
-      }
-    }
-    for (const id of _relations.ref) {
-      const r = resolveFromContext<Reference>(ctx, 'references', id);
-      if (r !== undefined) {
-        p.ref.push(r);
       }
     }
     return p;
@@ -134,22 +140,15 @@ export const dumpApproval: Dumper<Approval> = function (approval) {
     }
     out += '  }\n';
   }
-  if (approval.ref.length > 0) {
+  if (approval.referenceIds.length > 0) {
     out += '  reference {\n';
-    for (const r of approval.ref) {
-      out += '    ' + r.id + '\n';
+    for (const id of approval.referenceIds) {
+      out += '    ' + id + '\n';
     }
     out += '  }\n';
   }
   if (approval.source && (approval.source.doc || approval.source.clause)) {
-    out += '  source {\n';
-    if (approval.source.doc) {
-      out += '    doc "' + escapeString(approval.source.doc) + '"\n';
-    }
-    if (approval.source.clause) {
-      out += '    clause "' + escapeString(approval.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(approval.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

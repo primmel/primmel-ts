@@ -1,5 +1,3 @@
-import Resolvable from './Resolvable';
-import Reference from './Reference';
 import type { SeriesDecl } from './Series';
 import type SourceDiscrepancy from './SourceDiscrepancy';
 import type { SourceRef } from './Subject';
@@ -34,8 +32,8 @@ export interface EvaluationRule {
   op?: string;
   /** Limit predicate, ocl{...}. */
   limit?: string;
-  /** Free-text source clause citation (e.g. "R 60-1, 5.7.2.6"). */
-  specificationReference?: string;
+  /** The canonical citation channel — `ref cites "<document anchor>"`. */
+  refs?: import('./Ref').Ref[];
   sourceDiscrepancy?: SourceDiscrepancy | null;
 }
 
@@ -106,8 +104,6 @@ export interface FormField {
   sourceRefs?: SourceRef[];
   /** Role-grouped source reference URNs. */
   fieldReferences: RoleReference[];
-  /** Free-text source clause citation (e.g. "R 144-1, 4.5.2"). */
-  specificationReference: string;
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];
   sourceDiscrepancy: SourceDiscrepancy | null;
@@ -211,9 +207,6 @@ interface Form {
   fields: FormField[];
   passFail: PassFail | null;
   referenceIds: string[];
-  ref: Reference[];
 }
 
 export default Form;
-
-export type ResolvableForm = Resolvable<Form, 'ref'>;

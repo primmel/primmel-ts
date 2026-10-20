@@ -1,5 +1,3 @@
-import Resolvable from './Resolvable';
-import Reference from './Reference';
 import type { SeriesDecl } from './Series';
 import type { SourceRef } from './Subject';
 
@@ -50,7 +48,8 @@ interface Symbol {
   formula: SymbolFormula | null;
   /** Free-text editorial notes (repeatable). */
   notes: string[];
-  ref: Reference[];
+  /** The v2 `reference { … }` id list (opaque ids, never resolved). */
+  referenceIds: string[];
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
   /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
@@ -77,4 +76,4 @@ export interface FormulaNote {
   appliesTo: string[];
 }
 
-export type ResolvableSymbol = Resolvable<Symbol, 'ref'>;
+export type ResolvableSymbol = Symbol;

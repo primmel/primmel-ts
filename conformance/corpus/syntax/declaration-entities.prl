@@ -10,7 +10,7 @@ declaration_kind issuing_authority_declaration {
   definition "Declaration signed by an OIML Issuing Authority accepted for participation in the OIML-CS, indicating its scope for issuing OIML certificates and OIML type evaluation reports under Scheme A and/or Scheme B (§5.5.1)."
   scope_model categories_x_schemes
   scheme_a_obligation "When an OIML Issuing Authority is accepted under Scheme A, the OIML Member State shall designate at least one Utilizer for each instrument category concerned, unless the category is not regulated in that Member State (§5.5.1; PD-08 cl. 4 Note 2)."
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.5.1" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.5.1"
 }
 
 declaration_kind utilizer_declaration {
@@ -28,7 +28,7 @@ declaration_kind utilizer_declaration {
     clause "5.6.3"
     description "Whether the Utilizer accepts OIML certificates and/or type evaluation reports issued on the basis of test reports from a Manufacturer's Test Laboratory (§5.6.3) — acceptance is voluntary and requires no justification (PD-08 cl. 6)."
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.6.1" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.6.1"
 }
 
 declaration_status draft {
@@ -55,5 +55,5 @@ declaration_gate declaration-signed-before-issuance {
   blocks { issue evaluation }
   blocks_note "The gated abstract processes of the scheme process model: issue (certificate issuance) and evaluation (the OIML type evaluation report)."
   scope_checked { category scheme }
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.5.1" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.5.1"
 }

@@ -35,7 +35,7 @@
 //       abstentions not_voting
 //       reason_on_against_or_abstain true
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "11.4" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-11.4"
 //   }
 //
 // The advisory / appeal / registration / legacy / financing families
@@ -58,6 +58,7 @@ import DecisionRule, {
   VoteRule,
   VotingBlock,
 } from '../../types/DecisionRule';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 function parseVoteRule(block: string): VoteRule {
   const rule: VoteRule = {
@@ -229,6 +230,15 @@ export const parseDecisionRule: Parser = (id: string, data: string) => {
         rule.no_entrance_fees_for = parseIdList(value());
       } else if (keyword === 'source') {
         rule.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            rule.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -354,14 +364,7 @@ export const dumpDecisionRule: Dumper<DecisionRule> = function (r) {
     out += dumpIdList('no_entrance_fees_for', r.no_entrance_fees_for, '  ');
   }
   if (r.source.doc || r.source.clause) {
-    out += '  source {\n';
-    if (r.source.doc) {
-      out += '    doc "' + escapeString(r.source.doc) + '"\n';
-    }
-    if (r.source.clause) {
-      out += '    clause "' + escapeString(r.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(r.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

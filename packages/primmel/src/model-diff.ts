@@ -96,7 +96,6 @@ export const TIER_ORDER: TierName[] = [
  */
 export const TIER_BY_FIELD: Record<string, TierName> = {
   terms: 'foundations',
-  references: 'foundations',
   roles: 'foundations',
   quantityRegisters: 'foundations',
   enums: 'foundations',

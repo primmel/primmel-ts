@@ -44,20 +44,20 @@ requirement /req/metrological/mpe {
   statement "The error shall not exceed the MPE."
   binds_to { model.parameters.mpe }
   limit { expression "ocl{abs(e_l) <= mpe}" uses { mpe } }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "5.2.1" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.2.1"
 }
 conformance_test /conf/mpe-test {
   name "MPE test"
   purpose "Verify MPE compliance."
   targets { /req/metrological/mpe }
   binds_to { model.parameters.mpe }
-  reference { doc "urn:oiml:pub:r:60-2:2021" clause "2.7.1" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.7.1"
 }
 calculation vMin {
   name "vMin"
   description "Minimum verification interval"
   expression "ocl{(d_max - d_min) / (n_lc * f)}"
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "3.5.11" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.5.11"
 }
 `;
 
@@ -122,8 +122,8 @@ describe('model diff — added/removed/changed', () => {
     const d = diff(
       BASE,
       BASE.replace(
-        'binds_to { model.parameters.mpe }\n  reference',
-        'binds_to { model.parameters.mpe }\n  kind influence\n  reference',
+        'binds_to { model.parameters.mpe }\n  ref',
+        'binds_to { model.parameters.mpe }\n  kind influence\n  ref',
       ),
     );
     assert.equal(d.changed.length, 1);
@@ -170,8 +170,8 @@ describe('model diff — the changed-field list (ask 5, Mko::Diff-congruent)', (
     const d = diff(
       BASE,
       BASE.replace(
-        'binds_to { model.parameters.mpe }\n  reference',
-        'binds_to { model.parameters.mpe }\n  kind influence\n  reference',
+        'binds_to { model.parameters.mpe }\n  ref',
+        'binds_to { model.parameters.mpe }\n  kind influence\n  ref',
       ),
     );
     assert.deepEqual(d.changed[0].aspects, ['structure']);
@@ -189,7 +189,7 @@ describe('model diff — the changed-field list (ask 5, Mko::Diff-congruent)', (
   });
 
   it('a clause move names the provenance CHANNEL it moved on', () => {
-    const d = diff(BASE, BASE.replace('clause "5.2.1"', 'clause "5.2.2"'));
+    const d = diff(BASE, BASE.replace('#clause-5.2.1"', '#clause-5.2.2"'));
     const entry = d.changed.find(e => e.id === '/req/metrological/mpe')!;
     assert.deepEqual(entry.aspects, ['provenance']);
     assert.deepEqual(entry.fields, ['source']);
@@ -321,8 +321,8 @@ describe('model diff — binding content is changed, never moved (M1)', () => {
     const d = diff(
       BASE,
       BASE.replace(
-        '  binds_to { model.parameters.mpe }\n  reference',
-        '  binds_to { model.parameters.mpe }\n  conditions_to_enforce { /cond/rated }\n  reference',
+        '  binds_to { model.parameters.mpe }\n  ref',
+        '  binds_to { model.parameters.mpe }\n  conditions_to_enforce { /cond/rated }\n  ref',
       ),
     );
     assert.equal(d.moved.length, 0);
@@ -413,7 +413,7 @@ describe('model diff — edition-normalized provenance', () => {
   });
 
   it('a clause move between editions is a provenance change AND a drift row', () => {
-    const d = diff(BASE, BASE.replace('clause "2.7.1"', 'clause "2.7.2"'));
+    const d = diff(BASE, BASE.replace('#clause-2.7.1"', '#clause-2.7.2"'));
     assert.equal(d.changed.length, 1);
     assert.equal(d.changed[0].id, '/conf/mpe-test');
     assert.deepEqual(d.changed[0].aspects, ['provenance']);
@@ -435,49 +435,49 @@ describe('clause drift — pairing, folding, text', () => {
 calculation c1 {
   name "c1"
   expression "ocl{1}"
-  source { doc "urn:oiml:pub:r:60-2:2017" clause "2.10.4" }
+  ref derives-from "urn:oiml:pub:r:60-2:2017#clause-2.10.4"
 }
 calculation c2 {
   name "c2"
   expression "ocl{2}"
-  source { doc "urn:oiml:pub:r:60-3:2017" clause "2.1.3" }
-  source { doc "urn:oiml:pub:r:60-3:2017" clause "2.1.3.1" }
+  ref derives-from "urn:oiml:pub:r:60-3:2017#clause-2.1.3"
+  ref derives-from "urn:oiml:pub:r:60-3:2017#clause-2.1.3.1"
 }
 calculation c3 {
   name "c3"
   expression "ocl{3}"
-  source { doc "urn:oiml:pub:r:60-3:2017" clause "9.9.8" }
-  source { doc "urn:oiml:pub:r:60-3:2017" clause "9.9.9" }
+  ref derives-from "urn:oiml:pub:r:60-3:2017#clause-9.9.8"
+  ref derives-from "urn:oiml:pub:r:60-3:2017#clause-9.9.9"
 }
 calculation c4 {
   name "c4"
   expression "ocl{4}"
-  source { doc "urn:oiml:pub:r:60-3:2017" clause "9.9.9" }
+  ref derives-from "urn:oiml:pub:r:60-3:2017#clause-9.9.9"
 }
 `;
   const DRIFT_B = `
 calculation c1 {
   name "c1"
   expression "ocl{1}"
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.5" }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.6" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.5"
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.6"
 }
 calculation c2 {
   name "c2"
   expression "ocl{2}"
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.2" }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.2.1" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.2"
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.2.1"
 }
 calculation c3 {
   name "c3"
   expression "ocl{3}"
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "9.9.9" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-9.9.9"
 }
 calculation c4 {
   name "c4"
   expression "ocl{4}"
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "8.8.8" }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "9.9.9" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-8.8.8"
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-9.9.9"
 }
 `;
 
@@ -567,7 +567,7 @@ calculation c4 {
 
 describe('edition-comparison report', () => {
   it('is tier-annotated and carries the clause-drift table', () => {
-    const d = diff(BASE, BASE.replace('clause "2.7.1"', 'clause "2.7.2"'));
+    const d = diff(BASE, BASE.replace('#clause-2.7.1"', '#clause-2.7.2"'));
     const report = formatDiffReport(d);
     assert.match(report, /primmel diff:/);
     assert.match(report, /by tier:/);
@@ -758,8 +758,8 @@ test_sequence mdlo-creep-dr {
   step 2 { test "/conf/metrological-tests/creep" role follow_up depends_on 1 }
   step 3 { test "/conf/metrological-tests/dr" role follow_up depends_on 2 }
   sample_applicability all
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10" }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.11.1" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10"
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.11.1"
 }
 `;
     const idx = elementIndex(load(TEST_SEQUENCE));
@@ -797,7 +797,7 @@ test_sequence mdlo-creep-dr {
     // The provenance is an aspect: a clause move shows up as provenance.
     const clauseMoved = diff(
       BASE + TEST_SEQUENCE,
-      BASE + TEST_SEQUENCE.replace('clause "2.11.1"', 'clause "2.11.2"'),
+      BASE + TEST_SEQUENCE.replace('#clause-2.11.1"', '#clause-2.11.2"'),
     );
     assert.equal(clauseMoved.changed.length, 1);
     assert.deepEqual(clauseMoved.changed[0].aspects, ['provenance']);
@@ -819,7 +819,7 @@ formulas_used /conf/metrological-tests/measurement-error-repeatability-mdlo {
   name "MDLO evaluation formulas"
   description "The evaluation-level quantities of R 60-3, 2.1 the MDLO test derives from the indication output."
   formulas { conversion_factor_f e_l e_r c_m }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"
 }
 `;
     const KEY =
@@ -861,7 +861,7 @@ formulas_used /conf/metrological-tests/measurement-error-repeatability-mdlo {
     // The provenance is an aspect: a clause move shows up as provenance.
     const clauseMoved = diff(
       BASE + FORMULAS_USED,
-      BASE + FORMULAS_USED.replace('clause "2.1"', 'clause "2.2"'),
+      BASE + FORMULAS_USED.replace('#clause-2.1"', '#clause-2.2"'),
     );
     assert.equal(clauseMoved.changed.length, 1);
     assert.deepEqual(clauseMoved.changed[0].aspects, ['provenance']);

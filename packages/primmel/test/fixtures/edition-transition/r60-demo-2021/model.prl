@@ -106,12 +106,12 @@ requirement /req/metrological/zero-return {
   name "Zero return after load removal"
   statement "After removal of a load, the indication shall return to within 0.5 scale intervals of zero (the 2021 tolerance — TIGHTENED to 0.25 at the 2027 edition)."
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
-  source { doc "urn:oiml:pub:r:60-demo:2021" clause "4.3" }
+  ref derives-from "urn:oiml:pub:r:60-demo:2021#clause-4.3"
 }
 
 requirement /req/technical/warm-up-time {
   name "Warm-up period"
   statement "The instrument shall not indicate measurement results within 30 minutes of switch-on (the 2021 period — REVISED to 15 minutes with a completion record at the 2027 edition)."
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
-  source { doc "urn:oiml:pub:r:60-demo:2021" clause "5.2" }
+  ref derives-from "urn:oiml:pub:r:60-demo:2021#clause-5.2"
 }

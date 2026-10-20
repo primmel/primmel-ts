@@ -22,7 +22,7 @@
 //     }
 //     produced_when per_measurement
 //     retention "approx. three months (secure storage)"
-//     source { doc "urn:oiml:pub:r:91-1:2025" clause "6.6, 7.2.2, 7.3" }
+//     ref derives-from "urn:oiml:pub:r:91-1:2025#clause-6.6, 7.2.2, 7.3"
 //   }
 //
 //   artifact_instance evf-001 {

@@ -15,7 +15,7 @@ const SRC = `instrument GasAnalysisSystem {
     cardinality set
     label_separator "+"
     description "Gas component set measured by the system — multi-select"
-    reference { doc "urn:oiml:pub:r:144-1:2013" clause "1.1" }
+    ref derives-from "urn:oiml:pub:r:144-1:2013#clause-1.1"
     values {
       co { description "CO measured component" }
       no { description "NO measured component (part of NOx)" }

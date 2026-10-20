@@ -29,7 +29,7 @@
 //       definition "Test Laboratory that is part of the same organization
 //         as the OIML Issuing Authority."
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "5.2" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-5.2"
 //   }
 //
 // Cross-references (approval.* → governance_organ, declaration →
@@ -47,6 +47,7 @@ import ParticipantKind, {
   ParticipantCompetence,
   ParticipantSubkind,
 } from '../../types/ParticipantKind';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 function parseCompetence(block: string): ParticipantCompetence {
   const competence: ParticipantCompetence = {
@@ -199,6 +200,15 @@ export const parseParticipantKind: Parser = (id: string, data: string) => {
         kind.subkinds.push(parseSubkind(subId, unwrapBlock(value())));
       } else if (keyword === 'source') {
         kind.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            kind.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -316,14 +326,7 @@ export const dumpParticipantKind: Dumper<ParticipantKind> = function (k) {
     out += dumpSubkind(s);
   }
   if (k.source.doc || k.source.clause) {
-    out += '  source {\n';
-    if (k.source.doc) {
-      out += '    doc "' + escapeString(k.source.doc) + '"\n';
-    }
-    if (k.source.clause) {
-      out += '    clause "' + escapeString(k.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(k.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

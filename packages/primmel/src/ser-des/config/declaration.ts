@@ -17,7 +17,7 @@
 //         and/or type evaluation reports issued on the basis of test
 //         reports from a Manufacturer's Test Laboratory (§5.6.3) — …"
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "5.6.1" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-5.6.1"
 //   }
 //
 //   declaration_status signed {
@@ -38,7 +38,7 @@
 //     blocks_note "The gated abstract processes of the scheme process
 //       model: issue (certificate issuance) and evaluation (…)."
 //     scope_checked { category scheme }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "5.5.1" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-5.5.1"
 //   }
 // ─────────────────────────────────────────────────────────────────────
 
@@ -56,6 +56,7 @@ import DeclarationKind, {
   DeclarationGate,
   DeclarationStatus,
 } from '../../types/Declaration';
+import { dumpSourceRefAsRef, refTargetToSourceRef } from './ref';
 
 function parseContentSlot(id: string, block: string): DeclarationContentSlot {
   const slot: DeclarationContentSlot = { id, clause: '', description: '' };
@@ -120,6 +121,15 @@ export const parseDeclarationKind: Parser = (id: string, data: string) => {
         kind.content.push(parseContentSlot(slotId, unwrapBlock(value())));
       } else if (keyword === 'source') {
         kind.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            kind.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -147,15 +157,7 @@ function dumpContentSlot(s: DeclarationContentSlot): string {
 }
 
 function dumpSourceBlock(src: { doc: string; clause: string }): string {
-  let out = '  source {\n';
-  if (src.doc) {
-    out += '    doc "' + escapeString(src.doc) + '"\n';
-  }
-  if (src.clause) {
-    out += '    clause "' + escapeString(src.clause) + '"\n';
-  }
-  out += '  }\n';
-  return out;
+  return dumpSourceRefAsRef(src, '  ', escapeString);
 }
 
 export const dumpDeclarationKind: Dumper<DeclarationKind> = function (k) {
@@ -256,6 +258,15 @@ export const parseDeclarationGate: Parser = (id: string, data: string) => {
         );
       } else if (keyword === 'source') {
         gate.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            gate.source = b;
+          }
+        }
       } else {
         return false;
       }

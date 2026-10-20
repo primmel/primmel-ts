@@ -15,6 +15,7 @@ import { dumpBareSafe, readSource, stripColon } from './field-parser';
 import ApplicationDeclaration, {
   ApplicationDocument,
 } from '../../types/ApplicationDeclaration';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 const APPLICATION_DOCUMENT_OBLIGATIONS = ['shall', 'should', 'may'] as const;
 
@@ -62,6 +63,15 @@ export const parseApplicationDeclaration: Parser = (
               doc.obligation = o;
             } else if (k2 === 'source') {
               doc.source = readSource(unwrapBlock(v2()));
+            } else if (k2 === 'ref') {
+              const predicate = stripWrapping(v2());
+              const target = stripWrapping(v2());
+              if (predicate === 'derives-from') {
+                const b = refTargetToSourceRef(target);
+                if (b) {
+                  doc.source = b;
+                }
+              }
             } else {
               return false;
             }
@@ -102,14 +112,7 @@ export const dumpApplicationDeclaration: Dumper<ApplicationDeclaration> =
         out += '    obligation ' + dumpBareSafe(doc.obligation) + '\n';
       }
       if (doc.source && (doc.source.doc || doc.source.clause)) {
-        out += '    source {\n';
-        if (doc.source.doc) {
-          out += '      doc "' + escapeString(doc.source.doc) + '"\n';
-        }
-        if (doc.source.clause) {
-          out += '      clause "' + escapeString(doc.source.clause) + '"\n';
-        }
-        out += '    }\n';
+        out += dumpSourceRefAsRef(doc.source, '    ', escapeString);
       }
       out += '  }\n';
     }

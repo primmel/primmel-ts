@@ -8,7 +8,7 @@
 //                                      # attestation | surveillance
 //     row "II a)"
 //     label "testing (of product items …)"
-//     source { doc "urn:iso-iec:…:17067:2013" clause "5.2" }
+//     ref derives-from "urn:iso-iec:…:17067:2013#clause-5.2"
 //   }
 //
 //   scheme_type type_5 {
@@ -24,7 +24,7 @@
 //       activities { market_sampling factory_sampling … }
 //     }
 //     notes { "If the surveillance includes audit of the …" }
-//     source { doc "…" clause "5.3.7" }
+//     ref derives-from "…#clause-5.3.7"
 //   }
 //
 // The `family` and `attestation_object` vocabularies are parse-enforced

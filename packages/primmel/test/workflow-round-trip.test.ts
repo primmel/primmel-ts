@@ -44,7 +44,7 @@ process conduct_tests {
   validate_measurement {
     "every([within_mpe]) = true"
   }
-  source { doc "PD-05 §4.1" clause "" }
+  ref derives-from "PD-05 §4.1"
 }
 `;
 
@@ -92,15 +92,15 @@ describe('process workflow facets (smart TODO.roadmap/40 batch 5, step 5a)', () 
     assert.equal(dump(load(out)), out);
   });
 
-  it('provenance is spelled ONLY source { doc clause } — free citation strings land in doc', () => {
+  it('provenance is spelled ONLY ref derives-from — free citation strings land in doc', () => {
     const m = load(PROCESS);
     const src = m.processes[0]!.source!;
     assert.equal(src.doc, 'PD-05 §4.1');
     assert.equal(src.clause, '');
     const out = dump(m);
-    assert.ok(out.includes('doc "PD-05 §4.1"'));
-    // The accidental `reference { … }` emission has no keyword — it never
-    // comes back.
+    assert.ok(out.includes('ref derives-from "PD-05 §4.1"'));
+    // The retired spellings never come back.
+    assert.ok(!out.includes('source {'));
     assert.ok(!out.includes('reference {'));
   });
 
@@ -220,8 +220,7 @@ ${GATEWAY}
 
 // The r60 approvals.yaml shape: id, label→name, actor, approve_by,
 // approval_record { <entity-store>+ }, and the citation string folded
-// into source { doc } (the kernel `reference {…}` facet stays the
-// Reference-construct id list it always was).
+// onto the provenance slot (ref derives-from).
 const APPROVAL_ROLES_CLASSES = `
 role applicant {
   name "Applicant"
@@ -244,7 +243,7 @@ approval ia_approve_application {
   approval_record {
     applications
   }
-  source { doc "PD-05 §4.2" clause "" }
+  ref derives-from "PD-05 §4.2"
 }
 `;
 
@@ -281,9 +280,7 @@ describe('approval provenance + resolution (smart TODO.roadmap/40 batch 5, step 
           '  approval_record {\n' +
           '    applications\n' +
           '  }\n' +
-          '  source {\n' +
-          '    doc "PD-05 §4.2"\n' +
-          '  }\n' +
+          '  ref derives-from "PD-05 §4.2"\n' +
           '}\n',
       ),
     );

@@ -1,6 +1,3 @@
-import Resolvable from './Resolvable';
-import Reference from './Reference';
-
 export interface CalculationInput {
   name: string;
   type: string;
@@ -84,7 +81,8 @@ interface Calculation {
   refs?: import('./Ref').Ref[];
   /** The correspondence annotations (MN 114 v3.1, clause 19.4). */
   correspondences?: import('./Correspondence').Correspondence[];
-  ref: Reference[];
+  /** The v2 `reference { … }` id list (opaque ids, never resolved). */
+  referenceIds: string[];
   /** The executable realizations (smart TODO.roadmap/40 batch 4) —
    *  repeatable named `variant <id> { … }` blocks; `engine` is the
    *  documented first id, unknown ids tolerated for forward compat. */
@@ -129,4 +127,4 @@ export interface CalculationVariant {
 
 export default Calculation;
 
-export type ResolvableCalculation = Resolvable<Calculation, 'ref'>;
+export type ResolvableCalculation = Calculation;

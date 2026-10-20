@@ -188,29 +188,14 @@ export function readEntryTokens(value: string): string[] {
   return single === '' ? [] : [single];
 }
 
-/** Read one `source { doc "…" clause "…" [fragment "…"] }` block — the
- *  requirement/test_point_set provenance idiom. Unknown keys are skipped
- *  (forward compatibility); last wins on a repeated key. */
-export function readSource(block: string): SourceRef {
-  const src: SourceRef = { doc: '', clause: '' };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i >= t.length) {
-      break;
-    }
-    if (cmd === 'doc') {
-      src.doc = stripWrapping(t[i++]);
-    } else if (cmd === 'clause') {
-      src.clause = stripWrapping(t[i++]);
-    } else if (cmd === 'fragment') {
-      src.fragment = stripWrapping(t[i++]);
-    } else {
-      unwrapBlock(t[i++]);
-    }
-  }
-  return src;
+/** The retired `source { doc clause }` provenance block (1.21.21): every
+ *  call site is a parse error — cite the document anchor directly. The
+ *  parameter stays for the uniform call-site signature. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function readSource(_block: string): SourceRef {
+  throw new Error(
+    'Parsing error: the source { doc clause } provenance spelling is retired (1.21.21) — cite the clause anchor directly (ref derives-from "urn#clause-X")',
+  );
 }
 
 /**
@@ -285,7 +270,6 @@ export function parseFormField(
     hasDefault: false,
     referenceIds: [],
     fieldReferences: [],
-    specificationReference: '',
     applicability: [],
     sourceDiscrepancy: null,
     fields: [],
@@ -438,7 +422,9 @@ export function parseFormField(
       (field.correspondences ??= []).push(cc.corr);
       i = cc.next;
     } else if (cmd === 'specification_reference') {
-      field.specificationReference = stripWrapping(t[i++]);
+      throw new Error(
+        'Parsing error: the specification_reference facet is retired (1.21.21) — cite the document directly (ref cites "…")',
+      );
     } else if (cmd === 'applicability') {
       field.applicability = parseApplicability(unwrapBlock(t[i++]));
     } else if (cmd === 'source_discrepancy') {
@@ -494,8 +480,14 @@ function parseEvaluation(block: string): EvaluationRule {
     } else if (cmd === 'reference') {
       const ids = tokenizePackage(t[i++]).map(stripWrapping);
       rule.referenceId = ids[0] ?? null;
+    } else if (cmd === 'ref') {
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      (rule.refs ??= []).push(rr.ref);
+      i = rr.next;
     } else if (cmd === 'specification_reference') {
-      rule.specificationReference = stripWrapping(t[i++]);
+      throw new Error(
+        'Parsing error: the specification_reference facet is retired (1.21.21) — cite the document directly (ref cites "…")',
+      );
     } else if (cmd === 'source_discrepancy') {
       rule.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(t[i++]));
     } else {
@@ -756,11 +748,11 @@ export function dumpFormField(field: FormField, indent: string): string {
     if (field.evaluation.referenceId) {
       ev += ' reference { ' + field.evaluation.referenceId + ' }';
     }
-    if (field.evaluation.specificationReference) {
-      ev +=
-        ' specification_reference "' +
-        escapeString(field.evaluation.specificationReference) +
-        '"';
+    for (const r of field.evaluation.refs ?? []) {
+      ev += ' ref ' + r.predicate + ' "' + escapeString(r.target) + '"';
+      if (r.note) {
+        ev += ' { note "' + escapeString(r.note) + '" }';
+      }
     }
     if (field.evaluation.sourceDiscrepancy) {
       ev += ' ' + dumpSourceDiscrepancy(field.evaluation.sourceDiscrepancy, '');
@@ -852,13 +844,6 @@ export function dumpFormField(field: FormField, indent: string): string {
         escapeString,
         dumpBareSafe,
       ).trimEnd(),
-    );
-  }
-  if (field.specificationReference) {
-    inner.push(
-      'specification_reference "' +
-        escapeString(field.specificationReference) +
-        '"',
     );
   }
   if (field.sourceDiscrepancy) {

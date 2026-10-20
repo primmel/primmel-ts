@@ -16,7 +16,7 @@
 //     metamodel_class identity-provenance.Marking
 //     term_ref marking                   # → term (C130)
 //     contains { model.identity.manufacturer … e_max accuracy_class }
-//     source { doc "urn:oiml:pub:r:60-1:2021" clause "6.2.1" }
+//     ref derives-from "urn:oiml:pub:r:60-1:2021#clause-6.2.1"
 //   }
 //
 //   aspect software {

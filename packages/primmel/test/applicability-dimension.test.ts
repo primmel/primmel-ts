@@ -74,7 +74,7 @@ describe('top-level dimension: serialization', () => {
   label "Power supply"
   cardinality single
   description "Power source of the instrument."
-  reference { doc "urn:oiml:pub:r:144-1:2013" clause "4.5.1" }
+  ref derives-from "urn:oiml:pub:r:144-1:2013#clause-4.5.1"
   values {
     ac-mains { label "AC mains" description "Supply from AC mains power." }
     battery { label "Battery" }

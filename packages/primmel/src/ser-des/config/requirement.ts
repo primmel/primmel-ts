@@ -19,7 +19,7 @@
 //     verification { method testing }
 //     dependencies { /req/other }
 //     source_discrepancy { summary "…" sources { "urn:…" } resolution follows_clause_x rationale "…" }
-//     source { doc "urn:…" clause "5.3.2" }
+//     ref derives-from "urn:…#clause-5.3.2"
 //   }
 // ─────────────────────────────────────────────────────────────────────
 

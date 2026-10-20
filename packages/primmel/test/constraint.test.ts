@@ -12,7 +12,7 @@ const SRC = `constraint dead-load-max-geometry {
   check "ocl{model.parameters.d_max >= 0.9 * model.parameters.e_max and model.parameters.d_max <= model.parameters.e_max}"
   violation_meaning "The declared test setup does not realize the upper end of the measuring range — the type evaluation is void (R 60-1, 3.6; R 60-2, 2.7.3.4)."
   on_violation invalid
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "3.6" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.6"
 }
 
 constraint warm-up-observability {

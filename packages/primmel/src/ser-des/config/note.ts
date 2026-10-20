@@ -1,4 +1,4 @@
-import type { Dumper, Parser, Resolver } from '../types';
+import type { Dumper, Parser } from '../types';
 import {
   escapeString,
   stripWrapping,
@@ -19,8 +19,6 @@ import {
 import type Note from '../../types/Note';
 import type { NoteType } from '../../types/Note';
 import type { ResolvableNote } from '../../types/Note';
-import type Reference from '../../types/Reference';
-import { resolveFromContext } from '../resolve';
 
 // EXAMPLE is the legacy (MMEL v2) note type — the corpus carries it.
 const VALID_NOTE_TYPES: NoteType[] = [
@@ -38,10 +36,7 @@ export const parseNote: Parser = function (id, data) {
     message: '',
     sourceDiscrepancy: null,
     source: null,
-    ref: [],
-    _relations: {
-      ref: [],
-    },
+    referenceIds: [],
   };
 
   forEachEntry(
@@ -72,7 +67,7 @@ export const parseNote: Parser = function (id, data) {
       } else if (command === 'reference') {
         // The bibliographic citation channel (the references-collection
         // id list — resolveNote resolves each), never provenance.
-        result._relations.ref = tokenizePackage(value());
+        result.referenceIds = tokenizePackage(value());
       } else if (command === 'ref') {
         // The unified typed reference (spec: docs/primmel/18) — a
         // URN-anchored derives-from folds into the provenance facet.
@@ -92,20 +87,6 @@ export const parseNote: Parser = function (id, data) {
   };
 };
 
-export const resolveNote: Resolver<Note, ResolvableNote> = function (
-  ctx,
-  unresolved,
-) {
-  const ref: Reference[] = [];
-  for (const id of unresolved._relations.ref) {
-    const r = resolveFromContext<Reference>(ctx, 'references', id);
-    if (r !== undefined) {
-      ref.push(r);
-    }
-  }
-  return { ...unresolved, ref };
-};
-
 export const dumpNote: Dumper<Note> = function (n) {
   let out = 'note ' + n.id + ' {\n';
   out += '  type ' + n.type + '\n';
@@ -117,10 +98,10 @@ export const dumpNote: Dumper<Note> = function (n) {
     (n.source && (n.source.doc || n.source.clause) ? [n.source] : [])) {
     out += dumpSourceRefAsRef(src, '  ', escapeString);
   }
-  if (n.ref.length > 0) {
+  if (n.referenceIds.length > 0) {
     out += '  reference {\n';
-    for (const r of n.ref) {
-      out += '    ' + r.id + '\n';
+    for (const id of n.referenceIds) {
+      out += '    ' + id + '\n';
     }
     out += '  }\n';
   }

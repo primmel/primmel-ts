@@ -30,6 +30,6 @@ export default interface CommonTestCondition {
   /** The condition's normative text. */
   description: string;
   /** Clause-URN provenance (null = undeclared; the r91 keyed-map
-   *  entries carry a per-entry source { doc, clause }). */
+   *  entries carry a per-entry provenance record (doc + clause). */
   source?: SourceRef | null;
 }

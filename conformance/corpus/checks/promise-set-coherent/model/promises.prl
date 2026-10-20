@@ -34,7 +34,7 @@ promise_set LoadCell {
       label "E_max values"
       obligation mandatory
     }
-    source { doc "urn:oiml:pub:r:60-1:2021" clause "3.5.5" }
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.5.5"
   }
   promise accuracy_class_envelope {
     target accuracy_class

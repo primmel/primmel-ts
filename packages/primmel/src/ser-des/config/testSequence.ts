@@ -25,8 +25,8 @@
 //       depends_on 2
 //     }
 //     sample_applicability all
-//     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10" }
-//     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.11.1" }
+//     ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10"
+//     ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.11.1"
 //   }
 //
 // Surface-syntax notes (the invariant/passport conventions,
@@ -40,7 +40,7 @@
 //     wrapper block: steps sit directly in the body, so the body parses
 //     with a manual token walk — forEachEntry cannot interleave a
 //     head-scalar + block pair with scalar facets);
-//   - `source { doc "…" clause "…" }` repeats, collecting into
+//   - `ref derives-from "…#clause-…"` repeats, collecting into
 //     sourceRefs (the requirement family's idiom, TODO.roadmap/24);
 //   - the parser stays TOTAL: missing facets land as ''/null/[] and the
 //     linter (C92/C93) judges the shape — a missing step head (`step

@@ -368,19 +368,6 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         }
       }
     }
-    // C112: a reference's urn is a well-formed IRI.
-    if (c.keyword === 'reference') {
-      const urn = tokensOf(c, 'urn')[0] ?? '';
-      if (
-        urn !== '' &&
-        !/^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/.test(urn)
-      ) {
-        err(
-          'C112',
-          `reference ${c.ident}: urn "${urn}" is not a well-formed IRI (a scheme followed by no whitespace or IRI delimiters) (reference-identity)`,
-        );
-      }
-    }
     // C114: a requirement's limit kind agrees with its acceptance
     // chain's derived kind.
     if (c.keyword === 'requirement') {
@@ -5621,12 +5608,6 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         const m = ISODUR.exec(t2);
         return m !== null && m[1] === undefined && m[2] === undefined;
       };
-      const rawOfLine = (l: { blocks?: Item[][] }): string[] | null => {
-        const first = l.blocks?.[0]?.[0];
-        return first !== undefined && first.kind === 'raw'
-          ? first.tokens
-          : null;
-      };
       for (const ct of pkg.constructs.filter(
         x => x.keyword === 'conformance_test' && x.ident,
       )) {
@@ -6939,31 +6920,31 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           ? nested(isB).find(n => n.keyword === 'structure')
           : undefined;
         if (structure) {
-          compositionIds.add(
-            ...lines(structure)
-              .flatMap(l => [l.key ?? '', ...l.tokens])
-              .filter(x => x !== ''),
-          );
+          for (const id of lines(structure)
+            .flatMap(l => [l.key ?? '', ...l.tokens])
+            .filter(x => x !== '')) {
+            compositionIds.add(id);
+          }
         }
         const dp = isB
           ? nested(isB).find(n => n.keyword === 'design_parameters')
           : undefined;
         if (dp) {
-          compositionIds.add(
-            ...lines(dp)
-              .map(l => l.key!)
-              .filter(x => x !== ''),
-          );
+          for (const id of lines(dp)
+            .map(l => l.key!)
+            .filter(x => x !== '')) {
+            compositionIds.add(id);
+          }
         }
         const chars = has
           ? nested(has).find(n => n.keyword === 'characteristics')
           : undefined;
         if (chars) {
-          compositionIds.add(
-            ...lines(chars)
-              .map(l => l.key!)
-              .filter(x => x !== ''),
-          );
+          for (const id of lines(chars)
+            .map(l => l.key!)
+            .filter(x => x !== '')) {
+            compositionIds.add(id);
+          }
         }
         for (const l of has ? lines(has).filter(x => x.key === 'serve') : []) {
           if (l.tokens[0]) {
@@ -6983,19 +6964,19 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           ? nested(isB).find(n => n.keyword === 'artifacts')
           : undefined;
         if (arts) {
-          subjectArtifacts.add(
-            ...arts.items
-              .flatMap(i2 =>
-                i2.kind === 'raw'
-                  ? i2.tokens
-                  : i2.kind === 'line'
-                    ? [i2.key ?? '', ...i2.tokens]
-                    : i2.kind === 'construct' && i2.construct
-                      ? [i2.construct.ident || i2.construct.keyword]
-                      : [],
-              )
-              .filter(x => x !== ''),
-          );
+          for (const id of arts.items
+            .flatMap(i2 =>
+              i2.kind === 'raw'
+                ? i2.tokens
+                : i2.kind === 'line'
+                  ? [i2.key ?? '', ...i2.tokens]
+                  : i2.kind === 'construct' && i2.construct
+                    ? [i2.construct.ident || i2.construct.keyword]
+                    : [],
+            )
+            .filter(x => x !== '')) {
+            subjectArtifacts.add(id);
+          }
         }
       }
       const artifactDefIds = new Set(
@@ -8200,9 +8181,6 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           `.primmel-allowlist.prl: STALE entry [${e.rule}] "${e.match}" matches no issue — the data was fixed; remove the entry (allowlist-stale)`,
         );
       }
-      const budgetLine = al.budgets.find(
-        b2 => b2.key === 'coverage_budget' || b2.key === 'text_coverage_budget',
-      );
       // The C55 budget caps the C51/C52 coverage warnings; the C72 text
       // budget is judged inside the text-coverage family. A budget line
       // that is NOT the text budget governs C51/C52 (the kernel's

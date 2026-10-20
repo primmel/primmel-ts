@@ -528,15 +528,15 @@ requirement /req/scope/alpha {
   }
   dependencies { /req/scope/beta /req/missing }
   verification { method examination description "By inspection." }
-  source { doc "urn:test:r:1:2021" clause "5.2" }
-  source { doc "urn:test:r:1:2021" clause "5.2.1" }
+  ref derives-from "urn:test:r:1:2021#clause-5.2"
+  ref derives-from "urn:test:r:1:2021#clause-5.2.1"
 }
 
 requirement /req/scope/beta {
   name "Beta"
   statement "The widget should glow."
   obligation should
-  source { doc "urn:test:r:1:2021" clause "5.3" }
+  ref derives-from "urn:test:r:1:2021#clause-5.3"
 }
 
 requirement /req/scope/gamma {
@@ -556,7 +556,7 @@ requirement /req/orphan {
   name "Alpha check"
   purpose "Verify the widget frobnicates."
   guidance "Check twice."
-  reference { doc "urn:test:r:2:2021" clause "A.3" }
+  ref derives-from "urn:test:r:2:2021#clause-A.3"
   targets { /req/scope/alpha }
 }`,
   );

@@ -17,7 +17,6 @@ import type Note from './Note';
 import type Process from './process';
 import type { Subprocess } from './flow';
 import type Provision from './Provision';
-import type Reference from './Reference';
 import type Role from './Role';
 import type StateMachine from './StateMachine';
 import type {
@@ -99,7 +98,6 @@ export default interface Standard {
   regs: Registry[];
   events: EventNode[];
   gateways: Gateway[];
-  references: Reference[];
   approvals: Approval[];
   enums: Enum[];
   variables: Variable[];

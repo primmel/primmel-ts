@@ -12,7 +12,7 @@ scheme_definition scheme_b {
     clause "5.4.2.1"
     note "Self-declaration with additional supporting evidence (§5.4.2.1); the Scheme B application and approval process for IAs is specified in PD-03, for TLs in PD-04 (§5.4.1.1)."
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "3.38" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-3.38"
 }
 
 scheme_definition scheme_a {
@@ -26,7 +26,7 @@ scheme_definition scheme_a {
     basis { accreditation peer_assessment }
     note "Compliance demonstrated by peer evaluation on the basis of an accreditation assessment or a peer assessment (§5.4.3.1)."
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "3.37" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-3.37"
 }
 
 scheme_lifecycle category_scheme {
@@ -64,5 +64,5 @@ scheme_lifecycle category_scheme {
     deferral_note "The Management Committee may propose to the CIML that a category does not automatically transition after two years (§15.3); a granted deferral extends this timer's window per the CIML decision (§9 e iii)."
     description "The two-year Scheme-B window opened by the category's inclusion: when it elapses, transition_period_elapsed fires and the category moves to Scheme A automatically (§15.2)."
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "15" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-15"
 }

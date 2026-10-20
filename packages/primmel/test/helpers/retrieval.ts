@@ -113,13 +113,13 @@ requirement /req/scope/beta {
   applicability {
     tech: [analogue digital] match all
   }
-  source { doc "urn:test:r:9-1:2021#_eb46a3a3-b2c3-4d5e-8f90-a1b2c3d4e5f6" clause "" }
+  ref derives-from "urn:test:r:9-1:2021#_eb46a3a3-b2c3-4d5e-8f90-a1b2c3d4e5f6"
 }
 
 requirement /req/scope/gamma {
   name "Gamma"
   statement "The widget shall hum."
-  source { doc "urn:test:r:9-1:2021" clause "_eb46a3a3-b2c3-4d5e-8f90-a1b2c3d4e5f6" }
+  ref derives-from "urn:test:r:9-1:2021#clause-_eb46a3a3-b2c3-4d5e-8f90-a1b2c3d4e5f6"
 }
 
 requirement /req/scope/delta {
@@ -142,7 +142,7 @@ requirement /req/orphan {
   purpose "Verifies the widget frobnicates."
   method "Apply the frobnication procedure of the reference document."
   targets { /req/scope/alpha }
-  reference { doc "urn:test:r:9-2:2021" clause "7.1" fragment "s3" }
+  ref derives-from "urn:test:r:9-2:2021#clause-7.1/s3"
 }
 
 conformance_test /conf/scope/beta-composite {
@@ -349,7 +349,7 @@ calculation lookupFrob {
   description "The frobnication test establishes the baseline before the beep test."
   step 1 { test "/conf/scope/alpha-frob" role baseline }
   step 2 { phase "warm-up" depends_on 1 }
-  source { doc "urn:test:r:9-2:2021" clause "2.10" }
+  ref derives-from "urn:test:r:9-2:2021#clause-2.10"
 }`,
   );
 

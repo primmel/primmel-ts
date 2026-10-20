@@ -1780,18 +1780,6 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.primmel/11, MN 114 clause 10.6 (primmel/spec#18 ask 2)',
   ),
-  // C112: the structured reference identity (clause 14.7) — a malformed
-  // urn is an error (the same well-formedness class as C85); a reference
-  // carrying neither urn nor the org+document pair is a warning (a
-  // display-string citation is visible debt, never silently citable).
-  R(
-    'C112',
-    'reference-identity',
-    'base',
-    'error',
-    'normal',
-    'TODO.primmel/11, MN 114 clause 14.7 (primmel/spec#18 ask 3)',
-  ),
   // C114: the limit's quantity typing agrees with the verdict it binds
   // (clause 11.1.2) — a limit and its acceptance chain can never drift
   // apart in units. C115: the calculation signature (clause 13.7.1) —

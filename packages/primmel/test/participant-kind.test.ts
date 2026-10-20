@@ -34,7 +34,7 @@ participant_kind issuing_authority {
     clause "11.5 f)"
   }
   declaration issuing_authority_declaration
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.2" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.2"
 }
 participant_kind test_laboratory {
   label "Test Laboratory"
@@ -65,7 +65,7 @@ participant_kind test_laboratory {
     acceptance voluntary
     acceptance_note "Acceptance of certificates/reports issued on the basis of MTL test reports is voluntary (B 18:2025, §5.6.3; PD-06)."
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.3" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.3"
 }
 participant_kind utilizer {
   label "Utilizer"
@@ -75,7 +75,7 @@ participant_kind utilizer {
   member member_state
   declaration utilizer_declaration
   admission "PD-09"
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.6.1" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.6.1"
 }
 `;
 
@@ -85,7 +85,7 @@ governance_organ management_committee {
   term "3.22"
   clause "11"
   mandate "The MC manages the OIML-CS: it decides on the participation of Issuing Authorities, Test Laboratories, Utilizers and Associates, and on the transition of categories between Schemes."
-  source { doc "urn:oiml:pub:b:18:2025" clause "11" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-11"
 }
 governance_organ review_committee {
   label "Review Committee (RC)"
@@ -93,14 +93,14 @@ governance_organ review_committee {
   clause "12"
   mandate "The RC reviews applications and recommends participation decisions to the MC."
   sub_committee_of management_committee
-  source { doc "urn:oiml:pub:b:18:2025" clause "12" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-12"
 }
 governance_organ board_of_appeal {
   label "Board of Appeal (BoA)"
   clause "14"
   mandate "The BoA rules on appeals against MC decisions."
   independent_of management_committee
-  source { doc "urn:oiml:pub:b:18:2025" clause "14" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-14"
 }
 `;
 

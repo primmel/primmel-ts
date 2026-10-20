@@ -53,7 +53,6 @@ export const parseTerm: Parser = function (id, data) {
     definition: '',
     symbolId: '',
     referenceIds: [],
-    ref: [],
   };
 
   forEachEntry(

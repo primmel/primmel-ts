@@ -113,7 +113,7 @@ process ia_application {
     }
   }
   activity_kind { selection }
-  source { doc "urn:oiml:pub:cs:pd-05:2024" clause "4.1" }
+  ref derives-from "urn:oiml:pub:cs:pd-05:2024#clause-4.1"
 }
 process ia_assessment {
   name "IA assessment"

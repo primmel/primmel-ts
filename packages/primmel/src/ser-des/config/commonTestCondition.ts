@@ -15,6 +15,7 @@ import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { readSource } from './field-parser';
 import CommonTestCondition from '../../types/CommonTestCondition';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 export const parseCommonTestCondition: Parser = (id: string, data: string) => {
   const condition: CommonTestCondition = {
@@ -36,6 +37,15 @@ export const parseCommonTestCondition: Parser = (id: string, data: string) => {
         condition.description = stripWrapping(value());
       } else if (keyword === 'source') {
         condition.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            condition.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -64,14 +74,7 @@ export const dumpCommonTestCondition: Dumper<CommonTestCondition> = function (
     out += '  description "' + escapeString(c.description) + '"\n';
   }
   if (c.source && (c.source.doc || c.source.clause)) {
-    out += '  source {\n';
-    if (c.source.doc) {
-      out += '    doc "' + escapeString(c.source.doc) + '"\n';
-    }
-    if (c.source.clause) {
-      out += '    clause "' + escapeString(c.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(c.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

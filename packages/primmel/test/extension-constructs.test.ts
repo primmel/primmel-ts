@@ -35,7 +35,7 @@ requirement /req/metrological/mpe {
   }
   applicability { accuracy_class: [A, B, C, D] }
   verification { method testing }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "5.3.2" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2"
 }
 
 conformance_test /conf/metrological-tests/measurement-error-repeatability-mdlo {

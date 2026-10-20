@@ -23,7 +23,7 @@ import {
   readSource,
   stripColon,
 } from './field-parser';
-import { refTargetToSourceRef } from './ref';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 import VerificationPathway, {
   VerificationMark,
   VerificationTrigger,
@@ -79,14 +79,7 @@ function dumpSourceLines(
   if (!src.doc && !src.clause) {
     return '';
   }
-  let out = indent + 'source {\n';
-  if (src.doc) {
-    out += indent + '  doc "' + escapeString(src.doc) + '"\n';
-  }
-  if (src.clause) {
-    out += indent + '  clause "' + escapeString(src.clause) + '"\n';
-  }
-  return out + indent + '}\n';
+  return dumpSourceRefAsRef(src, indent, escapeString);
 }
 
 export const parseVerificationPathway: Parser = (id: string, data: string) => {

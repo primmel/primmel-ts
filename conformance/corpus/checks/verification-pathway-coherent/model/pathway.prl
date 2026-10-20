@@ -34,7 +34,7 @@ verification_pathway initial-verification {
   limits {
     mode same-as-type-evaluation
     description "The MPEs apply unchanged."
-    source { doc "urn:oiml:pub:r:91-1:2025" clause "8.2.3" }
+    ref derives-from "urn:oiml:pub:r:91-1:2025#clause-8.2.3"
   }
   marking {
     mark verification-mark { mark "verification mark" location "visible spot on the speed meter (7.14)" clause "8.2.4" }
@@ -53,8 +53,8 @@ verification_pathway initial-verification {
       action invalidating_signal_received
       applicability { mode_of_use: [moving] }
       description "After changing a tyre the verification might no longer be valid."
-      source { doc "urn:oiml:pub:r:91-1:2025" clause "6.15.3 Note 2" }
+      ref derives-from "urn:oiml:pub:r:91-1:2025#clause-6.15.3 Note 2"
     }
   }
-  source { doc "urn:oiml:pub:r:91-1:2025" clause "8.2" }
+  ref derives-from "urn:oiml:pub:r:91-1:2025#clause-8.2"
 }

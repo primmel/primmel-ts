@@ -20,6 +20,7 @@ import {
   parseProcessSequence,
 } from './processSequence';
 import DocumentModule from '../../types/DocumentModule';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 export const parseDocumentModule: Parser = (id: string, data: string) => {
   const module: DocumentModule = {
@@ -62,6 +63,15 @@ export const parseDocumentModule: Parser = (id: string, data: string) => {
         );
       } else if (keyword === 'source') {
         module.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            module.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -101,14 +111,7 @@ export const dumpDocumentModule: Dumper<DocumentModule> = function (m) {
     out += dumpProcessRegister(r, '  ');
   }
   if (m.source.doc || m.source.clause) {
-    out += '  source {\n';
-    if (m.source.doc) {
-      out += '    doc "' + escapeString(m.source.doc) + '"\n';
-    }
-    if (m.source.clause) {
-      out += '    clause "' + escapeString(m.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(m.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

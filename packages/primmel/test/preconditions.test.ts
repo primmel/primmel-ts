@@ -8,7 +8,7 @@ import { load, dump } from '../src/ser-des/index.js';
 const SRC = `conformance_test CreepTest {
   name "Creep test"
   type Testing
-  reference { doc "urn:oiml:pub:r:60-2:2021" clause "2.7.3" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.7.3"
   preconditions {
     precondition temperature-stability {
       check "ocl{temperature_variation <= min(2, 0.2 * (family.parameters.t_max - family.parameters.t_min))}"

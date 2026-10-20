@@ -131,7 +131,7 @@ const SEEDED_MANIFEST = manifest([
 const REQ_MPE = `requirement /req/mpe {
   binds_to { model.parameters.e_max }
   statement "The error of any load cell shall not exceed the maximum permissible error on type evaluation"
-  source { doc "${URN}" clause "5.3.2" }
+  ref derives-from "${URN}#clause-5.3.2"
 }
 instrument T {
   dimension accuracy_class { scope group values { A B } }
@@ -254,8 +254,8 @@ describe('text coverage in primmel check (TODO.roadmap/26)', () => {
     const req = `requirement /req/envelope {
   binds_to { model.parameters.e_max }
   statement "The error envelope considers several measurement errors together"
-  source { doc "${URN}" clause "2.2" fragment "s1" }
-  source { doc "${URN}" clause "5.3.2" }
+  ref derives-from "${URN}#clause-2.2/s1"
+  ref derives-from "${URN}#clause-5.3.2"
 }
 instrument T {
   dimension accuracy_class { scope group values { A B } }
@@ -417,12 +417,12 @@ attribute_definition e_max {
     const dup = `requirement /req/mpe {
   binds_to { model.parameters.e_max }
   statement "The error of any load cell shall not exceed the maximum permissible error on type evaluation"
-  source { doc "${URN}" clause "5.3.2" }
+  ref derives-from "${URN}#clause-5.3.2"
 }
 requirement /req/mpe-copy {
   binds_to { model.parameters.e_max }
   statement "The error of any load cell shall not exceed the maximum permissible error on type evaluation"
-  source { doc "${URN}" clause "5.3.2" }
+  ref derives-from "${URN}#clause-5.3.2"
 }
 instrument T {
   dimension accuracy_class { scope group values { A B } }
@@ -502,8 +502,8 @@ attribute_definition e_max {
   it('repeated source blocks on one element all bind (the sources-plural surface)', () => {
     const cond = `requirement /req/reference-conditions {
   name "Reference conditions"
-  source { doc "${URN}" clause "2.12.1" }
-  source { doc "${URN}" clause "2.2" }
+  ref derives-from "${URN}#clause-2.12.1"
+  ref derives-from "${URN}#clause-2.2"
 }
 instrument T {
   dimension accuracy_class { scope group values { A B } }

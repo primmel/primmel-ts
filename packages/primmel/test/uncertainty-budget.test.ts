@@ -30,7 +30,7 @@ uncertainty_budget u_ref {
     distribution rectangular
     half_width 0.5
     unit "kg"
-    source { doc "urn:example:cert:2026" clause "5.1" }
+    ref derives-from "urn:example:cert:2026#clause-5.1"
     description "The force standard's certificate half-width."
   }
   component u_rep {

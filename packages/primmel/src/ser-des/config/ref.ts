@@ -10,10 +10,11 @@
 // is a URI: a document anchor (a clause/annex URN) or a model element
 // id.
 //
-// The legacy citation spellings (`references { <role> {…} }`,
-// `source { doc clause }`, `specification_reference "…"`) keep parsing
-// into their own facets during the transition; packages migrate to the
-// canonical form mechanically.
+// The legacy citation spellings (`source { doc clause }`, the reference
+// role-channel blocks, `specification_reference "…"`) are RETIRED parse
+// errors since 1.21.21; the canonical `ref` line is the only spelling.
+// The role-references channel (`references { <role> { … } }`) survives as
+// an authoring form and folds alongside the canonical refs.
 
 /** A typed reference/relation triple on an element. */
 export interface Ref {
@@ -86,25 +87,25 @@ export function refTargetToSourceRef(target: string): {
   clause: string;
   fragment?: string;
 } | null {
-  const m = /^(urn:[^#]+)(?:#(.+))?$/.exec(target);
-  if (!m) {
-    return null;
-  }
-  const anchor = m[2];
-  if (!anchor) {
+  const hash = target.indexOf('#');
+  if (hash < 0) {
+    // A bare document target (a URN or a free-text citation like
+    // "PD-05 §4.3") rides the doc slot whole.
     return { doc: target, clause: '' };
   }
+  const doc = target.slice(0, hash);
+  const anchor = target.slice(hash + 1);
   if (anchor.startsWith('clause-')) {
     const rest = anchor.slice('clause-'.length);
     const slash = rest.indexOf('/');
     if (slash >= 0) {
       return {
-        doc: m[1]!,
+        doc,
         clause: rest.slice(0, slash),
         fragment: rest.slice(slash + 1),
       };
     }
-    return { doc: m[1]!, clause: rest };
+    return { doc, clause: rest };
   }
   // A non-clause anchor (a table, an annex) rides the doc, clause empty —
   // the legacy source block's exact shape.
@@ -202,20 +203,13 @@ export function foldRefIntoLegacy(
 }
 
 /** The canonical dump of one provenance block (docs/primmel/18 §18.4):
- *  a URN-anchored source emits the derives-from ref line; a free-text
- *  doc keeps the legacy source block. */
+ *  the derives-from ref line carries the anchor — a URN, or a free-text
+ *  designation composed with its clause. */
 export function dumpSourceRefAsRef(
   src: { doc: string; clause: string; fragment?: string },
   indent: string,
   escapeString: (s: string) => string,
 ): string {
-  if (src.doc && src.doc.startsWith('urn:')) {
-    const anchor = `${src.doc}${src.clause ? '#clause-' + src.clause : ''}${src.fragment ? '/' + src.fragment : ''}`;
-    return `${indent}ref derives-from "${escapeString(anchor)}"\n`;
-  }
-  return (
-    `${indent}source { doc "${escapeString(src.doc ?? '')}" clause "${escapeString(String(src.clause ?? ''))}"` +
-    (src.fragment ? ` fragment "${escapeString(src.fragment)}"` : '') +
-    ' }\n'
-  );
+  const anchor = `${src.doc}${src.clause ? '#clause-' + src.clause : ''}${src.fragment ? '/' + src.fragment : ''}`;
+  return `${indent}ref derives-from "${escapeString(anchor)}"\n`;
 }

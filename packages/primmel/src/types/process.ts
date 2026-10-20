@@ -472,7 +472,7 @@ export default interface Process {
 
   /**
    * Clause-URN provenance (the same facet requirement/provision carry):
-   * `source { doc "urn:…" clause "…" [fragment "…"] }`. null = undeclared.
+   * `ref derives-from "<doc>#clause-<c>[/<fragment>]"`. null = undeclared.
    */
   source: SourceRef | null;
   /**

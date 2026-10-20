@@ -10,7 +10,7 @@
 //     name "MDLO evaluation formulas"
 //     description "The evaluation-level quantities of R 60-3, 2.1 the MDLO test derives from the indication output: the conversion factor f (2.1.2.4), the load cell error E_L (2.1.2), …"
 //     formulas { conversion_factor_f e_l e_r c_m }
-//     source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
+//     ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"
 //   }
 //
 // Surface-syntax notes (the invariant/test_sequence conventions,
@@ -27,7 +27,7 @@
 //   - formulas is a list facet — a `{ … }` block (`,` and `;` are
 //     optional noise, the invariant applies_to idiom) or a single bare
 //     entry; repeated formulas facets accumulate;
-//   - `source { doc "…" clause "…" }` repeats, collecting into
+//   - `ref derives-from "…#clause-…"` repeats, collecting into
 //     sourceRefs (the requirement family's idiom, TODO.roadmap/24);
 //   - the parser stays TOTAL: missing facets land as ''/[] and the
 //     linter (C94) judges the shape — unknown keywords stay ignored

@@ -35,10 +35,9 @@ describe('round-trip', () => {
     assert.match(out, /metadata \{/);
   });
 
-  // The rename contract's fidelity legs (the corpus audit): an authored
-  // shortname and an EMPTY reference title both survive the round trip —
-  // the legacy corpus distinguishes empty from absent.
-  it('preserves the metadata shortname and empty reference titles (corpus fidelity)', () => {
+  // The rename contract's fidelity leg (the corpus audit): an authored
+  // shortname survives the round trip.
+  it('preserves the metadata shortname (corpus fidelity)', () => {
     const src = [
       'root T',
       'metadata {',
@@ -49,18 +48,11 @@ describe('round-trip', () => {
       '  namespace "T"',
       '  shortname "ISO T"',
       '}',
-      'reference R1 {',
-      '  document "BS 1:2020 Demo"',
-      '  clause "4.1"',
-      '  title ""',
-      '}',
     ].join('\n');
     const first = load(src);
     assert.equal((first.meta as { shortname?: string }).shortname, 'ISO T');
-    assert.equal(first.references.find(r => r.id === 'R1')?.title, '');
     const second = load(dump(first));
     assert.equal((second.meta as { shortname?: string }).shortname, 'ISO T');
-    assert.equal(second.references.find(r => r.id === 'R1')?.title, '');
   });
 
   // The bare condition keyword survives parsing: the corpus spells the

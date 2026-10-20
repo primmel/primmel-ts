@@ -50,7 +50,7 @@ function pkg(version: string, clause: string): string {
     `calculation vMin {
   name "vMin"
   expression "ocl{(d_max - d_min) / (n_lc * f)}"
-  source { doc "urn:oiml:pub:r:60-1:${version}" clause "${clause}" }
+  ref derives-from "urn:oiml:pub:r:60-1:${version}#clause-${clause}"
 }`,
   );
   return dir;

@@ -19,7 +19,7 @@
 //         obligation mandatory             # mandatory | optional —
 //                                          # parse-enforced
 //       }
-//       source { doc "urn:oiml:pub:r:60-1:2021" clause "3.5.5" }
+//       ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.5.5"
 //     }
 //   }
 //

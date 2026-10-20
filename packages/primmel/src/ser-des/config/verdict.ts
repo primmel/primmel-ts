@@ -7,7 +7,7 @@
 //     quantity { kind dimensionless }
 //     derive "ocl{abs(c_m * t_f / delta_t * (d_max - d_min) / (n * v_min))}"
 //     inputs { c_m t_f delta_t d_max d_min n v_min }
-//     source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.4" }
+//     ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.4"
 //   }
 //
 // symbol/behavior (TODO.roadmap/10): the display symbol and the behavior
@@ -18,7 +18,7 @@
 //     derive "ocl{indication - cgm_certified_value}"
 //     inputs { indication cgm_certified_value }
 //     series_reduction max_abs_over_window
-//     source { doc "urn:oiml:pub:r:144-2:2013" clause "4.8" }
+//     ref derives-from "urn:oiml:pub:r:144-2:2013#clause-4.8"
 //   }
 //
 // Requirements (limit.accepts), conformance tests, and form fields

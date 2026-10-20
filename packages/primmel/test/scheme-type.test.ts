@@ -27,7 +27,7 @@ scheme_activity_kind review {
   family common
   row "I"
   label "review"
-  source { doc "urn:iso-iec:std:iso-iec:17067:2013" clause "5.2" }
+  ref derives-from "urn:iso-iec:std:iso-iec:17067:2013#clause-5.2"
 }
 scheme_activity_kind testing {
   family determination
@@ -63,7 +63,7 @@ scheme_type type_1a {
     required false
   }
   notes { "The conformity statement applies to the sample only." }
-  source { doc "urn:iso-iec:std:iso-iec:17067:2013" clause "5.3.2" }
+  ref derives-from "urn:iso-iec:std:iso-iec:17067:2013#clause-5.3.2"
 }
 scheme_type type_5 {
   label "scheme type 5"
@@ -78,7 +78,7 @@ scheme_type type_5 {
     activities { market_sampling }
   }
   notes { "If the surveillance includes audit of the management system, an initial audit is needed." }
-  source { doc "urn:iso-iec:std:iso-iec:17067:2013" clause "5.3.7" }
+  ref derives-from "urn:iso-iec:std:iso-iec:17067:2013#clause-5.3.7"
 }
 `;
 

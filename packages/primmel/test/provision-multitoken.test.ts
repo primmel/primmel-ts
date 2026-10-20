@@ -12,11 +12,6 @@ metadata {
   namespace "n"
 }
 
-reference refISO {
-  document "ISO/IEC 17025:2017"
-  clause "7.5"
-}
-
 ${body}
 `;
 
@@ -27,9 +22,7 @@ describe('the provision free-form grammar (the multi-token values)', () => {
   subject claims Sample#data
   modality shall
   condition "every sample carries its identifier"
-  reference {
-    refISO
-  }
+  reference { refISO }
 }
 `),
       { strict: true },
@@ -41,7 +34,7 @@ describe('the provision free-form grammar (the multi-token values)', () => {
     );
     assert.equal(prov.modality, 'shall');
     assert.equal(prov.condition, 'every sample carries its identifier');
-    assert.equal((prov.ref ?? [])[0]?.id, 'refISO');
+    assert.deepEqual(prov.referenceIds, ['refISO']);
   });
 
   it('single-token values parse byte-identically to the old form', () => {

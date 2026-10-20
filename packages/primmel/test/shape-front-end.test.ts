@@ -24,7 +24,7 @@ const LIBRARY_SLICE = join(
   '..',
   '..',
   'oimlsmart',
-  'model-library-spike',
+  'model-library',
   'oiml-r60-lml',
 );
 const available =

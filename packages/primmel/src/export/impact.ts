@@ -17,7 +17,7 @@
 //     index (element → the edges that target it), the two views of the
 //     same edge set;
 //   * every edge carrying its kind and its source facet, and the clause
-//     provenance (source { doc clause } / ref derives-from) of the
+//     provenance (the canonical ref derives-from line) of the
 //     edge-bearing element where the element declares one.
 //
 // The edge registry (the clause-17.8 table) is the normative content:

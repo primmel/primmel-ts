@@ -1,4 +1,4 @@
-import type { Dumper, Parser, Resolver } from '../types';
+import type { Dumper, Parser } from '../types';
 import tokenize from '../tokenize';
 import {
   escapeString,
@@ -7,7 +7,11 @@ import {
   stripWrapping,
 } from '../tokenize';
 import { forEachEntry, unwrapped } from '../parse-block';
-import { foldRefIntoLegacy, parseRefFromReaders } from './ref';
+import {
+  foldRefIntoLegacy,
+  parseRefFromReaders,
+  dumpSourceRefAsRef,
+} from './ref';
 import {
   dumpCorrespondences,
   parseCorrespondsFromReaders,
@@ -17,8 +21,6 @@ import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { readSource } from './field-parser';
 import type Symbol from '../../types/Symbol';
 import type { SymbolType, ResolvableSymbol } from '../../types/Symbol';
-import type Reference from '../../types/Reference';
-import { resolveFromContext } from '../resolve';
 
 const VALID_SYMBOL_TYPES: SymbolType[] = [
   'number',
@@ -51,10 +53,7 @@ export const parseSymbol: Parser = function (id, data) {
     sourceRef: null,
     formula: null,
     notes: [],
-    ref: [],
-    _relations: {
-      ref: [],
-    },
+    referenceIds: [],
   };
 
   forEachEntry(
@@ -168,7 +167,7 @@ export const parseSymbol: Parser = function (id, data) {
       } else if (command === 'note') {
         result.notes.push(unwrapped(value));
       } else if (command === 'reference') {
-        result._relations.ref = tokenizePackage(value());
+        result.referenceIds = tokenizePackage(value());
       } else {
         return false;
       }
@@ -181,20 +180,6 @@ export const parseSymbol: Parser = function (id, data) {
     ctx.symbols[id] = result;
     return ctx;
   };
-};
-
-export const resolveSymbol: Resolver<Symbol, ResolvableSymbol> = function (
-  ctx,
-  unresolved,
-) {
-  const ref: Reference[] = [];
-  for (const id of unresolved._relations.ref) {
-    const r = resolveFromContext<Reference>(ctx, 'references', id);
-    if (r !== undefined) {
-      ref.push(r);
-    }
-  }
-  return { ...unresolved, ref };
 };
 
 export const dumpSymbol: Dumper<Symbol> = function (s) {
@@ -244,16 +229,7 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
     out += '  profile ' + s.profile + '\n';
   }
   if (s.sourceRef && (s.sourceRef.doc || s.sourceRef.clause)) {
-    out +=
-      '  source { doc "' +
-      escapeString(s.sourceRef.doc) +
-      '" clause "' +
-      escapeString(s.sourceRef.clause) +
-      '"' +
-      (s.sourceRef.fragment
-        ? ' fragment "' + escapeString(s.sourceRef.fragment) + '"'
-        : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(s.sourceRef, '  ', escapeString);
   }
   if (s.formula) {
     let line = '  formula { ';
@@ -271,10 +247,10 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
   for (const note of s.notes) {
     out += '  note "' + escapeString(note) + '"\n';
   }
-  if (s.ref.length > 0) {
+  if (s.referenceIds.length > 0) {
     out += '  reference {\n';
-    for (const r of s.ref) {
-      out += '    ' + r.id + '\n';
+    for (const id of s.referenceIds) {
+      out += '    ' + id + '\n';
     }
     out += '  }\n';
   }

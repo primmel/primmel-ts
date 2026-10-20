@@ -57,7 +57,6 @@ describe('round-trip: additional constructs', () => {
       role author { name "Author" }
       role approver { name "Approver" }
       data_registry reg1 { title "R1" }
-      reference ref1 { }
       approval a1 {
         name "A1"
         actor author
@@ -75,10 +74,8 @@ describe('round-trip: additional constructs', () => {
     assert.match(out, /reference \{/);
   });
 
-  it('resolves approval.ref as Reference (not Registry)', () => {
-    // Previously approval.ref was looked up against registers — wrong type.
+  it('keeps the approval reference id list opaque and byte-faithful', () => {
     const src = `
-      reference r1 { }
       approval a1 {
         name "A"
         modality shall
@@ -87,8 +84,7 @@ describe('round-trip: additional constructs', () => {
     `;
     const s = load(src);
     assert.equal(s.approvals.length, 1);
-    assert.equal(s.approvals[0].ref.length, 1);
-    assert.equal(s.approvals[0].ref[0].id, 'r1');
+    assert.deepEqual(s.approvals[0].referenceIds, ['r1']);
   });
 
   it('preserves a Primmel calculation', () => {
@@ -172,7 +168,6 @@ describe('round-trip: additional constructs', () => {
 
   it('preserves a note with a reference', () => {
     const src = `
-      reference r1 { }
       note n1 {
         type WARNING
         message "Be careful"

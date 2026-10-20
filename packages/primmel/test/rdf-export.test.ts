@@ -324,12 +324,12 @@ describe('RDF/OWL export (TODO.roadmap/27)', () => {
       join(dir, 'specification', 'r.prl'),
       `requirement /req/cited {
   statement "The widget shall be cited."
-  source { doc "ISO/IEC 17065:2012" clause "7.9.1, 7.9.2" }
+  ref derives-from "ISO/IEC 17065:2012#clause-7.9.1, 7.9.2"
 }
 
 requirement /req/cited-bare {
   statement "The widget shall be cited bare."
-  source { doc "ISO/IEC 17065:2012, 4.1.1" clause "" }
+  ref derives-from "ISO/IEC 17065:2012, 4.1.1"
 }`,
     );
     const store = parseTurtle(exportPackageRdf(dir).turtle);
