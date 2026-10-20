@@ -24,7 +24,6 @@ function emptyContext(): ParseContext {
     pages: {},
     gateways: {},
     regs: {},
-    references: {},
     dataclasses: {},
     events: {},
     enums: {},
@@ -185,8 +184,7 @@ describe('resolve (unit, minimal context)', () => {
       id: 'p1',
       modality: 'shall',
       condition: '',
-      ref: [],
-      _relations: { ref: [] },
+      referenceIds: [],
     };
     const s = resolve(ctx, RESOLVER_CONFIG);
     assert.equal(s.provisions.length, 1);

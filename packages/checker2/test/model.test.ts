@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { documentConstructs, resolveParsanolTs } from '../src/front-end.ts';
 import { check } from '../src/rules.ts';
 import { readExpression } from '../src/expressions.ts';
-import type { ParsedPackage } from '../src/front-end.ts';
+import type { ParsedPackage, ShippedDocument } from '../src/front-end.ts';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
 const parsanol = resolveParsanolTs(REPO_ROOT);
@@ -493,6 +493,7 @@ describe('the manifest-input increment (C169 + C56 — the register reaches 76)'
       'clause-4.2.1/table-2',
     ]),
     addresses: new Set(['clause-4.1.7/s1']),
+    sentences: [],
   };
 
   it('C169: exact, subtree, and enclosure landings stay silent', () => {
@@ -1220,8 +1221,7 @@ describe('the text-coverage family (C71/C72/C73)', () => {
         text: 'The maximum permissible error shall hold.',
       },
     ],
-    sentences2: undefined,
-  } as never;
+  } as ShippedDocument;
   const pkgWith = (over: object) =>
     check({
       constructs: constructs('term t { name "T" definition "D" }'),
@@ -2007,7 +2007,6 @@ describe('Batch C — the coverage plane + the allowlist applied (C5/C51-C55/C57
       .map(i => `${i.rule}:${i.severity}`);
 
   it('C5: an untargeted requirement warns; targets, provisions, and non-test verification cover', () => {
-    const rules = ['C5'];
     const req = 'requirement /req/a {\n name "A"\n statement "A holds."\n}\n';
     assert.deepEqual(
       check({ constructs: constructs(req) } as never)
@@ -2173,7 +2172,6 @@ requirement /req/a {
   });
 
   it('C57: a KNOWN entry marks its issue; an active entry matching nothing goes stale', () => {
-    const rules = ['C5', 'C57'];
     const req =
       'requirement /req/ghost_target {\n name "G"\n statement "G holds."\n}\n';
     // The C5 warning is KNOWN'd by a matching entry — no C57, and the
