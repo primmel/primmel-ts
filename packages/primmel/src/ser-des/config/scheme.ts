@@ -71,6 +71,7 @@ import {
   SchemeTransition,
   SchemeTrigger,
 } from '../../types/Scheme';
+import { dumpSourceRefAsRef, refTargetToSourceRef } from './ref';
 
 function parseDemonstration(block: string): SchemeDemonstration {
   const demonstration: SchemeDemonstration = {
@@ -127,6 +128,15 @@ export const parseSchemeDefinition: Parser = (id: string, data: string) => {
         scheme.demonstration = parseDemonstration(unwrapBlock(value()));
       } else if (keyword === 'source') {
         scheme.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            scheme.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -141,15 +151,7 @@ export const parseSchemeDefinition: Parser = (id: string, data: string) => {
 };
 
 function dumpSourceBlock(src: { doc: string; clause: string }): string {
-  let out = '  source {\n';
-  if (src.doc) {
-    out += '    doc "' + escapeString(src.doc) + '"\n';
-  }
-  if (src.clause) {
-    out += '    clause "' + escapeString(src.clause) + '"\n';
-  }
-  out += '  }\n';
-  return out;
+  return dumpSourceRefAsRef(src, '  ', escapeString);
 }
 
 export const dumpSchemeDefinition: Dumper<SchemeDefinition> = function (s) {
@@ -356,6 +358,15 @@ export const parseSchemeLifecycle: Parser = (id: string, data: string) => {
         lifecycle.triggers.push(parseTrigger(trigId, unwrapBlock(value())));
       } else if (keyword === 'source') {
         lifecycle.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            lifecycle.source = b;
+          }
+        }
       } else {
         return false;
       }

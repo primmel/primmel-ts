@@ -6,7 +6,7 @@ governance_organ management_committee {
   term "3.22"
   clause "11"
   mandate "The MC manages the OIML-CS: it decides on the participation of Issuing Authorities, Test Laboratories, Utilizers and Associates, and on the transition of categories between Schemes."
-  source { doc "urn:oiml:pub:b:18:2025" clause "11" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-11"
 }
 
 governance_organ review_committee {
@@ -15,7 +15,7 @@ governance_organ review_committee {
   clause "12"
   mandate "The RC reviews applications and recommends participation decisions to the MC."
   sub_committee_of management_committee
-  source { doc "urn:oiml:pub:b:18:2025" clause "12" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-12"
 }
 
 governance_organ board_of_appeal {
@@ -23,5 +23,5 @@ governance_organ board_of_appeal {
   clause "14"
   mandate "The BoA rules on appeals against MC decisions."
   independent_of management_committee
-  source { doc "urn:oiml:pub:b:18:2025" clause "14" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-14"
 }

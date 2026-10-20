@@ -66,8 +66,8 @@ conformance_test /conf/metrological-tests/load-step-accuracy {
       action "Verify the zero indication"
       verify { read zero_indication tolerance "/req/metrological/zero-error" }
     }
-    source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.2" }
-    source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.3" }
+    ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1.2"
+    ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1.3"
   }
   stimulus {
     description "The five-point ascending load program"
@@ -106,7 +106,7 @@ conformance_test /conf/metrological-tests/load-step-accuracy {
       fresh_within 5s
       acceptance "/req/metrological/mpe"
     }
-    source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.7" }
+    ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1.7"
   }
 }
 `;

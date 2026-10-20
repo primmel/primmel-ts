@@ -312,6 +312,12 @@ export const parseTestReportChecklist: Parser = (id: string, data: string) => {
               entry.descriptionNote = stripWrapping(v2());
             } else if (k2 === 'source') {
               entry.source = stripWrapping(v2());
+            } else if (k2 === 'ref') {
+              const predicate = stripWrapping(v2());
+              const target = stripWrapping(v2());
+              if (predicate === 'derives-from') {
+                entry.source = target;
+              }
             } else if (k2 === 'validation') {
               entry.validation = stripWrapping(v2());
             } else {

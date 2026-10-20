@@ -41,7 +41,7 @@ import {
   unescapeString,
 } from '../tokenize';
 import { readSource, dumpBareSafe } from './field-parser';
-import { parseRef, foldRefIntoLegacy } from './ref';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import { skipUnknownValue } from '../parse-block';
 import type { Dumper, Parser } from '../types';
@@ -268,16 +268,7 @@ export const dumpCompetenceKind: Dumper<CompetenceKind> = function (k) {
     out += '  definition "' + escapeString(k.definition) + '"\n';
   }
   if (k.source && (k.source.doc || k.source.clause)) {
-    out +=
-      '  source { doc "' +
-      escapeString(k.source.doc) +
-      '" clause "' +
-      escapeString(k.source.clause) +
-      '"' +
-      (k.source.fragment
-        ? ' fragment "' + escapeString(k.source.fragment) + '"'
-        : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(k.source, '  ', escapeString);
   }
   out += dumpCorrespondences(
     k.correspondences,

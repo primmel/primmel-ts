@@ -25,5 +25,5 @@ process conduct_tests {
   validate_measurement {
     "every([within_mpe]) = true"
   }
-  source { doc "PD-05 §4.1" clause "" }
+  ref derives-from "PD-05 §4.1"
 }

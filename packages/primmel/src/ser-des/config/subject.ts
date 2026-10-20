@@ -168,8 +168,13 @@ function dumpSource(
   if (!src || (!src.doc && !src.clause)) {
     return '';
   }
-  const frag = src.fragment ? ` fragment "${escapeString(src.fragment)}"` : '';
-  return `${indent}${keyword} { doc "${escapeString(src.doc)}" clause "${escapeString(src.clause)}"${frag} }\n`;
+  if (keyword === 'sample_selection') {
+    // The named sample-selection channel keeps its keyword; its payload is
+    // the canonical document anchor (the `{ doc clause }` block is retired).
+    const anchor = `${src.doc}${src.clause ? '#clause-' + src.clause : ''}${src.fragment ? '/' + src.fragment : ''}`;
+    return `${indent}${keyword} "${escapeString(anchor)}"\n`;
+  }
+  return dumpSourceRefAsRef(src, indent, escapeString);
 }
 
 function readIdList(block: string): string[] {
@@ -250,6 +255,14 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       if (!result.source) {
         result.source = src;
       }
+    } else if (cmd === 'ref') {
+      // The unified typed reference (docs/primmel/18) — derives-from
+      // folds onto the provenance channel, other predicates stay in refs.
+      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
+      if (!foldRefIntoLegacy(result as never, rr.ref)) {
+        (result.refs ??= []).push(rr.ref);
+      }
+      i = rr.next;
     } else if (cmd === 'variant') {
       const variantId = stripWrapping(t[i++]);
       const vblock = i < t.length ? unwrapBlock(t[i++]) : '';
@@ -269,6 +282,15 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
           v.note = stripWrapping(vt[j++]);
         } else if (vc === 'source') {
           v.source = readSource(unwrapBlock(vt[j++]));
+        } else if (vc === 'ref') {
+          const predicate = stripWrapping(vt[j++]);
+          const target = stripWrapping(vt[j++]);
+          if (predicate === 'derives-from') {
+            const b = refTargetToSourceRef(target);
+            if (b) {
+              v.source = b;
+            }
+          }
         } else {
           unwrapBlock(vt[j++]);
         }
@@ -336,13 +358,6 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       result.modelGroup = parseModelGroup(unwrapBlock(t[i++]));
     } else if (cmd === 'reference') {
       result.referenceIds = readReference(t[i++]);
-    } else if (cmd === 'ref') {
-      // The unified typed reference (docs/primmel/18).
-      const rr = parseRef(t, i, stripWrapping, unwrapBlock);
-      if (!foldRefIntoLegacy(result as never, rr.ref)) {
-        (result.refs ??= []).push(rr.ref);
-      }
-      i = rr.next;
     } else if (cmd === 'corresponds') {
       // The per-node correspondence annotation (MN 114 clause 19.4).
       const cc = parseCorresponds(t, i, stripWrapping);
@@ -398,6 +413,15 @@ function parseMeasurand(block: string): InstrumentMeasurand {
       m.context = ctx;
     } else if (cmd === 'source') {
       m.source = readSource(unwrapBlock(t[i++]));
+    } else if (cmd === 'ref') {
+      const predicate = stripWrapping(t[i++] ?? '');
+      const target = stripWrapping(t[i++] ?? '');
+      if (predicate === 'derives-from') {
+        const b = refTargetToSourceRef(target);
+        if (b) {
+          m.source = b;
+        }
+      }
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -426,6 +450,15 @@ function parseComponent(id: string, block: string): InstrumentComponent {
       c.definition = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
       c.source = readSource(unwrapBlock(t[i++]));
+    } else if (cmd === 'ref') {
+      const predicate = stripWrapping(t[i++] ?? '');
+      const target = stripWrapping(t[i++] ?? '');
+      if (predicate === 'derives-from') {
+        const b = refTargetToSourceRef(target);
+        if (b) {
+          c.source = b;
+        }
+      }
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -475,6 +508,15 @@ function parseStructure(id: string, block: string): StructureEntry {
       s.note = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
       s.source = readSource(unwrapBlock(t[i++]));
+    } else if (cmd === 'ref') {
+      const predicate = stripWrapping(t[i++] ?? '');
+      const target = stripWrapping(t[i++] ?? '');
+      if (predicate === 'derives-from') {
+        const b = refTargetToSourceRef(target);
+        if (b) {
+          s.source = b;
+        }
+      }
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -746,7 +788,16 @@ function parseModelGroup(block: string): ModelGroupDef {
         }
       }
     } else if (cmd === 'sample_selection') {
-      mg.sampleSelection!.push(readSource(unwrapBlock(t[i++])));
+      const raw = stripWrapping(t[i++]);
+      if (raw.startsWith('{')) {
+        throw new Error(
+          'Parsing error: the sample_selection { doc clause } block is retired (1.21.21) — cite the anchor directly (sample_selection "urn#clause-X")',
+        );
+      }
+      const b = refTargetToSourceRef(raw);
+      if (b) {
+        mg.sampleSelection!.push(b);
+      }
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -799,12 +850,7 @@ const dumpInstrument = function (inst: Instrument): string {
       line += 'definition "' + escapeString(c.definition) + '" ';
     }
     if (c.source && (c.source.doc || c.source.clause)) {
-      line +=
-        'source { doc "' +
-        escapeString(c.source.doc) +
-        '" clause "' +
-        escapeString(c.source.clause) +
-        '" } ';
+      line += dumpSourceRefAsRef(c.source, '', escapeString).trimEnd() + ' ';
     }
     out += line + '}\n';
   }
@@ -854,12 +900,7 @@ const dumpInstrument = function (inst: Instrument): string {
       line += 'note "' + escapeString(v.note) + '" ';
     }
     if (v.source && (v.source.doc || v.source.clause)) {
-      line +=
-        'source { doc "' +
-        escapeString(v.source.doc) +
-        '" clause "' +
-        escapeString(v.source.clause) +
-        '" } ';
+      line += dumpSourceRefAsRef(v.source, '', escapeString).trimEnd() + ' ';
     }
     out += line + '}\n';
   }
@@ -1003,6 +1044,15 @@ function parsePairList(block: string): PairListDecl {
             component.name = stripWrapping(et[j++]);
           } else if (ec === 'source') {
             component.source = readSource(unwrapBlock(et[j++]));
+          } else if (ec === 'ref') {
+            const predicate = stripWrapping(et[j++]);
+            const target = stripWrapping(et[j++]);
+            if (predicate === 'derives-from') {
+              const b = refTargetToSourceRef(target);
+              if (b) {
+                component.source = b;
+              }
+            }
           } else {
             unwrapBlock(et[j++]);
           }
@@ -1029,14 +1079,7 @@ function dumpPairList(decl: PairListDecl): string {
       out += '      name "' + escapeString(c.name) + '"\n';
     }
     if (c.source && (c.source.doc || c.source.clause)) {
-      out += '      source {\n';
-      if (c.source.doc) {
-        out += '        doc "' + escapeString(c.source.doc) + '"\n';
-      }
-      if (c.source.clause) {
-        out += '        clause "' + escapeString(c.source.clause) + '"\n';
-      }
-      out += '      }\n';
+      out += dumpSourceRefAsRef(c.source, '      ', escapeString);
     }
     out += '    }\n';
   }
@@ -1587,6 +1630,15 @@ function readCharacteristicBlock(block: string): SubjectCharacteristic {
       c.unit = stripWrapping(t[i++]);
     } else if (cmd === 'source' || cmd === 'reference') {
       c.source = readSource(unwrapBlock(t[i++]));
+    } else if (cmd === 'ref') {
+      const predicate = stripWrapping(t[i++]);
+      const target = stripWrapping(t[i++]);
+      if (predicate === 'derives-from') {
+        const b = refTargetToSourceRef(target);
+        if (b) {
+          c.source = b;
+        }
+      }
     } else {
       i = skipUnknownValue(t, i, cmd);
     }
@@ -1834,6 +1886,15 @@ export function readPromiseEntry(id: string, block: string): SubjectPromise {
       p.verifiedBy = readIdList(inner[j++]);
     } else if (cmd === 'source') {
       p.source = readSource(unwrapBlock(inner[j++]));
+    } else if (cmd === 'ref') {
+      const predicate = stripWrapping(inner[j++]);
+      const target = stripWrapping(inner[j++]);
+      if (predicate === 'derives-from') {
+        const b = refTargetToSourceRef(target);
+        if (b) {
+          p.source = b;
+        }
+      }
     } else if (cmd === 'certificate') {
       p.certificate = readPromiseCertificate(p.id, unwrapBlock(inner[j++]));
     } else {

@@ -31,7 +31,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { readSource, dumpBareSafe } from './field-parser';
-import { parseRef, foldRefIntoLegacy } from './ref';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import { skipUnknownValue } from '../parse-block';
 import type { Dumper, Parser } from '../types';
@@ -186,30 +186,12 @@ export const dumpUncertaintyBudget: Dumper<UncertaintyBudget> = function (b) {
       out += '    description "' + escapeString(c.description) + '"\n';
     }
     if (c.source && (c.source.doc || c.source.clause)) {
-      out +=
-        '    source { doc "' +
-        escapeString(c.source.doc) +
-        '" clause "' +
-        escapeString(c.source.clause) +
-        '"' +
-        (c.source.fragment
-          ? ' fragment "' + escapeString(c.source.fragment) + '"'
-          : '') +
-        ' }\n';
+      out += dumpSourceRefAsRef(c.source, '    ', escapeString);
     }
     out += '  }\n';
   }
   if (b.source && (b.source.doc || b.source.clause)) {
-    out +=
-      '  source { doc "' +
-      escapeString(b.source.doc) +
-      '" clause "' +
-      escapeString(b.source.clause) +
-      '"' +
-      (b.source.fragment
-        ? ' fragment "' + escapeString(b.source.fragment) + '"'
-        : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(b.source, '  ', escapeString);
   }
   out += dumpCorrespondences(
     b.correspondences,

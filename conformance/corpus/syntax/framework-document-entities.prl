@@ -8,7 +8,7 @@ framework_document b18 {
   title "Framework for the OIML Certification System (OIML-CS)"
   approved_by ciml
   clause "6 a)"
-  source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
 }
 
 framework_document cid-01 {
@@ -18,13 +18,13 @@ framework_document cid-01 {
   approved_by management_committee
   clause "6 b)"
   note "Clarifications and interpretations of OIML-CS documents intended as guidance and additional information; they do not supersede the text of the current editions (CID-01, clause 2)."
-  source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
 }
 
 document_precedence higher_position_prevails {
   clause "6"
   statement "In the event of a conflict, contradiction or inconsistency between the provisions of one of the governing documents and the provisions of another, the provisions of the document listed in a higher position take precedence over the provisions of the document listed in a lower position (clause 6)."
-  source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
 }
 
 auto_inclusion auto_inclusion {
@@ -47,5 +47,5 @@ auto_inclusion auto_inclusion {
     description "The Recommendation specifies the OIML type evaluation report format."
   }
   note "The two report formats (conditions c and d) may be specified in separate Parts of a Recommendation or combined in one Part (§4.2 Note). The BIML maintains the list of the categories in the OIML-CS on the OIML website (§4.5)."
-  source { doc "urn:oiml:pub:b:18:2025" clause "4.2" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-4.2"
 }

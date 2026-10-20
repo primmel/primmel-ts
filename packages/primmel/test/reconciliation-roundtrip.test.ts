@@ -54,13 +54,13 @@ describe('sentence-level provenance on calculation + conformance_test (TODO.road
     identifier "/calc/error-envelope"
     output : number { unit "g" }
     expression "ocl{abs(indication - reference)}"
-    source { doc "urn:oiml:pub:r:60-1:2021" clause "2.2" fragment "s1" }
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-2.2/s1"
   }
 
   conformance_test /conf/metrological/mpe-envelope {
     name "MPE envelope"
     type Calculation
-    reference { doc "urn:oiml:pub:r:60-1:2021" clause "5.3.2" fragment "s2" }
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2/s2"
   }
   `;
 
@@ -175,8 +175,8 @@ describe('table repeated source blocks', () => {
   const SRC = `table mpe_tiers {
     title "MPE tiers"
     columns "tier, factor"
-    source { doc "urn:oiml:pub:r:60-1:2021" clause "5.4" }
-    source { doc "urn:oiml:pub:r:60-1:2021" clause "table-2" }
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.4"
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-table-2"
     data {
       "wide" "1.0"
     }

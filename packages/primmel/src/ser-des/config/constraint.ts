@@ -30,7 +30,7 @@ import {
   readExpressionCarrier,
   dumpExpressionBlock,
 } from '../expression-carrier';
-import { parseRef, foldRefIntoLegacy } from './ref';
+import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import { skipUnknownValue } from '../parse-block';
 import type { Dumper, Parser } from '../types';
@@ -137,16 +137,7 @@ export const dumpConstraint: Dumper<Constraint> = function (c) {
   }
   out += '  on_violation ' + (c.onViolation || 'invalid') + '\n';
   if (c.source && (c.source.doc || c.source.clause)) {
-    out +=
-      '  source { doc "' +
-      escapeString(c.source.doc) +
-      '" clause "' +
-      escapeString(c.source.clause) +
-      '"' +
-      (c.source.fragment
-        ? ' fragment "' + escapeString(c.source.fragment) + '"'
-        : '') +
-      ' }\n';
+    out += dumpSourceRefAsRef(c.source, '  ', escapeString);
   }
   out += dumpCorrespondences(
     c.correspondences,

@@ -47,7 +47,7 @@ aspect markings {
   metamodel_class identity-provenance.Marking
   term_ref marking
   contains { model.identity.manufacturer e_max }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "6.2.1" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-6.2.1"
 }
 aspect software {
   kind other

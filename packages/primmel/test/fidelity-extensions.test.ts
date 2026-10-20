@@ -42,7 +42,7 @@ const REQ_SRC = `requirement /req/metrological/mdlo {
   obligation should
   verification { method testing }
   dependencies { /req/metrological/mpe /req/general/terminology }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "5.6.3.1" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.6.3.1"
 }
 `;
 
@@ -229,7 +229,7 @@ const TABLE_SRC = `table mpe_table {
     load_max: number "v"
     limit_factor: number
   }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "5.3" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3"
   overrides { field_automatic { condition statistical_analysis by evaluator } }
   profiles {
     profile mpe_tiers {
@@ -350,7 +350,7 @@ const SYMBOL_SRC = `symbol e_l {
   attribute e_l
   calculation load_cell_error
   profile mpe_tiers
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"
   formula { display "E = I − L" expression "ocl{indication - load}" inputs { indication load } }
   note "First note"
   note "Second note"
@@ -465,12 +465,12 @@ const INST_SRC = `instrument LoadCell {
   measurand_kind force
   definition "Load cell as a measuring instrument"
   note "Editorial instrument note"
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "3.1" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.1"
   variant digital {
     name "Digital load cell"
     definition "Load cell with digital output"
     note "Variant note"
-    source { doc "urn:oiml:pub:r:60-1:2021" clause "3.1.3.3" }
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.1.3.3"
   }
   dimension accuracy_class {
     label "Accuracy class"
@@ -549,7 +549,7 @@ const FORM_SRC = `form F1 {
       rule "uncertainty <= mpe / 3"
       on_violation invalidate
       notes "Reference uncertainty budget"
-      source { doc "urn:oiml:pub:r:60-2:2021" clause "2.4" }
+      ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.4"
     }
   }
   field e_l : number {
@@ -564,7 +564,7 @@ const FORM_SRC = `form F1 {
     false_label "Fail"
     enum_values { A B }
     references { requirement { "urn:oiml:pub:r:60-1:2021#clause-5.3" } }
-    specification_reference "R 144-1, 4.5.2"
+    ref cites "R 144-1, 4.5.2"
     applicability { accuracy_class: [A, B] }
     evaluation {
       verdict drift_error
@@ -641,8 +641,8 @@ describe('form fidelity extensions', () => {
     assert.deepEqual(f.enumValues, ['A', 'B']);
     assert.deepEqual(f.fieldReferences, [
       { urn: 'urn:oiml:pub:r:60-1:2021#clause-5.3', role: 'requirement' },
+      { urn: 'R 144-1, 4.5.2', role: 'reference' },
     ]);
-    assert.equal(f.specificationReference, 'R 144-1, 4.5.2');
     assert.deepEqual(f.applicability, [
       {
         dimension: 'accuracy_class',

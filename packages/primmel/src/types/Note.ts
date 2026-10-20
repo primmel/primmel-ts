@@ -1,5 +1,3 @@
-import Reference from './Reference';
-import Resolvable from './Resolvable';
 import type SourceDiscrepancy from './SourceDiscrepancy';
 import type { SourceRef } from './Subject';
 
@@ -19,9 +17,10 @@ interface Note {
   /** Every provenance block in document order (the first mirrors
       `source`). */
   sourceRefs?: SourceRef[];
-  ref: Reference[];
+  /** The v2 `reference { … }` id list (opaque ids, never resolved). */
+  referenceIds: string[];
 }
 
 export default Note;
 
-export type ResolvableNote = Resolvable<Note, 'ref'>;
+export type ResolvableNote = Note;

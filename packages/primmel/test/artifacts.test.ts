@@ -39,7 +39,7 @@ artifact_definition enforcement-evidence-file {
   }
   produced_when per_measurement
   retention "approx. three months (secure storage)"
-  source { doc "urn:oiml:pub:r:91-1:2025" clause "6.6, 7.2.2, 7.3" }
+  ref derives-from "urn:oiml:pub:r:91-1:2025#clause-6.6, 7.2.2, 7.3"
 }
 
 artifact_definition diagnostic-log {
@@ -266,7 +266,7 @@ artifact_definition enforcement-evidence-file {
   }
   produced_when per_measurement
   retention "approx. three months"
-  source { doc "urn:oiml:pub:r:91-1:2025" clause "7.3" }
+  ref derives-from "urn:oiml:pub:r:91-1:2025#clause-7.3"
 }
 artifact_definition diagnostic-log {
   name "Diagnostic log"

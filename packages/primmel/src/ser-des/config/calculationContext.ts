@@ -32,6 +32,12 @@ export const parseCalculationContext: Parser = (id: string, data: string) => {
           (k2, v2) => {
             if (k2 === 'source') {
               field.source = stripWrapping(v2());
+            } else if (k2 === 'ref') {
+              const predicate = stripWrapping(v2());
+              const target = stripWrapping(v2());
+              if (predicate === 'derives-from') {
+                field.source = target;
+              }
             } else if (k2 === 'expression') {
               field.expression = stripWrapping(v2());
             } else {

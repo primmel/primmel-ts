@@ -7,7 +7,7 @@ import { load, dump } from '../src/ser-des/index.js';
 
 const SRC = `test_point_set r144-cgm-points {
   description "CGM test points within the measuring range for error determination (R 144-2, 1.2)."
-  source { doc "urn:oiml:pub:r:144-2:2013" clause "1.2" }
+  ref derives-from "urn:oiml:pub:r:144-2:2013#clause-1.2"
   cardinality {
     linear { min_points 3 rule "min +10 %, mid ±10 %, max −10 % of the measuring range" }
     nonlinear { min_points 5 rule "uniformly distributed" }

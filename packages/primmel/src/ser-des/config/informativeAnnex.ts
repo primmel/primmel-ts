@@ -51,6 +51,12 @@ function parseAnnexDocument(block: string, annexId: string): AnnexDocument {
         doc.role = role;
       } else if (keyword === 'source') {
         doc.source = stripWrapping(value());
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          doc.source = target;
+        }
       } else {
         return false;
       }

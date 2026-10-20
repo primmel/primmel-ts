@@ -10,7 +10,7 @@ const SRC = `reference_material cgm {
   kind certified_gas_mixture
   name "Certified gas mixture (CGM)"
   definition "Gas mixture with certified composition used as the measurement reference."
-  source { doc "urn:oiml:pub:r:144-1:2013" clause "annex-a" }
+  ref derives-from "urn:oiml:pub:r:144-1:2013#clause-annex-a"
   identity_fields {
     field composition { description "Component(s) and nominal concentrations" }
     field certified_value { description "Certified concentration" unit "ppm" required true }
@@ -23,7 +23,7 @@ const SRC = `reference_material cgm {
       evidence { uncertainty: cgm_uncertainty mpe_at_point: mpe }
       override { rule "uncertainty <= mpe_at_point / 2" by issuing_authority evidence cgm_uncertainty_override_approved }
       on_violation invalidate
-      source { doc "urn:oiml:pub:r:144-1:2013" clause "7.2.2.2" }
+      ref derives-from "urn:oiml:pub:r:144-1:2013#clause-7.2.2.2"
     }
     constraint traceability {
       description "The certificate shall be traceable."

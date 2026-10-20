@@ -101,6 +101,12 @@ export function readProvenanceBlock(content: string): ValueProvenance {
     }
     if (cmd === 'source') {
       out.source = stripWrapping(t[i++]);
+    } else if (cmd === 'ref') {
+      const predicate = stripWrapping(t[i++] ?? '');
+      const target = stripWrapping(t[i++] ?? '');
+      if (predicate === 'derives-from') {
+        out.source = target;
+      }
     } else if (cmd === 'page') {
       out.page = String(coerceValueToken(t[i++]));
     } else if (cmd === 'entry_wording') {

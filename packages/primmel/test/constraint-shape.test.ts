@@ -27,7 +27,7 @@ const WELL_FORMED = `constraint dead_load_max_geometry {
   check "ocl{model.parameters.d_max >= 0.9 * model.parameters.e_max}"
   violation_meaning "The declared test setup does not realize the upper end of the measuring range — the type evaluation is void."
   on_violation invalid
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "3.6" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.6"
 }
 
 constraint warm_up_observability {
@@ -74,7 +74,7 @@ const SOURCE_NO_CLAUSE = `constraint c1 {
   check "ocl{true}"
   violation_meaning "Seeded violation."
   on_violation invalid
-  source { doc "urn:oiml:pub:r:60-1:2021" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021"
 }
 `;
 

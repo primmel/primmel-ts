@@ -64,10 +64,10 @@ test_sequence mdlo-creep-dr {
     depends_on 2
   }
   sample_applicability all
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10" }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.11.1" }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.11.2" }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.9.2" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10"
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.11.1"
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.11.2"
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.9.2"
 }
 `;
 
@@ -79,8 +79,8 @@ test_sequence temperature-cycling {
   step 2 { phase "T_high" }
   step 3 { phase "T_low" }
   step 4 { phase "20 °C return" }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.13" }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1.13"
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10"
 }
 `;
 

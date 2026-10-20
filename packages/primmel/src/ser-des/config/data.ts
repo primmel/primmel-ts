@@ -3,7 +3,6 @@ import {
   DataClass,
   Enum,
   EnumValue,
-  Reference,
   Registry,
   ResolvableDataClass,
   ResolvableRegistry,
@@ -187,9 +186,8 @@ const parseLutamlAttribute = (
     modality: '',
     cardinality: '',
     definition: '',
-    ref: [],
+    referenceIds: [],
     satisfy: [],
-    _relations: { ref: [] },
     surface: 'lutaml',
   };
   // forEachEntry tokenizes the WRAPPED block form (braces present) —
@@ -219,7 +217,7 @@ const parseLutamlAttribute = (
         }
         result.enumValues = vals;
       } else if (keyword === 'reference') {
-        result._relations.ref = tokenizePackage(value());
+        result.referenceIds = tokenizePackage(value());
       } else {
         value();
       }
@@ -240,11 +238,8 @@ const parseDataAttribute = (
     modality: '',
     cardinality: '',
     definition: '',
-    ref: [],
+    referenceIds: [],
     satisfy: [],
-    _relations: {
-      ref: [],
-    },
   };
   // Cardinality is the TRAILING bracket group, and only when its content
   // starts with a digit or `*` (`[0..*]`, `[1..1]`) — a `[]` inside the type
@@ -270,7 +265,7 @@ const parseDataAttribute = (
       } else if (keyword === 'definition') {
         result.definition = unwrapped(value);
       } else if (keyword === 'reference') {
-        result._relations.ref = tokenizePackage(value());
+        result.referenceIds = tokenizePackage(value());
       } else if (keyword === 'satisfy') {
         result.satisfy = tokenizePackage(value());
       } else if (keyword === 'on_delete') {
@@ -298,14 +293,7 @@ const parseDataAttribute = (
 export const resolveDataClass: Resolver<DataClass, ResolvableDataClass> =
   function (ctx, unresolved) {
     const attributes: DataAttribute[] = unresolved.attributes.map(attr => {
-      const resolved: DataAttribute = { ...attr, ref: [] };
-      for (const id of attr._relations.ref) {
-        const r = resolveFromContext<Reference>(ctx, 'references', id);
-        if (r !== undefined) {
-          resolved.ref.push(r);
-        }
-      }
-      return resolved;
+      return { ...attr };
     });
     return {
       id: unresolved.id,
@@ -445,10 +433,10 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
     }
     out += '    }\n';
   }
-  if (attribute.ref.length > 0) {
+  if (attribute.referenceIds.length > 0) {
     out += '    reference {\n';
-    for (const r of attribute.ref) {
-      out += '      ' + r.id + '\n';
+    for (const id of attribute.referenceIds) {
+      out += '      ' + id + '\n';
     }
     out += '    }\n';
   }

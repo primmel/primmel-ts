@@ -17,7 +17,6 @@ import type { ResolvableProcess } from '../types/process';
 import type { ResolvableSubprocess } from '../types/flow';
 import type { ResolvableProvision } from '../types/Provision';
 import type { ResolvableApproval } from '../types/Approval';
-import type Reference from '../types/Reference';
 import type Role from '../types/Role';
 import type Standard from '../types/Standard';
 import type StateMachine from '../types/StateMachine';
@@ -189,7 +188,6 @@ export interface ParseContext {
 
   // XXX: Make resolvable
   regs: Record<string, Registry>;
-  references: Record<string, Reference>;
   dataclasses: Record<string, DataClass>;
   events: Record<string, EventNode>;
   enums: Record<string, Enum>;

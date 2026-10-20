@@ -44,17 +44,10 @@ import FrameworkDocument, {
   AutoInclusionCondition,
   DocumentPrecedence,
 } from '../../types/FrameworkDocument';
+import { dumpSourceRefAsRef, refTargetToSourceRef } from './ref';
 
 function dumpSourceBlock(src: { doc: string; clause: string }): string {
-  let out = '  source {\n';
-  if (src.doc) {
-    out += '    doc "' + escapeString(src.doc) + '"\n';
-  }
-  if (src.clause) {
-    out += '    clause "' + escapeString(src.clause) + '"\n';
-  }
-  out += '  }\n';
-  return out;
+  return dumpSourceRefAsRef(src, '  ', escapeString);
 }
 
 export const parseFrameworkDocument: Parser = (id: string, data: string) => {
@@ -85,6 +78,15 @@ export const parseFrameworkDocument: Parser = (id: string, data: string) => {
         doc.note = stripWrapping(value());
       } else if (keyword === 'source') {
         doc.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            doc.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -141,6 +143,15 @@ export const parseDocumentPrecedence: Parser = (id: string, data: string) => {
         rule.statement = stripWrapping(value());
       } else if (keyword === 'source') {
         rule.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            rule.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -218,6 +229,15 @@ export const parseAutoInclusion: Parser = (id: string, data: string) => {
         inclusion.note = stripWrapping(value());
       } else if (keyword === 'source') {
         inclusion.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            inclusion.source = b;
+          }
+        }
       } else {
         return false;
       }

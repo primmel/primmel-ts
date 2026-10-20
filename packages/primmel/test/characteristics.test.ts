@@ -56,14 +56,14 @@ subject LoadCell {
         behavior creep
         quantity_kind verification_interval
         unit "v"
-        source { doc "urn:oiml:pub:r:60-1:2021" clause "5.5.1" }
+        ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.5.1"
       }
       mdlo_normalized {
         symbol "C_M"
         derivation ocl{abs(c_m * t_f / delta_t)}
         behavior temp-effect-min-dead-load
         quantity_kind dimensionless
-        source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.4" }
+        ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.4"
       }
       drift = ocl{self.indication - self.initial_reading}
     }
@@ -147,7 +147,7 @@ describe('has.characteristics block form (TODO.roadmap/10)', () => {
     assert.match(text, /quantity_kind dimensionless\n/);
     assert.match(
       text,
-      /source \{ doc "urn:oiml:pub:r:60-3:2021" clause "2.1.4" \}/,
+      /ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.4"/,
     );
     // …and the inline form for the shorthand entry.
     assert.match(
@@ -167,7 +167,7 @@ describe('verdict symbol/behavior (TODO.roadmap/10)', () => {
   quantity { kind dimensionless }
   derive "ocl{abs(c_m * t_f / delta_t * (d_max - d_min) / (n * v_min))}"
   inputs { c_m t_f delta_t d_max d_min n v_min }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.4" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.4"
 }
 `);
     const v = m.verdicts[0];

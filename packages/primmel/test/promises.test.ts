@@ -53,7 +53,7 @@ subject LoadCell {
         conditions ocl{self.temperature >= rated.t_min and self.temperature <= rated.t_max}
         statement "Holds accuracy class C6 across the rated range −10…+40 °C."
         verified_by { /req/metrological/mpe /conf/metrological-tests/mpe-test }
-        source { doc "urn:oiml:pub:r:60-1:2021" clause "5.1" }
+        ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.1"
       }
       creep-limit {
         target creep

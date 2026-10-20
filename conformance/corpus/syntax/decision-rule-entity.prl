@@ -32,7 +32,7 @@ decision_rule ia-tl-participation-decisions {
     abstentions not_voting
     reason_on_against_or_abstain true
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "11.4" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-11.4"
 }
 
 decision_rule tlf-advisory-tasks {
@@ -41,7 +41,7 @@ decision_rule tlf-advisory-tasks {
   clause "12.2"
   description "The Test Laboratories Forum is the scheme's consensus platform of the Test Laboratories: it handles practical and technical questions on the test specifications (12.2 a) and works towards the development of inter-laboratory comparison programs (12.2 d)."
   tasks { practical_testing_questions reproducibility_of_results interlaboratory_comparisons }
-  source { doc "urn:oiml:pub:b:18:2025" clause "12.2" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-12.2"
 }
 
 decision_rule boa-appeal-rulings {
@@ -51,7 +51,7 @@ decision_rule boa-appeal-rulings {
   independent_of management_committee
   scope { participation_decisions expert_decisions }
   description "The Board of Appeal manages appeals against decisions of the Management Committee relating to participation in the OIML-CS (13.2 a); its rulings bind the contested MC decision (PD-01)."
-  source { doc "urn:oiml:pub:b:18:2025" clause "13.2" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-13.2"
 }
 
 decision_rule biml-certificate-registration {
@@ -60,7 +60,7 @@ decision_rule biml-certificate-registration {
   clause "15.8"
   principle registered_copy_validity
   description "The BIML registers and publishes OIML certificates (10.1); the validity of any OIML certificate can be verified with the copy registered and published on the OIML-CS pages of the OIML website by the BIML (§15.8)."
-  source { doc "urn:oiml:pub:b:18:2025" clause "15.8" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-15.8"
 }
 
 decision_rule legacy-certificate-validity {
@@ -76,7 +76,7 @@ decision_rule legacy-certificate-validity {
     clause "15.11"
     description "OIML Basic certificates are considered to remain valid; their acceptance by Utilizers, Associates and users is voluntary (§15.11)."
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "15.10" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-15.10"
 }
 
 decision_rule scheme-financing {
@@ -86,5 +86,5 @@ decision_rule scheme-financing {
   income certificate_registration_fees
   no_entrance_fees_for { issuing_authority test_laboratory utilizer associate }
   description "The income of the OIML-CS consists of the fees from the registration of OIML certificates; no entrance fees are charged to OIML Issuing Authorities, Test Laboratories, Utilizers or Associates (§16.3)."
-  source { doc "urn:oiml:pub:b:18:2025" clause "16.3" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-16.3"
 }

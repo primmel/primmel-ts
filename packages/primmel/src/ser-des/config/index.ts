@@ -73,13 +73,12 @@ import {
   parseTestReportChecklist,
   parseTestReportSkeleton,
 } from './testReport';
-import { dumpProvision, parseProvision, resolveProvision } from './provision';
-import { dumpReference, parseReference } from './reference';
+import { dumpProvision, parseProvision } from './provision';
 import { dumpRole, parseRole } from './role';
 import { dumpSubprocess, parseSubprocess, resolveSubprocess } from './flow';
 
 // MMEL 0.1 spec-parity parsers/dumpers
-import { dumpNote, parseNote, resolveNote } from './note';
+import { dumpNote, parseNote } from './note';
 import { dumpTable, parseTable } from './table';
 import { dumpFigure, parseFigure } from './figure';
 import { dumpLink, parseLink } from './link';
@@ -90,13 +89,9 @@ import { dumpViewProfile, parseViewProfile } from './viewProfile';
 // Primmel extension parsers/dumpers (MN 113-6 to 113-10)
 import { dumpForm, parseForm } from './form';
 import { dumpSubformType as dumpSubform, parseSubform } from './subform';
-import { dumpSymbol, parseSymbol, resolveSymbol } from './symbol';
+import { dumpSymbol, parseSymbol } from './symbol';
 import { dumpFormulaNote, parseFormulaNote } from './formulaNote';
-import {
-  dumpCalculation,
-  parseCalculation,
-  resolveCalculation,
-} from './calculation';
+import { dumpCalculation, parseCalculation } from './calculation';
 import { dumpStateMachine, parseStateMachine } from './stateMachine';
 import { dumpConformanceTest, parseConformanceTest } from './conformanceTest';
 import { dumpTerm, parseTerm } from './term';
@@ -279,7 +274,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     field: 'provisions',
     takesID: true,
     parse: parseProvision,
-    resolve: resolveProvision as never,
     dump: dumpProvision as never,
   }),
   defineConstruct({
@@ -387,13 +381,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     dump: dumpEvent as never,
   }),
   defineConstruct({
-    keyword: 'reference',
-    field: 'references',
-    takesID: true,
-    parse: parseReference,
-    dump: dumpReference as never,
-  }),
-  defineConstruct({
     keyword: 'canvas',
     aliases: ['subprocess'],
     field: 'pages',
@@ -407,7 +394,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     field: 'notes',
     takesID: true,
     parse: parseNote,
-    resolve: resolveNote as never,
     dump: dumpNote as never,
   }),
   defineConstruct({
@@ -520,7 +506,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     field: 'symbols',
     takesID: true,
     parse: parseSymbol,
-    resolve: resolveSymbol as never,
     dump: dumpSymbol as never,
   }),
   // The symbol-annotation register (smart TODO.roadmap/40 batch 4) —
@@ -538,7 +523,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     field: 'calculations',
     takesID: true,
     parse: parseCalculation,
-    resolve: resolveCalculation as never,
     dump: dumpCalculation as never,
   }),
   // The evaluation-side wiring + classification cluster (smart

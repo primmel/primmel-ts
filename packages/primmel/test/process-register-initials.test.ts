@@ -52,8 +52,8 @@ process creep_method {
     in { applied_load : mass duration : time }
     out { indication_series : mass_series }
   }
-  source { doc "urn:oiml:pub:r:60-2:2021" clause "2.7.3" }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "5.3.2" fragment "s1" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.7.3"
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2/s1"
 }
 `;
 

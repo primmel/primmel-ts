@@ -503,7 +503,6 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'pages',
   'gateways',
   'regs',
-  'references',
   'provisions',
   'dataclasses',
   'events',

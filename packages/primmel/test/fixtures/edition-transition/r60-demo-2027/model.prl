@@ -118,7 +118,7 @@ requirement /req/metrological/zero-return {
   name "Zero return after load removal"
   statement "After removal of a load, the indication shall return to within 0.25 scale intervals of zero (TIGHTENED at the 2027 edition from the 0.5 of the superseded 2021 edition)."
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
-  source { doc "urn:oiml:pub:r:60-demo:2027" clause "4.3" }
+  ref derives-from "urn:oiml:pub:r:60-demo:2027#clause-4.3"
 }
 
 # CHANGED at 2027 (the clause revised: 30 min → 15 min + the record).
@@ -126,7 +126,7 @@ requirement /req/technical/warm-up-time {
   name "Warm-up period"
   statement "The instrument shall not indicate measurement results within 15 minutes of switch-on, and shall record the warm-up completion time (REVISED at the 2027 edition from the 30 minutes without a record of the superseded 2021 edition)."
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
-  source { doc "urn:oiml:pub:r:60-demo:2027" clause "5.2" }
+  ref derives-from "urn:oiml:pub:r:60-demo:2027#clause-5.2"
 }
 
 # ADDED at 2027 (no 2021 antecedent).
@@ -135,5 +135,5 @@ requirement /req/technical/warm-up-record {
   statement "The instrument shall record the time at which the warm-up period completes and make the record available to the operator (ADDED at the 2027 edition)."
   binds_to { sample.test_context.warm_up_recorded }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
-  source { doc "urn:oiml:pub:r:60-demo:2027" clause "5.3" }
+  ref derives-from "urn:oiml:pub:r:60-demo:2027#clause-5.3"
 }

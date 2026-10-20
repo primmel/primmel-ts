@@ -162,7 +162,6 @@ export function parseDeclarations(
     pages: {},
     gateways: {},
     regs: {},
-    references: {},
     provisions: {},
     dataclasses: {},
     events: {},

@@ -17,5 +17,5 @@ process_model evaluation {
     published "The OIML-CS pages of the OIML website."
     entries "Per Legal Metrology Expert: identity, contact, scope."
   }
-  source { doc "urn:oiml:pub:cs:pd-05:2024" clause "4" }
+  ref derives-from "urn:oiml:pub:cs:pd-05:2024#clause-4"
 }

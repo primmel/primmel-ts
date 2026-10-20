@@ -35,7 +35,6 @@ export type { default as Metadata } from './src/types/Metadata';
 export type { default as Role } from './src/types/Role';
 export type { default as Provision } from './src/types/Provision';
 export type { default as Process } from './src/types/process';
-export type { default as Reference } from './src/types/Reference';
 export type { default as Approval } from './src/types/Approval';
 export type { default as Gateway } from './src/types/Gateway';
 export type {

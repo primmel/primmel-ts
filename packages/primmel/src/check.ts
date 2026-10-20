@@ -384,7 +384,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
-import { dirname, join, relative, resolve } from 'path';
+import { dirname, join, resolve } from 'path';
 import {
   CompositionError,
   effectiveUses,
@@ -648,9 +648,6 @@ export function checkPackage(
 
   // ── C111: dimension-shape (MN 114 v3.2, clause 10.6) ───────────────
   issues.push(...checkDimensions(standard));
-
-  // ── C112: reference-identity (MN 114 v3.2, clause 14.7) ────────────
-  issues.push(...checkReferences(standard));
 
   // ── C116/C117: the verdict chain (MN 114 v3.2, clause 11.3) ────────
   issues.push(...checkVerdictChains(standard));
@@ -8453,69 +8450,6 @@ export function checkPackage(
   // and budgeted by the package's text_coverage_budget (C72, applied
   // with the allowlist below). Duplicate pairs are REPORTED by
   // `primmel check --coverage`, never auto-failed here.
-  // ── C154 armed (the provenance wave): the legacy provenance
-  //    spellings — `source { doc clause }` blocks and the
-  //    `specification_reference "…"` field facet — warn per occurrence
-  //    with the file context, the condition_set retirement's sequence
-  //    (arm → migrate → C57 ratchet → parse removal). The file scan is
-  //    the token-accurate detector: the parsed Standard cannot
-  //    distinguish the legacy spelling from the canonical `ref
-  //    derives-from` fold (both land in sourceRefs; the first-entry
-  //    back-compat sets `source` for both).
-  {
-    const LEGACY_PROVENANCE: Array<[RegExp, string]> = [
-      [/^\s*source\s*\{/gm, 'the source { doc clause } block'],
-      [/^\s*specification_reference\s+"([^"]*)"/gm, 'the specification_reference facet'],
-    ];
-    const scanDir = (base: string): void => {
-      let entries: string[] = [];
-      try {
-        entries = readdirSync(base).sort();
-      } catch {
-        return;
-      }
-      for (const e of entries) {
-        const full = join(base, e);
-        let st;
-        try {
-          st = statSync(full);
-        } catch {
-          continue;
-        }
-        if (st.isDirectory()) {
-          scanDir(full);
-        } else if (
-          (e.endsWith('.prl') || e.endsWith('.primmel')) &&
-          // The manifest's `source { collection … }` facet is the corpus
-          // pointer, not a provenance block.
-          e !== 'package.primmel'
-        ) {
-          let text = '';
-          try {
-            text = readFileSync(full, 'utf8');
-          } catch {
-            continue;
-          }
-          const rel = relative(dir, full) || e;
-          for (const [re, label] of LEGACY_PROVENANCE) {
-            const lines = text.split('\n');
-            let ln = 0;
-            for (const line of lines) {
-              ln++;
-              if (re.test(line)) {
-                warn(
-                  'C154',
-                  `${rel}:${ln}: ${label} is deprecated — cite the clause anchor directly (ref derives-from "urn#clause-X" / ref cites "urn") (construct-deprecated)`,
-                );
-              }
-            }
-          }
-        }
-      }
-    };
-    scanDir(dir);
-  }
-
   const textCoverageData = loadTextCoverageData(dir);
   issues.push(...textCoverageData.issues);
   if (textCoverageData.manifests.length > 0) {
@@ -10047,40 +9981,6 @@ export function checkDimensions(standard: Standard): CheckIssue[] {
       err(
         `dimension ${d.id}: declared both top-level and as the is_dimension attribute definition of the same id — one dimension identifier once per applicability namespace (dimension-shape)`,
       );
-    }
-  }
-  return issues;
-}
-
-/**
- * C112 — reference-identity (MN 114 v3.2, clause 14.7; TODO.primmel/11):
- * the reference construct is the registry of named citation targets, and
- * v3.2 grows its facet set from display strings to a resolvable identity.
- * A malformed `urn` is an error — the same well-formedness class as C85's
- * baseUrn check (a scheme, then no whitespace or IRI delimiters). When
- * `urn` is present it IS the document's identity; when it is absent the
- * org/document/edition/clause quadruple is what a consumer's locator
- * resolves, so a reference carrying neither `urn` nor the
- * org-and-document pair is a warning — a display-string citation is
- * visible debt, never silently citable.
- */
-export function checkReferences(standard: Standard): CheckIssue[] {
-  const issues: CheckIssue[] = [];
-  for (const r of standard.references ?? []) {
-    if (r.urn !== undefined) {
-      if (!/^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/.test(r.urn)) {
-        issues.push({
-          check: 'C112',
-          severity: 'error',
-          message: `reference ${r.id}: urn "${r.urn}" is not a well-formed IRI (a scheme followed by no whitespace or IRI delimiters) (reference-identity)`,
-        });
-      }
-    } else if (!(r.org && r.document)) {
-      issues.push({
-        check: 'C112',
-        severity: 'warning',
-        message: `reference ${r.id}: carries neither urn nor the org-and-document pair — a display-string citation is not machine-traversable (reference-identity)`,
-      });
     }
   }
   return issues;

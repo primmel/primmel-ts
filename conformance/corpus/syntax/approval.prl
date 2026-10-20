@@ -20,5 +20,5 @@ approval ia_approve_application {
   approval_record {
     applications
   }
-  source { doc "PD-05 §4.2" clause "" }
+  ref derives-from "PD-05 §4.2"
 }

@@ -1,5 +1,3 @@
-import type Reference from './Reference';
-
 /**
  * A formal term definition from a standard's terminology section.
  *
@@ -22,7 +20,6 @@ interface Term {
   // the id of the corresponding `symbol` declaration.
   symbolId: string;
   referenceIds: string[];
-  ref: Reference[];
   /** The unified typed references (docs/primmel/18). */
   refs?: import('./Ref').Ref[];
   /** The correspondence annotations (MN 114 v3.1, clause 19.4). */

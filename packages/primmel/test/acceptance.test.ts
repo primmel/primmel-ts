@@ -49,7 +49,7 @@ verdict drift_error {
   derive "ocl{indication - cgm_certified_value}"
   inputs { indication cgm_certified_value }
   ${ACCEPTANCE}
-  source { doc "urn:oiml:pub:r:144-2:2013" clause "4.8" }
+  ref derives-from "urn:oiml:pub:r:144-2:2013#clause-4.8"
 }
 `;
 

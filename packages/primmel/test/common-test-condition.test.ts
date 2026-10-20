@@ -29,7 +29,7 @@ common_test_condition test_equipment {
 common_test_condition measurement_counts {
   reference "urn:oiml:pub:r:91-1:1990#clause-8.3"
   description "The number of measurements shall be sufficient to evaluate the drift."
-  source { doc "urn:oiml:pub:r:91:1990" clause "8.3" }
+  ref derives-from "urn:oiml:pub:r:91:1990#clause-8.3"
 }
 `;
 

@@ -30,6 +30,7 @@ import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import GovernanceOrgan from '../../types/GovernanceOrgan';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 export const parseGovernanceOrgan: Parser = (id: string, data: string) => {
   const organ: GovernanceOrgan = {
@@ -60,6 +61,15 @@ export const parseGovernanceOrgan: Parser = (id: string, data: string) => {
         organ.independent_of = stripWrapping(value());
       } else if (keyword === 'source') {
         organ.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            organ.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -95,14 +105,7 @@ export const dumpGovernanceOrgan: Dumper<GovernanceOrgan> = function (o) {
     out += '  independent_of ' + dumpBareSafe(o.independent_of) + '\n';
   }
   if (o.source.doc || o.source.clause) {
-    out += '  source {\n';
-    if (o.source.doc) {
-      out += '    doc "' + escapeString(o.source.doc) + '"\n';
-    }
-    if (o.source.clause) {
-      out += '    clause "' + escapeString(o.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(o.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

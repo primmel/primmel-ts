@@ -27,10 +27,10 @@ import {
   type Run,
 } from '../src/runtime';
 
-const PKG = join(homedir(), 'src/oimlsmart/model-library-spike/oiml-r60-lml');
+const PKG = join(homedir(), 'src/oimlsmart/model-library/oiml-r60-lml');
 const FIXTURES = join(
   homedir(),
-  'src/oimlsmart/model-library-spike/spike/fixtures/golden-evaluation.json',
+  'src/oimlsmart/model-library/spike/fixtures/golden-evaluation.json',
 );
 const available =
   existsSync(join(PKG, 'package.primmel')) && existsSync(FIXTURES);
@@ -38,13 +38,13 @@ const available =
 async function loadComposed(): Promise<ReturnType<typeof loadPackage>> {
   return (await loadPackage(PKG, {
     resolvePackage: (id: string) =>
-      join(homedir(), 'src/oimlsmart/model-library-spike', id),
+      join(homedir(), 'src/oimlsmart/model-library', id),
   })) as unknown as ReturnType<typeof loadPackage>;
 }
 
 describe(
   'the runtime executes the R 60 goldens',
-  { skip: available ? false : 'no model-library-spike checkout' },
+  { skip: available ? false : 'no model-library checkout' },
   () => {
     const fx = JSON.parse(readFileSync(FIXTURES, 'utf8')) as {
       flintec_ssb7: {

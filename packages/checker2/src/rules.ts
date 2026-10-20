@@ -368,19 +368,6 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
         }
       }
     }
-    // C112: a reference's urn is a well-formed IRI.
-    if (c.keyword === 'reference') {
-      const urn = tokensOf(c, 'urn')[0] ?? '';
-      if (
-        urn !== '' &&
-        !/^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/.test(urn)
-      ) {
-        err(
-          'C112',
-          `reference ${c.ident}: urn "${urn}" is not a well-formed IRI (a scheme followed by no whitespace or IRI delimiters) (reference-identity)`,
-        );
-      }
-    }
     // C114: a requirement's limit kind agrees with its acceptance
     // chain's derived kind.
     if (c.keyword === 'requirement') {

@@ -1,10 +1,8 @@
 import type Provision from '../../types/Provision';
-import type { Dumper, Parser, Resolver } from '../types';
+import type { Dumper, Parser } from '../types';
 import { escapeString, tokenizePackage } from '../tokenize';
 import { unescapeString, unwrapBlock } from '../tokenize';
 import { ResolvableProvision } from '../../types/Provision';
-import type Reference from '../../types/Reference';
-import { resolveFromContext } from '../resolve';
 
 export const parseProvision: Parser = function (id, data) {
   const result: ResolvableProvision = {
@@ -12,10 +10,7 @@ export const parseProvision: Parser = function (id, data) {
     id: id,
     modality: '',
     condition: '',
-    ref: [],
-    _relations: {
-      ref: [],
-    },
+    referenceIds: [],
   };
 
   // The provision's own walk — NOT forEachEntry. The free-form
@@ -66,7 +61,7 @@ export const parseProvision: Parser = function (id, data) {
           `Parsing error: provision. ID ${id}: Expecting value for reference`,
         );
       }
-      result._relations.ref = tokenizePackage(t[i++]!);
+      result.referenceIds = tokenizePackage(t[i++]!);
       continue;
     }
     // The free-form subject entry.
@@ -89,18 +84,6 @@ export const parseProvision: Parser = function (id, data) {
   };
 };
 
-export const resolveProvision: Resolver<Provision, ResolvableProvision> =
-  function (ctx, unresolved) {
-    const ref: Reference[] = [];
-    for (const id of unresolved._relations.ref) {
-      const r = resolveFromContext<Reference>(ctx, 'references', id);
-      if (r !== undefined) {
-        ref.push(r);
-      }
-    }
-    return { ...unresolved, ref };
-  };
-
 export const dumpProvision: Dumper<Provision> = function (pro) {
   let out: string = 'provision ' + pro.id + ' {\n';
   pro.subject.forEach((value: string, key: string) => {
@@ -114,10 +97,10 @@ export const dumpProvision: Dumper<Provision> = function (pro) {
   if (pro.modality !== '') {
     out += '  modality ' + pro.modality + '\n';
   }
-  if (pro.ref.length > 0) {
+  if (pro.referenceIds.length > 0) {
     out += '  reference {\n';
-    for (const r of pro.ref) {
-      out += '    ' + r.id + '\n';
+    for (const id of pro.referenceIds) {
+      out += '    ' + id + '\n';
     }
     out += '  }\n';
   }

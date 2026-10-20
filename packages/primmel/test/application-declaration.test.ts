@@ -21,7 +21,7 @@ application_declaration application {
     name "Description of the general principle of measurement"
     description "A description of the load cell's general principle of measurement (R 60-2, 2.5 a)."
     obligation shall
-    source { doc "urn:oiml:pub:r:60-2:2021" clause "2.5" }
+    ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.5"
   }
   document mechanical-drawings {
     name "Mechanical drawings"

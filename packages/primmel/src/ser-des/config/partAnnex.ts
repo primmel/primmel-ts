@@ -11,7 +11,7 @@ import type { Dumper, Parser } from '../types';
 import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
-import { refTargetToSourceRef } from './ref';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 import PartAnnex from '../../types/PartAnnex';
 
 const PART_ANNEX_OBLIGATIONS = ['normative', 'informative'] as const;
@@ -95,14 +95,7 @@ export const dumpPartAnnex: Dumper<PartAnnex> = function (a) {
     out += '  realization "' + escapeString(a.realization) + '"\n';
   }
   if (a.source.doc || a.source.clause) {
-    out += '  source {\n';
-    if (a.source.doc) {
-      out += '    doc "' + escapeString(a.source.doc) + '"\n';
-    }
-    if (a.source.clause) {
-      out += '    clause "' + escapeString(a.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(a.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

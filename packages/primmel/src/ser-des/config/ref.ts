@@ -86,25 +86,25 @@ export function refTargetToSourceRef(target: string): {
   clause: string;
   fragment?: string;
 } | null {
-  const m = /^(urn:[^#]+)(?:#(.+))?$/.exec(target);
-  if (!m) {
-    return null;
-  }
-  const anchor = m[2];
-  if (!anchor) {
+  const hash = target.indexOf('#');
+  if (hash < 0) {
+    // A bare document target (a URN or a free-text citation like
+    // "PD-05 §4.3") rides the doc slot whole.
     return { doc: target, clause: '' };
   }
+  const doc = target.slice(0, hash);
+  const anchor = target.slice(hash + 1);
   if (anchor.startsWith('clause-')) {
     const rest = anchor.slice('clause-'.length);
     const slash = rest.indexOf('/');
     if (slash >= 0) {
       return {
-        doc: m[1]!,
+        doc,
         clause: rest.slice(0, slash),
         fragment: rest.slice(slash + 1),
       };
     }
-    return { doc: m[1]!, clause: rest };
+    return { doc, clause: rest };
   }
   // A non-clause anchor (a table, an annex) rides the doc, clause empty —
   // the legacy source block's exact shape.
@@ -209,13 +209,6 @@ export function dumpSourceRefAsRef(
   indent: string,
   escapeString: (s: string) => string,
 ): string {
-  if (src.doc && src.doc.startsWith('urn:')) {
-    const anchor = `${src.doc}${src.clause ? '#clause-' + src.clause : ''}${src.fragment ? '/' + src.fragment : ''}`;
-    return `${indent}ref derives-from "${escapeString(anchor)}"\n`;
-  }
-  return (
-    `${indent}source { doc "${escapeString(src.doc ?? '')}" clause "${escapeString(String(src.clause ?? ''))}"` +
-    (src.fragment ? ` fragment "${escapeString(src.fragment)}"` : '') +
-    ' }\n'
-  );
+  const anchor = `${src.doc}${src.clause ? '#clause-' + src.clause : ''}${src.fragment ? '/' + src.fragment : ''}`;
+  return `${indent}ref derives-from "${escapeString(anchor)}"\n`;
 }

@@ -49,7 +49,7 @@ verdict v_base {
   quantity { kind mass unit kg }
   derive "ocl{...}"
   inputs { e_l }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "5.3.2" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2"
 }
 verdict v_top {
   quantity { kind mass unit kg }
@@ -79,7 +79,7 @@ requirement /req/metrological/mpe {
     quantity { kind mass unit kg }
     accepts { verdict v_top op lte limit "ocl{...}" }
   }
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "5.3.2" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.2"
 }
 requirement /req/general/zero {
   name "Zero"

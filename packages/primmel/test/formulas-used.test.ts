@@ -52,7 +52,7 @@ formulas_used /conf/metrological-tests/measurement-error-repeatability-mdlo {
   name "MDLO evaluation formulas"
   description "The evaluation-level quantities of R 60-3, 2.1 the MDLO test derives from the indication output: the conversion factor f (2.1.2.4), the load cell error E_L (2.1.2), the repeatability error E_R (2.1.3), and the raw temperature effect on MDLO of one temperature step C_M (2.1.4 — the normalization to v_min per temperature increment lives exactly once in the mdlo_normalized VerdictQuantity)."
   formulas { conversion_factor_f e_l e_r c_m }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"
 }
 `;
 
@@ -62,7 +62,7 @@ formulas_used /conf/metrological-tests/creep {
   name "Creep evaluation formulas"
   description "The creep test's evaluation-level formulas."
   formulas { e_c }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.2" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.2"
 }
 `;
 
@@ -131,8 +131,8 @@ formulas_used /conf/x {
   name "X"
   description "d"
   formulas { e_l }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.2.4" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.2.4"
 }
 `);
     assert.deepEqual(m.formulasUsed[0].sourceRefs, [
@@ -192,7 +192,7 @@ formulas_used /conf/hash {
   name "H"
   description "see docs/formulas.md#anchor for the rationale"
   formulas { e_l }
-  source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
+  ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"
 }
 `;
     const dumped = dump(load(withHash));

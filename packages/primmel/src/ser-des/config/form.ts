@@ -17,7 +17,12 @@ import {
   dumpApplicabilityEntries,
   dumpBareSafe,
 } from './field-parser';
-import { parseRef, foldRefIntoLegacy } from './ref';
+import {
+  parseRef,
+  foldRefIntoLegacy,
+  dumpSourceRefAsRef,
+  refTargetToSourceRef,
+} from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
 import type Form from '../../types/Form';
 import type {
@@ -48,7 +53,6 @@ export const parseForm: Parser = function (id, data) {
     fields: [],
     passFail: null,
     referenceIds: [],
-    ref: [],
   };
 
   if (data !== '') {
@@ -258,6 +262,15 @@ function parseFormConstraints(block: string): FormConstraint[] {
           c.notes = stripWrapping(ct[j++]);
         } else if (cc === 'source') {
           c.source = readSource(unwrapBlock(ct[j++]));
+        } else if (cc === 'ref') {
+          const predicate = stripWrapping(ct[j++]);
+          const target = stripWrapping(ct[j++]);
+          if (predicate === 'derives-from') {
+            const b = refTargetToSourceRef(target);
+            if (b) {
+              c.source = b;
+            }
+          }
         } else {
           unwrapBlock(ct[j++]);
         }
@@ -360,7 +373,6 @@ function makeSubformRefField(subformId: string, block: string): FormField {
     referenceIds: [],
     refs: [],
     fieldReferences: [],
-    specificationReference: '',
     applicability: [],
     sourceDiscrepancy: null,
     fields: [],
@@ -474,16 +486,7 @@ export const dumpForm: Dumper<Form> = function (f) {
         out += 'notes "' + escapeString(c.notes) + '" ';
       }
       if (c.source && (c.source.doc || c.source.clause)) {
-        out +=
-          'source { doc "' +
-          escapeString(c.source.doc) +
-          '" clause "' +
-          escapeString(c.source.clause) +
-          '"' +
-          (c.source.fragment
-            ? ' fragment "' + escapeString(c.source.fragment) + '"'
-            : '') +
-          ' } ';
+        out += dumpSourceRefAsRef(c.source, '', escapeString).trimEnd() + ' ';
       }
       out += '}\n';
     }

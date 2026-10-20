@@ -1,8 +1,6 @@
-import type Reference from './Reference';
 import Resolvable from './Resolvable';
 import type { Ref } from '../ser-des/config/ref';
 
-export type { default as Reference } from './Reference';
 export type { Ref } from '../ser-des/config/ref';
 
 export interface Registry {
@@ -61,7 +59,8 @@ export interface DataAttribute {
   modality: string;
   cardinality: string;
   definition: string;
-  ref: Reference[];
+  /** The v2 `reference { … }` id list (opaque ids, never resolved). */
+  referenceIds: string[];
   satisfy: string[];
   /** FK edge semantics on reference fields (v2 G2). */
   onDelete?: string;
@@ -77,7 +76,7 @@ export interface DataAttribute {
   defaultValue?: string;
 }
 
-export type ResolveableDataAttribute = Resolvable<DataAttribute, 'ref'>;
+export type ResolveableDataAttribute = DataAttribute;
 
 export interface Enum {
   id: string;

@@ -16,6 +16,7 @@ import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { tokenizePackage } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource, stripColon } from './field-parser';
+import { dumpSourceRefAsRef, refTargetToSourceRef } from './ref';
 import SchemeType, {
   SchemeActivityKind,
   SchemeSurveillance,
@@ -69,6 +70,15 @@ export const parseSchemeActivityKind: Parser = (id: string, data: string) => {
         kind.label = stripWrapping(value());
       } else if (keyword === 'source') {
         kind.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            kind.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -148,6 +158,15 @@ export const parseSchemeType: Parser = (id: string, data: string) => {
           .filter(s => s.length > 0);
       } else if (keyword === 'source') {
         type.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            type.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -163,18 +182,7 @@ export const parseSchemeType: Parser = (id: string, data: string) => {
 };
 
 function dumpSource(source: SchemeType['source'], indent: string): string {
-  if (!source.doc && !source.clause) {
-    return '';
-  }
-  let out = indent + 'source {\n';
-  if (source.doc) {
-    out += indent + '  doc "' + escapeString(source.doc) + '"\n';
-  }
-  if (source.clause) {
-    out += indent + '  clause "' + escapeString(source.clause) + '"\n';
-  }
-  out += indent + '}\n';
-  return out;
+  return dumpSourceRefAsRef(source, indent, escapeString);
 }
 
 export const dumpSchemeActivityKind: Dumper<SchemeActivityKind> = function (k) {

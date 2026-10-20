@@ -1,12 +1,10 @@
-import { Resolvable } from './Resolvable';
-import Reference from './Reference';
-
 export default interface Provision {
   subject: Map<string, string>;
   id: string;
   modality: string;
   condition: string;
-  ref: Reference[];
+  /** The v2 `reference { … }` id list (opaque ids, never resolved). */
+  referenceIds: string[];
 }
 
-export type ResolvableProvision = Resolvable<Provision, 'ref'>;
+export type ResolvableProvision = Provision;

@@ -16,7 +16,7 @@ instrument LoadCell {
     label "Accuracy class"
     scope group
     description "Metrological class with associated n_LC ranges"
-    reference { doc "urn:oiml:pub:r:60-1:2021" clause "5.1.1" }
+    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.1.1"
     values {
       A { description "Class A" payload { n_lc_limits: "50000-unlimited" } }
       B
@@ -43,7 +43,7 @@ attribute_definition e_max {
   symbol "E_max"
   name "Maximum capacity"
   definition "Largest value of a quantity which may be applied to a load cell."
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "3.5.5" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.5.5"
   quantity_kind mass
   unit kg
   value_type QuantityValue
@@ -57,7 +57,7 @@ attribute_definition humidity_symbol {
   symbol "humidity_symbol"
   name "Humidity symbol"
   definition "Symbol indicating the humidity conditions under which tested."
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "3.4.1" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.4.1"
   value_type string
   origin declared
   scope model
@@ -97,7 +97,7 @@ behavior creep {
   kind temporal
   stimulus force
   response "Change in load cell output with time under constant load."
-  source { doc "urn:oiml:pub:r:60-1:2021" clause "3.7.1" }
+  ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.7.1"
   verified_by { /conf/metrological-tests/creep }
 }
 

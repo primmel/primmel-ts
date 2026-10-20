@@ -120,7 +120,7 @@ canvas Root {
     // branch clears sourceRefs for symmetry with sourceRef.
     const model = load(`conformance_test Mixed {
   name "Mixed reference forms"
-  reference { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1" }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1"
   reference { R60doc#2.10.1 }
 }`);
 

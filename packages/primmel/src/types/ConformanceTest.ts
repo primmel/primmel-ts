@@ -1,6 +1,5 @@
 import type AcceptanceDecision from './Acceptance';
 import type TestDesign from './Design';
-import type Reference from './Reference';
 import type { CompetenceRequirement } from './CompetenceKind';
 import type { ApplicabilityEntry } from './Form';
 import type { SeriesDecl } from './Series';
@@ -314,5 +313,3 @@ export default interface ConformanceTest {
   derivedValues: Array<{ name: string; expression: string }>;
   sourceDiscrepancy: SourceDiscrepancy | null;
 }
-
-export type { Reference };

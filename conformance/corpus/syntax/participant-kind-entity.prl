@@ -19,7 +19,7 @@ participant_kind issuing_authority {
     clause "11.5 f)"
   }
   declaration issuing_authority_declaration
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.2" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.2"
 }
 
 participant_kind test_laboratory {
@@ -51,7 +51,7 @@ participant_kind test_laboratory {
     acceptance voluntary
     acceptance_note "Acceptance of certificates/reports issued on the basis of MTL test reports is voluntary (B 18:2025, §5.6.3; PD-06)."
   }
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.3" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.3"
 }
 
 participant_kind utilizer {
@@ -62,5 +62,5 @@ participant_kind utilizer {
   member member_state
   declaration utilizer_declaration
   admission "PD-09"
-  source { doc "urn:oiml:pub:b:18:2025" clause "5.6.1" }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-5.6.1"
 }

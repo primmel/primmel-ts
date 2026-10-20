@@ -17,6 +17,7 @@ import tokenize, {
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource, stripColon } from './field-parser';
 import Aspect from '../../types/Aspect';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 const ASPECT_KINDS = [
   'marking',
@@ -76,6 +77,15 @@ export const parseAspect: Parser = (id: string, data: string) => {
           .filter(s => s.length > 0);
       } else if (keyword === 'source') {
         aspect.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            aspect.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -117,14 +127,7 @@ export const dumpAspect: Dumper<Aspect> = function (a) {
     out += '  contains { ' + a.contains.map(dumpBareSafe).join(' ') + ' }\n';
   }
   if (a.source && (a.source.doc || a.source.clause)) {
-    out += '  source {\n';
-    if (a.source.doc) {
-      out += '    doc "' + escapeString(a.source.doc) + '"\n';
-    }
-    if (a.source.clause) {
-      out += '    clause "' + escapeString(a.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(a.source, '  ', escapeString);
   }
   out += '}\n';
   return out;

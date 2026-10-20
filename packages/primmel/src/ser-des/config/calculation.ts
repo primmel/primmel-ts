@@ -1,4 +1,4 @@
-import type { Dumper, Parser, Resolver } from '../types';
+import type { Dumper, Parser } from '../types';
 import {
   escapeString,
   unwrapBlock,
@@ -17,8 +17,6 @@ import type {
   CalculationVariant,
   ResolvableCalculation,
 } from '../../types/Calculation';
-import type Reference from '../../types/Reference';
-import { resolveFromContext } from '../resolve';
 
 export const parseCalculation: Parser = function (id, data) {
   const result: ResolvableCalculation = {
@@ -31,10 +29,7 @@ export const parseCalculation: Parser = function (id, data) {
     params: [],
     lookup: null,
     profile: '',
-    ref: [],
-    _relations: {
-      ref: [],
-    },
+    referenceIds: [],
     // Initialized so the ref fold (docs/primmel/18 §18.4) mirrors the
     // first derives-from block here — the fold only mirrors slots the
     // object already carries.
@@ -81,7 +76,7 @@ export const parseCalculation: Parser = function (id, data) {
           }
           result.math = { notation, formula };
         } else if (command === 'reference') {
-          result._relations.ref = tokenizePackage(t[i++]);
+          result.referenceIds = tokenizePackage(t[i++]);
         } else if (command === 'ref') {
           const rr = parseRef(t, i, stripWrapping, unwrapBlock);
           if (!foldRefIntoLegacy(result as never, rr.ref)) {
@@ -537,18 +532,6 @@ function dumpVariant(v: CalculationVariant): string {
   return out;
 }
 
-export const resolveCalculation: Resolver<Calculation, ResolvableCalculation> =
-  function (ctx, unresolved) {
-    const ref: Reference[] = [];
-    for (const id of unresolved._relations.ref) {
-      const r = resolveFromContext<Reference>(ctx, 'references', id);
-      if (r !== undefined) {
-        ref.push(r);
-      }
-    }
-    return { ...unresolved, ref };
-  };
-
 export const dumpCalculation: Dumper<Calculation> = function (c) {
   let out = 'calculation ' + c.id + ' {\n';
   out += '  name "' + escapeString(c.name) + '"\n';
@@ -673,10 +656,10 @@ export const dumpCalculation: Dumper<Calculation> = function (c) {
     escapeString,
     dumpBareSafe,
   );
-  if (c.ref.length > 0) {
+  if (c.referenceIds.length > 0) {
     out += '  reference {\n';
-    for (const r of c.ref) {
-      out += '    ' + r.id + '\n';
+    for (const id of c.referenceIds) {
+      out += '    ' + id + '\n';
     }
     out += '  }\n';
   }

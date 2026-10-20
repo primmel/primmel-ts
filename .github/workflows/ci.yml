@@ -51,6 +51,38 @@ jobs:
           npm install parsanol --no-audit --no-fund
           cd "$GITHUB_WORKSPACE"
           PRIMMEL_PARSANOL_TS="$SCRATCH/node_modules/parsanol" yarn test:conformance:checker2
+  corpus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: yarn
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install
+        run: yarn install --immutable
+      - name: Build the kernel CLI
+        run: yarn workspace @primmel/primmel run build:cli
+      # The corpus is a private sibling repo (oimlsmart/model-library). A
+      # fork PR has no token, so the checkout is allowed to fail and the
+      # smoke script then skips LOUDLY — a skipped corpus gate never reads
+      # as a pass.
+      - name: Check out the model corpus
+        id: corpus
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: oimlsmart/model-library
+          path: .corpus
+          token: ${{ secrets.OIMLSMART_CORPUS_TOKEN }}
+      - name: Composed corpus smoke (strict + audit, the full uses closure)
+        env:
+          PRIMMEL_CORPUS_DIR: ${{ github.workspace }}/.corpus
+        run: node --import tsx scripts/check-corpus.mts
+
       - name: Build package
         run: yarn build
       - name: Exports-map proof (the built package's subpaths)

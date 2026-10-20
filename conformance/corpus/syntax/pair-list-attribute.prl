@@ -16,7 +16,7 @@ attribute_definition interfering_components {
     }
     component h2o {
       name "Water vapour"
-      source { doc "urn:oiml:pub:r:144-1:2013" clause "5.3" }
+      ref derives-from "urn:oiml:pub:r:144-1:2013#clause-5.3"
     }
     component so2 {
       name "Sulfur dioxide"

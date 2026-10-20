@@ -17,6 +17,7 @@ import tokenize, {
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource, stripColon } from './field-parser';
 import IdentitySlot from '../../types/IdentitySlot';
+import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 
 const IDENTITY_SLOT_TYPES = [
   'string',
@@ -82,6 +83,15 @@ export const parseIdentitySlot: Parser = (id: string, data: string) => {
         slot.metamodelClass = stripWrapping(value());
       } else if (keyword === 'source') {
         slot.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b) {
+            slot.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -118,14 +128,7 @@ export const dumpIdentitySlot: Dumper<IdentitySlot> = function (s) {
     out += '  metamodel_class ' + dumpBareSafe(s.metamodelClass) + '\n';
   }
   if (s.source && (s.source.doc || s.source.clause)) {
-    out += '  source {\n';
-    if (s.source.doc) {
-      out += '    doc "' + escapeString(s.source.doc) + '"\n';
-    }
-    if (s.source.clause) {
-      out += '    clause "' + escapeString(s.source.clause) + '"\n';
-    }
-    out += '  }\n';
+    out += dumpSourceRefAsRef(s.source, '  ', escapeString);
   }
   out += '}\n';
   return out;
