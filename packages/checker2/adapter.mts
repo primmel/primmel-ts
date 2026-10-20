@@ -120,29 +120,73 @@ async function main(): Promise<void> {
       // The shipped documents' harvest indexes (C169's counterpart
       // inputs) and the parsed allowlist (C56's): artifacts the adapter
       // reads so check() judges them without fs of its own.
-      const documents: { urn: string; fragments: Set<string>; addresses: Set<string> }[] = [];
+      const documents: {
+        urn: string;
+        fragments: Set<string>;
+        addresses: Set<string>;
+        sentences: { address: string; fragment: string; modality: string; kind: string; text: string }[];
+        malformed?: string;
+      }[] = [];
       for (const f of manifestFiles.filter(x => x.includes('sources-prd/') && x.endsWith('.sentences.json'))) {
+        const rel = f.slice(f.indexOf('sources-prd/'));
+        let raw: {
+          prd_sentences?: string;
+          document?: { urn?: string };
+          sentences?: { address?: string; fragment?: string; modality?: string; kind?: string; text?: string }[];
+        };
         try {
-          const raw = JSON.parse(read(f)) as {
-            document?: { urn?: string };
-            sentences?: { address?: string; fragment?: string }[];
-          };
-          if (typeof raw.document?.urn !== 'string' || !Array.isArray(raw.sentences)) {
-            continue;
+          raw = JSON.parse(read(f));
+        } catch (e) {
+          documents.push({ urn: '', fragments: new Set(), addresses: new Set(), sentences: [], malformed: `${rel}: not parseable JSON — ${String((e as Error)?.message ?? e)} (text-coverage-config)` });
+          continue;
+        }
+        if (
+          raw.prd_sentences !== '0.1.0' ||
+          typeof raw.document?.urn !== 'string' ||
+          !Array.isArray(raw.sentences) ||
+          raw.sentences.some(
+            x =>
+              typeof x?.address !== 'string' ||
+              typeof x?.fragment !== 'string' ||
+              (x?.modality !== 'normative' && x?.modality !== 'informative') ||
+              typeof x?.text !== 'string',
+          )
+        ) {
+          documents.push({ urn: raw.document?.urn ?? '', fragments: new Set(), addresses: new Set(), sentences: [], malformed: `${rel}: not a prd_sentences 0.1.0 manifest (document.urn + sentences[{address, fragment, modality, text}]) — regenerate the package (text-coverage-config)` });
+          continue;
+        }
+        const fragments = new Set<string>();
+        const addresses = new Set<string>();
+        const sentences: { address: string; fragment: string; modality: string; kind: string; text: string }[] = [];
+        for (const s2 of raw.sentences) {
+          if (typeof s2.fragment === 'string') {
+            fragments.add(s2.fragment);
           }
-          const fragments = new Set<string>();
-          const addresses = new Set<string>();
-          for (const s2 of raw.sentences) {
-            if (typeof s2.fragment === 'string') {
-              fragments.add(s2.fragment);
-            }
-            if (typeof s2.address === 'string') {
-              addresses.add(s2.address);
-            }
+          if (typeof s2.address === 'string') {
+            addresses.add(s2.address);
           }
-          documents.push({ urn: raw.document.urn, fragments, addresses });
-        } catch {
-          // An unparseable manifest rides the kernel's C73, not C169.
+          sentences.push({
+            address: s2.address ?? '',
+            fragment: s2.fragment ?? '',
+            modality: s2.modality ?? 'informative',
+            kind: s2.kind ?? '',
+            text: s2.text ?? '',
+          });
+        }
+        documents.push({ urn: raw.document.urn, fragments, addresses, sentences });
+      }
+      const coveragePath = manifestFiles.find(x => x.endsWith('sources-prd/coverage.json'));
+      let coverage: { config?: unknown; parseError?: string } | undefined;
+      if (coveragePath !== undefined) {
+        try {
+          const cfg = JSON.parse(read(coveragePath)) as { prd_coverage?: string };
+          if (cfg.prd_coverage !== '0.1.0') {
+            coverage = { parseError: `sources-prd/coverage.json: prd_coverage must be "0.1.0" — regenerate the package (text-coverage-config)` };
+          } else {
+            coverage = { config: cfg };
+          }
+        } catch (e) {
+          coverage = { parseError: `sources-prd/coverage.json: ${String((e as Error)?.message ?? e)} — regenerate the package (text-coverage-config)` };
         }
       }
       // The allowlist is NOT package syntax — the package grammar does
@@ -161,7 +205,18 @@ async function main(): Promise<void> {
       };
       const pkg = loadDir(target);
       pkg.dir = resolve(target);
+      // The register this implementation mirrors — the allowlist's
+      // active-rules gate (a dormant rule's entry never goes stale).
+      try {
+        const registerPath = join(import.meta.dirname ?? '.', '..', '..', 'conformance', 'checker2-rules.json');
+        pkg.mirroredRules = new Set(
+          (JSON.parse(readFileSync(registerPath, 'utf8')) as { implemented: string[] }).implemented,
+        );
+      } catch {
+        // no register in reach — every entry counts as active
+      }
       pkg.documents = documents;
+      pkg.coverage = coverage;
       pkg.allowlist = allowlist;
       // The lineage counterparties: the sibling package directories.
       pkg.siblings = readdirSync(resolve(target, '..'))

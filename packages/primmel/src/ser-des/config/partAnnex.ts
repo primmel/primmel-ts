@@ -11,6 +11,7 @@ import type { Dumper, Parser } from '../types';
 import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
+import { refTargetToSourceRef } from './ref';
 import PartAnnex from '../../types/PartAnnex';
 
 const PART_ANNEX_OBLIGATIONS = ['normative', 'informative'] as const;
@@ -49,6 +50,19 @@ export const parsePartAnnex: Parser = (id: string, data: string) => {
         annex.realization = stripWrapping(value());
       } else if (keyword === 'source') {
         annex.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        // The canonical channel (the provenance retirement): the
+        // annex's own provenance rides the first derives-from binding.
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          // The init is a truthy {doc:'',clause:''} placeholder — the
+          // binding always stores.
+          if (b) {
+            annex.source = b;
+          }
+        }
       } else {
         return false;
       }

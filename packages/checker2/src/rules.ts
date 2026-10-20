@@ -12,6 +12,7 @@
 
 import type { Construct, Item, ParsedPackage } from './front-end.ts';
 import {
+  parseX,
   readExpression,
   readNavMembers,
   X_FUNCS,
@@ -37,6 +38,20 @@ function lines(
 }
 
 /** Nested constructs of a body. */
+const BUDGETED_RULES_C = new Set(['C51', 'C52']);
+
+/** The tokens of a construct's raw-or-line body (a refs/targets/uses
+ *  list): raw token runs and line keys+runs, both. */
+function rawTokensT(c: Construct): string[] {
+  return c.items.flatMap(i =>
+    i.kind === 'raw'
+      ? i.tokens
+      : i.kind === 'line'
+        ? [i.key ?? '', ...i.tokens]
+        : [],
+  );
+}
+
 function nested(c: Construct): Construct[] {
   return c.items.flatMap(i =>
     i.kind === 'construct' && i.construct ? [i.construct] : [],
@@ -1089,20 +1104,67 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
     // C51 coverage-test-evidence: a conformance test leaving no
     // evidence — no result_forms, no report_rows, and no form binds its
     // process (warning; the audit family's leg).
+    const harvestForms = (): Construct[] => {
+      const out: Construct[] = [];
+      const walk = (c: Construct): void => {
+        if (c.keyword === 'form') {
+          out.push(c);
+        }
+        for (const i2 of c.items) {
+          if (i2.kind === 'construct' && i2.construct) {
+            walk(i2.construct);
+          }
+        }
+      };
+      for (const c of [pkg, ...(pkg.siblings ?? [])].flatMap(
+        x => x.constructs,
+      )) {
+        walk(c);
+      }
+      return out;
+    };
+    const allForms51 = harvestForms();
     const boundProcesses = new Set(
-      [pkg, ...(pkg.siblings ?? [])]
-        .flatMap(x => x.constructs)
-        .filter(c => c.keyword === 'form')
-        .flatMap(f => tokensOf(f, 'conformance_process')),
+      allForms51.flatMap(f => tokensOf(f, 'conformance_process')),
     );
+    const formRequirementSets51 = allForms51.map(
+      f => new Set(tokensOf(f, 'requirements')),
+    );
+    // inherits_from chains inherit the parent's evidence links (R 60's
+    // class-driven instances) — the kernel's hasEvidence recursion.
+    const testById51 = new Map(
+      pkg.constructs
+        .filter(x => x.keyword === 'conformance_test' && x.ident)
+        .map(x => [x.ident!, x]),
+    );
+    const hasEvidence51 = (c: Construct, seen: Set<string>): boolean => {
+      const id = c.ident ?? '';
+      if (seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      if (
+        tokensOf(c, 'result_forms').length > 0 ||
+        tokensOf(c, 'report_rows').length > 0 ||
+        boundProcesses.has(id)
+      ) {
+        return true;
+      }
+      const targets51 = tokensOf(c, 'targets');
+      if (
+        targets51.length > 0 &&
+        formRequirementSets51.some(reqs => targets51.some(t2 => reqs.has(t2)))
+      ) {
+        return true;
+      }
+      const pid = tokensOf(c, 'inherits_from')[0];
+      const parent = pid ? testById51.get(pid) : undefined;
+      return parent !== undefined && hasEvidence51(parent, seen);
+    };
     for (const c of pkg.constructs.filter(
       x => x.keyword === 'conformance_test' && x.ident,
     )) {
-      const recorded =
-        tokensOf(c, 'result_forms').length > 0 ||
-        tokensOf(c, 'report_rows').length > 0 ||
-        boundProcesses.has(c.ident);
-      if (!recorded) {
+      if (!hasEvidence51(c, new Set())) {
         issues.push({
           rule: 'C51',
           severity: 'warning',
@@ -1185,7 +1247,11 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       const judged =
         tokensOf(c, 'pass_fail').length > 0 ||
         nested(c).some(n => n.keyword === 'pass_fail') ||
-        facetTokens(c.items, 'measurement_method').includes('evaluated');
+        facetTokens(c.items, 'measurement_method').includes('evaluated') ||
+        // a form binding requirements weighs them — the kernel's
+        // (f.requirements ?? []).length === 0 gate
+        tokensOf(c, 'requirements').length > 0 ||
+        nested(c).some(n => n.keyword === 'requirements');
       if (!judged) {
         issues.push({
           rule: 'C52',
@@ -2882,9 +2948,348 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
             err('C169', message);
           }
         }
+
+        // ── the text-coverage family (C73/C71/C72): the normative-text
+        //     metric over the shipped harvests. C73 is config hygiene
+        //     (malformed payloads, stale/dead/unreasoned allowances,
+        //     unsorted/unreasoned/stale adjudications); C71 warns per
+        //     uncovered normative sentence; C72 is the allowlist's
+        //     text_coverage_budget (exceeded errors, slack warns).
+        {
+          for (const d of docs) {
+            if (d.malformed) {
+              err('C73', d.malformed);
+            }
+          }
+          const cov = pkg.coverage;
+          if (cov?.parseError) {
+            err('C73', cov.parseError);
+          }
+          const config = cov?.config;
+          const manifests = docs.filter(d => !d.malformed && d.urn !== '');
+          const manifestUrns = new Set(manifests.map(m => m.urn));
+          if (manifests.length > 0) {
+            const SENTENCE_ADDRESS = /\/s[1-9][0-9]*$/;
+            const boundFragments = new Set<string>();
+            const boundSentences = new Set<string>();
+            const textByElement = new Map<string, string>();
+            for (const b of bindings) {
+              if (!manifestUrns.has(b.doc)) {
+                continue;
+              }
+              const key = `${b.doc}#${b.path}`;
+              if (SENTENCE_ADDRESS.test(b.path)) {
+                boundSentences.add(key);
+              } else {
+                boundFragments.add(key);
+              }
+            }
+            // The kernel's DUPLICATE_TEXT_KINDS are the Standard collection
+            // names; the shape tree's keywords are their singulars.
+            const DUPLICATE_TEXT_KINDS = new Set([
+              'requirement',
+              'term',
+              'instrument',
+            ]);
+            // The bound text for duplicate detection: the requirement
+            // statement / term definition / instrument definition the
+            // binding's element carries.
+            const textOf = (c: Construct): string => {
+              for (const key of ['statement', 'definition']) {
+                const l = lines(c).find(x => x.key === key);
+                if (l && l.tokens.length > 0) {
+                  return l.tokens.join(' ');
+                }
+              }
+              return '';
+            };
+            const ownerOf = new Map<string, Construct>();
+            for (const c of closureConstructs) {
+              if (c.ident && DUPLICATE_TEXT_KINDS.has(c.keyword)) {
+                ownerOf.set(c.ident, c);
+              }
+            }
+            for (const b of bindings) {
+              if (!manifestUrns.has(b.doc) || textByElement.has(b.element)) {
+                continue;
+              }
+              const owner = ownerOf.get(b.element);
+              if (owner && DUPLICATE_TEXT_KINDS.has(owner.keyword)) {
+                const t = textOf(owner);
+                if (t !== '') {
+                  textByElement.set(b.element, t);
+                }
+              }
+            }
+            const allowances = config?.allowances ?? [];
+            const adjudications = config?.duplicate_adjudications ?? [];
+            type Sent = {
+              address: string;
+              fragment: string;
+              modality: string;
+              kind: string;
+              text: string;
+            };
+            const allowanceAddressMatches = (
+              allowance: string,
+              sentence: string,
+            ): boolean =>
+              sentence === allowance ||
+              (sentence.startsWith(allowance) &&
+                ['.', '/'].includes(sentence.charAt(allowance.length)));
+            const allowanceMatches = (
+              address: string,
+              pins: string[] | undefined,
+              urn: string,
+              sentences: Sent[],
+            ): Sent[] => {
+              const hash = address.indexOf('#');
+              const fragment = address.slice(hash + 1);
+              if (pins) {
+                const set = new Set(pins.map(x => `${urn}#${fragment}/${x}`));
+                return sentences.filter(x => set.has(`${urn}#${x.address}`));
+              }
+              return sentences.filter(x =>
+                allowanceAddressMatches(address, `${urn}#${x.address}`),
+              );
+            };
+            const matchedByAllowance = new Map<
+              { address: string; pins?: string[]; reason?: string },
+              Sent[]
+            >();
+            for (const manifest of manifests) {
+              const urn = manifest.urn;
+              const sentences = manifest.sentences ?? [];
+              const sentenceCovered = (x: Sent): boolean =>
+                boundFragments.has(`${urn}#${x.fragment}`) ||
+                boundSentences.has(`${urn}#${x.address}`);
+              const allowanceOf = new Map<
+                string,
+                (typeof allowances)[number]
+              >();
+              for (const a of allowances) {
+                if (a.address.slice(0, a.address.indexOf('#')) !== urn) {
+                  continue;
+                }
+                const matched = allowanceMatches(
+                  a.address,
+                  a.sentences,
+                  urn,
+                  sentences,
+                );
+                const arr = matchedByAllowance.get(a) ?? [];
+                arr.push(...matched);
+                matchedByAllowance.set(a, arr);
+                for (const x of matched) {
+                  if (x.modality === 'normative' && !sentenceCovered(x)) {
+                    allowanceOf.set(x.address, a);
+                  }
+                }
+              }
+              for (const x of sentences) {
+                if (x.modality !== 'normative' || sentenceCovered(x)) {
+                  continue;
+                }
+                if (allowanceOf.has(x.address)) {
+                  continue;
+                }
+                const text =
+                  x.text.length > 100 ? `${x.text.slice(0, 97)}…` : x.text;
+                issues.push({
+                  rule: 'C71',
+                  severity: 'warning',
+                  message: `sentence ${urn}#${x.address} (normative, ${x.kind}): bound by no model element and excluded by no allowance — "${text}" (text-coverage-sentence-uncovered)`,
+                });
+              }
+            }
+            // C73 — allowance hygiene.
+            for (const a of allowances) {
+              const label = `coverage allowance '${a.address}'${a.sentences ? ` pins {${a.sentences.join(' ')}}` : ''}`;
+              const urn = a.address.slice(0, a.address.indexOf('#'));
+              if (!manifestUrns.has(urn)) {
+                err(
+                  'C73',
+                  `${label}: not a document of the shipped manifests (stale or mistyped address) (text-coverage-config)`,
+                );
+                continue;
+              }
+              const matched = matchedByAllowance.get(a) ?? [];
+              const normative = matched.filter(x => x.modality === 'normative');
+              if (matched.length === 0) {
+                err(
+                  'C73',
+                  `${label}: matches no sentence of the decomposition (stale — remove the entry or fix the address/pins) (text-coverage-config)`,
+                );
+              } else if (normative.length === 0) {
+                err(
+                  'C73',
+                  `${label}: every matched sentence is informative — informative sentences need no allowance (stale — remove the entry) (text-coverage-config)`,
+                );
+              } else if (a.sentences) {
+                const informativePins = matched
+                  .filter(x => x.modality !== 'normative')
+                  .map(x => x.address);
+                if (informativePins.length > 0) {
+                  err(
+                    'C73',
+                    `${label}: pinned sentence(s) ${informativePins.join(', ')} are informative-classified — the pin is stale (text-coverage-config)`,
+                  );
+                }
+              }
+              if (normative.length > 0) {
+                const bound = (x: Sent): boolean =>
+                  boundFragments.has(`${urn}#${x.fragment}`) ||
+                  boundSentences.has(`${urn}#${x.address}`);
+                if (normative.every(bound)) {
+                  err(
+                    'C73',
+                    `${label}: every matched normative sentence is now bound by a model element — the allowance discharges nothing (stale — remove the entry; the bindings carry the coverage) (text-coverage-config)`,
+                  );
+                }
+              }
+              if (!a.reason) {
+                err(
+                  'C73',
+                  `${label}: missing reason (allowances are deliberate, never silent) (text-coverage-config)`,
+                );
+              }
+            }
+            // The duplicate detector (the adjudication-staleness input):
+            // containment similarity over the bound-text elements.
+            const normalizeForSimilarity = (text: string): string[] =>
+              text
+                .toLowerCase()
+                .replace(/[‘’‚]/g, "'")
+                .replace(/[“”„]/g, '"')
+                .replace(/[‐‑‒–—]/g, '-')
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim()
+                .split(' ')
+                .filter(t => t !== '');
+            const containmentSimilarity = (
+              a: string[],
+              b: string[],
+            ): number => {
+              const count = (xs: string[]) => {
+                const m = new Map<string, number>();
+                for (const x of xs) {
+                  m.set(x, (m.get(x) ?? 0) + 1);
+                }
+                return m;
+              };
+              const ca = count(a);
+              const cb = count(b);
+              let inter = 0;
+              for (const [t, n] of ca) {
+                inter += Math.min(n, cb.get(t) ?? 0);
+              }
+              const denom = Math.min(a.length, b.length);
+              return denom === 0 ? 0 : inter / denom;
+            };
+            const flaggedKeys = new Set<string>();
+            {
+              const elements = [...textByElement.keys()].sort();
+              const tokens = new Map(
+                elements.map(e => [
+                  e,
+                  normalizeForSimilarity(textByElement.get(e)!),
+                ]),
+              );
+              for (let i = 0; i < elements.length; i++) {
+                for (let j = i + 1; j < elements.length; j++) {
+                  const ta = tokens.get(elements[i]!)!;
+                  const tb = tokens.get(elements[j]!)!;
+                  if (Math.min(ta.length, tb.length) < 6) {
+                    continue;
+                  }
+                  if (containmentSimilarity(ta, tb) >= 0.8) {
+                    flaggedKeys.add(elements[i]! + elements[j]!);
+                  }
+                }
+              }
+            }
+            // C73 — adjudication hygiene.
+            for (const d of adjudications) {
+              const els = d.elements ?? [];
+              const label = `duplicate adjudication {${els.join(', ')}}`;
+              if (els.length !== 2) {
+                err(
+                  'C73',
+                  `${label}: exactly two element ids make a pair (text-coverage-config)`,
+                );
+                continue;
+              }
+              if (els[0] === els[1]) {
+                err(
+                  'C73',
+                  `${label}: the pair names the same element twice (text-coverage-config)`,
+                );
+              }
+              if (els[0]! > els[1]!) {
+                err(
+                  'C73',
+                  `${label}: element ids must be sorted (the pair key is order-free) (text-coverage-config)`,
+                );
+              }
+              if (!d.reason) {
+                err(
+                  'C73',
+                  `${label}: missing reason (adjudications are deliberate, never silent) (text-coverage-config)`,
+                );
+              }
+              if (!flaggedKeys.has([...els].sort().join(''))) {
+                err(
+                  'C73',
+                  `${label}: the pair is not currently flagged (similarity below 0.8 or an element unbound/renamed) — the adjudication is STALE (text-coverage-config)`,
+                );
+              }
+            }
+            // C72 — the text_coverage_budget (the allowlist's own line).
+            const budgetLine = pkg.allowlist?.budgets.find(
+              b =>
+                b.key === 'coverage_budget' || b.key === 'text_coverage_budget',
+            );
+            if (budgetLine) {
+              const budget = Number.parseInt(budgetLine.raw, 10);
+              if (Number.isInteger(budget) && budget >= 0) {
+                // KNOWN C71 entries discharge their matches from the count
+                // (the kernel's applyAllowlist subtracts `known`).
+                const globMatch = (glob: string, text: string): boolean =>
+                  new RegExp(
+                    '^' +
+                      glob
+                        .split('*')
+                        .map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                        .join('[\\s\\S]*') +
+                      '$',
+                  ).test(text);
+                const knownPats = (pkg.allowlist?.entries ?? [])
+                  .filter(e => e.rule === 'C71' && e.match)
+                  .map(e => e.match);
+                const count = issues.filter(
+                  i2 =>
+                    i2.rule === 'C71' &&
+                    i2.severity === 'warning' &&
+                    !knownPats.some(pat => globMatch(pat, i2.message)),
+                ).length;
+                if (count > budget) {
+                  err(
+                    'C72',
+                    `.primmel-allowlist.prl: ${count} uncovered normative sentences exceed the package text_coverage_budget of ${budget} — bind the sentences, declare allowances with clause-referenced reasons, or raise the budget (text-coverage-budget)`,
+                  );
+                } else if (count < budget) {
+                  issues.push({
+                    rule: 'C72',
+                    severity: 'warning',
+                    message: `.primmel-allowlist.prl: text_coverage_budget ${budget} has slack — only ${count} uncovered normative sentences remain; tighten the budget (the allowlist only shrinks) (text-coverage-budget)`,
+                  });
+                }
+              }
+            }
+          }
+        }
       }
     }
-
     // ── C56 allowlist-malformed: every allowlist entry carries a rule,
     //     a non-empty match glob, a reason, and an audit_ref; the
     //     budgets are non-negative integers; the directives are the
@@ -2938,34 +3343,150 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
     }
 
-    // ── the state family: C37 (state-fires-resolve) and C40
-    //     (anatomy-state-resolve). C39's gate extraction queues on the
-    //     front-end delivering precondition check-block text; C95's
-    //     cascade routing contract is its own batch.
+    // ── the state family: C37 (state-fires-resolve), C39
+    //     (state-machine-states-referenced) and C40
+    //     (anatomy-state-resolve). C95's cascade routing contract is its
+    //     own batch.
     {
       const machineById = new Map<
         string,
-        { kind: string; actions: Set<string> }
+        { kind: string; actions: Set<string>; states: Set<string> }
       >();
+      // The transitions both grammar forms deliver: a nested construct
+      // (simple bodies) and a `transition` line whose cascade/guard body
+      // rides the line's blocks.
+      const transitionsByMachine = new Map<
+        string,
+        {
+          action: string;
+          to: string;
+          guard: string;
+          cascades: {
+            target: string;
+            action?: string;
+            via?: string;
+            create: boolean;
+            setFields: Map<string, string>;
+            withKeys: string[];
+          }[];
+        }[]
+      >();
+      const readCascade = (cc: Construct) => {
+        const setFields = new Map<string, string>();
+        const withKeys: string[] = [];
+        for (const setName of ['set', 'create', 'with']) {
+          for (const blk of nested(cc).filter(n => n.keyword === setName)) {
+            for (const l of lines(blk)) {
+              const field = l.key!.replace(/:$/, '');
+              if (setName === 'with') {
+                withKeys.push(field);
+              } else {
+                setFields.set(field, l.tokens[0] ?? '');
+              }
+            }
+          }
+        }
+        return {
+          target: cc.ident ?? '',
+          action: facetTokens(cc.items, 'action')[0],
+          via: facetTokens(cc.items, 'via')[0],
+          create: nested(cc).some(n => n.keyword === 'create'),
+          setFields,
+          withKeys,
+        };
+      };
+      const readTransitionLine = (l: {
+        key: string;
+        tokens: string[];
+        blocks?: Item[][];
+      }) => {
+        const t = [l.key, ...l.tokens];
+        const ai = t.indexOf('action');
+        const tr = {
+          action: ai !== -1 ? (t[ai + 1] ?? '') : '',
+          to: t.indexOf('->') > 0 ? (t[t.indexOf('->') + 1] ?? '') : '',
+          guard: '',
+          cascades: [] as ReturnType<typeof readCascade>[],
+        };
+        for (const blk of l.blocks ?? []) {
+          for (const it of blk) {
+            if (it.kind === 'line' && it.key === 'guard' && it.tokens[0]) {
+              tr.guard = it.tokens[0];
+            } else if (it.kind === 'construct' && it.construct) {
+              if (it.construct.keyword === 'cascade') {
+                tr.cascades.push(readCascade(it.construct));
+              } else if (it.construct.keyword === 'guard') {
+                const gl = lines(it.construct)[0];
+                if (gl) {
+                  tr.guard = [gl.key ?? '', ...gl.tokens].join(' ');
+                }
+              }
+            }
+          }
+        }
+        return tr;
+      };
       for (const sm of closureConstructs.filter(
         x => x.keyword === 'state_machine' && x.ident,
       )) {
         const actions = new Set<string>();
+        const states = new Set<string>();
+        const transitions: ReturnType<typeof readTransitionLine>[] = [];
+        for (const l of lines(sm)) {
+          if (l.key === 'state') {
+            for (const t of l.tokens) {
+              states.add(t);
+            }
+          }
+          if (l.key === 'transition') {
+            const tr = readTransitionLine(l);
+            transitions.push(tr);
+            if (tr.action) {
+              actions.add(tr.action);
+            }
+          }
+        }
+        for (const stC of nested(sm).filter(n => n.keyword === 'states')) {
+          for (const i2 of stC.items) {
+            if (i2.kind === 'raw') {
+              for (const t of i2.tokens) {
+                states.add(t);
+              }
+            } else if (i2.kind === 'line') {
+              states.add(i2.key!);
+              for (const t of i2.tokens) {
+                states.add(t);
+              }
+            }
+          }
+        }
         for (const t of nested(sm).filter(n => n.keyword === 'transition')) {
           const fromLine = t.items.find(
             i2 => i2.kind === 'line' && i2.key === 'from',
           );
           if (fromLine) {
             const ti = fromLine.tokens.indexOf('action');
-            if (ti !== -1 && fromLine.tokens[ti + 1]) {
-              actions.add(fromLine.tokens[ti + 1]!);
+            const toi = fromLine.tokens.indexOf('to');
+            const tr = {
+              action: ti !== -1 ? (fromLine.tokens[ti + 1] ?? '') : '',
+              to: toi !== -1 ? (fromLine.tokens[toi + 1] ?? '') : '',
+              guard: facetTokens(t.items, 'guard')[0] ?? '',
+              cascades: nested(t)
+                .filter(n => n.keyword === 'cascade')
+                .map(readCascade),
+            };
+            transitions.push(tr);
+            if (tr.action) {
+              actions.add(tr.action);
             }
           }
         }
         machineById.set(sm.ident!, {
           kind: facetTokens(sm.items, 'kind')[0] ?? '',
           actions,
+          states,
         });
+        transitionsByMachine.set(sm.ident!, transitions);
       }
       // C37: a process bound to a machine (state <machineRef>) fires only
       // that machine's declared transition actions; a step fires with no
@@ -3033,6 +3554,4190 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
           err(
             'C38',
             `subject ${c2.ident}: has.state "${st}" is a lifecycle state machine — a subject's HAS state is its OPERATIONAL machine; workflow lifecycle state lives on entities (state-family-separation)`,
+          );
+        }
+      }
+      // C39: a process precondition's self.state gates resolve against
+      // the bound machine's declared states. The gate extraction reads
+      // the check carrier's captured expression.
+      const GATE_FORWARD =
+        /\bself\.state\s*(<>|!=|==|=)\s*#([A-Za-z_][A-Za-z0-9_]*)/g;
+      const GATE_MIRRORED =
+        /#([A-Za-z_][A-Za-z0-9_]*)\s*(==|=)\s*self\.state\b/g;
+      const checkTextOf = (pc: Construct): string => {
+        const l = pc.items.find(i2 => i2.kind === 'line' && i2.key === 'check');
+        if (!l) {
+          return '';
+        }
+        return (l.blocks ?? [])
+          .flat()
+          .map(b =>
+            b.kind === 'raw'
+              ? b.tokens.join(' ')
+              : b.kind === 'line'
+                ? [b.key ?? '', ...b.tokens].join(' ')
+                : '',
+          )
+          .join(' ');
+      };
+      const gatesOf = (text: string): string[] => {
+        const out: string[] = [];
+        for (const m of text.matchAll(GATE_FORWARD)) {
+          out.push(m[2]!);
+        }
+        for (const m of text.matchAll(GATE_MIRRORED)) {
+          out.push(m[1]!);
+        }
+        return out;
+      };
+      // ── C95 cascade-transition-resolve (legs 1–5, the routing
+      //     contract): a status-writing cascade step on a machinated
+      //     target routes through a declared transition of the target's
+      //     own machine — via present, via legal, via resolving, the
+      //     route landing on the written status, and unguarded.
+      {
+        const SEMANTIC_STATUS: Record<string, string> = {
+          submit: 'SUBMITTED',
+          lock: 'LOCKED',
+        };
+        for (const sm of closureConstructs.filter(
+          x => x.keyword === 'state_machine' && x.ident,
+        )) {
+          for (const tr of transitionsByMachine.get(sm.ident!) ?? []) {
+            const transitionLabel = `-> ${tr.to}${tr.action ? ` action ${tr.action}` : ''}`;
+            tr.cascades.forEach((c, k) => {
+              const stepLabel = `state_machine ${sm.ident}: transition ${transitionLabel}: cascade ${k} (${c.target})`;
+              const self = c.target === sm.ident;
+              const targetMachine = machineById.get(c.target);
+              const isCreate = c.create;
+              const semanticStatus =
+                c.action !== undefined ? SEMANTIC_STATUS[c.action] : undefined;
+              const setStatus = c.setFields.get('status');
+              const writesStatus =
+                !isCreate &&
+                (semanticStatus !== undefined || setStatus !== undefined);
+              const writtenStatus = semanticStatus ?? setStatus ?? '';
+              // Leg 1 — via-present.
+              if (
+                writesStatus &&
+                targetMachine &&
+                !self &&
+                c.via === undefined
+              ) {
+                err(
+                  'C95',
+                  `${stepLabel} writes status '${writtenStatus}' on machinated entity '${c.target}' but declares no via — a status-writing cascade routes through a declared transition of the target's machine (cascade-transition-resolve)`,
+                );
+              }
+              // Leg 5 — via-forbidden-elsewhere; legs 2–4 — the routing
+              // contract, judged only where a via is legal.
+              if (c.via !== undefined) {
+                if (
+                  self ||
+                  isCreate ||
+                  !writesStatus ||
+                  !targetMachine ||
+                  c.action === 'notify' ||
+                  c.action === 'record'
+                ) {
+                  const forbidden = self
+                    ? "a self-step (the target is the owning machine's own entity)"
+                    : isCreate
+                      ? 'a create step (a fresh record has no current-state hop to route)'
+                      : c.action === 'notify' || c.action === 'record'
+                        ? `an action ${c.action} step (a record-create, never a status hop)`
+                        : !writesStatus
+                          ? 'a step that writes no status (payload-only)'
+                          : `a step on entity '${c.target}', which declares no state machine`;
+                  err(
+                    'C95',
+                    `${stepLabel} declares via '${c.via}' on ${forbidden} — via routes a status write through the target's machine and is forbidden everywhere else (cascade-transition-resolve)`,
+                  );
+                } else {
+                  const candidates = (
+                    transitionsByMachine.get(c.target) ?? []
+                  ).filter(t2 => t2.action === c.via);
+                  if (candidates.length === 0) {
+                    err(
+                      'C95',
+                      `${stepLabel} via '${c.via}' resolves to no transition of machine '${c.target}' (cascade-transition-resolve)`,
+                    );
+                  } else {
+                    const landing = candidates.filter(
+                      t2 => t2.to === writtenStatus,
+                    );
+                    if (landing.length === 0) {
+                      err(
+                        'C95',
+                        `${stepLabel} via '${c.via}' names no transition of machine '${c.target}' whose to is '${writtenStatus}' — the route must land on the written status (cascade-transition-resolve)`,
+                      );
+                    } else if (landing.some(t2 => t2.guard !== '')) {
+                      err(
+                        'C95',
+                        `${stepLabel} via '${c.via}' names a guarded transition of machine '${c.target}' — a cascade has no caller to supply guard values; the route must be unguarded (cascade-transition-resolve)`,
+                      );
+                    }
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+      for (const p2 of pkg.constructs.filter(
+        x => x.keyword === 'process' && x.ident,
+      )) {
+        const gates: { pc: string; state: string }[] = [];
+        for (const pc of nested(p2).filter(n => n.keyword === 'precondition')) {
+          for (const st of gatesOf(checkTextOf(pc))) {
+            gates.push({ pc: pc.ident ?? '', state: st });
+          }
+        }
+        if (gates.length === 0) {
+          continue;
+        }
+        const bound = facetTokens(p2.items, 'state')[0];
+        const m = bound !== undefined ? machineById.get(bound) : undefined;
+        if (!bound) {
+          err(
+            'C39',
+            `process ${p2.ident}: precondition "${gates[0]!.pc}" gates on self.state but the process binds no state machine — declare state <machineRef> (state-machine-states-referenced)`,
+          );
+        } else if (!m) {
+          err(
+            'C39',
+            `process ${p2.ident}: state machine "${bound}" is not declared — state gates cannot resolve (state-machine-states-referenced)`,
+          );
+        } else {
+          for (const g of gates) {
+            if (!m.states.has(g.state)) {
+              err(
+                'C39',
+                `process ${p2.ident}: precondition "${g.pc}" gates on #${g.state}, which is not a declared state of machine "${bound}" (state-machine-states-referenced)`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // ── the quantities family: C33's register plane, C32's instance
+    //     leg, C33's symbol/verdict + instance legs, C34 duality
+    //     coherence. Coherence judges KINDS resolved through the
+    //     package's quantity_registers, never unit strings.
+    {
+      const qKindDecl = new Set<string>();
+      const qUnitKind = new Map<string, string>();
+      const qUnitHome = new Map<string, string>();
+      const qUnitEntry = new Map<string, string>();
+      const qRegisters = closureConstructs.filter(
+        x => x.keyword === 'quantity_register' && x.ident,
+      );
+      for (const reg of qRegisters) {
+        for (const k of nested(reg).filter(n => n.keyword === 'kind')) {
+          if (k.ident) {
+            qKindDecl.add(k.ident);
+          }
+        }
+      }
+      for (const reg of qRegisters) {
+        for (const u of nested(reg).filter(n => n.keyword === 'unit')) {
+          if (!u.ident) {
+            continue;
+          }
+          const sym = facetTokens(u.items, 'symbol')[0] ?? '';
+          const kind = facetTokens(u.items, 'kind')[0] ?? '';
+          const factor = facetTokens(u.items, 'factor')[0] ?? '';
+          const offset = facetTokens(u.items, 'offset')[0] ?? '';
+          if (kind && !qKindDecl.has(kind)) {
+            err(
+              'C33',
+              `quantity_register ${reg.ident}: unit "${u.ident}" declares kind "${kind}", which no quantity_register declares (quantity-coherence)`,
+            );
+          }
+          const entry = `${kind}|${factor}|${offset}|${sym}`;
+          for (const key of new Set([u.ident, sym].filter(x => x))) {
+            const prior = qUnitHome.get(key);
+            if (prior !== undefined) {
+              if (qUnitEntry.get(key) !== entry) {
+                err(
+                  'C33',
+                  `quantity_register ${reg.ident}: unit "${u.ident}" ("${key}") redefines a unit already declared by register "${prior}" — a package extends the register, it never redefines entries (quantity-coherence)`,
+                );
+              }
+            } else {
+              qUnitHome.set(key, reg.ident!);
+              qUnitEntry.set(key, entry);
+              qUnitKind.set(key, kind);
+            }
+          }
+        }
+      }
+      const kindOfUnit = (unit: string | undefined): string | undefined =>
+        unit === undefined ? undefined : qUnitKind.get(unit.trim());
+      const registersExist = qRegisters.length > 0;
+      // C33 — symbols and verdicts: declared quantity_kind vs unit kind.
+      for (const kw of ['symbol', 'verdict']) {
+        for (const c2 of closureConstructs.filter(
+          x => x.keyword === kw && x.ident,
+        )) {
+          const unit = facetTokens(c2.items, 'unit')[0];
+          const qk = facetTokens(c2.items, 'quantity_kind')[0];
+          if (!unit || !qk) {
+            continue;
+          }
+          const uKind = kindOfUnit(unit);
+          if (uKind && qKindDecl.has(qk) && uKind !== qk) {
+            err(
+              'C33',
+              `${kw} ${c2.ident}: declared quantity_kind "${qk}" but unit "${unit}" measures kind ${uKind} — quantity kinds differ (quantity-coherence)`,
+            );
+          }
+        }
+      }
+      // C32/C33 — the instance attribute plane. Attributes arrive in
+      // two shapes: a nested per-attribute construct (block form, a
+      // `value` line) or an inline run riding ONE greedy line of the
+      // `attributes` body (key = attribute name, tokens = [value,
+      // unit?]; `-` marks an unstated value).
+      const attrDefs = new Map<string, Construct>();
+      for (const c2 of closureConstructs.filter(
+        x => x.keyword === 'attribute_definition' && x.ident,
+      )) {
+        attrDefs.set(c2.ident!, c2);
+      }
+      const numberish = (t: string): boolean => /^[-+]?[0-9]/.test(t);
+      const statedOf = (
+        name: string,
+        c2: Construct,
+      ): {
+        unit?: string;
+        kind?: string;
+        bare?: boolean;
+      } => {
+        const block = nested(c2).find(n => n.keyword === name);
+        if (block) {
+          const vLine = block.items.find(
+            i2 => i2.kind === 'line' && i2.key === 'value',
+          );
+          if (!vLine) {
+            return {};
+          }
+          const toks = vLine.tokens;
+          const ui = toks.indexOf('unit');
+          const ki = toks.indexOf('kind');
+          return {
+            unit: ui !== -1 ? toks[ui + 1] : undefined,
+            kind: ki !== -1 ? toks[ki + 1] : undefined,
+            bare: toks.length > 0 && ui === -1 && ki === -1,
+          };
+        }
+        const l = c2.items.find(i2 => i2.kind === 'line' && i2.key === name);
+        if (!l) {
+          return {};
+        }
+        const run = l.tokens.filter(t => t !== ':');
+        if (run.length === 0 || run[0] === '-') {
+          return {};
+        }
+        if (run.length >= 2) {
+          return { unit: run[1] };
+        }
+        return { bare: numberish(run[0]!) };
+      };
+      for (const inst of pkg.constructs.filter(
+        x => x.keyword === 'instance' && x.ident,
+      )) {
+        const has = nested(inst).find(n => n.keyword === 'has');
+        for (const planeName of ['attributes', 'test_context']) {
+          const plane = has
+            ? nested(has).find(n => n.keyword === planeName)
+            : undefined;
+          if (!plane) {
+            continue;
+          }
+          const names = new Set<string>([
+            ...nested(plane).map(n => n.keyword),
+            ...lines(plane).map(l => l.key!),
+          ]);
+          for (const key of names) {
+            const def = attrDefs.get(key);
+            if (!def) {
+              continue; // the undeclared attribute is another rule's finding
+            }
+            const defUnit = facetTokens(def.items, 'unit')[0] ?? '';
+            const defQk = facetTokens(def.items, 'quantity_kind')[0] ?? '';
+            const defVt = facetTokens(def.items, 'value_type')[0] ?? '';
+            const physical =
+              defUnit !== '' || defQk !== '' || defVt === 'QuantityValue';
+            const st = statedOf(key, plane);
+            if (physical && st.bare) {
+              err(
+                'C32',
+                `instance ${inst.ident}: attribute "${key}" is a declared physical quantity (${defUnit !== '' ? `unit "${defUnit}"` : defVt === 'QuantityValue' ? 'value_type QuantityValue' : `quantity_kind ${defQk}`}) but the stated value is a bare number — INV-1: no bare numbers (inv1-no-bare-quantity)`,
+              );
+            }
+            if (
+              st.unit &&
+              registersExist &&
+              kindOfUnit(st.unit) === undefined
+            ) {
+              issues.push({
+                rule: 'C33',
+                severity: 'warning',
+                message: `instance ${inst.ident}: attribute "${key}" carries unit "${st.unit}", which no quantity_register declares (quantity-coherence)`,
+              });
+            }
+            const effKind = st.kind ?? kindOfUnit(st.unit);
+            if (
+              defQk &&
+              effKind &&
+              qKindDecl.has(effKind) &&
+              effKind !== defQk
+            ) {
+              err(
+                'C33',
+                `instance ${inst.ident}: attribute "${key}" (kind ${defQk}) stated with ${st.kind ? `kind "${st.kind}"` : `unit "${st.unit}" (kind ${effKind})`} — quantity kinds differ (quantity-coherence)`,
+              );
+            } else if (!defQk && defUnit && st.unit) {
+              const dK = kindOfUnit(defUnit);
+              const vK = kindOfUnit(st.unit);
+              if (dK && vK && dK !== vK) {
+                err(
+                  'C33',
+                  `instance ${inst.ident}: attribute "${key}" declared with unit "${defUnit}" (kind ${dK}) stated with unit "${st.unit}" (kind ${vK}) — quantity kinds differ (quantity-coherence)`,
+                );
+              }
+            }
+          }
+        }
+      }
+      // C34 — the duality: designed and exhibited sides are kind-coherent.
+      for (const d of closureConstructs.filter(x => x.keyword === 'dual')) {
+        const sideUnit = (name: string): string | undefined => {
+          const side = nested(d).find(n => n.keyword === name);
+          if (!side) {
+            return undefined;
+          }
+          const vLine = side.items.find(
+            i2 => i2.kind === 'line' && i2.key === 'value',
+          );
+          if (!vLine) {
+            return undefined;
+          }
+          const ui = vLine.tokens.indexOf('unit');
+          return ui !== -1 ? vLine.tokens[ui + 1] : undefined;
+        };
+        const du = sideUnit('designed');
+        const eu = sideUnit('exhibited');
+        if (du && eu) {
+          const dK = kindOfUnit(du);
+          const eK = kindOfUnit(eu);
+          if (dK && eK && dK !== eK) {
+            err(
+              'C34',
+              `dual ${d.ident}: the designed side's unit "${du}" (kind ${dK}) and the exhibited side's unit "${eu}" (kind ${eK}) measure different quantity kinds — the two roles state ONE quantity (duality-coherence)`,
+            );
+          }
+        }
+      }
+      // ── C35 time-format (two legs), C36 map-type, C149
+      //     closed-derivation-references-declared, C152
+      //     payload-typed-by-class, C167 qualified-unit-reference.
+      //     (C165/C166 are catalog-only in the kernel too — they await
+      //     the calculation math plane.)
+      {
+        // ISO 8601 primitives (the kernel's time.ts, independently).
+        const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+        const DATETIME_RE =
+          /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:[.,]\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
+        const DURATION_RE =
+          /^P(?:(\d+(?:[.,]\d+)?)Y)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)D)?(?:T(?:(\d+(?:[.,]\d+)?)H)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)S)?)?(?:(\d+(?:[.,]\d+)?)W)?$/;
+        const daysInMonth = (year: number, month: number): number =>
+          new Date(Date.UTC(year, month, 0)).getUTCDate();
+        const isDateV = (v: string): boolean => {
+          const m = DATE_RE.exec(v);
+          if (!m) {
+            return false;
+          }
+          const month = Number(m[2]);
+          const day = Number(m[3]);
+          return (
+            month >= 1 &&
+            month <= 12 &&
+            day >= 1 &&
+            day <= daysInMonth(Number(m[1]), month)
+          );
+        };
+        const isDateTimeV = (v: string): boolean => {
+          const m = DATETIME_RE.exec(v);
+          if (!m) {
+            return false;
+          }
+          if (!isDateV(m.slice(1, 4).join('-'))) {
+            return false;
+          }
+          return (
+            Number(m[4]) <= 23 &&
+            Number(m[5]) <= 59 &&
+            (m[6] === undefined || Number(m[6]) <= 60)
+          );
+        };
+        const isDurationV = (v: string): boolean => {
+          const m = DURATION_RE.exec(v);
+          if (!m) {
+            return false;
+          }
+          const components = m.slice(1).filter(x => x !== undefined);
+          if (components.length === 0) {
+            return false;
+          }
+          return m[7] === undefined || components.length === 1;
+        };
+        const isPeriodV = (v: string): boolean => {
+          const parts = v.split('/');
+          if (parts.length !== 2) {
+            return false;
+          }
+          const [a, b] = parts;
+          const aDate = isDateV(a) || isDateTimeV(a);
+          const bDate = isDateV(b) || isDateTimeV(b);
+          if (aDate && bDate) {
+            return a <= b;
+          }
+          if (aDate && isDurationV(b)) {
+            return true;
+          }
+          return isDurationV(a) && bDate;
+        };
+        const isValidTimeValue = (kind: string, v: string): boolean | null => {
+          if (kind === 'date') {
+            return isDateV(v);
+          }
+          if (kind === 'datetime') {
+            return isDateTimeV(v);
+          }
+          if (kind === 'duration') {
+            return isDurationV(v);
+          }
+          if (kind === 'period') {
+            return isPeriodV(v);
+          }
+          return null;
+        };
+        // C35a — a time-typed attribute's stated value is ISO 8601.
+        for (const inst of pkg.constructs.filter(
+          x => x.keyword === 'instance' && x.ident,
+        )) {
+          const has = nested(inst).find(n => n.keyword === 'has');
+          for (const planeName of ['attributes', 'test_context']) {
+            const plane = has
+              ? nested(has).find(n => n.keyword === planeName)
+              : undefined;
+            if (!plane) {
+              continue;
+            }
+            for (const l of lines(plane)) {
+              if (l.key === planeName) {
+                continue;
+              }
+              const def = attrDefs.get(l.key!);
+              if (!def) {
+                continue;
+              }
+              const vt = facetTokens(def.items, 'value_type')[0] ?? '';
+              if (!['date', 'datetime', 'duration', 'period'].includes(vt)) {
+                continue;
+              }
+              const run = l.tokens.filter(t2 => t2 !== ':');
+              if (run.length === 0 || run[0] === '-') {
+                continue;
+              }
+              if (isValidTimeValue(vt, run[0]!) === false) {
+                err(
+                  'C35',
+                  `instance ${inst.ident}: attribute "${l.key}" (value_type ${vt}) value "${run[0]}" is not a valid ISO 8601 ${vt} (time-format)`,
+                );
+              }
+            }
+          }
+        }
+        // C35b — a timer_event step's period is an ISO 8601 duration.
+        for (const p2 of pkg.constructs.filter(
+          x => x.keyword === 'process' && x.ident,
+        )) {
+          const doesBody = nested(p2).find(n => n.keyword === 'does');
+          for (const st of doesBody
+            ? nested(doesBody).filter(n => n.keyword === 'step')
+            : []) {
+            if (facetTokens(st.items, 'kind')[0] !== 'timer_event') {
+              continue;
+            }
+            const period = facetTokens(st.items, 'period')[0];
+            if (period && !isDurationV(period)) {
+              err(
+                'C35',
+                `process ${p2.ident}: timer_event "${st.ident}" period "${period}" is not an ISO 8601 duration (time-format)`,
+              );
+            }
+          }
+        }
+        // C36 — map<K, V> type expressions are well-formed.
+        const PRIMITIVES = new Set([
+          'integer',
+          'float',
+          'double',
+          'string',
+          'text',
+          'boolean',
+          'date',
+          'datetime',
+          'duration',
+          'period',
+          'url',
+          'email',
+        ]);
+        const TYPE_IDENT = /^[A-Za-z_][A-Za-z0-9_-]*$/;
+        const splitTopLevelComma = (src: string): [string, string] | null => {
+          let depth = 0;
+          for (let i = 0; i < src.length; i++) {
+            const ch = src[i];
+            if (ch === '<') {
+              depth++;
+            } else if (ch === '>') {
+              depth--;
+            } else if (ch === ',' && depth === 0) {
+              return [src.slice(0, i), src.slice(i + 1)];
+            }
+          }
+          return null;
+        };
+        const wellFormedType = (src: string, depth = 0): boolean => {
+          const v = src.trim();
+          if (depth > 8) {
+            return false;
+          }
+          if (v === 'QuantityValue' || PRIMITIVES.has(v)) {
+            return true;
+          }
+          const ref = /^reference\(([^)]+)\)$/.exec(v);
+          if (ref) {
+            return TYPE_IDENT.test(ref[1]!.trim());
+          }
+          if (v.startsWith('map<') && v.endsWith('>')) {
+            const inner = v.slice(4, -1);
+            const parts = splitTopLevelComma(inner);
+            if (!parts) {
+              return false;
+            }
+            const rawKey = parts[0].trim();
+            const keyOk =
+              rawKey === 'string' ||
+              (TYPE_IDENT.test(rawKey) && !rawKey.includes('<'));
+            if (!keyOk) {
+              return false;
+            }
+            return wellFormedType(parts[1], depth + 1);
+          }
+          return false;
+        };
+        const checkMapType = (owner: string, id: string, ty: string) => {
+          if (/^map\s*</.test(ty) && !wellFormedType(ty)) {
+            err(
+              'C36',
+              `${owner}: ${/attribute_definition/.test(owner) ? 'value_type' : `attribute "${id}"`} type "${ty}" is not a well-formed map<K, V> type — K is string or an enum id, V a type expression (map-type)`,
+            );
+          }
+        };
+        for (const c2 of closureConstructs.filter(
+          x => x.keyword === 'class' && x.ident,
+        )) {
+          for (const f of nested(c2)) {
+            if (f.keyword.endsWith(':')) {
+              checkMapType(
+                `class ${c2.ident}`,
+                f.keyword.slice(0, -1),
+                f.ident ?? '',
+              );
+            }
+          }
+        }
+        for (const a2 of closureConstructs.filter(
+          x => x.keyword === 'attribute_definition' && x.ident,
+        )) {
+          const vt = facetTokens(a2.items, 'value_type')[0];
+          if (vt) {
+            checkMapType(`attribute_definition ${a2.ident}`, '', vt);
+          }
+        }
+        // C149 — closed-derivation-references-declared: a derivation
+        // expression references only the declared universe.
+        const declared = new Set<string>();
+        for (const c2 of closureConstructs.filter(
+          x => x.keyword === 'calculation' && x.ident,
+        )) {
+          declared.add(c2.ident!);
+          const nm = facetTokens(c2.items, 'name')[0];
+          if (nm) {
+            declared.add(nm);
+          }
+          declared.add(facetTokens(c2.items, 'output')[0] ?? '');
+          for (const i2 of nested(c2).filter(n => n.keyword === 'input')) {
+            declared.add(i2.ident ?? '');
+          }
+        }
+        for (const kw of [
+          'table',
+          'symbol',
+          'variable',
+          'attribute_definition',
+          'enum',
+          'class',
+          'dimension',
+        ]) {
+          for (const c2 of closureConstructs.filter(
+            x => x.keyword === kw && x.ident,
+          )) {
+            declared.add(c2.ident!);
+          }
+        }
+        for (const inst of closureConstructs.filter(
+          x => x.keyword === 'instrument' && x.ident,
+        )) {
+          for (const d2 of nested(inst).filter(
+            n => n.keyword === 'dimension',
+          )) {
+            if (d2.ident) {
+              declared.add(d2.ident);
+            }
+          }
+        }
+        declared.delete('');
+        const CLOSED_STOP = new Set([
+          'self',
+          'p',
+          'ocl',
+          'true',
+          'false',
+          'null',
+          'undefined',
+          'and',
+          'or',
+          'not',
+          'implies',
+          'if',
+          'then',
+          'else',
+          'endif',
+          'xor',
+          'let',
+          'in',
+          'exists',
+          'forAll',
+          'select',
+          'reject',
+          'collect',
+          'isEmpty',
+          'size',
+          'sum',
+          'min',
+          'max',
+          'abs',
+          'round',
+          'floor',
+          'sqrt',
+          'includes',
+          'excludes',
+          'includesAll',
+          'excludesAll',
+          'count',
+          'first',
+          'last',
+          'asSet',
+          'asOrderedSet',
+          'asSequence',
+          'asBag',
+          'sortedBy',
+          'iterate',
+          'oclIsUndefined',
+          'oclIsKindOf',
+          'oclIsTypeOf',
+          'allInstances',
+          'lookup',
+          'profile',
+          'average',
+          'mean',
+          'div',
+          'mod',
+        ]);
+        const PATH_RE =
+          /\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+/g;
+        const IDENT_RE = /[A-Za-z_][A-Za-z0-9_]*/g;
+        const checkDerivation = (
+          expr: string,
+          locals: Set<string>,
+          where: string,
+        ) => {
+          if (!expr) {
+            return;
+          }
+          const noLiterals = expr.replace(/'[^']*'/g, ' ');
+          const noLambdas = noLiterals.replace(
+            /\b([A-Za-z_][A-Za-z0-9_]*)\s*\|/g,
+            ' ',
+          );
+          const stripped = noLambdas.replace(PATH_RE, ' ');
+          const seen = new Set<string>();
+          for (const raw of stripped.match(IDENT_RE) ?? []) {
+            if (
+              CLOSED_STOP.has(raw) ||
+              locals.has(raw) ||
+              seen.has(raw) ||
+              /^[a-z][0-9]?$/.test(raw)
+            ) {
+              continue;
+            }
+            seen.add(raw);
+            err(
+              'C149',
+              `${where}: expression references "${raw}", which no declared calculation, table, symbol, measurement, or attribute defines (closed-derivation-references-declared)`,
+            );
+          }
+        };
+        for (const a2 of closureConstructs.filter(
+          x => x.keyword === 'attribute_definition' && x.ident,
+        )) {
+          const derived = facetTokens(a2.items, 'derived')[0];
+          if (derived) {
+            checkDerivation(
+              derived,
+              declared,
+              `attribute_definition ${a2.ident}`,
+            );
+          }
+        }
+        for (const c2 of closureConstructs.filter(
+          x => x.keyword === 'calculation' && x.ident,
+        )) {
+          const locals = new Set(declared);
+          for (const i2 of nested(c2).filter(n => n.keyword === 'input')) {
+            if (i2.ident) {
+              locals.add(i2.ident);
+            }
+          }
+          const expr = nested(c2)
+            .filter(n => n.keyword === 'expression')
+            .flatMap(n =>
+              n.items.flatMap(i2 =>
+                i2.kind === 'raw'
+                  ? i2.tokens
+                  : i2.kind === 'line'
+                    ? [i2.key ?? '', ...i2.tokens]
+                    : [],
+              ),
+            )
+            .join(' ');
+          if (expr.trim() !== '') {
+            checkDerivation(expr, locals, `calculation ${c2.ident}`);
+          }
+        }
+        // C152 — payload-typed-by-class: a dimension value's payload is
+        // typed by its payload_class's declared fields.
+        const normId = (x: string): string =>
+          x.includes('#') ? x.slice(0, x.indexOf('#')) : x;
+        const classFields = new Map<string, Set<string>>();
+        for (const c2 of closureConstructs.filter(
+          x => x.keyword === 'class' && x.ident,
+        )) {
+          const fields = new Set<string>();
+          for (const f of nested(c2)) {
+            if (f.keyword.endsWith(':')) {
+              fields.add(f.keyword.slice(0, -1));
+            }
+          }
+          classFields.set(normId(c2.ident!), fields);
+        }
+        const checkDim = (owner: string, d2: Construct) => {
+          const pc = facetTokens(d2.items, 'payload_class')[0];
+          if (!pc) {
+            return;
+          }
+          const fields = classFields.get(normId(pc));
+          if (!fields) {
+            err(
+              'C152',
+              `${owner} dimension ${d2.ident}: payload_class "${pc}" is not a declared class (payload-typed-by-class)`,
+            );
+            return;
+          }
+          const values = nested(d2).find(n => n.keyword === 'values');
+          for (const v of values ? nested(values) : []) {
+            const payload = nested(v).find(n => n.keyword === 'payload');
+            const keys = payload
+              ? lines(payload)
+                  .map(l => l.key!.replace(/:$/, ''))
+                  .filter(k => k !== 'payload')
+              : [];
+            if (keys.length === 0) {
+              err(
+                'C152',
+                `${owner} dimension ${d2.ident}: value ${v.ident} carries no payload — a value of a payload_class dimension IS its definition (payload-typed-by-class)`,
+              );
+              continue;
+            }
+            for (const key of keys) {
+              if (!fields.has(key)) {
+                err(
+                  'C152',
+                  `${owner} dimension ${d2.ident}: value ${v.ident} payload field "${key}" is not a field of class "${pc}" (payload-typed-by-class)`,
+                );
+              }
+            }
+          }
+        };
+        for (const inst of closureConstructs.filter(
+          x => x.keyword === 'instrument' && x.ident,
+        )) {
+          for (const d2 of nested(inst).filter(
+            n => n.keyword === 'dimension',
+          )) {
+            checkDim(`instrument ${inst.ident}`, d2);
+          }
+        }
+        for (const d2 of closureConstructs.filter(
+          x => x.keyword === 'dimension' && x.ident,
+        )) {
+          checkDim('top-level', d2);
+        }
+        for (const a2 of closureConstructs.filter(
+          x => x.keyword === 'attribute_definition' && x.ident,
+        )) {
+          const classRef = facetTokens(a2.items, 'class')[0];
+          if (classRef && !classFields.has(normId(classRef))) {
+            err(
+              'C152',
+              `attribute_definition ${a2.ident}: class "${classRef}" is not a declared class (payload-typed-by-class)`,
+            );
+          }
+        }
+        // C167 — qualified-unit-reference: a datum's unit and quantity
+        // kind use the closed <namespace>:<id> form.
+        const QUALIFIED_REF = /^[a-z]+:[A-Za-z0-9_-]+$/;
+        for (const d2 of closureConstructs.filter(
+          x => x.keyword === 'datum' && x.ident,
+        )) {
+          for (const facet of ['unit', 'quantity_kind']) {
+            const v = facetTokens(d2.items, facet)[0];
+            if (v && !QUALIFIED_REF.test(v)) {
+              err(
+                'C167',
+                `datum ${d2.ident}: ${facet} "${v}" is bare — a ${facet === 'unit' ? 'unit reference' : 'quantity-kind reference'} uses the qualified <namespace>:<id> form (si:…, unitsdb:…) (qualified-unit-reference)`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // ── the twins family: the twin interface (C60–C64), the monitors
+    //     (C65–C70), the composition facet (C100–C102), and the
+    //     probe-channel provenance (C99). Vocabulary is closed-data;
+    //     the serve-aspect vocabulary resolves against the subject's
+    //     own declared planes.
+    {
+      const OP_KINDS = new Set(['query', 'subscribe', 'invoke']);
+      const SCOPES = new Set(['public', 'registered', 'authority']);
+      const BUILTIN_PROFILES = new Set([
+        'rest_json',
+        'mqtt',
+        'opc_ua',
+        'file_drop',
+      ]);
+      const OUTCOMES = new Set(['pass', 'fail', 'indeterminate', 'invalid']);
+      const ACTIONS = new Set([
+        'notify',
+        'flag_certificate',
+        'open_service_case',
+      ]);
+      const STREAMS = ['evidence', 'verdicts'] as const;
+      const REFSET_KINDS = new Set(['all', 'applicable_to', 'refs']);
+      const STATE_RULES = new Set(['any_fault_else_analyzer']);
+      const SHORTHAND = /^(\d+(?:\.\d+)?)(ms|min|s|h|d)$/;
+      const ISODUR =
+        /^P(?:(\d+(?:[.,]\d+)?)Y)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)D)?(?:T(?:(\d+(?:[.,]\d+)?)H)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)S)?)?(?:(\d+(?:[.,]\d+)?)W)?$/;
+      const parseWindow = (s: string | undefined): boolean => {
+        if (!s) {
+          return false;
+        }
+        const t = s.trim();
+        if (SHORTHAND.test(t)) {
+          return true;
+        }
+        const m = ISODUR.exec(t);
+        return m !== null && m[1] === undefined && m[2] === undefined;
+      };
+      const norm = (x: string): string =>
+        x.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      const connectorProfiles = new Set([
+        ...BUILTIN_PROFILES,
+        ...closureConstructs
+          .filter(x => x.keyword === 'connector_profile' && x.ident)
+          .map(x => x.ident!),
+      ]);
+      const behaviorIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'behavior' && x.ident)
+          .map(x => x.ident!),
+      );
+      const reqIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'requirement' && x.ident)
+          .map(x => x.ident!),
+      );
+      const roleIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'role' && x.ident)
+          .map(x => x.ident!),
+      );
+      const attrDefBy = new Map<string, Construct>();
+      for (const c2 of closureConstructs.filter(
+        x => x.keyword === 'attribute_definition' && x.ident,
+      )) {
+        attrDefBy.set(c2.ident!, c2);
+      }
+      const subjectIds2 = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'subject' && x.ident)
+          .map(x => x.ident!),
+      );
+      // One serve-aspect resolver: [level.]{parameters|classification|
+      // test_context}.<key>, a bare declared plane name, state,
+      // environmental_context.
+      const TWIN_CHAIN_LEVELS = new Set(['family', 'group', 'model', 'sample']);
+      const attrIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'attribute_definition' && x.ident)
+          .map(x => x.ident!),
+      );
+      const packageHasOperationalMachine = closureConstructs.some(
+        x =>
+          x.keyword === 'state_machine' &&
+          facetTokens(x.items, 'kind')[0] === 'operational',
+      );
+      // One serve-aspect resolver (the kernel's resolveServeAspect): an
+      // optional chain-level prefix, then parameters/test_context/
+      // classification/characteristics.<key>, a bare declared name, the
+      // reserved state and environmental_context.
+      const planeNames = (subj: Construct, planeName: string): Set<string> => {
+        const names = new Set<string>();
+        const has = nested(subj).find(n => n.keyword === 'has');
+        const plane = has
+          ? nested(has).find(n => n.keyword === planeName)
+          : undefined;
+        if (!plane) {
+          return names;
+        }
+        for (const l of lines(plane)) {
+          if (l.key !== planeName) {
+            names.add(l.key!);
+          } else {
+            const t = l.tokens;
+            for (let k = 0; k < t.length; k++) {
+              if (t[k] === 'in' || t[k] === '=') {
+                continue;
+              }
+              if (t[k + 1] === 'in' || t[k + 1] === '=' || k === t.length - 1) {
+                names.add(t[k]!.split(':')[0]!);
+              }
+            }
+          }
+          for (const n2 of nested(plane)) {
+            names.add(n2.ident || n2.keyword);
+          }
+        }
+        return names;
+      };
+      const subjectHasState = (subj: Construct): boolean => {
+        const has = nested(subj).find(n => n.keyword === 'has');
+        return has !== undefined && lines(has).some(l => l.key === 'state');
+      };
+      const resolvesAspect = (name: string, subj: Construct): boolean => {
+        const parts = name.split('.');
+        const rest =
+          parts.length > 1 && TWIN_CHAIN_LEVELS.has(parts[0]!)
+            ? parts.slice(1).join('.')
+            : name;
+        if (rest === 'state') {
+          return subjectHasState(subj) || packageHasOperationalMachine;
+        }
+        if (rest === 'environmental_context') {
+          return true;
+        }
+        const chars = planeNames(subj, 'characteristics');
+        const dims = new Set([
+          ...planeNames(subj, 'dimensions'),
+          ...planeNames(subj, 'classification'),
+        ]);
+        const segs = rest.split('.');
+        if (segs.length === 2) {
+          const [area, key] = segs;
+          if (area === 'parameters' || area === 'test_context') {
+            return attrIds.has(key);
+          }
+          if (area === 'classification') {
+            return dims.has(key);
+          }
+          if (area === 'characteristics') {
+            return chars.has(key);
+          }
+          return false;
+        }
+        if (segs.length === 1 && rest !== '') {
+          return attrIds.has(rest) || chars.has(rest) || dims.has(rest);
+        }
+        return false;
+      };
+      const rawTokens = (c2: Construct): string[] =>
+        c2.items.flatMap(i2 =>
+          i2.kind === 'raw'
+            ? i2.tokens
+            : i2.kind === 'line'
+              ? [i2.key!, ...i2.tokens]
+              : [],
+        );
+      for (const subj of pkg.constructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        const sid = subj.ident!;
+        const isB = nested(subj).find(n => n.keyword === 'is');
+        const has = nested(subj).find(n => n.keyword === 'has');
+        type Op = {
+          name: string;
+          kind: string;
+          serves: string[];
+          does: string[];
+          payload?: { qk?: string; unit?: string; ts?: string };
+        };
+        const readPayloadLines = (ls: string[][]): Op['payload'] => {
+          const out: { qk?: string; unit?: string; ts?: string } = {};
+          for (const t of ls) {
+            for (let k = 0; k < t.length; k++) {
+              if (t[k] === 'quantity_kind') {
+                out.qk = t[++k];
+              } else if (t[k] === 'unit') {
+                out.unit = t[++k];
+              } else if (t[k] === 'timestamp') {
+                out.ts = t[++k];
+              }
+            }
+          }
+          return out;
+        };
+        const blockTokenLists = (blk: readonly Item[]): string[][] =>
+          blk.map(it =>
+            it.kind === 'line'
+              ? [it.key!, ...it.tokens]
+              : it.kind === 'raw'
+                ? [...it.tokens]
+                : [],
+          );
+        const readOp = (oc: Construct): Op => {
+          const op: Op = {
+            name: oc.ident ?? '',
+            kind: '',
+            serves: [],
+            does: [],
+          };
+          for (const i of oc.items) {
+            if (i.kind === 'construct' && i.construct) {
+              if (i.construct.keyword === 'payload') {
+                op.payload = readPayloadLines(
+                  blockTokenLists(i.construct.items),
+                );
+              } else if (i.construct.keyword === 'serves') {
+                op.serves.push(
+                  ...rawTokens(i.construct).map(t2 => t2.replace(/,$/, '')),
+                );
+              } else if (i.construct.keyword === 'does') {
+                op.does.push(
+                  ...rawTokens(i.construct).map(t2 => t2.replace(/,$/, '')),
+                );
+              }
+              continue;
+            }
+            if (i.kind !== 'line') {
+              continue;
+            }
+            const t = [i.key!, ...i.tokens];
+            const blocks = i.blocks ?? [];
+            let bi = 0;
+            for (let k = 0; k < t.length; k++) {
+              const w = t[k];
+              if (w === 'kind') {
+                op.kind = t[++k] ?? '';
+              } else if (w === 'serves' || w === 'does') {
+                const names: string[] = [];
+                if (bi < blocks.length) {
+                  for (const lt of blockTokenLists(blocks[bi++]!)) {
+                    names.push(...lt.map(x => x.replace(/,$/, '')));
+                  }
+                } else {
+                  while (
+                    k + 1 < t.length &&
+                    !['kind', 'serves', 'does', 'payload'].includes(t[k + 1]!)
+                  ) {
+                    k++;
+                    names.push(t[k]!.replace(/,$/, ''));
+                  }
+                }
+                (w === 'serves' ? op.serves : op.does).push(...names);
+              } else if (w === 'payload') {
+                if (bi < blocks.length) {
+                  op.payload = readPayloadLines(blockTokenLists(blocks[bi++]!));
+                }
+              }
+            }
+          }
+          return op;
+        };
+        const endpoints: {
+          id: string;
+          ops: Op[];
+          access: Construct[];
+          profile?: string;
+        }[] = [];
+        for (const ep of isB
+          ? nested(isB).filter(n => n.keyword === 'endpoint')
+          : []) {
+          const ops = nested(ep)
+            .filter(n => n.keyword === 'operation')
+            .map(readOp);
+          const access = nested(ep).filter(n => n.keyword === 'access');
+          endpoints.push({
+            id: ep.ident ?? '',
+            ops,
+            access: access.flatMap(a => nested(a)),
+            profile: facetTokens(ep.items, 'profile')[0],
+          });
+        }
+        for (const ep of endpoints) {
+          // C64 — endpoint-profile-resolves
+          if (!ep.profile) {
+            err(
+              'C64',
+              `subject ${sid}: endpoint ${ep.id} declares no connector profile — the model is protocol-neutral; profiles bind protocols (endpoint-profile-resolves)`,
+            );
+          } else if (!connectorProfiles.has(ep.profile)) {
+            err(
+              'C64',
+              `subject ${sid}: endpoint ${ep.id} profile "${ep.profile}" is not a declared connector_profile nor a built-in (endpoint-profile-resolves)`,
+            );
+          }
+          const opNames = new Set(ep.ops.map(o => o.name));
+          const coverage = new Map<string, number>();
+          for (const scope of ep.access) {
+            // C62 — the scope vocabulary + coverage
+            if (!SCOPES.has(scope.keyword)) {
+              err(
+                'C62',
+                `subject ${sid}: endpoint ${ep.id} access scope "${scope.keyword}" is not one of public | registered | authority (access-scope-covers-serves)`,
+              );
+            }
+            for (const name of rawTokens(scope)) {
+              if (!opNames.has(name)) {
+                err(
+                  'C62',
+                  `subject ${sid}: endpoint ${ep.id} access ${scope.keyword} names "${name}", which is not a declared operation of the endpoint (access-scope-covers-serves)`,
+                );
+              }
+              coverage.set(name, (coverage.get(name) ?? 0) + 1);
+            }
+          }
+          for (const op of ep.ops) {
+            // C61 — payload-schema-quantity
+            if (!OP_KINDS.has(op.kind)) {
+              err(
+                'C61',
+                `subject ${sid}: endpoint ${ep.id} operation ${op.name} kind "${op.kind || '(none)'}" is not one of query | subscribe | invoke (payload-schema-quantity)`,
+              );
+            }
+            if (!op.payload) {
+              err(
+                'C61',
+                `subject ${sid}: endpoint ${ep.id} operation ${op.name} declares no payload schema — every endpoint operation has a payload schema (QuantityValue with timestamp, §14.12) (payload-schema-quantity)`,
+              );
+            } else {
+              if (!op.payload.qk) {
+                err(
+                  'C61',
+                  `subject ${sid}: endpoint ${ep.id} operation ${op.name} payload names no quantity_kind — INV-1: no bare numbers (payload-schema-quantity)`,
+                );
+              }
+              if (!op.payload.unit) {
+                err(
+                  'C61',
+                  `subject ${sid}: endpoint ${ep.id} operation ${op.name} payload names no unit — a QuantityValue always carries a unit (payload-schema-quantity)`,
+                );
+              }
+              if (op.payload.ts !== 'true') {
+                err(
+                  'C61',
+                  `subject ${sid}: endpoint ${ep.id} operation ${op.name} payload does not declare timestamp true — a value without a time is not evidence (§14.3) (payload-schema-quantity)`,
+                );
+              }
+            }
+            // C60 — the operation's own targets resolve
+            for (const name of op.serves) {
+              if (!resolvesAspect(name, subj)) {
+                err(
+                  'C60',
+                  `subject ${sid}: endpoint ${ep.id} operation ${op.name} serves "${name}", which is not a declared aspect of the subject (serve-targets-resolve)`,
+                );
+              }
+            }
+            for (const name of op.does) {
+              if (!behaviorIds.has(name)) {
+                err(
+                  'C60',
+                  `subject ${sid}: endpoint ${ep.id} operation ${op.name} does "${name}", which is not a declared behavior (serve-targets-resolve)`,
+                );
+              }
+            }
+            // C62 — exactly one scope per operation
+            const n = coverage.get(op.name) ?? 0;
+            if (n === 0) {
+              err(
+                'C62',
+                `subject ${sid}: endpoint ${ep.id} operation ${op.name} has no access scope — every endpoint operation has an access scope (§14.12) (access-scope-covers-serves)`,
+              );
+            } else if (n > 1) {
+              err(
+                'C62',
+                `subject ${sid}: endpoint ${ep.id} operation ${op.name} is covered by ${n} access scopes — exactly one scope per operation (access-scope-covers-serves)`,
+              );
+            }
+          }
+        }
+        // The subject's whole API surface, for the serve bindings.
+        const operations = new Map<string, Op[]>();
+        for (const ep of endpoints) {
+          for (const op of ep.ops) {
+            const list = operations.get(op.name) ?? [];
+            list.push(op);
+            operations.set(op.name, list);
+          }
+        }
+        // C60/C63 — the serve bindings.
+        for (const l of has ? lines(has).filter(x => x.key === 'serve') : []) {
+          const aspect = l.tokens[0];
+          const viaIx = l.tokens.indexOf('via');
+          const via = viaIx !== -1 ? l.tokens[viaIx + 1] : undefined;
+          if (!aspect || !via) {
+            continue;
+          }
+          if (!resolvesAspect(aspect, subj)) {
+            err(
+              'C60',
+              `subject ${sid}: serve "${aspect}" does not resolve to a declared aspect of the subject ([level.]{parameters|classification|test_context}.<key>, a bare attribute/characteristic/dimension name, state, environmental_context) (serve-targets-resolve)`,
+            );
+          }
+          const owners = operations.get(via) ?? [];
+          if (owners.length === 0) {
+            err(
+              'C60',
+              `subject ${sid}: serve "${aspect}" via "${via}" names no declared operation of the subject's endpoints (serve-targets-resolve)`,
+            );
+          } else if (owners.length > 1) {
+            err(
+              'C60',
+              `subject ${sid}: serve "${aspect}" via "${via}" is ambiguous — the operation is declared on ${owners.length} endpoints (serve-targets-resolve)`,
+            );
+          } else {
+            const op = owners[0]!;
+            if (op.kind === 'invoke') {
+              err(
+                'C60',
+                `subject ${sid}: serve "${aspect}" via "${via}" targets an invoke operation — invoke triggers a process; a serve binding binds a value channel (query | subscribe) (serve-targets-resolve)`,
+              );
+            }
+            const aspectKey = aspect.split('.').pop()!;
+            const def = attrDefBy.get(aspectKey);
+            const defUnit = def ? facetTokens(def.items, 'unit')[0] : undefined;
+            const defQk = def
+              ? facetTokens(def.items, 'quantity_kind')[0]
+              : undefined;
+            const pu = op.payload?.unit;
+            const pk = op.payload?.qk;
+            if (defUnit && pu && defUnit !== pu) {
+              err(
+                'C60',
+                `subject ${sid}: serve "${aspect}" unit "${defUnit}" ≠ operation ${via} payload unit "${pu}" — unit coherence between aspect and payload is required (§14.12) (serve-targets-resolve)`,
+              );
+            }
+            if (defQk && pk && defQk !== pk) {
+              err(
+                'C60',
+                `subject ${sid}: serve "${aspect}" quantity kind "${defQk}" ≠ operation ${via} payload quantity kind "${pk}" (serve-targets-resolve)`,
+              );
+            }
+          }
+          // C63 — freshness-required-on-live-bindings
+          const fw = l.blocks
+            .flat()
+            .find(
+              b =>
+                b.kind === 'line' &&
+                (b as { key?: string }).key === 'fresh_within',
+            ) as { tokens: string[] } | undefined;
+          if (!fw) {
+            err(
+              'C63',
+              `subject ${sid}: serve "${aspect}" via "${via}" declares no fresh_within — a live binding without a freshness window is an error (§14.12: no stale semantics, no live binding) (freshness-required-on-live-bindings)`,
+            );
+          } else if (!parseWindow(fw.tokens[0])) {
+            err(
+              'C63',
+              `subject ${sid}: serve "${aspect}" fresh_within "${fw.tokens[0] ?? ''}" is not a parseable freshness window (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT5S) (freshness-required-on-live-bindings)`,
+            );
+          }
+        }
+        // C100–C102 — the composition facet.
+        const composed = isB
+          ? nested(isB).find(n => n.keyword === 'composed_of')
+          : undefined;
+        if (composed) {
+          const components = nested(composed).filter(
+            n => n.keyword === 'component',
+          );
+          const componentIds = new Set(components.map(c2 => c2.ident ?? ''));
+          for (const c2 of components) {
+            const product = facetTokens(c2.items, 'product')[0];
+            const endpoint = facetTokens(c2.items, 'endpoint')[0];
+            if (product && product.includes('/')) {
+              const sub = product
+                .slice(product.indexOf('/') + 1)
+                .split('@')[0]!;
+              if (![...subjectIds2].some(x => norm(x) === norm(sub))) {
+                err(
+                  'C100',
+                  `subject ${sid}: composed_of component ${c2.ident} product "${product}" names no subject of this package (composition-components-resolve)`,
+                );
+              }
+            }
+            if (!endpoint) {
+              err(
+                'C100',
+                `subject ${sid}: composed_of component ${c2.ident} declares no endpoint — the component's projection must serve on a named endpoint (composition-components-resolve)`,
+              );
+            }
+          }
+          const dec = nested(composed).find(n => n.keyword === 'decomposition');
+          const covered = new Map<string, number>();
+          if (dec) {
+            // One entry per `->`: <register> -> <component>[.<aspect>]
+            // | rule <rule-id> (the composite state rule; the kernel's
+            // line grammar, glued runs included).
+            for (const l of lines(dec)) {
+              const t = [l.key!, ...l.tokens];
+              const arrows: number[] = [];
+              for (let i = 0; i < t.length; i++) {
+                if (t[i] === '->' && i > 0) {
+                  arrows.push(i);
+                }
+              }
+              for (let a = 0; a < arrows.length; a++) {
+                const m = arrows[a]!;
+                const register = t[m - 1]!;
+                const stop = a + 1 < arrows.length ? arrows[a + 1]! : t.length;
+                const rest = t.slice(m + 1, stop);
+                let component = '';
+                let rule: string | undefined;
+                if (rest[0] === 'composite' && rest[1] === 'rule') {
+                  component = 'composite';
+                  rule = rest[2];
+                } else if (rest[0] === 'rule') {
+                  component = 'composite';
+                  rule = rest[1];
+                } else {
+                  component = (rest[0] ?? '').split('.')[0]!;
+                }
+                covered.set(register, (covered.get(register) ?? 0) + 1);
+                if (component !== 'composite' && !componentIds.has(component)) {
+                  err(
+                    'C100',
+                    `subject ${sid}: decomposition ${register} names undeclared component "${component}" (composition-components-resolve)`,
+                  );
+                }
+                if (component === 'composite' && !STATE_RULES.has(rule ?? '')) {
+                  err(
+                    'C102',
+                    `subject ${sid}: decomposition ${register} declares unknown composite state rule "${rule ?? '(none)'}" — the vocabulary is closed (composition-state-rule-closed)`,
+                  );
+                }
+              }
+            }
+          }
+          for (const l of has
+            ? lines(has).filter(x => x.key === 'serve')
+            : []) {
+            const aspect = l.tokens[0];
+            if (aspect && (covered.get(aspect) ?? 0) !== 1) {
+              err(
+                'C101',
+                `subject ${sid}: serve "${aspect}" is covered ${covered.get(aspect) ?? 0} times by the decomposition — every served register decomposes exactly once (composition-decomposition-covers)`,
+              );
+            }
+          }
+        }
+      }
+      // ── C65–C70 — the monitors.
+      for (const m of pkg.constructs.filter(
+        x => x.keyword === 'monitor' && x.ident,
+      )) {
+        const mid = m.ident!;
+        const overNames = [
+          ...lines(m)
+            .filter(l => l.key === 'over')
+            .flatMap(l => l.tokens),
+          ...nested(m)
+            .filter(n => n.keyword === 'over')
+            .flatMap(n => rawTokens(n)),
+        ];
+        const watched = overNames.filter(n => subjectIds2.has(n));
+        // C65 — monitor-subject-resolves
+        if (overNames.length === 0) {
+          err(
+            'C65',
+            `monitor ${mid}: declares no subject set — a monitor watches a subject set (over { … }) (monitor-subject-resolves)`,
+          );
+        }
+        for (const ref of overNames) {
+          if (!subjectIds2.has(ref)) {
+            err(
+              'C65',
+              `monitor ${mid}: over "${ref}" is not a declared subject (monitor-subject-resolves)`,
+            );
+          }
+        }
+        // C66 — monitor-trigger-wellformed
+        const triggerRuns: string[][] = nested(m)
+          .filter(n => n.keyword === 'triggers')
+          .flatMap(n => lines(n).map(l => [l.key!, ...l.tokens]));
+        if (triggerRuns.length === 0) {
+          err(
+            'C66',
+            `monitor ${mid}: declares no triggers — without triggers, "continuous" has no clock (§14.5 step 1) (monitor-trigger-wellformed)`,
+          );
+        }
+        for (const t of triggerRuns) {
+          for (let i = 0; i < t.length; i++) {
+            if (t[i] === 'every') {
+              const w = t[i + 1];
+              if (!parseWindow(w)) {
+                err(
+                  'C66',
+                  `monitor ${mid}: timer trigger every "${w ?? '(none)'}" is not a parseable window (monitor-trigger-wellformed)`,
+                );
+              }
+              i += 1;
+            } else if (t[i] === 'on' && t[i + 1] === 'signal') {
+              if (!t[i + 2]) {
+                err(
+                  'C66',
+                  `monitor ${mid}: signal trigger names no signal (on signal <name>) (monitor-trigger-wellformed)`,
+                );
+              }
+              i += 2;
+            } else if (t[i] === 'on' && t[i + 1] === 'change') {
+              const aspect = t[i + 2];
+              if (!aspect) {
+                err(
+                  'C66',
+                  `monitor ${mid}: change trigger names no aspect (on change <aspect>) (monitor-trigger-wellformed)`,
+                );
+              } else if (
+                watched.length > 0 &&
+                !watched.some(n => {
+                  const subj = pkg.constructs.find(
+                    x => x.keyword === 'subject' && x.ident === n,
+                  );
+                  return subj !== undefined && resolvesAspect(aspect, subj);
+                })
+              ) {
+                err(
+                  'C66',
+                  `monitor ${mid}: change trigger aspect "${aspect}" does not resolve against any monitored subject (monitor-trigger-wellformed)`,
+                );
+              }
+              i += 2;
+            } else if (
+              t[i] !== 'on' &&
+              t[i] !== 'signal' &&
+              t[i] !== 'change'
+            ) {
+              err(
+                'C66',
+                `monitor ${mid}: trigger kind "${t[i]}" is not one of timer (every) | signal (on signal) | change (on change) (monitor-trigger-wellformed)`,
+              );
+            }
+          }
+        }
+        // C67 — monitor-evaluate-resolves
+        const readRefSet = (
+          label: string,
+        ): { kind?: string; refs: string[]; expression?: string } | null => {
+          const block = nested(m).find(n => n.keyword === 'evaluate');
+          if (!block) {
+            return null;
+          }
+          const inner = nested(block).find(n => n.keyword === label);
+          if (inner) {
+            return { kind: 'refs', refs: rawTokens(inner) };
+          }
+          const l = lines(block).find(x => x.key === label);
+          if (!l) {
+            return null;
+          }
+          const kind = l.tokens[0];
+          if (kind === 'applicable_to') {
+            return {
+              kind: 'applicable_to',
+              refs: [],
+              expression: l.tokens.slice(1).join(' '),
+            };
+          }
+          if (kind === 'all') {
+            return { kind: 'all', refs: [] };
+          }
+          return { kind, refs: [] };
+        };
+        const watchedSubjects = pkg.constructs.filter(
+          x => x.keyword === 'subject' && watched.includes(x.ident ?? ''),
+        );
+        const promiseIds2 = new Set(
+          watchedSubjects
+            .map(s2 => {
+              const isB2 = nested(s2).find(n => n.keyword === 'is');
+              return isB2
+                ? nested(isB2)
+                    .filter(n => n.keyword === 'promises')
+                    .flatMap(n => nested(n))
+                    .map(n => n.ident || n.keyword)
+                : [];
+            })
+            .flat()
+            .filter(x => x !== ''),
+        );
+        const checkRefSet = (
+          label: string,
+          set: { kind?: string; refs: string[]; expression?: string } | null,
+          resolveRef: (r: string) => boolean,
+          refKind: string,
+        ): void => {
+          if (!set || !set.kind) {
+            err(
+              'C67',
+              `monitor ${mid}: evaluate names no ${label} selector (all | applicable_to(…) | { refs… }) — a monitor judges something (monitor-evaluate-resolves)`,
+            );
+            return;
+          }
+          if (!REFSET_KINDS.has(set.kind)) {
+            err(
+              'C67',
+              `monitor ${mid}: ${label} selector "${set.kind}" is not one of all | applicable_to(…) | { refs… } (monitor-evaluate-resolves)`,
+            );
+            return;
+          }
+          if (set.kind === 'applicable_to' && !set.expression) {
+            err(
+              'C67',
+              `monitor ${mid}: ${label} applicable_to() carries no applicability expression (monitor-evaluate-resolves)`,
+            );
+          }
+          if (set.kind === 'refs') {
+            if (set.refs.length === 0) {
+              err(
+                'C67',
+                `monitor ${mid}: ${label} selector { } names no refs (monitor-evaluate-resolves)`,
+              );
+            }
+            for (const ref of set.refs) {
+              if (!resolveRef(ref)) {
+                err(
+                  'C67',
+                  `monitor ${mid}: evaluate ${label} ref "${ref}" is not a declared ${refKind} (monitor-evaluate-resolves)`,
+                );
+              }
+            }
+          }
+        };
+        checkRefSet(
+          'requirements',
+          readRefSet('requirements'),
+          r => reqIds.has(r),
+          'requirement',
+        );
+        checkRefSet(
+          'promises',
+          readRefSet('promises'),
+          r => promiseIds2.has(r),
+          'promise of the monitored subjects',
+        );
+        // C68/C69 — escalation.
+        const esc = nested(m).filter(n => n.keyword === 'escalate');
+        const rulesEsc = esc.flatMap(e =>
+          nested(e).filter(n => n.keyword === 'on'),
+        );
+        if (!rulesEsc.some(r => r.ident === 'fail')) {
+          issues.push({
+            rule: 'C68',
+            severity: 'warning',
+            message: `monitor ${mid}: declares no escalation path for fail — §14.12: a monitor without an escalation path for fail is a warning (monitor-fail-escalation)`,
+          });
+        }
+        for (const r of rulesEsc) {
+          if (!OUTCOMES.has(r.ident ?? '')) {
+            err(
+              'C69',
+              `monitor ${mid}: escalate on "${r.ident || '(none)'}" — the outcome is not one of pass | fail | indeterminate | invalid (monitor-escalation-resolves)`,
+            );
+          }
+          const toks = rawTokens(r);
+          if (toks.length === 0) {
+            err(
+              'C69',
+              `monitor ${mid}: escalate on ${r.ident || '(none)'} names no actions (monitor-escalation-resolves)`,
+            );
+          }
+          for (let i = 0; i < toks.length; i++) {
+            const a = toks[i]!;
+            if (!ACTIONS.has(a)) {
+              err(
+                'C69',
+                `monitor ${mid}: escalate on ${r.ident} action "${a}" is not one of notify | flag_certificate | open_service_case (monitor-escalation-resolves)`,
+              );
+              continue;
+            }
+            if (a === 'notify') {
+              const role = toks[i + 1];
+              i += 1;
+              if (!role) {
+                err(
+                  'C69',
+                  `monitor ${mid}: escalate on ${r.ident} notify names no role (notify <role>) (monitor-escalation-resolves)`,
+                );
+              } else if (roleIds.size > 0 && !roleIds.has(role)) {
+                err(
+                  'C69',
+                  `monitor ${mid}: escalate on ${r.ident} notify "${role}" is not a declared role (monitor-escalation-resolves)`,
+                );
+              }
+            }
+          }
+        }
+        // C70 — monitor-emit-sinks
+        const emitted = new Map<string, number>();
+        for (const l of nested(m)
+          .filter(n => n.keyword === 'emit')
+          .flatMap(n => lines(n))) {
+          const t = [l.key!, ...l.tokens];
+          for (let i = 0; i < t.length; i++) {
+            if (t[i] !== '->' || i === 0) {
+              continue;
+            }
+            const stream = t[i - 1]!;
+            const target = t[i + 1] ?? '';
+            i += 1;
+            if (!(STREAMS as readonly string[]).includes(stream)) {
+              err(
+                'C70',
+                `monitor ${mid}: emit stream "${stream}" is not one of evidence | verdicts (monitor-emit-sinks)`,
+              );
+            }
+            if (!target) {
+              err(
+                'C70',
+                `monitor ${mid}: emit ${stream} names no sink (${stream} -> <sink>) (monitor-emit-sinks)`,
+              );
+            }
+            emitted.set(stream, (emitted.get(stream) ?? 0) + 1);
+          }
+        }
+        for (const stream of STREAMS) {
+          const n = emitted.get(stream) ?? 0;
+          if (n === 0) {
+            err(
+              'C70',
+              `monitor ${mid}: emit declares no ${stream} sink — §14.5 step 6: values seen, rule results, verdicts, timestamps are appended to the workspace (monitor-emit-sinks)`,
+            );
+          } else if (n > 1) {
+            err(
+              'C70',
+              `monitor ${mid}: emit declares the ${stream} stream ${n} times — one sink per stream (monitor-emit-sinks)`,
+            );
+          }
+        }
+      }
+      // ── C99 — the probe-channel provenance.
+      const PROBE_CHANNELS = new Set([
+        'reference_instrument',
+        'observer_attestation',
+        'sim_ground_truth',
+      ]);
+      for (const t of pkg.constructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        const variables = nested(t).filter(n => n.keyword === 'variable');
+        const variableNames = new Set(variables.map(v => v.ident ?? ''));
+        for (const v of variables) {
+          const prov = nested(v).find(n => n.keyword === 'provenance');
+          if (!prov) {
+            continue;
+          }
+          const channel = facetTokens(prov.items, 'channel')[0] ?? '';
+          const ref = facetTokens(prov.items, 'ref')[0] ?? '';
+          const observedAt = facetTokens(prov.items, 'observed_at')[0] ?? '';
+          const limitation = facetTokens(prov.items, 'limitation')[0] ?? '';
+          const vname = v.ident ?? '';
+          if (!PROBE_CHANNELS.has(channel)) {
+            err(
+              'C99',
+              `conformance test ${t.ident}: variable "${vname}" declares provenance channel "${channel}" — the probe channel is one of reference_instrument | observer_attestation | sim_ground_truth (variable-provenance-channel)`,
+            );
+          }
+          if (ref === '') {
+            err(
+              'C99',
+              `conformance test ${t.ident}: variable "${vname}" declares channel "${channel}" but cites no ref — the channel's register entry is the provenance's substance (variable-provenance-channel)`,
+            );
+          }
+          if (observedAt === '') {
+            err(
+              'C99',
+              `conformance test ${t.ident}: variable "${vname}" declares no observed_at binding — a channel reading without its observation timestamp cannot be paired (variable-provenance-channel)`,
+            );
+          } else if (!variableNames.has(observedAt)) {
+            err(
+              'C99',
+              `conformance test ${t.ident}: variable "${vname}" binds observed_at to "${observedAt}", which names no declared variable of the test (variable-provenance-channel)`,
+            );
+          }
+          if (channel === 'observer_attestation' && limitation === '') {
+            err(
+              'C99',
+              `conformance test ${t.ident}: variable "${vname}" declares the observer_attestation channel without its traceability limitation — attestation-only evidence proves "twin ≡ display", not "twin ≡ mass" (variable-provenance-channel)`,
+            );
+          }
+          if (channel !== 'observer_attestation' && limitation !== '') {
+            issues.push({
+              rule: 'C99',
+              severity: 'warning',
+              message: `conformance test ${t.ident}: variable "${vname}" carries a traceability limitation on the ${channel} channel — the limitation declaration rides the observer_attestation channel (variable-provenance-channel)`,
+            });
+          }
+          const src = facetTokens(v.items, 'source')[0];
+          if (src !== undefined && src !== '' && src !== 'measured') {
+            issues.push({
+              rule: 'C99',
+              severity: 'warning',
+              message: `conformance test ${t.ident}: variable "${vname}" is source ${src} but declares a physical probe channel — the channel provenance belongs to a measured reference reading (variable-provenance-channel)`,
+            });
+          }
+        }
+      }
+    }
+
+    // ── C41 precondition-on-violation-known: the only known outcome is
+    //     `invalid` — a violated run-validity precondition VOIDS the run
+    //     (doctrine ch. 04 §4.5); anything else warns, and a state gate
+    //     declared `fail` always names the doctrine.
+    for (const kw of ['process', 'conformance_test']) {
+      for (const owner of pkg.constructs.filter(
+        x => x.keyword === kw && x.ident,
+      )) {
+        for (const pc of nested(owner).filter(
+          n => n.keyword === 'precondition',
+        )) {
+          const ov = facetTokens(pc.items, 'on_violation')[0];
+          if (!ov || ov === 'invalid') {
+            continue;
+          }
+          const checkLine = pc.items.find(
+            i2 => i2.kind === 'line' && i2.key === 'check',
+          );
+          const checkText = checkLine
+            ? (checkLine.blocks ?? [])
+                .flat()
+                .map(b =>
+                  b.kind === 'raw'
+                    ? b.tokens.join(' ')
+                    : b.kind === 'line'
+                      ? [b.key ?? '', ...b.tokens].join(' ')
+                      : '',
+                )
+                .join(' ')
+            : '';
+          const gatesState =
+            /\bself\.state\s*(<>|!=|==|=)\s*#([A-Za-z_][A-Za-z0-9_]*)/g;
+          const hasStateGate = [...checkText.matchAll(gatesState)].length > 0;
+          if (ov === 'fail' && hasStateGate) {
+            issues.push({
+              rule: 'C41',
+              severity: 'warning',
+              message: `${kw} ${owner.ident}: precondition "${pc.ident}" declares on_violation fail — a violated run-validity precondition VOIDS the run (invalid); it never fails the instrument (doctrine ch. 04 §4.5) (precondition-on-violation-known)`,
+            });
+          } else {
+            issues.push({
+              rule: 'C41',
+              severity: 'warning',
+              message: `${kw} ${owner.ident}: precondition "${pc.ident}" declares on_violation "${ov}" — the only known outcome is "invalid" (precondition-on-violation-known)`,
+            });
+          }
+        }
+      }
+    }
+
+    // ── Batch A: the shapes/vocabulary family. C154 the deprecation
+    //     inventory, C90/C91 invariants, C92/C93 test sequences, C147/
+    //     C148 the executable test programs, C94 formulas-used, C89 the
+    //     spelling codes, C158 prose-quarantine, C159 urn-only-refs,
+    //     C161 check-surface, C84 the when-guard-is-a-predicate shape.
+    {
+      // C154 — construct-deprecated: the kernel arms deprecations as
+      // data on the construct registry; the mirror holds the same
+      // inventory. Empty today (condition_set's arm retired with its
+      // parse support in 1.21.20); the provenance-spelling arms of the
+      // retirement wave land here.
+      const DEPRECATED_CONSTRUCTS: Record<string, string> = {};
+      for (const c2 of pkg.constructs) {
+        const note = DEPRECATED_CONSTRUCTS[c2.keyword];
+        if (note) {
+          issues.push({
+            rule: 'C154',
+            severity: 'warning',
+            message: `construct "${c2.keyword}" is deprecated: ${note} (construct-deprecated)`,
+          });
+        }
+      }
+      // C90/C91 — the invariants.
+      const CLAIM_GRAMMAR = [
+        /^kernel:C\d+$/,
+        /^linker:[a-z0-9-]+$/,
+        /^gate:[a-z0-9-]+$/,
+      ];
+      for (const inv of closureConstructs.filter(
+        x => x.keyword === 'invariant' && x.ident,
+      )) {
+        const name = facetTokens(inv.items, 'name')[0];
+        const statement = facetTokens(inv.items, 'statement')[0];
+        const severity = facetTokens(inv.items, 'severity')[0];
+        if (!name) {
+          err(
+            'C90',
+            `invariant ${inv.ident}: declares no name — an invariant carries a short rule name (invariant-shape)`,
+          );
+        }
+        if (!statement) {
+          err(
+            'C90',
+            `invariant ${inv.ident}: declares no statement — an invariant carries the rule's prose (invariant-shape)`,
+          );
+        }
+        if (!severity) {
+          err(
+            'C90',
+            `invariant ${inv.ident}: declares no severity (invariant-shape)`,
+          );
+        }
+        // The kernel's surface rule: a braced enforcement value is a
+        // CLAIMS LIST (`{ aspirational }` is the marker INSIDE a list,
+        // C91's flag); the bare `enforcement aspirational` line is the
+        // marker.
+        const enfc = nested(inv).find(n => n.keyword === 'enforcement');
+        const enfcLine = lines(inv).find(l => l.key === 'enforcement');
+        let aspirational = false;
+        let claims: string[] = [];
+        if (enfc) {
+          for (const i2 of enfc.items) {
+            if (i2.kind === 'raw') {
+              claims.push(...i2.tokens);
+            } else if (i2.kind === 'line') {
+              claims.push(i2.key ?? '', ...i2.tokens);
+            }
+          }
+          claims = claims.filter(x => x !== '');
+        } else if (enfcLine) {
+          if (enfcLine.tokens[0] === 'aspirational') {
+            aspirational = true;
+          } else {
+            claims.push(...enfcLine.tokens);
+          }
+        }
+        if (!aspirational && claims.length === 0) {
+          err(
+            'C90',
+            `invariant ${inv.ident}: declares no enforcement — a non-empty claim list (enforcement { kernel:C<n> … }) or the literal marker (enforcement aspirational) (invariant-shape)`,
+          );
+        }
+        if (aspirational && claims.length > 0) {
+          err(
+            'C90',
+            `invariant ${inv.ident}: enforcement mixes the aspirational marker with ${claims.length} claim(s) — one or the other, never both (invariant-shape)`,
+          );
+        }
+        for (const claim of claims) {
+          if (claim === 'aspirational') {
+            err(
+              'C91',
+              `invariant ${inv.ident}: the aspirational marker never appears inside a claims list — spell it bare (enforcement aspirational) (invariant-enforcement-grammar)`,
+            );
+          } else if (!CLAIM_GRAMMAR.some(re => re.test(claim))) {
+            err(
+              'C91',
+              `invariant ${inv.ident}: enforcement claim "${claim}" does not match kernel:C<n> | linker:<kebab-name> | gate:<kebab-name> (invariant-enforcement-grammar)`,
+            );
+          }
+        }
+      }
+      // C92/C93 — the test sequences.
+      const STEP_ROLES = new Set(['baseline', 'follow_up']);
+      for (const seq of closureConstructs.filter(
+        x => x.keyword === 'test_sequence' && x.ident,
+      )) {
+        const name = facetTokens(seq.items, 'name')[0];
+        const description = facetTokens(seq.items, 'description')[0];
+        const steps = nested(seq).filter(n => n.keyword === 'step');
+        if (!name) {
+          err(
+            'C92',
+            `test_sequence ${seq.ident}: declares no name — a test sequence carries a short name (test-sequence-shape)`,
+          );
+        }
+        if (!description) {
+          err(
+            'C92',
+            `test_sequence ${seq.ident}: declares no description — a test sequence carries the ordering's prose (test-sequence-shape)`,
+          );
+        }
+        if (steps.length === 0) {
+          err(
+            'C92',
+            `test_sequence ${seq.ident}: declares no steps — a test sequence is a non-empty ordered step list (test-sequence-shape)`,
+          );
+        }
+        const orders = new Set<number>();
+        for (const step of steps) {
+          const orderNum =
+            step.ident !== undefined &&
+            step.ident !== '' &&
+            /^\d+$/.test(step.ident)
+              ? Number(step.ident)
+              : null;
+          const at = orderNum !== null ? `step ${orderNum}` : 'a step';
+          if (orderNum === null || orderNum < 1) {
+            err(
+              'C92',
+              `test_sequence ${seq.ident}: ${at} declares no positive-integer order — the step order is a positive integer (test-sequence-shape)`,
+            );
+          } else if (orders.has(orderNum)) {
+            err(
+              'C92',
+              `test_sequence ${seq.ident}: step order ${orderNum} is declared twice — the order is unique within the sequence (test-sequence-shape)`,
+            );
+          } else {
+            orders.add(orderNum);
+          }
+          const test = facetTokens(step.items, 'test')[0];
+          const phase = facetTokens(step.items, 'phase')[0];
+          if ((test === undefined) === (phase === undefined)) {
+            err(
+              'C92',
+              `test_sequence ${seq.ident}: ${at} carries ${
+                test === undefined
+                  ? 'neither test nor phase'
+                  : 'both test and phase'
+              } — exactly one per step (test-sequence-shape)`,
+            );
+          }
+          const role = facetTokens(step.items, 'role')[0];
+          if (role !== undefined) {
+            if (test === undefined) {
+              err(
+                'C92',
+                `test_sequence ${seq.ident}: ${at} declares role "${role}" on ${
+                  phase === undefined
+                    ? 'a step carrying neither test nor phase'
+                    : 'a phase step'
+                } — the role is meaningful on test steps only (test-sequence-shape)`,
+              );
+            } else if (!STEP_ROLES.has(role)) {
+              err(
+                'C92',
+                `test_sequence ${seq.ident}: ${at} declares role "${role}" — the vocabulary is baseline | follow_up (test-sequence-shape)`,
+              );
+            }
+          }
+          const dep = facetTokens(step.items, 'depends_on')[0];
+          if (dep !== undefined && !/^\d+$/.test(dep)) {
+            err(
+              'C92',
+              `test_sequence ${seq.ident}: ${at} declares depends_on ${dep} — the dependency is the integer order of an earlier step (test-sequence-shape)`,
+            );
+          }
+          // C93 — the per-edge integrity.
+          if (dep !== undefined && /^\d+$/.test(dep)) {
+            const depN = Number(dep);
+            if (orderNum !== null && depN === orderNum) {
+              err(
+                'C93',
+                `test_sequence ${seq.ident}: ${at} depends on itself — depends_on names an EARLIER step (test-sequence-integrity)`,
+              );
+            } else if (!orders.has(depN)) {
+              err(
+                'C93',
+                `test_sequence ${seq.ident}: ${at} depends_on ${depN} names no step of the sequence (test-sequence-integrity)`,
+              );
+            } else if (orderNum !== null && depN > orderNum) {
+              err(
+                'C93',
+                `test_sequence ${seq.ident}: ${at} depends_on ${depN} names a LATER step — a forward reference; depends_on names an EARLIER step (test-sequence-integrity)`,
+              );
+            }
+          }
+        }
+      }
+      // C147/C148 — the executable test programs.
+      const SHORTHAND = /^(\d+(?:\.\d+)?)(ms|min|s|h|d)$/;
+      const ISODUR =
+        /^P(?:(\d+(?:[.,]\d+)?)Y)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)D)?(?:T(?:(\d+(?:[.,]\d+)?)H)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)S)?)?(?:(\d+(?:[.,]\d+)?)W)?$/;
+      const parseWindow2 = (v: string | undefined): boolean => {
+        if (!v) {
+          return false;
+        }
+        const t2 = v.trim();
+        if (SHORTHAND.test(t2)) {
+          return true;
+        }
+        const m = ISODUR.exec(t2);
+        return m !== null && m[1] === undefined && m[2] === undefined;
+      };
+      const rawOfLine = (l: { blocks?: Item[][] }): string[] | null => {
+        const first = l.blocks?.[0]?.[0];
+        return first !== undefined && first.kind === 'raw'
+          ? first.tokens
+          : null;
+      };
+      for (const ct of pkg.constructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        for (const progName of ['preparation', 'stimulus']) {
+          const prog = nested(ct).find(n => n.keyword === progName);
+          if (!prog) {
+            continue;
+          }
+          const entries = nested(prog).filter(
+            n => n.keyword === 'step' || n.keyword === 'point',
+          );
+          const orders = new Set<number>();
+          for (const e of entries) {
+            const isPoint = e.keyword === 'point';
+            const noun = isPoint ? 'stimulus point' : 'preparation step';
+            const orderNum =
+              e.ident !== undefined && /^\d+$/.test(e.ident)
+                ? Number(e.ident)
+                : null;
+            const at = orderNum !== null ? `${noun} ${orderNum}` : `a ${noun}`;
+            if (orderNum === null || orderNum < 1) {
+              err(
+                'C147',
+                `conformance_test ${ct.ident}: ${at} declares no positive-integer order — the order is a positive integer (test-program-shape)`,
+              );
+            } else if (orders.has(orderNum)) {
+              err(
+                'C147',
+                `conformance_test ${ct.ident}: ${noun} order ${orderNum} is declared twice — the order is unique within the program (test-program-shape)`,
+              );
+            } else {
+              orders.add(orderNum);
+            }
+            // The facets: glued tokens plus the brace groups riding the
+            // line at `verify` / `args` (the verify block carries the
+            // step's read+tolerance).
+            let drive: string | undefined;
+            let action: string | undefined;
+            let acceptance: string | undefined;
+            let verifyRead: string | undefined;
+            let verifyTolerance: string | undefined;
+            let hasVerify = false;
+            let hold: string | undefined;
+            let freshWithin: string | undefined;
+            for (const i2 of e.items) {
+              if (i2.kind !== 'line') {
+                continue;
+              }
+              const t2 = [i2.key ?? '', ...i2.tokens];
+              const blocks = i2.blocks ?? [];
+              let bi = 0;
+              for (let k = 0; k < t2.length; k++) {
+                const w = t2[k];
+                if (w === 'drive') {
+                  drive = t2[++k];
+                } else if (w === 'action') {
+                  action = t2[++k];
+                } else if (w === 'acceptance') {
+                  acceptance = t2[++k];
+                } else if (w === 'hold') {
+                  hold = t2[++k];
+                } else if (w === 'fresh_within') {
+                  freshWithin = t2[++k];
+                } else if (w === 'verify') {
+                  hasVerify = true;
+                  if (bi < blocks.length) {
+                    for (const it of blocks[bi++]!) {
+                      if (it.kind !== 'line') {
+                        continue;
+                      }
+                      const vt = [it.key ?? '', ...it.tokens];
+                      for (let m = 0; m < vt.length; m++) {
+                        if (vt[m] === 'read') {
+                          verifyRead = vt[++m];
+                        } else if (vt[m] === 'tolerance') {
+                          verifyTolerance = vt[++m];
+                        }
+                      }
+                    }
+                  }
+                } else if (w === 'args' && bi < blocks.length) {
+                  bi++;
+                }
+              }
+            }
+            if (!isPoint) {
+              if (action === undefined && drive === undefined) {
+                err(
+                  'C147',
+                  `conformance_test ${ct.ident}: ${at} declares neither action nor drive — a preparation step carries a prose action AND/OR a drive reference (test-program-shape)`,
+                );
+              }
+              if (hasVerify && (!verifyRead || !verifyTolerance)) {
+                err(
+                  'C147',
+                  `conformance_test ${ct.ident}: ${at} declares a verify block without ${
+                    !verifyRead ? 'read' : 'tolerance'
+                  } — the verification names what to read AND the tolerance reference (test-program-shape)`,
+                );
+              }
+            } else {
+              if (drive === undefined) {
+                err(
+                  'C147',
+                  `conformance_test ${ct.ident}: ${at} declares no drive — a stimulus point names the drive operation (test-program-shape)`,
+                );
+              }
+              if (acceptance === undefined) {
+                err(
+                  'C147',
+                  `conformance_test ${ct.ident}: ${at} declares no acceptance — a stimulus point names the MPE/requirement node it is judged against (test-program-shape)`,
+                );
+              }
+            }
+            // C148 — the duration legs.
+            if (hold !== undefined && !parseWindow2(hold)) {
+              err(
+                'C148',
+                `conformance_test ${ct.ident}: ${at} hold "${hold}" is not a parseable duration (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT30M) (test-program-duration)`,
+              );
+            }
+            if (isPoint) {
+              if (freshWithin === undefined) {
+                err(
+                  'C148',
+                  `conformance_test ${ct.ident}: ${at} declares no fresh_within — a measurement point's read carries its freshness bound (§14.12: no stale semantics) (test-program-duration)`,
+                );
+              } else if (!parseWindow2(freshWithin)) {
+                err(
+                  'C148',
+                  `conformance_test ${ct.ident}: ${at} fresh_within "${freshWithin}" is not a parseable freshness window (shorthand 500ms/5s/1min/1h/1d or ISO 8601 with fixed-length components, e.g. PT5S) (test-program-duration)`,
+                );
+              }
+            }
+          }
+        }
+      }
+      // C94 — the formulas-used traces.
+      const FORMULA_ID_SHAPE = /^[a-z][a-z0-9_]*$/;
+      for (const fu of closureConstructs.filter(
+        x => x.keyword === 'formulas_used',
+      )) {
+        if (!fu.ident || fu.ident.trim() === '') {
+          err(
+            'C94',
+            `formulas_used: declares no test reference — the block symbol is the conformance-test reference the trace is keyed by (formulas-used-shape)`,
+          );
+        }
+        const name = facetTokens(fu.items, 'name')[0];
+        const description = facetTokens(fu.items, 'description')[0];
+        if (!name) {
+          err(
+            'C94',
+            `formulas_used ${fu.ident}: declares no name — a formulas-used trace carries a short name (formulas-used-shape)`,
+          );
+        }
+        if (!description) {
+          err(
+            'C94',
+            `formulas_used ${fu.ident}: declares no description — a formulas-used trace carries what the listed formulas compute (formulas-used-shape)`,
+          );
+        }
+        const formulas = nested(fu).find(n => n.keyword === 'formulas');
+        const ids = formulas
+          ? lines(formulas).flatMap(l => [l.key ?? '', ...l.tokens])
+          : facetTokens(fu.items, 'formulas');
+        if (ids.length === 0) {
+          err(
+            'C94',
+            `formulas_used ${fu.ident}: declares no formulas — a formulas-used trace is a non-empty registry-formula id list (formulas-used-shape)`,
+          );
+        }
+        for (const f of ids) {
+          if (!FORMULA_ID_SHAPE.test(f)) {
+            err(
+              'C94',
+              `formulas_used ${fu.ident}: formula id "${f}" is not a well-formed registry identifier — the snake_case shape the calculations registry uses (formulas-used-shape)`,
+            );
+          }
+        }
+      }
+      // C89 — the spelling codes (the manifest's default_spelling and
+      // the spellings set; ISO 24229 shape).
+      const parseSpelling = (code: string): string | null => {
+        const segments = code.split('-');
+        if (segments.length === 1 && /^[a-z]{3}$/.test(segments[0]!)) {
+          return `script segment missing — a bare language code ("${code}") is not a spelling system; add the ISO 15924 script (e.g. ${code}-Latn)`;
+        }
+        if (segments.length < 2 || segments.length > 4) {
+          return `a spelling code is <language>-<script>[-<country>][-<extension>] (2–4 segments), got "${code}"`;
+        }
+        const [language, script, ...rest] = segments;
+        if (!/^[a-z]{3}$/.test(language!)) {
+          return `language segment "${language}" is not an ISO 639-3 alpha-3 code (three lower-case letters)`;
+        }
+        if (!/^[A-Z][a-z]{3}$/.test(script!)) {
+          if (/^[a-z]{3}$/.test(script!) && rest.length === 0) {
+            return `script segment missing — a bare language code ("${code}") is not a spelling system; add the ISO 15924 script (e.g. ${code}-Latn)`;
+          }
+          return `script segment "${script}" is not an ISO 15924 script code (title-case four letters, e.g. Latn)`;
+        }
+        if (rest.length > 0) {
+          const first = rest[0]!;
+          if (/^[A-Z]{2}$/.test(first)) {
+            if (rest.length > 1 && !/^[a-z][a-z0-9]*$/.test(rest[1]!)) {
+              return `extension segment "${rest[1]}" is malformed (lower-case alnum, e.g. pre1972)`;
+            }
+          } else if (/^[a-z][a-z0-9]*$/.test(first)) {
+            if (rest.length > 1) {
+              return `country segment must precede the extension ("${code}")`;
+            }
+          } else {
+            return `segment "${first}" is neither an ISO 3166-1 alpha-2 country (two upper-case letters) nor an extension (lower-case alnum)`;
+          }
+        }
+        return null;
+      };
+      for (const m of pkg.constructs.filter(x => x.keyword === 'package')) {
+        const mid = m.ident ?? facetTokens(m.items, 'id')[0] ?? '(the package)';
+        const def = facetTokens(m.items, 'default_spelling')[0];
+        if (def) {
+          const bad = parseSpelling(def);
+          if (bad) {
+            err(
+              'C89',
+              `package "${mid}": default_spelling "${def}" — ${bad} (spelling-code-wellformed)`,
+            );
+          }
+        }
+        // The spellings set: a nested construct OR a brace group riding
+        // the manifest's greedy line at the `spellings` token.
+        const spellings = nested(m).find(n => n.keyword === 'spellings');
+        const codes = spellings
+          ? lines(spellings).flatMap(l => [l.key ?? '', ...l.tokens])
+          : m.items.flatMap(i2 => {
+              if (i2.kind !== 'line') {
+                return [];
+              }
+              const t2 = [i2.key ?? '', ...i2.tokens];
+              const blocks = i2.blocks ?? [];
+              let bi = 0;
+              const out: string[] = [];
+              for (let j = 0; j < t2.length; j++) {
+                if (t2[j] === 'spellings' && bi < blocks.length) {
+                  for (const it of blocks[bi++]!) {
+                    if (it.kind === 'raw') {
+                      out.push(...it.tokens);
+                    } else if (it.kind === 'line') {
+                      out.push(it.key ?? '', ...it.tokens);
+                    }
+                  }
+                }
+              }
+              return out.filter(x => x !== '');
+            });
+        for (const code of codes) {
+          const bad = parseSpelling(code);
+          if (bad) {
+            err(
+              'C89',
+              `package "${mid}": declared spelling "${code}" — ${bad} (spelling-code-wellformed)`,
+            );
+          }
+        }
+        if (def && codes.length > 0 && !codes.includes(def)) {
+          err(
+            'C89',
+            `package "${mid}": default_spelling "${def}" is not in the declared spellings set (spelling-code-wellformed)`,
+          );
+        }
+      }
+      // C158/C161 — the datum's prose quarantine and render surface.
+      const CLAUSE_CITATION = /clause-\d|§\d/i;
+      const MATH_NOTATIONS = new Set([
+        'asciimath',
+        'latex',
+        'unicodemath',
+        'mathml',
+        'omml',
+      ]);
+      for (const d of closureConstructs.filter(
+        x => x.keyword === 'datum' && x.ident,
+      )) {
+        const description = facetTokens(d.items, 'description').join(' ');
+        if (description) {
+          if (CLAUSE_CITATION.test(description)) {
+            err(
+              'C158',
+              `datum ${d.ident}: the description cites a clause — a reference in prose belongs in a urn reference, not the quarantined free text (prose-quarantine)`,
+            );
+          } else if (description.includes('TODO.roadmap')) {
+            issues.push({
+              rule: 'C158',
+              severity: 'warning',
+              message: `datum ${d.ident}: the description carries the unfinished-prose marker TODO.roadmap (prose-quarantine)`,
+            });
+          }
+        }
+        // Both spellings: the nested render construct and the inline
+        // `render <notation> "<text>"` line.
+        const renderNotations = [
+          ...nested(d)
+            .filter(n => n.keyword === 'render')
+            .map(r2 => facetTokens(r2.items, 'notation')[0] ?? r2.ident),
+          ...facetTokens(d.items, 'render').slice(0, 1),
+        ];
+        for (const notation of renderNotations) {
+          if (notation && !MATH_NOTATIONS.has(notation)) {
+            err(
+              'C161',
+              `datum ${d.ident}: render notation "${notation}" is outside the closed vocabulary (asciimath|latex|unicodemath|mathml|omml) (check-surface)`,
+            );
+          }
+        }
+      }
+      // C159 — urn-only-refs: a mapping's namespace names a declared
+      // namespace block.
+      const namespaceIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'namespace' && x.ident)
+          .map(x => x.ident!),
+      );
+      for (const w of closureConstructs.filter(
+        x => x.keyword === 'mapping' && x.ident,
+      )) {
+        const ns = facetTokens(w.items, 'namespace')[0];
+        if (ns && !namespaceIds.has(ns)) {
+          err(
+            'C159',
+            `mapping ${w.ident}: namespace "${ns}" names no declared namespace block (urn-only-refs)`,
+          );
+        }
+      }
+      // C84 — the when-guard is a predicate: a comparison or logical
+      // composition (or its negation) at the top.
+      const GUARD_CMP = new Set(['<=', '>=', '!=', '≠', '<', '>', '=']);
+      const GUARD_WORD = new Set(['implies', 'or', 'xor', 'and']);
+      for (const r of pkg.constructs.filter(
+        x => x.keyword === 'requirement' && x.ident,
+      )) {
+        for (const lim of nested(r).filter(n => n.keyword === 'limit')) {
+          const when = nested(lim).find(n => n.keyword === 'when');
+          if (!when) {
+            continue;
+          }
+          const src = when.items
+            .flatMap(i2 =>
+              i2.kind === 'raw'
+                ? i2.tokens
+                : i2.kind === 'line'
+                  ? [i2.key ?? '', ...i2.tokens]
+                  : [],
+            )
+            .join(' ')
+            .trim();
+          if (src === '') {
+            continue;
+          }
+          try {
+            const ast = parseX(src);
+            const ok =
+              (ast.kind === 'bin' &&
+                ast.op !== undefined &&
+                (GUARD_CMP.has(ast.op) || GUARD_WORD.has(ast.op))) ||
+              (ast.kind === 'un' && ast.op === 'not');
+            if (!ok) {
+              err(
+                'C84',
+                `requirement ${r.ident}: limit ${lim.ident ? `"${lim.ident}"` : '(the unnamed limit)'}'s when-guard does not evaluate to a boolean — the guard is one comparison or logical composition (constraint-shape)`,
+              );
+            }
+          } catch {
+            // the guard's parse errors ride C171's expression plane
+          }
+        }
+      }
+    }
+
+    // ── Batch B: the resolution family — C3 dimension enums, C6–C9
+    //     the subject anatomy, C18/C20 the instance pins, C42–C44 the
+    //     promises, C48–C50 the characteristics, C156 class-extends,
+    //     C168 method-refs, C103 declared predicates, C97/C98 the
+    //     certification program maps.
+    {
+      const subjectIdsB = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'subject' && x.ident)
+          .map(x => x.ident!),
+      );
+      const behaviorIdsB = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'behavior' && x.ident)
+          .map(x => x.ident!),
+      );
+      const attrIdsB = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'attribute_definition' && x.ident)
+          .map(x => x.ident!),
+      );
+      const symbolIdsB = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'symbol' && x.ident)
+          .map(x => x.ident!),
+      );
+      const instanceIdsB = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'instance' && x.ident)
+          .map(x => x.ident!),
+      );
+      const classIdsB = new Set<string>();
+      const classBareB = new Set<string>();
+      for (const c2 of closureConstructs.filter(
+        x => x.keyword === 'class' && x.ident,
+      )) {
+        classIdsB.add(c2.ident!);
+        classBareB.add(
+          c2.ident!.includes('#')
+            ? c2.ident!.slice(0, c2.ident!.indexOf('#'))
+            : c2.ident!,
+        );
+      }
+      const testIdsB = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'conformance_test' && x.ident)
+          .map(x => x.ident!),
+      );
+      const processIdsB = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'process' && x.ident)
+          .map(x => x.ident!),
+      );
+      // The dimension registry: id → value domain (null when open). The
+      // spellings: instrument/dimension `values { … }` blocks, the
+      // attribute_definition `is_dimension true` + enum facets, and the
+      // `values_of` indirection.
+      const dimDomainsB = new Map<string, Set<string> | null>();
+      const valuesOfB = new Map<string, string>();
+      const readValuesBlock = (holder: Construct): Set<string> | null => {
+        const values = nested(holder).find(n => n.keyword === 'values');
+        if (!values) {
+          return null;
+        }
+        const out = new Set<string>();
+        for (const i2 of values.items) {
+          if (i2.kind === 'raw') {
+            for (const t of i2.tokens) {
+              for (const v of t.split(',')) {
+                if (v.trim() !== '') {
+                  out.add(v.trim());
+                }
+              }
+            }
+          } else if (i2.kind === 'line') {
+            if (i2.key && i2.key !== 'values') {
+              out.add(i2.key);
+            }
+            for (const t of i2.tokens) {
+              out.add(t);
+            }
+          }
+        }
+        for (const v of nested(values)) {
+          out.add(v.ident || v.keyword);
+        }
+        return out;
+      };
+      for (const inst of closureConstructs.filter(
+        x => x.keyword === 'instrument' && x.ident,
+      )) {
+        for (const d2 of nested(inst).filter(
+          n => n.keyword === 'dimension' && n.ident,
+        )) {
+          dimDomainsB.set(d2.ident!, readValuesBlock(d2));
+        }
+      }
+      for (const d2 of closureConstructs.filter(
+        x => x.keyword === 'dimension' && x.ident,
+      )) {
+        if (dimDomainsB.has(d2.ident!)) {
+          continue;
+        }
+        const vo = facetTokens(d2.items, 'values_of')[0];
+        if (vo) {
+          valuesOfB.set(d2.ident!, vo);
+        }
+        dimDomainsB.set(d2.ident!, readValuesBlock(d2));
+      }
+      for (const a2 of closureConstructs.filter(
+        x => x.keyword === 'attribute_definition' && x.ident,
+      )) {
+        if (
+          dimDomainsB.has(a2.ident!) ||
+          facetTokens(a2.items, 'is_dimension')[0] !== 'true'
+        ) {
+          continue;
+        }
+        const enumRef = facetTokens(a2.items, 'enum')[0];
+        const enumC = enumRef
+          ? closureConstructs.find(
+              x => x.keyword === 'enum' && x.ident === enumRef,
+            )
+          : undefined;
+        const ev = nested(a2).find(n => n.keyword === 'enum_values');
+        const domain = enumC
+          ? readValuesBlock(enumC)
+          : ev
+            ? new Set(
+                lines(ev)
+                  .flatMap(l => [l.key ?? '', ...l.tokens])
+                  .filter(x => x !== ''),
+              )
+            : null;
+        dimDomainsB.set(a2.ident!, domain);
+      }
+      for (const [id, src] of valuesOfB) {
+        dimDomainsB.set(id, dimDomainsB.get(src) ?? null);
+      }
+      const dimDomainOf = (dim: string): Set<string> | null | undefined =>
+        dimDomainsB.has(dim) ? dimDomainsB.get(dim)! : undefined;
+      // C3 — the dimension ids + values exist.
+      const RESERVED_KEYS = new Set(['component', 'description']);
+      for (const t of pkg.constructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        const ts = nested(t).find(n => n.keyword === 'test_subject');
+        if (!ts) {
+          continue;
+        }
+        for (const l of lines(ts)) {
+          const dim = l.key!.replace(/:$/, '');
+          if (RESERVED_KEYS.has(dim)) {
+            continue;
+          }
+          const domain = dimDomainOf(dim);
+          if (domain === undefined) {
+            err(
+              'C3',
+              `conformance test ${t.ident}: test_subject dimension "${dim}" not declared`,
+            );
+          } else if (
+            domain !== null &&
+            l.tokens[0] !== undefined &&
+            !domain.has(l.tokens[0])
+          ) {
+            err(
+              'C3',
+              `conformance test ${t.ident}: test_subject ${dim}="${l.tokens[0]}" not in the dimension's values`,
+            );
+          }
+        }
+      }
+      for (const r of pkg.constructs.filter(
+        x => x.keyword === 'requirement' && x.ident,
+      )) {
+        const app = nested(r).find(n => n.keyword === 'applicability');
+        if (!app) {
+          continue;
+        }
+        for (const l of lines(app)) {
+          const dim = l.key!.replace(/:$/, '');
+          const domain = dimDomainOf(dim);
+          if (domain === undefined) {
+            err(
+              'C3',
+              `requirement ${r.ident}: applicability dimension "${dim}" not declared`,
+            );
+            continue;
+          }
+          if (domain === null) {
+            continue;
+          }
+          for (const raw of l.tokens) {
+            for (const v of raw.replace(/^\[|\]$/g, '').split(',')) {
+              const val = v.trim();
+              if (val !== '' && !domain.has(val)) {
+                err(
+                  'C3',
+                  `requirement ${r.ident}: applicability ${dim}="${val}" not in the dimension's values`,
+                );
+              }
+            }
+          }
+          for (const blk of l.blocks ?? []) {
+            for (const it of blk) {
+              if (it.kind !== 'line') {
+                continue;
+              }
+              const key = it.key!.replace(/:$/, '');
+              if (!domain.has(key)) {
+                err(
+                  'C3',
+                  `requirement ${r.ident}: applicability ${dim} mapping key "${key}" not in the dimension's values`,
+                );
+              }
+            }
+          }
+        }
+      }
+      // C6–C9 — the subject anatomy.
+      const ASPECT_FAMILY = new Map<string, string>([
+        ['metadata', 'is'],
+        ['provenance', 'is'],
+        ['structure', 'is'],
+        ['design_parameters', 'is'],
+        ['designed_conditions', 'is'],
+        ['promises', 'is'],
+        ['artifacts', 'is'],
+        ['endpoint', 'is'],
+        ['attributes', 'has'],
+        ['dimensions', 'has'],
+        ['state', 'has'],
+        ['characteristics', 'has'],
+        ['environmental_context', 'has'],
+        ['artifact_instances', 'has'],
+        ['serve', 'has'],
+        ['behavior', 'does'],
+      ]);
+      const CONDITION_TIERS = new Set(['reference', 'rated', 'limiting']);
+      for (const subj of pkg.constructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        const sid = subj.ident!;
+        const isB = nested(subj).find(n => n.keyword === 'is');
+        const has = nested(subj).find(n => n.keyword === 'has');
+        const does = nested(subj).find(n => n.keyword === 'does');
+        // C6 — every aspect under its family.
+        for (const [family, block] of [
+          ['is', isB],
+          ['has', has],
+          ['does', does],
+        ] as const) {
+          if (!block) {
+            continue;
+          }
+          const aspectNames = new Set<string>([
+            ...nested(block).map(n2 => n2.keyword),
+            ...lines(block)
+              .map(l => l.key!)
+              .filter(k => k !== 'behavior' && k !== 'serve'),
+          ]);
+          // The parser's own accepted keys per family — the misplaced
+          // record exists exactly for keys OUTSIDE these lists.
+          const ACCEPTED = new Map<string, Set<string>>([
+            [
+              'is',
+              new Set([
+                'metadata',
+                'provenance',
+                'structure',
+                'design_parameters',
+                'designed_conditions',
+                'promises',
+                'artifacts',
+                'endpoint',
+                'composed_of',
+              ]),
+            ],
+            [
+              'has',
+              new Set([
+                'attributes',
+                'dimensions',
+                'state',
+                'characteristics',
+                'environmental_context',
+                'artifact_instances',
+                'serve',
+              ]),
+            ],
+            ['does', new Set(['behavior'])],
+          ]);
+          for (const kw of aspectNames) {
+            if (ACCEPTED.get(family)?.has(kw)) {
+              continue;
+            }
+            const home = ASPECT_FAMILY.get(kw);
+            if (home !== undefined) {
+              err(
+                'C6',
+                `subject ${sid}: aspect "${kw}" declared under family "${family}" — it belongs to "${home}" (anatomy-family)`,
+              );
+            } else {
+              err(
+                'C6',
+                `subject ${sid}: undeclared aspect "${kw}" in family "${family}" (anatomy-family)`,
+              );
+            }
+          }
+        }
+        // The two value-level heuristics.
+        const dp = isB
+          ? nested(isB).find(n => n.keyword === 'design_parameters')
+          : undefined;
+        if (dp) {
+          for (const l of lines(dp)) {
+            for (const v of l.tokens) {
+              if (/test[-_]dependent/.test(v)) {
+                err(
+                  'C6',
+                  `subject ${sid}: design parameter "${l.key}" is test-dependent — exhibited values belong to has.attributes (anatomy-family)`,
+                );
+              }
+            }
+          }
+        }
+        const attrs = has
+          ? nested(has).find(n => n.keyword === 'attributes')
+          : undefined;
+        if (attrs) {
+          for (const l of lines(attrs)) {
+            if (CONDITION_TIERS.has(l.key!)) {
+              err(
+                'C6',
+                `subject ${sid}: attribute "${l.key}" is a condition tier — designed tiers belong to is.designed_conditions (anatomy-family)`,
+              );
+            }
+          }
+        }
+        // C7 — characteristics carry derivations.
+        const chars = has
+          ? nested(has).find(n => n.keyword === 'characteristics')
+          : undefined;
+        const charDerivs = new Map<
+          string,
+          { symbol?: string; derivation?: string; behavior?: string }
+        >();
+        if (chars) {
+          for (const l of lines(chars)) {
+            const name = l.key!;
+            let symbol: string | undefined;
+            let derivation: string | undefined;
+            let behavior: string | undefined;
+            const bi2 = l.tokens.indexOf('behavior');
+            for (let k = 0; k < l.tokens.length; k++) {
+              if (l.tokens[k] === '=') {
+                derivation = l.tokens
+                  .slice(k + 1, bi2 > k ? bi2 : l.tokens.length)
+                  .join(' ');
+                break;
+              }
+              if (k === 0) {
+                symbol = l.tokens[0];
+              }
+            }
+            if (bi2 > 0) {
+              behavior = l.tokens[bi2 + 1];
+            }
+            charDerivs.set(name, { symbol, derivation, behavior });
+            if (!derivation) {
+              err(
+                'C7',
+                `subject ${sid}: characteristic "${name}" names no derivation from behavior I/O (anatomy-characteristic-derivation)`,
+              );
+            }
+            if (behavior && !behaviorIdsB.has(behavior)) {
+              err(
+                'C49',
+                `subject ${sid}: characteristic "${name}" behavior "${behavior}" is not a declared behavior (characteristic-behavior-link)`,
+              );
+            }
+          }
+        }
+        // C50 — the derivation's reads resolve.
+        const OCL_KEYWORDS = new Set([
+          'self',
+          'and',
+          'or',
+          'xor',
+          'not',
+          'implies',
+          'true',
+          'false',
+          'null',
+          'if',
+          'then',
+          'else',
+          'endif',
+          'let',
+          'in',
+          'invalid',
+        ]);
+        const subjectParams = new Set<string>([
+          ...attrIdsB,
+          ...(dp
+            ? lines(dp)
+                .flatMap(l => [l.key ?? '', ...l.tokens])
+                .filter(x => x !== '')
+            : []),
+          ...(attrs
+            ? lines(attrs)
+                .map(l => l.key!)
+                .filter(x => x !== '')
+            : []),
+        ]);
+        const ioVocabulary = new Set<string>([...symbolIdsB, ...subjectParams]);
+        if (chars) {
+          for (const [name, info] of charDerivs) {
+            const deriv = info.derivation ?? '';
+            if (!/^ocl\{[\s\S]*\}$/.test(deriv.trim())) {
+              continue;
+            }
+            const body = deriv
+              .trim()
+              .replace(/^ocl\{/, '')
+              .replace(/\}$/, '');
+            const selfReads: string[] = [];
+            const bareReads: string[] = [];
+            for (const m of body.matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)) {
+              const id = m[0];
+              if (OCL_KEYWORDS.has(id)) {
+                continue;
+              }
+              const idx = m.index ?? 0;
+              if (
+                body
+                  .slice(idx + id.length)
+                  .trimStart()
+                  .startsWith('(')
+              ) {
+                continue;
+              }
+              const before = body.slice(0, idx);
+              if (before.endsWith('self.')) {
+                selfReads.push(id);
+              } else if (before.endsWith('.')) {
+                continue;
+              } else {
+                bareReads.push(id);
+              }
+            }
+            for (const id of selfReads) {
+              if (!subjectParams.has(id)) {
+                err(
+                  'C50',
+                  `subject ${sid}: characteristic "${name}" derivation reads self.${id}, which is not a declared subject parameter (design parameter, has.attribute, or attribute definition) — in \`${deriv}\` (characteristic-derivation-inputs)`,
+                );
+              }
+            }
+            for (const id of bareReads) {
+              if (!ioVocabulary.has(id)) {
+                err(
+                  'C50',
+                  `subject ${sid}: characteristic "${name}" derivation reads "${id}", which is not a declared symbol, attribute, or subject parameter (behavior I/O) — in \`${deriv}\` (characteristic-derivation-inputs)`,
+                );
+              }
+            }
+          }
+        }
+        // C8 — the does behaviors resolve.
+        if (does) {
+          for (const l of lines(does)) {
+            if (l.key === 'behavior') {
+              for (const b of l.tokens) {
+                if (!behaviorIdsB.has(b)) {
+                  err(
+                    'C8',
+                    `subject ${sid}: behavior "${b}" is not a declared behavior (anatomy-behavior-resolves)`,
+                  );
+                }
+              }
+            }
+          }
+          for (const n2 of nested(does).filter(n => n.keyword === 'behavior')) {
+            if (n2.ident && !behaviorIdsB.has(n2.ident)) {
+              err(
+                'C8',
+                `subject ${sid}: behavior "${n2.ident}" is not a declared behavior (anatomy-behavior-resolves)`,
+              );
+            }
+          }
+        }
+        // C9 — the extends target resolves.
+        const ext = lines(subj).find(l => l.key === 'extends')?.tokens[0];
+        if (ext && !subjectIdsB.has(ext)) {
+          issues.push({
+            rule: 'C9',
+            severity: 'warning',
+            message: `subject ${sid}: extends "${ext}" is not a declared subject (subject-extends-resolves)`,
+          });
+        }
+        // C48 — characteristic-one-home: once a subject declares
+        // characteristics, a verdict carrying its own derive shadows the
+        // primary model.
+        const anySubjectCharacteristics = pkg.constructs.some(x => {
+          if (x.keyword !== 'subject') {
+            return false;
+          }
+          const h2 = nested(x).find(n => n.keyword === 'has');
+          const ch2 = h2
+            ? nested(h2).find(n => n.keyword === 'characteristics')
+            : undefined;
+          return ch2 !== undefined && lines(ch2).length > 0;
+        });
+        if (anySubjectCharacteristics) {
+          for (const v of pkg.constructs.filter(
+            x => x.keyword === 'verdict' && x.ident,
+          )) {
+            const derive =
+              facetTokens(v.items, 'derive')[0] ??
+              (nested(v).find(n => n.keyword === 'derive') !== undefined
+                ? 'ocl{…}'
+                : undefined);
+            if (derive) {
+              err(
+                'C48',
+                `verdict ${v.ident}: carries a derivation outside the primary model — a verdict quantity derives ONCE in the subject's has.characteristics and is referenced everywhere else (characteristic-one-home)`,
+              );
+            }
+          }
+        }
+        // C42–C44 — the subject's promises.
+        const bareValueTargets = new Set<string>([
+          ...attrIdsB,
+          ...(dp
+            ? lines(dp)
+                .map(l => l.key!)
+                .filter(x => x !== '')
+            : []),
+          ...(attrs
+            ? lines(attrs)
+                .map(l => l.key!)
+                .filter(x => x !== '')
+            : []),
+        ]);
+        const characteristicNames = new Set([
+          ...charDerivs.keys(),
+          ...new Set(
+            [...charDerivs.values()]
+              .map(v => v.symbol)
+              .filter((x): x is string => !!x),
+          ),
+        ]);
+        const promisesBlock = isB
+          ? nested(isB).find(n => n.keyword === 'promises')
+          : undefined;
+        for (const p of promisesBlock ? nested(promisesBlock) : []) {
+          const target = facetTokens(p.items, 'target')[0];
+          const label =
+            p.ident || facetTokens(p.items, 'statement')[0] || '(a promise)';
+          const verifiedBy = nested(p).find(n => n.keyword === 'verified_by');
+          const verifiedByIds = verifiedBy ? rawTokensT(verifiedBy) : [];
+          const level = nested(p).find(n => n.keyword === 'level');
+          const levelQuantity =
+            level !== undefined &&
+            facetTokens(level.items, 'unit')[0] !== undefined;
+          if (!target) {
+            if (verifiedByIds.length === 0) {
+              issues.push({
+                rule: 'C43',
+                severity: 'warning',
+                message: `subject ${sid}: promise "${label}" has no target and no verified_by — it is unverifiable; give it a characteristic/behavior target or declare the verifying requirement/test (promise-verifiable)`,
+              });
+            }
+            continue;
+          }
+          const isCharacteristic = characteristicNames.has(target);
+          const isBehavior = behaviorIdsB.has(target);
+          if (!isCharacteristic && !isBehavior) {
+            if (bareValueTargets.has(target)) {
+              const restates =
+                levelQuantity &&
+                !facetTokens(p.items, 'conditions')[0] &&
+                verifiedByIds.length === 0;
+              if (restates) {
+                err(
+                  'C44',
+                  `subject ${sid}: promise "${label}" only restates the declared attribute value "${target}" — a promise claims a characteristic or behavior (optionally conditioned); bare values stay origin: declared attributes (promise-not-bare-value)`,
+                );
+              }
+            } else if (!dimDomainOf(target) && !symbolIdsB.has(target)) {
+              err(
+                'C42',
+                `subject ${sid}: promise "${label}" target "${target}" is not a declared characteristic, behavior, attribute, dimension, or symbol (promise-target-resolves)`,
+              );
+            }
+            continue;
+          }
+          if (verifiedByIds.length > 0) {
+            continue;
+          }
+          // C43 — derive the verification from the binding requirements/tests.
+          const names = new Set<string>([target]);
+          const sym = charDerivs.get(target)?.symbol;
+          if (sym) {
+            names.add(sym);
+          }
+          const boundReqs = new Set<string>();
+          for (const r of pkg.constructs.filter(
+            x => x.keyword === 'requirement' && x.ident,
+          )) {
+            let binds = false;
+            for (const lim of nested(r).filter(n => n.keyword === 'limit')) {
+              const uses = nested(lim).find(n => n.keyword === 'uses');
+              for (const u of uses ? rawTokensT(uses) : []) {
+                if (names.has(u) || names.has(u.split('.').pop() ?? '')) {
+                  binds = true;
+                }
+              }
+            }
+            const bindsTo = nested(r).find(n => n.keyword === 'binds_to');
+            for (const p2 of bindsTo ? rawTokensT(bindsTo) : []) {
+              if (names.has(p2.split('.').pop() ?? '')) {
+                binds = true;
+              }
+            }
+            if (binds) {
+              boundReqs.add(r.ident!);
+            }
+          }
+          let anyBoundTest = false;
+          for (const t of pkg.constructs.filter(
+            x => x.keyword === 'conformance_test' && x.ident,
+          )) {
+            const targets = nested(t).find(n => n.keyword === 'targets');
+            const tTargets = targets ? rawTokensT(targets) : [];
+            if (tTargets.some(x => boundReqs.has(x))) {
+              anyBoundTest = true;
+              break;
+            }
+            const vars = nested(t).find(n => n.keyword === 'variables');
+            if (vars && nested(vars).some(v => names.has(v.ident ?? ''))) {
+              anyBoundTest = true;
+              break;
+            }
+          }
+          if (boundReqs.size === 0 && !anyBoundTest) {
+            issues.push({
+              rule: 'C43',
+              severity: 'warning',
+              message: `subject ${sid}: promise "${label}" declares no verified_by and no requirement/test binds its target "${target}" — declare the verifying requirement or test (promise-verifiable)`,
+            });
+          }
+        }
+      }
+      // C42–C44 over the promise_set register.
+      for (const ps of pkg.constructs.filter(
+        x => x.keyword === 'promise_set' && x.ident,
+      )) {
+        const owner = pkg.constructs.find(
+          x => x.keyword === 'subject' && x.ident === ps.ident,
+        );
+        const ownerHas = owner
+          ? nested(owner).find(n => n.keyword === 'has')
+          : undefined;
+        const ownerChars = ownerHas
+          ? nested(ownerHas).find(n => n.keyword === 'characteristics')
+          : undefined;
+        const charNames = new Set<string>(
+          ownerChars ? lines(ownerChars).map(l => l.key!) : [],
+        );
+        for (const p of nested(ps)
+          .filter(n => n.keyword === 'promises')
+          .flatMap(n => nested(n))) {
+          const target = facetTokens(p.items, 'target')[0];
+          const label =
+            p.ident || facetTokens(p.items, 'statement')[0] || '(a promise)';
+          const where = `promise_set ${ps.ident}: promise "${label}"`;
+          const verifiedBy = nested(p).find(n => n.keyword === 'verified_by');
+          const verifiedByIds = verifiedBy ? rawTokensT(verifiedBy) : [];
+          if (!target) {
+            if (verifiedByIds.length === 0) {
+              issues.push({
+                rule: 'C43',
+                severity: 'warning',
+                message: `${where} has no target and no verified_by — it is unverifiable; give it a characteristic/behavior target or declare the verifying requirement/test (promise-verifiable)`,
+              });
+            }
+            continue;
+          }
+          if (!charNames.has(target) && !behaviorIdsB.has(target)) {
+            if (
+              !attrIdsB.has(target) &&
+              !symbolIdsB.has(target) &&
+              !dimDomainOf(target) &&
+              owner !== undefined
+            ) {
+              err(
+                'C42',
+                `${where} target "${target}" is not a declared characteristic, behavior, attribute, dimension, or symbol (promise-target-resolves)`,
+              );
+            }
+          }
+        }
+      }
+      // C18/C20 — the instance pins.
+      for (const inst of pkg.constructs.filter(
+        x => x.keyword === 'instance' && x.ident,
+      )) {
+        if (!nested(inst).find(n => n.keyword === 'definition_versions')) {
+          err(
+            'C18',
+            `instance ${inst.ident}: no definition_versions — every instance is version-pinned to its definitions (INV-8) (instance-version-pin)`,
+          );
+        }
+        const ofRef = lines(inst).find(l => l.key === 'of')?.tokens[0] ?? '';
+        if (
+          !subjectIdsB.has(ofRef) &&
+          !instanceIdsB.has(ofRef) &&
+          !classIdsB.has(ofRef) &&
+          !classBareB.has(ofRef)
+        ) {
+          err(
+            'C20',
+            `instance ${inst.ident}: of "${ofRef}" is not a declared subject, instrument, class, or instance (instance-of-resolves)`,
+          );
+        }
+      }
+      // C156 — class extends resolves.
+      for (const c2 of closureConstructs.filter(
+        x => x.keyword === 'class' && x.ident,
+      )) {
+        const ext = lines(c2).find(l => l.key === 'extends')?.tokens[0];
+        if (
+          ext &&
+          !classIdsB.has(ext) &&
+          !classBareB.has(ext) &&
+          !instanceIdsB.has(ext)
+        ) {
+          issues.push({
+            rule: 'C156',
+            severity: 'warning',
+            message: `class ${c2.ident}: extends "${ext}" is not a declared class or instance (class-extends-resolves)`,
+          });
+        }
+      }
+      // C168 — method refs (the local leg; the scoped leg is
+      // locator-gated and stays silent without one).
+      for (const t of pkg.constructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        const ref = facetTokens(t.items, 'method_ref')[0];
+        if (
+          ref &&
+          !ref.includes(':') &&
+          !processIdsB.has(ref) &&
+          !testIdsB.has(ref)
+        ) {
+          err(
+            'C168',
+            `conformance test ${t.ident}: the reference "${ref}" names no process or conformance test declared in this package (method-ref-resolves)`,
+          );
+        }
+      }
+      for (const pr of pkg.constructs.filter(
+        x => x.keyword === 'process' && x.ident,
+      )) {
+        const doesBody = nested(pr).find(n => n.keyword === 'does');
+        for (const st of doesBody
+          ? nested(doesBody).filter(n => n.keyword === 'step')
+          : []) {
+          const call = facetTokens(st.items, 'calls')[0];
+          if (call && !call.includes(':') && !processIdsB.has(call)) {
+            err(
+              'C168',
+              `${pr.ident}/step/${st.ident}: the reference "${call}" names no process or conformance test declared in this package (method-ref-resolves)`,
+            );
+          }
+        }
+      }
+      // C103 — ref predicates against the declared registry.
+      const predicateRegistry = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'predicate' && x.ident)
+          .map(x => x.ident!),
+      );
+      const predicatesBlock = closureConstructs.find(
+        x => x.keyword === 'predicates',
+      );
+      if (predicatesBlock) {
+        for (const p2 of nested(predicatesBlock)) {
+          predicateRegistry.add(p2.ident || p2.keyword);
+        }
+      }
+      if (predicateRegistry.size > 0) {
+        for (const owner of pkg.constructs.filter(
+          x =>
+            ['requirement', 'conformance_test', 'form'].includes(x.keyword) &&
+            x.ident,
+        )) {
+          for (const refs of nested(owner).filter(n => n.keyword === 'refs')) {
+            for (const ref of nested(refs).filter(n => n.keyword === 'ref')) {
+              const pred = facetTokens(ref.items, 'predicate')[0] ?? ref.ident;
+              if (pred && !predicateRegistry.has(pred)) {
+                err(
+                  'C103',
+                  `${owner.keyword} ${owner.ident}: ref predicate "${pred}" is not declared in the composed predicate registry (declared-predicate)`,
+                );
+              }
+            }
+          }
+        }
+      }
+      // C97/C98 — the certification program maps.
+      const manifestB = pkg.constructs.find(x => x.keyword === 'package');
+      const manifestId =
+        manifestB?.ident ??
+        (manifestB ? facetTokens(manifestB.items, 'id')[0] : undefined);
+      const manifestKind = manifestB
+        ? facetTokens(manifestB.items, 'kind')[0]
+        : undefined;
+      if (manifestB && manifestKind === 'certification_program') {
+        const mapsTo = nested(manifestB).find(n => n.keyword === 'maps_to');
+        const targets = mapsTo
+          ? rawTokensT(mapsTo)
+          : facetTokens(manifestB.items, 'maps_to');
+        const siblingIds = new Set(
+          (pkg.siblings ?? []).flatMap(s2 =>
+            s2.constructs
+              .filter(x => x.keyword === 'package')
+              .map(x => x.ident || facetTokens(x.items, 'id')[0] || ''),
+          ),
+        );
+        const siblingKinds = new Map<string, string>();
+        for (const s2 of pkg.siblings ?? []) {
+          for (const m2 of s2.constructs.filter(x => x.keyword === 'package')) {
+            const id2 = m2.ident || facetTokens(m2.items, 'id')[0] || '';
+            const kind2 = facetTokens(m2.items, 'id')
+              ? facetTokens(m2.items, 'kind')[0] || 'rec'
+              : 'rec';
+            siblingKinds.set(id2, kind2);
+          }
+        }
+        if (targets.length === 0) {
+          err(
+            'C97',
+            `package "${manifestId}": a certification program declares the Recommendation vocabulary it certifies against (maps_to) — a program that maps to nothing certifies nothing (program-maps-resolves)`,
+          );
+        }
+        for (const target of targets) {
+          if (!siblingIds.has(target) && !located?.packages.has(target)) {
+            err(
+              'C97',
+              `package "${manifestId}": maps_to "${target}" does not resolve to a known package — the requirement vocabulary a program certifies against must resolve (program-maps-resolves)`,
+            );
+          } else if (siblingKinds.get(target) === 'certification_program') {
+            err(
+              'C97',
+              `package "${manifestId}": maps_to "${target}" is itself a certification program — a program maps to the standards vocabulary, never to another program (program-maps-resolves)`,
+            );
+          } else if (siblingKinds.get(target) === 'product_reference') {
+            err(
+              'C97',
+              `package "${manifestId}": maps_to "${target}" is a product reference package — the product twin declarations a program certifies are pinned abstract imports (program-maps-resolves)`,
+            );
+          }
+        }
+        // C98 — the surveillance shapes.
+        const schemeType = facetTokens(manifestB.items, 'scheme_type')[0];
+        const NO_SURVEILLANCE = new Set(['type_1a', 'type_1b']);
+        if (schemeType && NO_SURVEILLANCE.has(schemeType)) {
+          const claims: string[] = [];
+          const monitors = pkg.constructs.filter(
+            x => x.keyword === 'monitor' && x.ident,
+          );
+          if (monitors.length > 0) {
+            claims.push(
+              `${monitors.length} monitor(s): ${monitors.map(m2 => m2.ident).join(', ')}`,
+            );
+          }
+          const surveillance = pkg.constructs.filter(
+            x =>
+              x.keyword === 'process' &&
+              x.ident &&
+              facetTokens(x.items, 'activity_kinds').includes('surveillance'),
+          );
+          if (surveillance.length > 0) {
+            claims.push(
+              `surveillance-classified process(es): ${surveillance.map(p2 => p2.ident).join(', ')}`,
+            );
+          }
+          if (claims.length > 0) {
+            issues.push({
+              rule: 'C98',
+              severity: 'warning',
+              message: `package "${manifestId}": scheme_type "${schemeType}" certifies a type sample with no surveillance, but the program declares ${claims.join(' and ')} — the ${schemeType} shape structurally can't say "continuously"; a surveillance-constitutive program self-classifies type_5 (ISO/IEC 17067 Table 1) (program-surveillance-required)`,
+            });
+          }
+        }
+      }
+    }
+
+    // ── Batch D wave 1: the spec planes — C86–C88 the passport, C150/
+    //     C151 the attestations, C106 dataspace governance provenance,
+    //     C162 namespace-coherence, C164 wire-mapping-coverage.
+    {
+      // C86–C88 — the model-native DPP.
+      const CONTENT_CLASSES = new Set([
+        'identity',
+        'composition',
+        'promises_as_verified',
+        'live_compliance_status',
+        'artifacts',
+        'sustainability',
+      ]);
+      const UPI_LEVELS = new Set(['model', 'batch', 'item']);
+      const subjectIdsD = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'subject' && x.ident)
+          .map(x => x.ident!),
+      );
+      const compositionIds = new Set<string>();
+      const passportPromises = new Set<string>();
+      const subjectArtifacts = new Set<string>();
+      for (const subj of pkg.constructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        const isB = nested(subj).find(n => n.keyword === 'is');
+        const has = nested(subj).find(n => n.keyword === 'has');
+        const structure = isB
+          ? nested(isB).find(n => n.keyword === 'structure')
+          : undefined;
+        if (structure) {
+          compositionIds.add(
+            ...lines(structure)
+              .flatMap(l => [l.key ?? '', ...l.tokens])
+              .filter(x => x !== ''),
+          );
+        }
+        const dp = isB
+          ? nested(isB).find(n => n.keyword === 'design_parameters')
+          : undefined;
+        if (dp) {
+          compositionIds.add(
+            ...lines(dp)
+              .map(l => l.key!)
+              .filter(x => x !== ''),
+          );
+        }
+        const chars = has
+          ? nested(has).find(n => n.keyword === 'characteristics')
+          : undefined;
+        if (chars) {
+          compositionIds.add(
+            ...lines(chars)
+              .map(l => l.key!)
+              .filter(x => x !== ''),
+          );
+        }
+        for (const l of has ? lines(has).filter(x => x.key === 'serve') : []) {
+          if (l.tokens[0]) {
+            compositionIds.add(l.tokens[0]);
+          }
+        }
+        const promises = isB
+          ? nested(isB).find(n => n.keyword === 'promises')
+          : undefined;
+        for (const p2 of promises ? nested(promises) : []) {
+          const nm = p2.ident || p2.keyword;
+          if (nm) {
+            passportPromises.add(nm);
+          }
+        }
+        const arts = isB
+          ? nested(isB).find(n => n.keyword === 'artifacts')
+          : undefined;
+        if (arts) {
+          subjectArtifacts.add(
+            ...arts.items
+              .flatMap(i2 =>
+                i2.kind === 'raw'
+                  ? i2.tokens
+                  : i2.kind === 'line'
+                    ? [i2.key ?? '', ...i2.tokens]
+                    : i2.kind === 'construct' && i2.construct
+                      ? [i2.construct.ident || i2.construct.keyword]
+                      : [],
+              )
+              .filter(x => x !== ''),
+          );
+        }
+      }
+      const artifactDefIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'artifact_definition' && x.ident)
+          .map(x => x.ident!),
+      );
+      const monitorIdsD = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'monitor' && x.ident)
+          .map(x => x.ident!),
+      );
+      const CONTENT_DOMAINS: Record<string, Set<string> | null> = {
+        identity: subjectIdsD,
+        composition: compositionIds,
+        promises_as_verified: passportPromises,
+        live_compliance_status: new Set([...monitorIdsD, ...passportPromises]),
+        artifacts: new Set([...artifactDefIds, ...subjectArtifacts]),
+        sustainability: null,
+      };
+      for (const pp of pkg.constructs.filter(
+        x => x.keyword === 'passport' && x.ident,
+      )) {
+        const entries: { cls: string; ref: string; access: string }[] = [];
+        for (const l of lines(pp).filter(x => x.key === 'entry')) {
+          const t2 = l.tokens;
+          if (t2.length < 2) {
+            continue;
+          }
+          const dotted = t2[0]!.split('.');
+          entries.push({
+            cls: dotted[0]!,
+            ref: dotted.length > 1 ? dotted.slice(1).join('.') : '',
+            access: t2[1]!,
+          });
+        }
+        const tokens = new Set(
+          entries.map(e2 => (e2.ref === '' ? e2.cls : `${e2.cls}.${e2.ref}`)),
+        );
+        const publicBare = new Set(
+          entries
+            .filter(e2 => e2.access === 'public' && e2.ref === '')
+            .map(e2 => e2.cls),
+        );
+        for (const e2 of entries) {
+          if (!CONTENT_CLASSES.has(e2.cls)) {
+            err(
+              'C86',
+              `passport ${pp.ident}: content entry "${e2.ref === '' ? e2.cls : `${e2.cls}.${e2.ref}`}" names an unknown content class — one of identity | composition | promises_as_verified | live_compliance_status | artifacts | sustainability (passport-content-resolves)`,
+            );
+            continue;
+          }
+          if (e2.ref !== '') {
+            const domain = CONTENT_DOMAINS[e2.cls];
+            if (
+              domain !== null &&
+              domain !== undefined &&
+              !domain.has(e2.ref)
+            ) {
+              err(
+                'C86',
+                `passport ${pp.ident}: content entry "${e2.cls}.${e2.ref}" — "${e2.ref}" does not resolve against the package's declared aspects/promises (the passport projection contains only aspects that resolve, §15.9) (passport-content-resolves)`,
+              );
+            }
+          }
+          if (e2.access === 'restricted' || e2.access === 'authority') {
+            const token = e2.ref === '' ? e2.cls : `${e2.cls}.${e2.ref}`;
+            if (
+              (tokens.has(token) &&
+                entries.some(
+                  x2 =>
+                    x2.access === 'public' &&
+                    (x2.ref === '' ? x2.cls : `${x2.cls}.${x2.ref}`) === token,
+                )) ||
+              publicBare.has(e2.cls)
+            ) {
+              err(
+                'C87',
+                `passport ${pp.ident}: entry "${token}" is marked ${e2.access} but reachable from the public class — public classes contain nothing marked restricted (§15.9) (passport-access-leak)`,
+              );
+            }
+          }
+        }
+        const upi = nested(pp).find(n => n.keyword === 'upi');
+        const pattern = upi ? facetTokens(upi.items, 'pattern')[0] : undefined;
+        const level = upi ? facetTokens(upi.items, 'level')[0] : undefined;
+        if (!pattern) {
+          err(
+            'C88',
+            `passport ${pp.ident}: declares no UPI pattern — a passport is reached through its unique product identifier (upi { pattern … level … }) (passport-upi-scheme)`,
+          );
+        }
+        if (!level) {
+          err(
+            'C88',
+            `passport ${pp.ident}: the UPI pattern declares no level — the ESPR unique product identifier is model | batch | item level (passport-upi-scheme)`,
+          );
+        } else if (!UPI_LEVELS.has(level)) {
+          err(
+            'C88',
+            `passport ${pp.ident}: UPI level "${level}" is not one of model | batch | item (passport-upi-scheme)`,
+          );
+        }
+      }
+      // C150/C151 — the attestations.
+      const instanceIdsD = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'instance' && x.ident)
+          .map(x => x.ident!),
+      );
+      const roleIdsD = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'role' && x.ident)
+          .map(x => x.ident!),
+      );
+      const verdictIdsD = new Set(
+        pkg.constructs
+          .filter(x => x.keyword === 'verdict' && x.ident)
+          .map(x => x.ident!),
+      );
+      // The promise-set views: promise_set registers AND subjects carrying
+      // is.promises (the kernel's setViews).
+      const setViews = new Map<string, Construct[]>();
+      const promiseName = (p2: Construct): string => p2.ident || p2.keyword;
+      for (const ps of pkg.constructs.filter(
+        x => x.keyword === 'promise_set' && x.ident,
+      )) {
+        const promises = nested(ps).find(n => n.keyword === 'promises');
+        setViews.set(
+          ps.ident!,
+          (promises ? nested(promises) : []).map(p2 => ({
+            ...p2,
+            ident: promiseName(p2),
+          })),
+        );
+      }
+      for (const subj of pkg.constructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        const isB = nested(subj).find(n => n.keyword === 'is');
+        const promises = isB
+          ? nested(isB).find(n => n.keyword === 'promises')
+          : undefined;
+        const list = promises ? nested(promises) : [];
+        if (list.length > 0) {
+          setViews.set(
+            subj.ident!,
+            list.map(p2 => ({ ...p2, ident: promiseName(p2) })),
+          );
+        }
+      }
+      for (const a of pkg.constructs.filter(
+        x => x.keyword === 'attestation' && x.ident,
+      )) {
+        const subjectRef = facetTokens(a.items, 'subject')[0];
+        if (!subjectRef) {
+          err(
+            'C150',
+            `attestation ${a.ident}: no subject facet (attestation-references-resolve)`,
+          );
+        } else if (!instanceIdsD.has(subjectRef)) {
+          err(
+            'C150',
+            `attestation ${a.ident}: subject "${subjectRef}" is not a declared instance (attestation-references-resolve)`,
+          );
+        }
+        const promisesRef = facetTokens(a.items, 'promises')[0];
+        if (!promisesRef) {
+          err(
+            'C150',
+            `attestation ${a.ident}: no promises facet (attestation-references-resolve)`,
+          );
+        }
+        const set =
+          promisesRef !== undefined
+            ? (setViews.get(promisesRef) ??
+              setViews.get(promisesRef.split('.').slice(1).join('.')) ??
+              null)
+            : null;
+        if (promisesRef !== undefined && set === null) {
+          err(
+            'C150',
+            `attestation ${a.ident}: promises "${promisesRef}" does not resolve to a declared promise set (attestation-references-resolve)`,
+          );
+        }
+        for (const basis of nested(a).filter(n => n.keyword === 'basis')) {
+          for (const l of lines(basis)) {
+            const kind =
+              l.key === 'kind'
+                ? l.tokens[0]
+                : facetTokens([l as unknown as Item], 'kind')[0];
+            void kind;
+          }
+          // The basis entries: greedy lines [kind, id] — the first token
+          // pair of each run.
+          const t2 = lines(basis).flatMap(l => [l.key ?? '', ...l.tokens]);
+          for (let k = 0; k + 1 < t2.length; k += 2) {
+            if (!t2[k] || !t2[k + 1]) {
+              err(
+                'C150',
+                `attestation ${a.ident}: a basis entry needs an evidence kind and an id (attestation-references-resolve)`,
+              );
+            }
+          }
+        }
+        const authority = nested(a).find(n => n.keyword === 'authority');
+        const role = authority
+          ? facetTokens(authority.items, 'role')[0]
+          : undefined;
+        if (role && roleIdsD.size > 0 && !roleIdsD.has(role)) {
+          err(
+            'C150',
+            `attestation ${a.ident}: authority role "${role}" is not a declared role (attestation-references-resolve)`,
+          );
+        }
+        const claimsBlock = nested(a).find(n => n.keyword === 'claims');
+        const claims = claimsBlock
+          ? nested(claimsBlock).filter(n => n.keyword === 'claim')
+          : [];
+        const carried = new Set(claims.map(c2 => c2.ident ?? ''));
+        const mandatory = new Set(
+          (set ?? [])
+            .filter(
+              p2 => facetTokens(p2.items, 'obligation')[0] === 'mandatory',
+            )
+            .map(p2 => p2.ident ?? ''),
+        );
+        for (const c2 of claims) {
+          const pid = c2.ident ?? '';
+          if (set !== null && !set.some(p2 => (p2.ident ?? '') === pid)) {
+            err(
+              'C150',
+              `attestation ${a.ident}: claim "${pid}" is not a promise of "${promisesRef}" (attestation-references-resolve)`,
+            );
+          }
+          const declared = facetTokens(c2.items, 'declared')[0];
+          if (!declared) {
+            err(
+              'C151',
+              `attestation ${a.ident}: claim "${pid}" carries no declaration reference (attestation-claim-lineage)`,
+            );
+          }
+          const validatedBy = facetTokens(c2.items, 'validated_by')[0];
+          if (!validatedBy) {
+            err(
+              'C151',
+              `attestation ${a.ident}: claim "${pid}" carries no verdict reference (attestation-claim-lineage)`,
+            );
+          } else if (
+            verdictIdsD.size > 0 &&
+            !validatedBy.startsWith('/') &&
+            !verdictIdsD.has(validatedBy)
+          ) {
+            err(
+              'C150',
+              `attestation ${a.ident}: claim "${pid}" names verdict "${validatedBy}", which is not declared (attestation-references-resolve)`,
+            );
+          }
+        }
+        if (set !== null) {
+          for (const pid of mandatory) {
+            if (!carried.has(pid)) {
+              err(
+                'C151',
+                `attestation ${a.ident}: the mandatory promise "${pid}" of "${promisesRef}" is carried by no claim — a mandatory characteristic is carried by lineage, never restated (attestation-claim-lineage)`,
+              );
+            }
+          }
+        }
+      }
+      // C106 — dataspace governance provenance.
+      for (const d2 of closureConstructs.filter(
+        x => x.keyword === 'dataspace' && x.ident,
+      )) {
+        const hasSourceRefs = nested(d2).some(
+          n => n.keyword === 'sourceRefs' || n.keyword === 'sourceRef',
+        );
+        const sourceLine = lines(d2).some(l => l.key === 'source');
+        const refLine = lines(d2).some(l => l.key === 'ref');
+        if (!hasSourceRefs && !sourceLine && !refLine) {
+          issues.push({
+            rule: 'C106',
+            severity: 'warning',
+            message: `dataspace ${d2.ident}: the dataspace cites no governance clause — the definition's charter is its clause-cited provenance (ref derives-from); an orphan definition is a warning, never silent (dataspace-governance-provenance)`,
+          });
+        }
+      }
+      // C162 — namespace-coherence.
+      const namespaceIdsD = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'namespace' && x.ident)
+          .map(x => x.ident!),
+      );
+      const metadata = pkg.constructs.find(x => x.keyword === 'metadata');
+      const metaNs = metadata
+        ? facetTokens(metadata.items, 'namespace')[0]
+        : undefined;
+      if (metaNs && namespaceIdsD.size > 0 && !namespaceIdsD.has(metaNs)) {
+        err(
+          'C162',
+          `metadata namespace "${metaNs}" names no declared namespace block (namespace-coherence)`,
+        );
+      }
+      // C164 — wire-mapping-coverage.
+      const MAPPING_FORMATS = new Set(['xml', 'yaml', 'json', 'toml', 'csv']);
+      const dataclassIdsD = new Set<string>();
+      for (const c2 of closureConstructs.filter(
+        x => x.keyword === 'class' && x.ident,
+      )) {
+        dataclassIdsD.add(c2.ident!);
+        if (c2.ident!.includes('#')) {
+          dataclassIdsD.add(c2.ident!.slice(0, c2.ident!.indexOf('#')));
+        }
+      }
+      for (const w of closureConstructs.filter(x => x.keyword === 'mapping')) {
+        if (w.format && !MAPPING_FORMATS.has(w.format)) {
+          err(
+            'C164',
+            `mapping ${w.format}:${w.ident}: format "${w.format}" is outside the wire vocabulary (xml|yaml|json|toml|csv) (wire-mapping-coverage)`,
+          );
+        }
+        if (
+          dataclassIdsD.size > 0 &&
+          w.ident &&
+          !dataclassIdsD.has(w.ident) &&
+          !dataclassIdsD.has(`${w.format}:${w.ident}`)
+        ) {
+          err(
+            'C164',
+            `mapping ${w.ident}: the class "${w.ident}" is no declared dataclass — a class serialized to a format carries the declared mapping (wire-mapping-coverage)`,
+          );
+        }
+      }
+    }
+
+    // ── Batch D wave 2: the typed transition boundaries — C74 one
+    //     name one type, C75 the action-chain dataflow, C76 the calls
+    //     bindings. Boundary types resolve to KINDS through the
+    //     package's quantity registers (kind id directly, or a unit id/
+    //     symbol via its kind); unresolved tokens compare as plain type
+    //     names; untyped composes with anything.
+    {
+      const kindDeclW2 = new Set<string>();
+      const unitKindW2 = new Map<string, string>();
+      for (const reg of closureConstructs.filter(
+        x => x.keyword === 'quantity_register' && x.ident,
+      )) {
+        for (const k of nested(reg).filter(
+          n => n.keyword === 'kind' && n.ident,
+        )) {
+          kindDeclW2.add(k.ident!);
+        }
+        for (const u of nested(reg).filter(
+          n => n.keyword === 'unit' && n.ident,
+        )) {
+          const kind = facetTokens(u.items, 'kind')[0];
+          if (kind) {
+            unitKindW2.set(u.ident!, kind);
+            const sym = facetTokens(u.items, 'symbol')[0];
+            if (sym) {
+              unitKindW2.set(sym, kind);
+            }
+          }
+        }
+      }
+      type ResolvedT = { kind: string } | { token: string } | null;
+      const resolveParamType = (type: string): ResolvedT => {
+        const t2 = (type ?? '').trim();
+        if (t2 === '') {
+          return null;
+        }
+        if (kindDeclW2.has(t2)) {
+          return { kind: t2 };
+        }
+        const k = unitKindW2.get(t2);
+        if (k !== undefined) {
+          return { kind: k };
+        }
+        return { token: t2 };
+      };
+      const typesCompatible = (a: ResolvedT, b: ResolvedT): boolean => {
+        if (a === null || b === null) {
+          return true;
+        }
+        if ('kind' in a && 'kind' in b) {
+          return a.kind === b.kind;
+        }
+        if ('token' in a && 'token' in b) {
+          return a.token === b.token;
+        }
+        return false;
+      };
+      const processByIdW2 = new Map(
+        pkg.constructs
+          .filter(x => x.keyword === 'process' && x.ident)
+          .map(x => [x.ident!, x]),
+      );
+      // signature { in { name : type … } out { … } } — map entries.
+      const sigParamsOf = (
+        p2: Construct,
+        direction: 'in' | 'out',
+      ): { name: string; type: string }[] => {
+        const sig = nested(p2).find(n => n.keyword === 'signature');
+        if (!sig) {
+          return [];
+        }
+        const dir = nested(sig).find(n => n.keyword === direction);
+        return (dir ? lines(dir) : []).map(l => ({
+          name: l.key ?? '',
+          type: l.tokens[0] ?? '',
+        }));
+      };
+      // registers { name : type … } — entries directly on the block.
+      const registersOf = (p2: Construct): { name: string; type: string }[] => {
+        const regs = nested(p2).find(n => n.keyword === 'registers');
+        return (regs ? lines(regs) : []).map(l => ({
+          name: l.key ?? '',
+          type: l.tokens[0] ?? '',
+        }));
+      };
+      // The calls bindings: `calls X { with { in { param : bind } out { … } } }`.
+      const readBindingsOf = (
+        calls: Construct,
+        dirName: 'in' | 'out',
+      ): { param: string; bind: string }[] => {
+        const withB = nested(calls).find(n => n.keyword === 'with');
+        const dir = withB
+          ? nested(withB).find(n => n.keyword === dirName)
+          : undefined;
+        return (dir ? lines(dir) : []).map(l => ({
+          param: l.key ?? '',
+          bind: l.tokens[0] ?? '',
+        }));
+      };
+      for (const p2 of pkg.constructs.filter(
+        x => x.keyword === 'process' && x.ident,
+      )) {
+        const sites = new Map<string, { pos: string; type: string }[]>();
+        const note = (pos: string, name: string, type: string) => {
+          if (name !== '') {
+            sites.set(name, [...(sites.get(name) ?? []), { pos, type }]);
+          }
+        };
+        for (const prm of sigParamsOf(p2, 'in')) {
+          note('signature in', prm.name, prm.type);
+        }
+        for (const prm of sigParamsOf(p2, 'out')) {
+          note('signature out', prm.name, prm.type);
+        }
+        for (const prm of registersOf(p2)) {
+          note('registers', prm.name, prm.type);
+        }
+        // C74 — one name, ONE type.
+        for (const [name, decls] of sites) {
+          let conflict: { a: string; b: string } | null = null;
+          for (let x = 0; x < decls.length && !conflict; x++) {
+            for (let y = x + 1; y < decls.length && !conflict; y++) {
+              if (
+                !typesCompatible(
+                  resolveParamType(decls[x]!.type),
+                  resolveParamType(decls[y]!.type),
+                )
+              ) {
+                conflict = {
+                  a: `${decls[x]!.pos} "${decls[x]!.type}"`,
+                  b: `${decls[y]!.pos} "${decls[y]!.type}"`,
+                };
+              }
+            }
+          }
+          if (conflict) {
+            err(
+              'C74',
+              `process ${p2.ident}: "${name}" declares incompatible types — ${conflict.a} vs ${conflict.b} — one name, one type at a transition boundary (process-io-type-coherence)`,
+            );
+          }
+        }
+        const doesBody = nested(p2).find(n => n.keyword === 'does');
+        if (!doesBody) {
+          continue;
+        }
+        const actions = nested(doesBody).filter(n => n.keyword === 'action');
+        const actionById = new Map(actions.map(a2 => [a2.ident ?? '', a2]));
+        const readsOf = (a2: Construct): Set<string> => {
+          const out = new Set<string>();
+          for (const key of ['read', 'wait']) {
+            const blk = nested(a2).find(n => n.keyword === key);
+            if (blk) {
+              for (const l of lines(blk)) {
+                if (l.key && l.key !== key) {
+                  out.add(l.key);
+                }
+                for (const t2 of l.tokens) {
+                  out.add(t2);
+                }
+              }
+            } else {
+              for (const t2 of facetTokens(a2.items, key)) {
+                out.add(t2);
+              }
+            }
+          }
+          const calls = nested(a2).find(n => n.keyword === 'calls');
+          if (calls) {
+            for (const b2 of readBindingsOf(calls, 'in')) {
+              if (b2.bind !== '') {
+                out.add(b2.bind);
+              }
+            }
+          }
+          out.delete('');
+          return out;
+        };
+        const writesOf = (a2: Construct): Set<string> => {
+          const out = new Set<string>();
+          const write = nested(a2).find(n => n.keyword === 'write');
+          if (write) {
+            for (const l of lines(write)) {
+              if (l.key && l.key !== 'write') {
+                out.add(l.key);
+              }
+              for (const t2 of l.tokens) {
+                out.add(t2);
+              }
+            }
+            for (const i2 of write.items) {
+              if (i2.kind === 'raw') {
+                for (const t2 of i2.tokens) {
+                  out.add(t2);
+                }
+              }
+            }
+          }
+          const calls = nested(a2).find(n => n.keyword === 'calls');
+          if (calls) {
+            for (const b2 of readBindingsOf(calls, 'out')) {
+              if (b2.bind !== '') {
+                out.add(b2.bind);
+              }
+            }
+          }
+          out.delete('');
+          return out;
+        };
+        const declaredNames = new Set<string>(['state', ...sites.keys()]);
+        const provided = new Set<string>(['state']);
+        for (const prm of sigParamsOf(p2, 'in')) {
+          provided.add(prm.name);
+        }
+        // flow { s -> run -> e when "cond" } — the edges.
+        const edgeRuns: { from: string; to: string; when?: string }[] = [];
+        const flowBlock = nested(doesBody).find(n => n.keyword === 'flow');
+        if (flowBlock) {
+          for (const l of lines(flowBlock)) {
+            const t2 = [l.key ?? '', ...l.tokens];
+            for (let k2 = 1; k2 < t2.length; k2++) {
+              if (t2[k2] !== '->') {
+                continue;
+              }
+              const wi = t2.indexOf('when');
+              edgeRuns.push({
+                from: t2[k2 - 1]!,
+                to: t2[k2 + 1] ?? '',
+                when: wi > k2 ? t2[wi + 1] : undefined,
+              });
+            }
+          }
+        }
+        const condReads = new Map<string, Set<string>>();
+        for (const e of edgeRuns) {
+          for (const m of (e.when ?? '').matchAll(
+            /\bself\.([A-Za-z_][A-Za-z0-9_]*)/g,
+          )) {
+            condReads.set(
+              e.from,
+              (condReads.get(e.from) ?? new Set()).add(m[1]!),
+            );
+          }
+        }
+        // C75 — the must-analysis: definitely-written on EVERY incoming
+        // path, shrink-to-fixpoint from the top.
+        const allWritten = new Set<string>();
+        for (const a2 of actions) {
+          writesOf(a2).forEach(n2 => allWritten.add(n2));
+        }
+        const preds = new Map<string, string[]>();
+        for (const e of edgeRuns) {
+          if (actionById.has(e.from) && actionById.has(e.to)) {
+            preds.set(e.to, [...(preds.get(e.to) ?? []), e.from]);
+          }
+        }
+        const availIn = new Map<string, Set<string>>();
+        for (const a2 of actions) {
+          availIn.set(a2.ident ?? '', new Set(allWritten));
+        }
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const a2 of actions) {
+            const sid = a2.ident ?? '';
+            const ps = preds.get(sid) ?? [];
+            let next = new Set<string>();
+            if (ps.length > 0) {
+              next = new Set(allWritten);
+              for (const pid of ps) {
+                const pOut = new Set([
+                  ...(availIn.get(pid) ?? []),
+                  ...writesOf(actionById.get(pid)!),
+                ]);
+                next = new Set([...next].filter(n2 => pOut.has(n2)));
+              }
+            }
+            const cur = availIn.get(sid)!;
+            if (next.size !== cur.size || [...next].some(n2 => !cur.has(n2))) {
+              availIn.set(sid, next);
+              changed = true;
+            }
+          }
+        }
+        for (const a2 of actions) {
+          const sid = a2.ident ?? '';
+          for (const n2 of readsOf(a2)) {
+            if (!declaredNames.has(n2) || provided.has(n2)) {
+              continue;
+            }
+            if (!(availIn.get(sid) ?? new Set<string>()).has(n2)) {
+              err(
+                'C75',
+                `process ${p2.ident}: action "${sid}" reads "${n2}", which is neither an IN parameter/instance value nor written on every incoming flow path (process-flow-io-cover)`,
+              );
+            }
+          }
+          for (const n2 of condReads.get(sid) ?? new Set<string>()) {
+            if (!declaredNames.has(n2) || provided.has(n2)) {
+              continue;
+            }
+            if (
+              !new Set([...(availIn.get(sid) ?? []), ...writesOf(a2)]).has(n2)
+            ) {
+              err(
+                'C75',
+                `process ${p2.ident}: the edge condition at "${sid}" reads "${n2}", which is neither an IN parameter/instance value nor written on every incoming flow path (process-flow-io-cover)`,
+              );
+            }
+          }
+        }
+        // The dead-write warning leg.
+        const allRead = new Set<string>();
+        for (const a2 of actions) {
+          readsOf(a2).forEach(n2 => allRead.add(n2));
+        }
+        for (const names of condReads.values()) {
+          names.forEach(n2 => allRead.add(n2));
+        }
+        const outNames = new Set(sigParamsOf(p2, 'out').map(o2 => o2.name));
+        for (const a2 of actions) {
+          if (facetTokens(a2.items, 'capture')[0] === 'true') {
+            continue;
+          }
+          for (const n2 of writesOf(a2)) {
+            if (!declaredNames.has(n2)) {
+              continue;
+            }
+            if (!allRead.has(n2) && !outNames.has(n2)) {
+              issues.push({
+                rule: 'C75',
+                severity: 'warning',
+                message: `process ${p2.ident}: action "${a2.ident}" writes "${n2}", which no action reads and no OUT parameter names — a dead output (process-flow-io-cover)`,
+              });
+            }
+          }
+        }
+        // C76 — the calls bindings.
+        for (const a2 of actions) {
+          const calls = nested(a2).find(n => n.keyword === 'calls');
+          if (!calls) {
+            continue;
+          }
+          const calleeName =
+            calls.ident || (facetTokens(calls.items, 'target')[0] ?? '');
+          const callee = processByIdW2.get(calleeName);
+          if (!callee) {
+            err(
+              'C76',
+              `process ${p2.ident}: action "${a2.ident}" calls "${calleeName}", which is not a declared process (subprocess-signature-bound)`,
+            );
+            continue;
+          }
+          const checkBindings = (
+            direction: 'IN' | 'OUT',
+            params: { name: string; type: string }[],
+            bindings: { param: string; bind: string }[],
+          ): void => {
+            for (const prm of params) {
+              const bs = bindings.filter(b2 => b2.param === prm.name);
+              if (bs.length === 0) {
+                err(
+                  'C76',
+                  `process ${p2.ident}: action "${a2.ident}" calls "${calleeName}": ${direction} parameter "${prm.name}" is not ${direction === 'IN' ? 'bound from a caller register' : 'mapped back to a caller register'} — the signature binds completely (subprocess-signature-bound)`,
+                );
+              } else if (bs.length > 1) {
+                err(
+                  'C76',
+                  `process ${p2.ident}: action "${a2.ident}" calls "${calleeName}": ${direction} parameter "${prm.name}" is bound ${bs.length} times — exactly once (subprocess-signature-bound)`,
+                );
+              }
+            }
+            for (const b2 of bindings) {
+              const prm = params.find(q2 => q2.name === b2.param);
+              if (!prm) {
+                err(
+                  'C76',
+                  `process ${p2.ident}: action "${a2.ident}" calls "${calleeName}": "${b2.param}" is not a declared ${direction} parameter of the callee (subprocess-signature-bound)`,
+                );
+                continue;
+              }
+              const callerType = sites.get(b2.bind)?.[0]?.type;
+              if (callerType === undefined) {
+                continue;
+              }
+              if (
+                !typesCompatible(
+                  resolveParamType(callerType),
+                  resolveParamType(prm.type),
+                )
+              ) {
+                err(
+                  'C76',
+                  `process ${p2.ident}: action "${a2.ident}" calls "${calleeName}": caller "${b2.bind}" (${callerType || 'untyped'}) and ${direction} parameter "${b2.param}" (${prm.type || 'untyped'}) are not kind-compatible (subprocess-signature-bound)`,
+                );
+              }
+            }
+          };
+          checkBindings(
+            'IN',
+            sigParamsOf(callee, 'in'),
+            readBindingsOf(calls, 'in'),
+          );
+          checkBindings(
+            'OUT',
+            sigParamsOf(callee, 'out'),
+            readBindingsOf(calls, 'out'),
           );
         }
       }
@@ -3144,6 +7849,390 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
               'C179',
               `uncertainty_budget ${b.ident}: component ${comp.ident} is Type B but states no half_width (uncertainty-budget-resolves)`,
             );
+          }
+        }
+      }
+    }
+  }
+
+  // ── Batch C: the coverage plane — C5 the req⇄test closure, C53/C54
+  //     the uses anchoring, and the allowlist
+  //     applied BY THIS IMPLEMENTATION (C57's stale ratchet + C55's
+  //     coverage budget) — the second pair of eyes on the KNOWN
+  //     register, judging the retirement waves' entry retirement.
+  {
+    const rawTokensC = (c2: Construct): string[] =>
+      c2.items.flatMap(i2 =>
+        i2.kind === 'raw'
+          ? i2.tokens
+          : i2.kind === 'line'
+            ? [i2.key ?? '', ...i2.tokens]
+            : [],
+      );
+    const reqIdsC = new Set(
+      pkg.constructs
+        .filter(x => x.keyword === 'requirement' && x.ident)
+        .map(x => x.ident!),
+    );
+    const symbolIdsC = new Set(
+      closureConstructs
+        .filter(x => x.keyword === 'symbol' && x.ident)
+        .map(x => x.ident!),
+    );
+    const attrIdsC = new Set(
+      closureConstructs
+        .filter(x => x.keyword === 'attribute_definition' && x.ident)
+        .map(x => x.ident!),
+    );
+    const behaviorIdsC = new Set(
+      closureConstructs
+        .filter(x => x.keyword === 'behavior' && x.ident)
+        .map(x => x.ident!),
+    );
+    const dimIdsC = new Set<string>();
+    for (const c2 of closureConstructs.filter(
+      x => x.keyword === 'dimension' && x.ident,
+    )) {
+      dimIdsC.add(c2.ident!);
+    }
+    for (const inst of closureConstructs.filter(
+      x => x.keyword === 'instrument' && x.ident,
+    )) {
+      for (const d2 of nested(inst).filter(n => n.keyword === 'dimension')) {
+        if (d2.ident) {
+          dimIdsC.add(d2.ident);
+        }
+      }
+    }
+    const classMembersC = new Map<string, string[]>();
+    for (const rc of pkg.constructs.filter(
+      x => x.keyword === 'requirement_class' && x.ident,
+    )) {
+      const members = nested(rc).find(n => n.keyword === 'members');
+      classMembersC.set(
+        rc.ident!,
+        members ? rawTokensC(members).filter(x => x !== '') : [],
+      );
+    }
+    const NON_TEST_VERIFICATION = new Set([
+      'definitional',
+      'examination',
+      'inspection',
+      'documentation',
+      'computational',
+      'deferred',
+      'implicit',
+    ]);
+    const covered = new Set<string>();
+    const coverWithMembers = (id: string): void => {
+      covered.add(id);
+      for (const m of classMembersC.get(id) ?? []) {
+        covered.add(m);
+      }
+    };
+    for (const t of pkg.constructs.filter(
+      x => x.keyword === 'conformance_test' && x.ident,
+    )) {
+      const targets = nested(t).find(n => n.keyword === 'targets');
+      if (targets) {
+        for (const id of rawTokensC(targets)) {
+          coverWithMembers(id);
+        }
+      }
+    }
+    const provisioned = new Set<string>();
+    for (const p2 of pkg.constructs.filter(
+      x => x.keyword === 'process' && x.ident,
+    )) {
+      for (const u of facetTokens(p2.items, 'provision_refs')) {
+        provisioned.add(u);
+      }
+      // Both spellings: provision_refs and the OIML-CS validate_provision
+      // channel (the abstract-process doctrine's coverage route).
+      for (const prName of ['provision_refs', 'validate_provision']) {
+        const pr = nested(p2).find(n => n.keyword === prName);
+        if (pr) {
+          for (const id of rawTokensC(pr)) {
+            provisioned.add(id);
+          }
+        }
+      }
+    }
+    // C5 — the req⇄test closure.
+    for (const r of pkg.constructs.filter(
+      x => x.keyword === 'requirement' && x.ident,
+    )) {
+      if (covered.has(r.ident!) || provisioned.has(r.ident!)) {
+        continue;
+      }
+      const verif = nested(r).find(n => n.keyword === 'verification');
+      const vm =
+        (verif ? facetTokens(verif.items, 'method')[0] : undefined) ??
+        facetTokens(r.items, 'verification')[0] ??
+        '';
+      if (NON_TEST_VERIFICATION.has(vm)) {
+        continue;
+      }
+      issues.push({
+        rule: 'C5',
+        severity: 'warning',
+        message: `requirement ${r.ident}: no conformance test targets it and it declares no non-test verification — an undeclared coverage gap is always a finding (req-test-coverage)`,
+      });
+    }
+    for (const t of pkg.constructs.filter(
+      x => x.keyword === 'conformance_test' && x.ident,
+    )) {
+      const targets = nested(t).find(n => n.keyword === 'targets');
+      const n = targets ? rawTokensC(targets).length : 0;
+      if (n === 0) {
+        issues.push({
+          rule: 'C5',
+          severity: 'warning',
+          message: `conformance test ${t.ident}: targets no requirement`,
+        });
+      }
+    }
+    // C53 — coverage-uses-bound.
+    const calcNamesC = new Set<string>();
+    for (const c2 of closureConstructs.filter(
+      x => x.keyword === 'calculation' && x.ident,
+    )) {
+      if (c2.ident) {
+        calcNamesC.add(c2.ident);
+      }
+      const nm = facetTokens(c2.items, 'name')[0];
+      if (nm) {
+        calcNamesC.add(nm);
+      }
+    }
+    const tableIdsC = new Set(
+      closureConstructs
+        .filter(x => x.keyword === 'table' && x.ident)
+        .map(x => x.ident!),
+    );
+    const profileDefsOf = (tableId: string): Set<string> => {
+      const out = new Set<string>();
+      const tbl = closureConstructs.find(
+        x => x.keyword === 'table' && x.ident === tableId,
+      );
+      // Both spellings: `profile_defs { <name> { } }` and the corpus's
+      // `profiles { profile <name> { } }`.
+      for (const defsName of ['profile_defs', 'profiles']) {
+        const defs = tbl
+          ? nested(tbl).find(n => n.keyword === defsName)
+          : undefined;
+        for (const d2 of defs ? nested(defs) : []) {
+          const name =
+            d2.ident || (d2.keyword === 'profile' ? d2.ident : d2.keyword);
+          if (name && name !== 'profile') {
+            out.add(name);
+          }
+        }
+        if (defs) {
+          for (const l of defs ? lines(defs) : []) {
+            if (l.key && l.key !== defsName && l.key !== 'profile') {
+              out.add(l.key);
+            }
+          }
+        }
+      }
+      return out;
+    };
+    const profileRefResolves = (ref: string): boolean => {
+      if (tableIdsC.has(ref)) {
+        return true;
+      }
+      const dot = ref.indexOf('.');
+      if (dot > 0) {
+        const tbl = ref.slice(0, dot);
+        const name = ref.slice(dot + 1);
+        if (profileDefsOf(tbl).has(name)) {
+          return true;
+        }
+      }
+      return profileDefsOf('profiles').has(ref);
+    };
+    const limitUsesOf = (r: Construct): string[] => {
+      const out: string[] = [];
+      for (const lim of nested(r).filter(n => n.keyword === 'limit')) {
+        const uses = nested(lim).find(n => n.keyword === 'uses');
+        if (uses) {
+          out.push(
+            ...lines(uses)
+              .flatMap(l => [l.key ?? '', ...l.tokens])
+              .filter(x => x !== ''),
+          );
+        }
+      }
+      return out;
+    };
+    for (const r of pkg.constructs.filter(
+      x => x.keyword === 'requirement' && x.ident,
+    )) {
+      for (const u of limitUsesOf(r)) {
+        if (/^(table|profile):/.test(u)) {
+          // C54's lookup-table leg.
+          if (u.startsWith('table:')) {
+            const id = u.slice('table:'.length);
+            if (!tableIdsC.has(id)) {
+              err(
+                'C54',
+                `requirement ${r.ident}: limit.uses "${u}" — table "${id}" is not declared (coverage-lookup-table-exists)`,
+              );
+            }
+          } else {
+            const ref = u.slice('profile:'.length);
+            if (!profileRefResolves(ref)) {
+              err(
+                'C54',
+                `requirement ${r.ident}: limit.uses "${u}" — profile "${ref}" is not a declared table or profile definition (coverage-lookup-table-exists)`,
+              );
+            }
+          }
+          continue;
+        }
+        if (u.startsWith('observable:')) {
+          const id = u.slice('observable:'.length);
+          if (!symbolIdsC.has(id)) {
+            err(
+              'C53',
+              `requirement ${r.ident}: limit.uses "${u}" — observable "${id}" is not a declared symbol (coverage-uses-bound)`,
+            );
+          }
+          continue;
+        }
+        if (u.startsWith('formula:')) {
+          const id = u.slice('formula:'.length);
+          if (!calcNamesC.has(id)) {
+            err(
+              'C53',
+              `requirement ${r.ident}: limit.uses "${u}" — formula "${id}" is not a declared calculation (coverage-uses-bound)`,
+            );
+          }
+          continue;
+        }
+        const leaf = u.split('.').pop() ?? u;
+        if (
+          !attrIdsC.has(leaf) &&
+          !attrIdsC.has(u) &&
+          !symbolIdsC.has(leaf) &&
+          !symbolIdsC.has(u) &&
+          !reqIdsC.has(u) &&
+          !dimIdsC.has(leaf) &&
+          !behaviorIdsC.has(leaf) &&
+          u !== 'load'
+        ) {
+          err(
+            'C53',
+            `requirement ${r.ident}: limit.uses "${u}" binds nothing — it is not a declared attribute, symbol, requirement, dimension, or behavior (coverage-uses-bound)`,
+          );
+        }
+      }
+    }
+    for (const c2 of closureConstructs.filter(
+      x => x.keyword === 'calculation' && x.ident,
+    )) {
+      const profile = facetTokens(c2.items, 'profile')[0];
+      if (profile && !profileRefResolves(profile)) {
+        err(
+          'C54',
+          `calculation ${facetTokens(c2.items, 'name')[0] || c2.ident}: lookup profile "${profile}" is not a declared table or profile definition (coverage-lookup-table-exists)`,
+        );
+      }
+    }
+    // (C51/C52 the audit links are mirrored above — the pre-existing
+    // legs at the composition family.)
+  }
+
+  // ── the allowlist applied BY THIS IMPLEMENTATION (the kernel's
+  //    applyAllowlist): KNOWN entries mark their issues and the stale
+  //    ratchet (C57) plus the coverage budget (C55) judge the register.
+  //    A dormant rule's entry — one this implementation does not mirror
+  //    — never goes stale, exactly like the kernel's level gate.
+  {
+    const al = pkg.allowlist;
+    if (al) {
+      const globMatch = (glob: string, text: string): boolean =>
+        new RegExp(
+          '^' +
+            glob
+              .split('*')
+              .map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+              .join('[\\s\\S]*') +
+            '$',
+        ).test(text);
+      const elementId = (message: string): string => {
+        const m = /^[a-z_]+ ([^:\s][^:]*):/.exec(message);
+        return m ? m[1]! : '';
+      };
+      const activeRules = pkg.mirroredRules;
+      const knownIdx = new Set<number>();
+      const staleEntries: { rule: string; match: string }[] = [];
+      for (const e of al.entries) {
+        if (activeRules !== undefined && !activeRules.has(e.rule)) {
+          continue;
+        }
+        let matched = false;
+        issues.forEach((i2, idx) => {
+          if (i2.rule !== e.rule || knownIdx.has(idx)) {
+            return;
+          }
+          if (!globMatch(e.match, i2.message)) {
+            return;
+          }
+          if (
+            e.id !== undefined &&
+            e.id !== '' &&
+            !globMatch(e.id, elementId(i2.message))
+          ) {
+            return;
+          }
+          knownIdx.add(idx);
+          matched = true;
+        });
+        if (!matched) {
+          staleEntries.push(e);
+        }
+      }
+      for (const e of staleEntries) {
+        err(
+          'C57',
+          `.primmel-allowlist.prl: STALE entry [${e.rule}] "${e.match}" matches no issue — the data was fixed; remove the entry (allowlist-stale)`,
+        );
+      }
+      const budgetLine = al.budgets.find(
+        b2 => b2.key === 'coverage_budget' || b2.key === 'text_coverage_budget',
+      );
+      // The C55 budget caps the C51/C52 coverage warnings; the C72 text
+      // budget is judged inside the text-coverage family. A budget line
+      // that is NOT the text budget governs C51/C52 (the kernel's
+      // coverage_budget key).
+      const covBudget = al.budgets.find(b2 => b2.key === 'coverage_budget');
+      if (covBudget) {
+        const budget = Number.parseInt(covBudget.raw, 10);
+        if (Number.isInteger(budget) && budget >= 0) {
+          const active =
+            activeRules === undefined ||
+            [...BUDGETED_RULES_C].some(r2 => activeRules.has(r2));
+          if (active) {
+            const count = issues.filter(
+              (i2, idx) =>
+                BUDGETED_RULES_C.has(i2.rule) &&
+                i2.severity === 'warning' &&
+                !knownIdx.has(idx),
+            ).length;
+            if (count > budget) {
+              err(
+                'C55',
+                `.primmel-allowlist.prl: ${count} coverage warnings exceed the package budget of ${budget} — close the gaps or raise the budget with a clause-referenced reason (coverage-budget)`,
+              );
+            } else if (count < budget) {
+              issues.push({
+                rule: 'C55',
+                severity: 'warning',
+                message: `.primmel-allowlist.prl: coverage budget ${budget} has slack — only ${count} coverage warnings remain; tighten the budget (the allowlist only shrinks) (coverage-budget)`,
+              });
+            }
           }
         }
       }

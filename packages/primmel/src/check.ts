@@ -384,7 +384,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
-import { dirname, join, resolve } from 'path';
+import { dirname, join, relative, resolve } from 'path';
 import {
   CompositionError,
   effectiveUses,
@@ -8453,6 +8453,69 @@ export function checkPackage(
   // and budgeted by the package's text_coverage_budget (C72, applied
   // with the allowlist below). Duplicate pairs are REPORTED by
   // `primmel check --coverage`, never auto-failed here.
+  // ── C154 armed (the provenance wave): the legacy provenance
+  //    spellings — `source { doc clause }` blocks and the
+  //    `specification_reference "…"` field facet — warn per occurrence
+  //    with the file context, the condition_set retirement's sequence
+  //    (arm → migrate → C57 ratchet → parse removal). The file scan is
+  //    the token-accurate detector: the parsed Standard cannot
+  //    distinguish the legacy spelling from the canonical `ref
+  //    derives-from` fold (both land in sourceRefs; the first-entry
+  //    back-compat sets `source` for both).
+  {
+    const LEGACY_PROVENANCE: Array<[RegExp, string]> = [
+      [/^\s*source\s*\{/gm, 'the source { doc clause } block'],
+      [/^\s*specification_reference\s+"([^"]*)"/gm, 'the specification_reference facet'],
+    ];
+    const scanDir = (base: string): void => {
+      let entries: string[] = [];
+      try {
+        entries = readdirSync(base).sort();
+      } catch {
+        return;
+      }
+      for (const e of entries) {
+        const full = join(base, e);
+        let st;
+        try {
+          st = statSync(full);
+        } catch {
+          continue;
+        }
+        if (st.isDirectory()) {
+          scanDir(full);
+        } else if (
+          (e.endsWith('.prl') || e.endsWith('.primmel')) &&
+          // The manifest's `source { collection … }` facet is the corpus
+          // pointer, not a provenance block.
+          e !== 'package.primmel'
+        ) {
+          let text = '';
+          try {
+            text = readFileSync(full, 'utf8');
+          } catch {
+            continue;
+          }
+          const rel = relative(dir, full) || e;
+          for (const [re, label] of LEGACY_PROVENANCE) {
+            const lines = text.split('\n');
+            let ln = 0;
+            for (const line of lines) {
+              ln++;
+              if (re.test(line)) {
+                warn(
+                  'C154',
+                  `${rel}:${ln}: ${label} is deprecated — cite the clause anchor directly (ref derives-from "urn#clause-X" / ref cites "urn") (construct-deprecated)`,
+                );
+              }
+            }
+          }
+        }
+      }
+    };
+    scanDir(dir);
+  }
+
   const textCoverageData = loadTextCoverageData(dir);
   issues.push(...textCoverageData.issues);
   if (textCoverageData.manifests.length > 0) {

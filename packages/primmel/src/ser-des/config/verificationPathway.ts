@@ -23,6 +23,7 @@ import {
   readSource,
   stripColon,
 } from './field-parser';
+import { refTargetToSourceRef } from './ref';
 import VerificationPathway, {
   VerificationMark,
   VerificationTrigger,
@@ -160,6 +161,18 @@ export const parseVerificationPathway: Parser = (id: string, data: string) => {
               limits.description = stripWrapping(v2());
             } else if (k2 === 'source') {
               limits.source = readSource(unwrapBlock(v2()));
+            } else if (k2 === 'ref') {
+              // The canonical channel (the provenance retirement): ref
+              // derives-from "target" — the singular slot takes the
+              // first binding, the legacy parse's invariant.
+              const predicate = stripWrapping(v2());
+              const target = stripWrapping(v2());
+              if (predicate === 'derives-from') {
+                const b = refTargetToSourceRef(target);
+                if (b && !limits.source) {
+                  limits.source = b;
+                }
+              }
             } else {
               return false;
             }
@@ -253,6 +266,15 @@ export const parseVerificationPathway: Parser = (id: string, data: string) => {
                     trigger.description = stripWrapping(v3());
                   } else if (k3 === 'source') {
                     trigger.source = readSource(unwrapBlock(v3()));
+                  } else if (k3 === 'ref') {
+                    const predicate3 = stripWrapping(v3());
+                    const target3 = stripWrapping(v3());
+                    if (predicate3 === 'derives-from') {
+                      const b3 = refTargetToSourceRef(target3);
+                      if (b3 && !trigger.source) {
+                        trigger.source = b3;
+                      }
+                    }
                   } else {
                     return false;
                   }
@@ -271,6 +293,15 @@ export const parseVerificationPathway: Parser = (id: string, data: string) => {
         pathway.validity = validity;
       } else if (keyword === 'source') {
         pathway.source = readSource(unwrapBlock(value()));
+      } else if (keyword === 'ref') {
+        const predicate = stripWrapping(value());
+        const target = stripWrapping(value());
+        if (predicate === 'derives-from') {
+          const b = refTargetToSourceRef(target);
+          if (b && !pathway.source) {
+            pathway.source = b;
+          }
+        }
       } else {
         return false;
       }

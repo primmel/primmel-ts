@@ -256,6 +256,12 @@ export interface XIds {
  *  of one expression. The kind inference: a bare number is null; a name
  *  resolves through `kindOf` (the checker's binding map); a comparison
  *  of two known different kinds is a mix. */
+/** The parsed AST of one expression (the shape rules read the top
+ *  node — C84's guard-is-a-predicate leg). Throws when unparsable. */
+export function parseX(src: string): XNode {
+  return XParser.parse(src);
+}
+
 export function readExpression(
   src: string,
   kindOf: (path: string[]) => string | null | undefined,
