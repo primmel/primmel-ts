@@ -16,7 +16,7 @@
 //       note "Compliance demonstrated by peer evaluation on the basis
 //         of an accreditation assessment or a peer assessment …"
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "3.37" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-3.37"
 //   }
 //
 //   scheme_lifecycle category_scheme {
@@ -47,7 +47,7 @@
 //       description "The two-year Scheme-B window opened by the
 //         category's inclusion …"
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "15" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-15"
 //   }
 //
 // The transition surface deliberately mirrors the state_machine grammar

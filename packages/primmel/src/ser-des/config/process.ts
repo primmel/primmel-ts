@@ -113,9 +113,9 @@
 // (repeatable, ordered workflow gate criteria — opaque, never resolved),
 // and `machine_steps { <id>+ }` (the engine-run steps — documentary
 // service names, no resolution leg). Provenance is spelled ONLY
-// `source { doc "…" clause "…" }` (free citation strings land in doc) —
-// no `reference` alias exists; the old emitter's `reference {…}` form
-// was silently skipped at load and dies with the fold.
+// `ref derives-from "<doc>#clause-<c>"` (a free citation string rides the
+// target whole); the legacy `source { doc clause }` and `reference {…}`
+// forms are retired parse errors (1.21.21).
 //
 // The abstract-process model (smart TODO.roadmap/40 batch 2; the
 // packages-as-SSOT epic — the OIML-CS / CASCO evaluation pipelines) adds

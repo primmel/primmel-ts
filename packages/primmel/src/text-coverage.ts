@@ -241,11 +241,12 @@ function isSourceRefLike(v: unknown): v is SourceRefLike {
   );
 }
 
-/** Harvest every provenance binding of the composed package: sourceRefs/
- * sourceRef blocks, `source { doc clause fragment? }` blocks, term-style
- * `source "urn …"` strings, `reference "urn#fragment"` strings and
- * references[].urn lists — on ANY id-bearing element (the generic walk is
- * construct-agnostic; non-URN strings never match the address grammar). */
+/** Harvest every provenance binding of the composed package: the
+ * sourceRefs/sourceRef provenance channels (the `ref derives-from` fold),
+ * term-style `source "urn …"` strings, `reference "urn#fragment"`
+ * strings and references[].urn lists — on ANY id-bearing element (the
+ * generic walk is construct-agnostic; non-URN strings never match the
+ * address grammar). */
 export function collectProvenanceBindings(
   standard: Standard,
 ): ProvenanceBinding[] {

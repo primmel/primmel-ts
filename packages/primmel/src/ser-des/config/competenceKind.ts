@@ -6,7 +6,7 @@
 //   competence_kind force_measurement {
 //     label "Force measurement"
 //     definition "…"
-//     source { doc "ISO/IEC 17025:2017, 6.4" clause "" }
+//     ref derives-from "ISO/IEC 17025:2017, 6.4#clause-"
 //     method_ref iec-60068-2-30:damp-heat-cyclic
 //   }
 //

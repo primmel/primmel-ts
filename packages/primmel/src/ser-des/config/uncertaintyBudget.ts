@@ -13,7 +13,7 @@
 //       distribution rectangular
 //       half_width 0.5
 //       unit "kg"
-//       source { doc "urn:..." clause "..." }
+//       ref derives-from "urn:...#clause-..."
 //     }
 //     component u_rep {
 //       type A

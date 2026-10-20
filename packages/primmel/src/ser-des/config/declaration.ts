@@ -17,7 +17,7 @@
 //         and/or type evaluation reports issued on the basis of test
 //         reports from a Manufacturer's Test Laboratory (§5.6.3) — …"
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "5.6.1" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-5.6.1"
 //   }
 //
 //   declaration_status signed {
@@ -38,7 +38,7 @@
 //     blocks_note "The gated abstract processes of the scheme process
 //       model: issue (certificate issuance) and evaluation (…)."
 //     scope_checked { category scheme }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "5.5.1" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-5.5.1"
 //   }
 // ─────────────────────────────────────────────────────────────────────
 

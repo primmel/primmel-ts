@@ -8,7 +8,7 @@
 //     title "Framework for the OIML Certification System (OIML-CS)"
 //     approved_by ciml
 //     clause "6 a)"
-//     source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
 //   }
 //
 //   document_precedence higher_position_prevails {
@@ -16,7 +16,7 @@
 //     statement "In the event of a conflict, contradiction or
 //       inconsistency … the provisions of the document listed in a
 //       higher position take precedence …"
-//     source { doc "urn:oiml:pub:b:18:2025" clause "6" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
 //   }
 //
 //   auto_inclusion auto_inclusion {
@@ -31,7 +31,7 @@
 //     }
 //     note "The two report formats (conditions c and d) may be
 //       specified in separate Parts of a Recommendation …"
-//     source { doc "urn:oiml:pub:b:18:2025" clause "4.2" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-4.2"
 //   }
 // ─────────────────────────────────────────────────────────────────────
 

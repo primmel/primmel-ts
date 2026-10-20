@@ -12,7 +12,7 @@
 //     check "ocl{model.parameters.d_max >= 0.9 * model.parameters.e_max and …}"
 //     violation_meaning "…"   // REQUIRED — what a violation means
 //     on_violation invalid    // invalid | indeterminate (default invalid)
-//     source { doc "urn:oiml:pub:r:60-1:2021" clause "3.6" }
+//     ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.6"
 //   }
 // ─────────────────────────────────────────────────────────────────────
 

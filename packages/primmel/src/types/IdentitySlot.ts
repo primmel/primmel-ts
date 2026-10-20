@@ -14,7 +14,7 @@
 //     definition "…"
 //     metamodel_class identity-provenance.Manufacturer   # dotted token —
 //                                        # external ontology, documentary
-//     source { doc "urn:oiml:pub:r:60-1:2021" clause "6.2.1" }
+//     ref derives-from "urn:oiml:pub:r:60-1:2021#clause-6.2.1"
 //   }
 //
 // Requirements bind to the slots as `model.identity.<slot>` (the smart

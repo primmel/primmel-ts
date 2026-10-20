@@ -35,7 +35,7 @@
 //       abstentions not_voting
 //       reason_on_against_or_abstain true
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "11.4" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-11.4"
 //   }
 //
 // The advisory / appeal / registration / legacy / financing families

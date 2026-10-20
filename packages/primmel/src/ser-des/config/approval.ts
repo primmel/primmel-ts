@@ -8,10 +8,10 @@
 // they name no declared construct — the process.provisionRefs
 // precedent — so the dump stays byte-faithful and C143
 // (approval-references-resolve) can check them; and the clause-URN
-// provenance facet `source { doc "…" clause "…" }` (free citation
-// strings land in doc — the YAML `reference: "PD-05 §4.2"` citation
-// folds here; the kernel `reference { <id>+ }` facet stays the
-// Reference-construct id list it always was).
+// provenance facet `ref derives-from "…#clause-…"` (free citation
+// strings land in the doc slot — the YAML `reference: "PD-05 §4.2"`
+// citation folds here; the kernel `reference { <id>+ }` facet is an
+// opaque id list (referenceIds), never resolved).
 // ─────────────────────────────────────────────────────────────────────
 
 import Approval, { ResolvableApproval } from '../../types/Approval';

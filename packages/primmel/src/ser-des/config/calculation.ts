@@ -89,7 +89,7 @@ export const parseCalculation: Parser = function (id, data) {
           (result.correspondences ??= []).push(cc.corr);
           i = cc.next;
         } else if (command === 'source') {
-          // Structured provenance: source { doc "urn:..." clause "2.1.2.4" }
+          // Structured provenance: ref derives-from "urn:...#clause-2.1.2.4"
           // Repeated source blocks collect into sourceRefs (TODO.roadmap/24).
           // The optional third field `fragment` is the sentence sub-address
           // (TODO.roadmap/26) — the dumper emits it, so the parser must keep

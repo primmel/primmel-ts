@@ -29,7 +29,7 @@
 //       definition "Test Laboratory that is part of the same organization
 //         as the OIML Issuing Authority."
 //     }
-//     source { doc "urn:oiml:pub:b:18:2025" clause "5.2" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-5.2"
 //   }
 //
 // Cross-references (approval.* → governance_organ, declaration →

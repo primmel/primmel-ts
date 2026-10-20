@@ -14,7 +14,7 @@
 //       description "… (R 60-2, 2.5 a)."
 //       obligation shall                    # shall | should | may —
 //                                           # parse-enforced
-//       source { doc "urn:oiml:pub:r:60-2:2021" clause "2.5" }
+//       ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.5"
 //     }
 //   }
 //

@@ -164,7 +164,7 @@ export interface StimulusPoint {
 
 /**
  * A test's executable program block — `preparation { … }` (steps) or
- * `stimulus { … }` (points). Both carry the `source { doc clause }`
+ * `stimulus { … }` (points). Both carry the canonical `ref derives-from`
  * provenance blocks (the requirement family's idiom, TODO.roadmap/24).
  * Null on the test when the facet is absent.
  */
@@ -173,7 +173,7 @@ export interface TestProgram<TStep> {
   description: string;
   /** The ordered program entries (preparation steps | stimulus points). */
   entries: TStep[];
-  /** Clause-URN provenance — repeated `source { doc "…" clause "…" }` blocks. */
+  /** Clause-URN provenance — repeated `ref derives-from "…#clause-…"` blocks. */
   sourceRefs: { doc: string; clause: string; fragment?: string }[];
 }
 

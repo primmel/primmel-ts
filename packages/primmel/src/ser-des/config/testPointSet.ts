@@ -2,7 +2,7 @@
 // Test point set construct (specification/test-point-sets.yaml):
 //   test_point_set r144-cgm-points {
 //     description "..."
-//     source { doc "urn:oiml:pub:r:144-2:2013" clause "1.2" }
+//     ref derives-from "urn:oiml:pub:r:144-2:2013#clause-1.2"
 //     cardinality {
 //       linear { min_points 3 rule "min +10 %, mid ±10 %, max −10 % of the measuring range" }
 //       nonlinear { min_points 5 rule "uniformly distributed" }

@@ -9,7 +9,7 @@
 //     clause "11"
 //     mandate "The MC manages the OIML-CS: it decides participation,
 //       approves …"
-//     source { doc "urn:oiml:pub:b:18:2025" clause "11" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-11"
 //   }
 //
 //   governance_organ review_committee {
@@ -17,7 +17,7 @@
 //     clause "12"
 //     mandate "…"
 //     sub_committee_of management_committee
-//     source { doc "urn:oiml:pub:b:18:2025" clause "12" }
+//     ref derives-from "urn:oiml:pub:b:18:2025#clause-12"
 //   }
 //
 // Organs are the resolution target of the framework's decision facets

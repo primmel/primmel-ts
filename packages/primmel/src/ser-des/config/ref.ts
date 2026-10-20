@@ -10,10 +10,11 @@
 // is a URI: a document anchor (a clause/annex URN) or a model element
 // id.
 //
-// The legacy citation spellings (`references { <role> {…} }`,
-// `source { doc clause }`, `specification_reference "…"`) keep parsing
-// into their own facets during the transition; packages migrate to the
-// canonical form mechanically.
+// The legacy citation spellings (`source { doc clause }`, the reference
+// role-channel blocks, `specification_reference "…"`) are RETIRED parse
+// errors since 1.21.21; the canonical `ref` line is the only spelling.
+// The role-references channel (`references { <role> { … } }`) survives as
+// an authoring form and folds alongside the canonical refs.
 
 /** A typed reference/relation triple on an element. */
 export interface Ref {
@@ -202,8 +203,8 @@ export function foldRefIntoLegacy(
 }
 
 /** The canonical dump of one provenance block (docs/primmel/18 §18.4):
- *  a URN-anchored source emits the derives-from ref line; a free-text
- *  doc keeps the legacy source block. */
+ *  the derives-from ref line carries the anchor — a URN, or a free-text
+ *  designation composed with its clause. */
 export function dumpSourceRefAsRef(
   src: { doc: string; clause: string; fragment?: string },
   indent: string,

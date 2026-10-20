@@ -11,7 +11,7 @@
 //                                   # precedent)
 //     summary "…"
 //     realization "…"
-//     source { doc "urn:oiml:pub:r:60-4:2021" clause "A" }
+//     ref derives-from "urn:oiml:pub:r:60-4:2021#clause-A"
 //   }
 //
 // NOT the batch-2 informative_annex — that construct is an external

@@ -271,7 +271,7 @@ export const parseTable: Parser = function (id, data) {
         } else if (command === 'display') {
           result.display = unwrapBlock(t[i++]);
         } else if (command === 'source') {
-          // Structured provenance: source { doc "urn:..." clause "4" }
+          // Structured provenance: ref derives-from "urn:...#clause-4"
           // Repeated source blocks collect into sourceRefs (TODO.roadmap/24).
           const src = readSource(unwrapBlock(t[i++]));
           if (!result.sourceRef) {

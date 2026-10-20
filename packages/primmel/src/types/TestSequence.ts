@@ -25,8 +25,8 @@
  *       depends_on 2
  *     }
  *     sample_applicability all
- *     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10" }
- *     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.11.1" }
+ *     ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10"
+ *     ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.11.1"
  *   }
  *
  * The facets (the smart side's test-sequences.yaml contract — the
@@ -47,7 +47,7 @@
  *     OPTIONAL, free vocabulary (the smart side owns the semantics —
  *     presence-judged never, like the invariant severity).
  *   - source — clause-URN provenance, the platform's content doctrine:
- *     repeated `source { doc "urn:…" clause "…" }` blocks collecting
+ *     repeated `ref derives-from "urn:…#clause-…"` blocks collecting
  *     into sourceRefs (the requirement family's idiom).
  *
  * Linter rules (check.ts, family base):
@@ -102,7 +102,7 @@ export interface TestSequence {
   /** Which samples the sequence binds ('' = absent; free vocabulary —
    *  the smart side owns the semantics). */
   sampleApplicability: string;
-  /** Clause-URN provenance (repeated `source { doc clause }` blocks —
+  /** Clause-URN provenance (repeated `ref derives-from` lines —
    *  the requirement family's sourceRefs idiom). */
   sourceRefs: SourceRef[];
   /** The unified typed references (docs/primmel/18). */

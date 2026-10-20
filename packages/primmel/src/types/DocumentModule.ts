@@ -21,7 +21,7 @@
 //       published "The OIML-CS pages of the OIML website …"
 //       entries "Per Legal Metrology Expert: identity, …"
 //     }
-//     source { doc "urn:oiml:pub:cs:pd-03:2025" clause "" }
+//     ref derives-from "urn:oiml:pub:cs:pd-03:2025#clause-"
 //   }
 //
 // The sequence/register sub-grammar is SHARED with process_model

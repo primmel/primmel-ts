@@ -448,7 +448,7 @@ function parseInstances(block: string): TestInstances {
 //       action "Verify the zero indication"
 //       verify { read zero_indication tolerance "/req/metrological/zero-error" }
 //     }
-//     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.2" }
+//     ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1.2"
 //   }
 //   stimulus {
 //     point 1 {
@@ -458,7 +458,7 @@ function parseInstances(block: string): TestInstances {
 //       fresh_within 5s
 //       acceptance "/req/metrological/mpe"
 //     }
-//     source { doc "urn:oiml:pub:r:60-2:2021" clause "2.10.1.7" }
+//     ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1.7"
 //   }
 //
 // Surface-syntax notes:
@@ -475,7 +475,7 @@ function parseInstances(block: string): TestInstances {
 //   - hold / fresh_within carry the freshness-window duration vocabulary
 //     (the serve contract's idiom: shorthand 30min or ISO 8601
 //     fixed-length PT30M — C148 polices the shape);
-//   - `source { doc "…" clause "…" }` repeats at the program level,
+//   - `ref derives-from "…#clause-…"` repeats at the program level,
 //     collecting into sourceRefs (the requirement family's idiom,
 //     TODO.roadmap/24);
 //   - the parser stays TOTAL: a missing entry head parses with order

@@ -23,7 +23,7 @@
 //
 //   attribute_definition e_max {
 //     symbol "E_max"  name "Maximum capacity"  definition "..."
-//     source { doc "urn:..." clause "3.5.5" }
+//     ref derives-from "urn:...#clause-3.5.5"
 //     quantity_kind mass  unit kg  value_type QuantityValue
 //     origin design-fixed  scope model  category metrological
 //     is_dimension false  enum humidity_class  irdi "..."  derived "ocl{...}"
@@ -39,7 +39,7 @@
 //
 //   behavior creep {
 //     kind temporal  stimulus force  response "..."
-//     source { doc "..." clause "3.7.1" }  verified_by { /conf/... }
+//     ref derives-from "...#clause-3.7.1"  verified_by { /conf/... }
 //   }
 //
 //   condition_set load-cell-reference {
@@ -65,7 +65,7 @@
 //           conditions ocl{self.temperature >= rated.t_min and self.temperature <= rated.t_max}
 //           statement "Holds accuracy class C6 across the rated range −10…+40 °C."
 //           verified_by { /req/metrological/mpe /conf/metrological-tests/mpe-test }
-//           source { doc "urn:oiml:pub:r:60-1:2021" clause "5.1" }
+//           ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.1"
 //         }
 //         "a statement-only claim (shorthand — linter C43 flags it unverifiable)"
 //       }
@@ -78,7 +78,7 @@
 //       characteristics { creep c_c = ocl{self.indication.delta / self.time.delta} }
 //       (block form, TODO.roadmap/10: creep { symbol "c_c" derivation ocl{…}
 //        behavior creep quantity_kind verification_interval unit "v"
-//        source { doc "…" clause "…" } })
+//        ref derives-from "…#clause-…" })
 //       environmental_context { "logged 23.4 degC during run 7" }
 //       artifact_instances { }
 //     }
@@ -1561,7 +1561,7 @@ function readDimensionMap(block: string): Record<string, string[]> {
  *     derivation ocl{abs(c_m * t_f / delta_t * (d_max - d_min) / (n * v_min))}
  *     behavior temp-effect-min-dead-load
  *     quantity_kind dimensionless
- *     source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1.4" }
+ *     ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1.4"
  *   }
  */
 function readCharacteristics(

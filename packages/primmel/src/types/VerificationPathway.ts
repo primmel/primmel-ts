@@ -22,7 +22,7 @@
 //     limits {
 //       mode same-as-type-evaluation    # same-as-type-evaluation|override (parse-enforced)
 //       description "…"
-//       source { doc "urn:oiml:pub:r:91-1:2025" clause "8.2.3" }
+//       ref derives-from "urn:oiml:pub:r:91-1:2025#clause-8.2.3"
 //     }
 //     marking {
 //       mark verification-mark { mark "verification mark" location "…" clause "8.2.4" }
@@ -36,10 +36,10 @@
 //         event tyre-change             # required iff kind signal (C138)
 //         action invalidating_signal_received   # → a lifecycle state_machine transition action (C138, gated)
 //         applicability { mode_of_use: [moving] }
-//         source { doc "urn:oiml:pub:r:91-1:2025" clause "6.15.3 Note 2" }
+//         ref derives-from "urn:oiml:pub:r:91-1:2025#clause-6.15.3 Note 2"
 //       }
 //     }
-//     source { doc "urn:oiml:pub:r:91-1:2025" clause "8.2" }
+//     ref derives-from "urn:oiml:pub:r:91-1:2025#clause-8.2"
 //   }
 //
 // The YAML `reference:` facet is DROPPED (derivable from `source` — the

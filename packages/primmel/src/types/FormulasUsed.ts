@@ -10,7 +10,7 @@
  *     name "MDLO evaluation formulas"
  *     description "The evaluation-level quantities of R 60-3, 2.1 the MDLO test derives from the indication output: …"
  *     formulas { conversion_factor_f e_l e_r c_m }
- *     source { doc "urn:oiml:pub:r:60-3:2021" clause "2.1" }
+ *     ref derives-from "urn:oiml:pub:r:60-3:2021#clause-2.1"
  *   }
  *
  * The design (DECIDED — the 9.5-era file header contemplated a facet):
@@ -41,7 +41,7 @@
  *     the kernel checks syntax/shape only, exactly like E9's C90/C91
  *     vs R38 and E10's C92/C93 vs R39 split.
  *   - source — clause-URN provenance, the platform's content doctrine:
- *     repeated `source { doc "urn:…" clause "…" }` blocks collecting
+ *     repeated `ref derives-from "urn:…#clause-…"` blocks collecting
  *     into sourceRefs (the requirement family's idiom). The trace is
  *     keyed by test, so entry uniqueness is the parse-time
  *     duplicate-id rule's — the collection key IS the test ref.
