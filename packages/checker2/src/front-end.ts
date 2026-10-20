@@ -50,6 +50,9 @@ export interface Construct {
   keyword: string;
   ident: string;
   items: Item[];
+  /** The LML mapping's format token (`mapping xml Ceramic`) — the
+   *  grammar captures it beside the ident. */
+  format?: string;
 }
 
 /** The source text a positioned node's span covers — the raw payload
@@ -197,8 +200,11 @@ function toItem(node: unknown): Item | null {
     if (key in n) {
       const line = n[key] as ShapeNode;
       if ('blockvalue' in line) {
-        // the expression carrier (register 18): keyword + block — the
-        // block's RAW span is the payload, the rules read its tokens
+        // the expression carrier (register 18): keyword + block. The
+        // block rides either as PARSED inner items (a body the grammar
+        // captured — e.g. a precondition `check { self.state = #ready }`
+        // parses as an inner kwline) or as the RAW span (an expression
+        // the carrier rules read as tokens).
         const inner = line['blockvalue'];
         const raw = spanText(inner);
         const rawItem: Item = {
@@ -206,11 +212,19 @@ function toItem(node: unknown): Item | null {
           tokens: raw ? splitRaw(raw) : [],
           blocks: [],
         };
+        // A carrier body the grammar PARSES (a precondition `check {
+        // self.state = #ready }` captures as an inner kwline) rides the
+        // parsed items too — the raw span stays first so the raw-token
+        // readers are unchanged.
+        const innerArr = Array.isArray(inner) ? inner : [inner];
+        const innerItems = innerArr
+          .map(toItem)
+          .filter((x): x is Item => x !== null);
         const lineItem: Item = {
           kind: 'line',
           key: tokenText(line['key']),
           tokens: [],
-          blocks: [[rawItem]],
+          blocks: [[rawItem, ...innerItems]],
         };
         return lineItem;
       }
@@ -261,7 +275,8 @@ export function toConstruct(node: unknown): Construct | null {
       items.push({ kind: 'raw', tokens: splitRaw(raw), blocks: [] });
     }
   }
-  return { keyword, ident, items };
+  const format = tokenText(n['format']);
+  return { keyword, ident, items, ...(format !== '' ? { format } : {}) };
 }
 
 /** The top-level constructs of one document's shape tree. */
@@ -285,6 +300,32 @@ export interface ShippedDocument {
   urn: string;
   fragments: Set<string>;
   addresses: Set<string>;
+  /** The raw sentence records (the text-coverage family's input). */
+  sentences: {
+    address: string;
+    fragment: string;
+    modality: string;
+    kind: string;
+    text: string;
+  }[];
+  /** Set when the manifest fails the kernel's shape contract — the
+   *  C73 malformed leg judges the message. */
+  malformed?: string;
+}
+
+/** The parsed sources-prd/coverage.json (the C73/C71/C72 config). */
+export interface CoverageConfig {
+  allowances?: {
+    address: string;
+    sentences?: string[];
+    reason?: string;
+  }[];
+  duplicate_adjudications?: {
+    elements?: string[];
+    verdict?: string;
+    reason?: string;
+  }[];
+  prd_coverage?: string;
 }
 
 /** One parsed allowlist entry (the kernel's AllowlistEntry contract,
@@ -416,6 +457,11 @@ export interface ParsedPackage {
   /** The shipped documents' harvest indexes (absent when the package
    *  ships none or the caller reads no artifacts). */
   documents?: ShippedDocument[];
+  /** The parsed sources-prd/coverage.json (absent when none shipped). */
+  coverage?: { config?: CoverageConfig; parseError?: string };
+  /** The rules this implementation mirrors (the register's ids) — the
+   *  allowlist's active-rules gate reads it. */
+  mirroredRules?: Set<string>;
   /** The parsed .primmel-allowlist.prl contents (absent when none). */
   allowlist?: {
     entries: AllowlistEntry[];
