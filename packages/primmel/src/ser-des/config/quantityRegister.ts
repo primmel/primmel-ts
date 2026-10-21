@@ -118,6 +118,33 @@ function parseUnit(id: string, block: string): UnitDef {
       const { corr, next } = parseCorresponds(t, i, stripWrapping);
       (out.correspondences ??= []).push(corr);
       i = next;
+    } else if (cmd === 'unitsdb') {
+      // unitsdb { nist "…" unitsml "…" } — the UnitsDB pin (kernel#87);
+      // at least one identifier — an empty pin is a parse error.
+      const bt = tokenize(unwrapBlock(t[i++]));
+      out.unitsdb = {};
+      let pinned = false;
+      let k2 = 0;
+      while (k2 < bt.length) {
+        const ucmd = bt[k2++];
+        if (k2 >= bt.length) {
+          break;
+        }
+        if (ucmd === 'nist') {
+          out.unitsdb.nist = stripWrapping(bt[k2++]);
+          pinned = true;
+        } else if (ucmd === 'unitsml') {
+          out.unitsdb.unitsml = stripWrapping(bt[k2++]);
+          pinned = true;
+        } else {
+          stripWrapping(bt[k2++]);
+        }
+      }
+      if (!pinned) {
+        throw new Error(
+          `Parsing error: quantity_register. unit ${id}: unitsdb carries no identifier (nist / unitsml)`,
+        );
+      }
     } else {
       unwrapBlock(t[i++]);
     }
@@ -234,6 +261,16 @@ const dumpQuantityRegister = function (reg: QuantityRegister): string {
     }
     if (u.definition) {
       line += ' definition "' + escapeString(u.definition) + '"';
+    }
+    if (u.unitsdb && (u.unitsdb.nist || u.unitsdb.unitsml)) {
+      line += ' unitsdb {';
+      if (u.unitsdb.nist) {
+        line += ' nist "' + escapeString(u.unitsdb.nist) + '"';
+      }
+      if (u.unitsdb.unitsml) {
+        line += ' unitsml "' + escapeString(u.unitsdb.unitsml) + '"';
+      }
+      line += ' }';
     }
     line += dumpCorrespondencesInline(u.correspondences);
     out += line + ' }\n';

@@ -504,6 +504,14 @@ export const CHECK_RULES: CheckRule[] = [
     "a form field's scalar min/max are each a numeric literal or a template, and a numerically bounded pair is ordered min ≤ max — the entry-validation facet for measured fields (kernel#90)",
   ),
   R(
+    'C185',
+    'unitsdb-binding-coherent',
+    'quantities',
+    'error',
+    'normal',
+    "a register unit's unitsdb pin names entries in the supplied UnitsDB data and the decomposition to SI bases terminates — the DB is authoritative for structure, the register keeps its authored conversion (kernel#87)",
+  ),
+  R(
     'C173',
     'step-plane-refs-resolve',
     'process',

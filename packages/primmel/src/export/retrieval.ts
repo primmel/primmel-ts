@@ -141,6 +141,7 @@ import type {
   Behavior,
   ClassificationDimension,
 } from '../types/Subject';
+import { UnitsDb } from '../unitsdb';
 import { loadPackageWithIssues } from '../ser-des/package';
 import { parseYamlBlock } from './yaml-lite';
 
@@ -1569,14 +1570,23 @@ function constraintUnit(c: Constraint): UnitContent {
   );
 }
 
-function characteristicUnit(v: Verdict): UnitContent {
+function characteristicUnit(v: Verdict, standard: Standard): UnitContent {
   // The deployed plane's `characteristic` kind: the canonical verdict
   // quantity (derive once, reference everywhere).
   const units = present(v.unit) && v.unit !== '1' ? [v.unit] : undefined;
+  const unitsdb = units ? unitsdbEnrichment(standard, v.unit!) : undefined;
   const payload: Record<string, unknown> = {
     ...(present(v.behavior) ? { behavior: v.behavior } : {}),
     ...(present(v.quantityKind) ? { quantity_kind: v.quantityKind } : {}),
     ...(v.seriesReduction ? { series_reduction: v.seriesReduction } : {}),
+    ...(unitsdb
+      ? {
+          unitsdb: unitsdb.unitsdb,
+          ...(unitsdb.si_structure
+            ? { si_structure: unitsdb.si_structure }
+            : {}),
+        }
+      : {}),
   };
   return assemble(
     {
@@ -1599,7 +1609,7 @@ function characteristicUnit(v: Verdict): UnitContent {
   );
 }
 
-function tableUnit(t: Table): UnitContent {
+function tableUnit(t: Table, standard: Standard): UnitContent {
   const units = (t.columnDefs ?? [])
     .map(c => c.unit)
     .filter(u => present(u) && u !== '1')
@@ -1607,11 +1617,24 @@ function tableUnit(t: Table): UnitContent {
   const payload: Record<string, unknown> = {
     ...(presentList(t.columnDefs)
       ? {
-          columns: t.columnDefs!.map(c => ({
-            name: c.name,
-            type: c.type,
-            ...(present(c.unit) ? { unit: c.unit } : {}),
-          })),
+          columns: t.columnDefs!.map(c => {
+            const enrichment = present(c.unit)
+              ? unitsdbEnrichment(standard, c.unit!)
+              : undefined;
+            return {
+              name: c.name,
+              type: c.type,
+              ...(present(c.unit) ? { unit: c.unit } : {}),
+              ...(enrichment
+                ? {
+                    unitsdb: enrichment.unitsdb,
+                    ...(enrichment.si_structure
+                      ? { si_structure: enrichment.si_structure }
+                      : {}),
+                  }
+                : {}),
+            };
+          }),
         }
       : present(t.columns)
         ? { columns: t.columns }
@@ -1798,6 +1821,65 @@ export interface RetrievalExportOptions {
    * with its own hash pipeline may supply it here.
    */
   sourceHash?: string;
+  /**
+   * The UnitsDB data (kernel#87) — when supplied, every emitted unit
+   * that a register entry pins enriches with the pin's identifiers and
+   * the DB-resolved SI structure (the bases, the prefix, the scale), so
+   * the consumer normalizes stated quantities through the same DB
+   * semantics. Absent, the emission is byte-identical to the /2 shape.
+   */
+  unitsDb?: import('../unitsdb').UnitsDbData;
+}
+
+/**
+ * The export walk's UnitsDB binding: set at the entry, cleared on exit —
+ * the per-kind unit functions read it to enrich a pinned unit's
+ * emission. Module-scoped because the walk's shape is a fixed function
+ * tree; the set/clear bracket keeps it out of every other call.
+ */
+let walkUnitsDb: import('../unitsdb').UnitsDb | undefined;
+
+/** The enrichment for one unit symbol: when the symbol names a register
+ *  unit that pins UnitsDB, the entry gains the pin's identifiers and
+ *  the DB-resolved SI structure. Absent a DB or a pin: undefined (the
+ *  emission is byte-identical to the /2 shape). */
+function unitsdbEnrichment(
+  standard: Standard,
+  symbol: string,
+): Record<string, unknown> | undefined {
+  if (!walkUnitsDb) {
+    return undefined;
+  }
+  for (const reg of standard.quantityRegisters ?? []) {
+    for (const u of reg.units ?? []) {
+      if (u.symbol !== symbol || !u.unitsdb) {
+        continue;
+      }
+      let si: Record<string, unknown> | undefined;
+      try {
+        const id = u.unitsdb.unitsml ?? u.unitsdb.nist;
+        if (!id) {
+          continue;
+        }
+        const r = walkUnitsDb.resolveUnit(id);
+        si = {
+          si_bases: r.siBases,
+          ...(r.prefix ? { prefix: r.prefix } : {}),
+          ...(r.scale ? { scale: r.scale } : {}),
+        };
+      } catch {
+        si = undefined;
+      }
+      return {
+        unitsdb: {
+          ...(u.unitsdb.nist ? { nist: u.unitsdb.nist } : {}),
+          ...(u.unitsdb.unitsml ? { unitsml: u.unitsdb.unitsml } : {}),
+        },
+        ...(si ? { si_structure: si } : {}),
+      };
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -1808,9 +1890,18 @@ export function exportStandardRetrieval(
   standard: Standard,
   options: RetrievalExportOptions = {},
 ): RetrievalExport {
-  // The UnitsDB binding is environmental: UNITSDB_DIR names a unitsdb
-  // checkout (units.json), and condition-set entries enrich with the
-  // DB's identifiers and measurement scales. Absent, no enrichment.
+  walkUnitsDb = options.unitsDb ? new UnitsDb(options.unitsDb) : undefined;
+  try {
+    return exportStandardRetrievalInner(standard, options);
+  } finally {
+    walkUnitsDb = undefined;
+  }
+}
+
+function exportStandardRetrievalInner(
+  standard: Standard,
+  options: RetrievalExportOptions = {},
+): RetrievalExport {
   const pkg = packageBlock(standard);
   // Build the unit contents paired with the KERNEL element id — the
   // address a `text` block targets (a term's variants address
@@ -1849,10 +1940,10 @@ export function exportStandardRetrieval(
     push(constraintUnit(c), c.id);
   }
   for (const v of standard.verdicts ?? []) {
-    push(characteristicUnit(v), v.id);
+    push(characteristicUnit(v, standard), v.id);
   }
   for (const t of standard.tables ?? []) {
-    push(tableUnit(t), t.id);
+    push(tableUnit(t, standard), t.id);
   }
   for (const s of standard.testSequences ?? []) {
     push(sequenceUnit(s), s.id);
