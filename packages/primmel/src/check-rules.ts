@@ -496,6 +496,14 @@ export const CHECK_RULES: CheckRule[] = [
     "a record form whose run_inputs names the applied-input slice the record carries — every name is the owning test's run.inputs member AND a field of the form's data class (spec#57, the record-run link machine-checked end to end)",
   ),
   R(
+    'C184',
+    'field-range-order',
+    'base',
+    'error',
+    'normal',
+    "a form field's scalar min/max are each a numeric literal or a template, and a numerically bounded pair is ordered min ≤ max — the entry-validation facet for measured fields (kernel#90)",
+  ),
+  R(
     'C173',
     'step-plane-refs-resolve',
     'process',

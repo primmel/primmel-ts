@@ -369,6 +369,17 @@ export function parseFormField(
       const raw = stripWrapping(t[i++]);
       const n = parseInt(raw, 10);
       field.maxItems = isNaN(n) ? raw : n;
+    } else if (cmd === 'min') {
+      // The scalar numeric range (entry validation, kernel#90) — the
+      // min_items convention: a non-numeric bound stays verbatim (the
+      // template spelling).
+      const raw = stripWrapping(t[i++]);
+      const n = Number(raw);
+      field.min = raw !== '' && Number.isFinite(n) ? n : raw;
+    } else if (cmd === 'max') {
+      const raw = stripWrapping(t[i++]);
+      const n = Number(raw);
+      field.max = raw !== '' && Number.isFinite(n) ? n : raw;
     } else if (cmd === 'items') {
       // items { <type> [unit "…"] [fields { … }] } — element type, optional
       // unit, optional nested fields.
@@ -790,6 +801,12 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
   if (field.maxItems !== undefined && field.maxItems !== null) {
     inner.push('max_items ' + dumpBareSafe(String(field.maxItems)));
+  }
+  if (field.min !== undefined && field.min !== null) {
+    inner.push('min ' + dumpBareSafe(String(field.min)));
+  }
+  if (field.max !== undefined && field.max !== null) {
+    inner.push('max ' + dumpBareSafe(String(field.max)));
   }
   if (field.series) {
     inner.push(dumpSeriesDecl(field.series));
