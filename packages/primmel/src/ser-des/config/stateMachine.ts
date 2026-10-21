@@ -49,11 +49,82 @@ export const parseStateMachine: Parser = function (entityName, data) {
           for (const s of stateBlock.split(/\s+/).filter(s => s.length > 0)) {
             result.states.push({ name: s });
           }
+        } else if (command === 'state') {
+          // state <name> — the v3.4 bare declaration (spec: state
+          // machines; the twin-cert corpus spelling). Coexists with the
+          // legacy `states { … }` list; either populates result.states.
+          // An attached block is consumed and skipped (no grammar defined
+          // for one yet — the parser stays total, as everywhere).
+          const name = t[i++];
+          result.states.push({ name });
+          result.statesDeclared = true;
+          if (i < t.length && t[i].startsWith('{')) {
+            unwrapBlock(t[i++]);
+          }
         } else if (command === 'transition') {
           // transition <From> | [<From>, <From>, ...] -> <To> [action <ActionName>] { ... }
-          // Multi-source lists (G10) fan out to one Transition per source.
+          //   — the legacy arrow form — or the v3.4 named form:
+          // transition <name> { from <S> | {<S...>} to <S> [action <n>]
+          // [guard "..."] [cascade <T> {...}] ... }  (spec: state
+          // machines; the twin-cert corpus spelling). The two are told
+          // apart by the SECOND token: a block opens the named form.
+          // Multi-source lists (G10, either form) fan out to one
+          // Transition per source.
           let fromList: string[] = [];
           const fromTok = t[i++];
+          if (i < t.length && t[i].startsWith('{')) {
+            const name = fromTok;
+            const body = unwrapBlock(t[i++]);
+            const bt = tokenizePackage(body);
+            let to = '';
+            let actionName = '';
+            let guard = '';
+            const cascades: Cascade[] = [];
+            const referenceIds: string[] = [];
+            let j = 0;
+            while (j < bt.length) {
+              const cmd = bt[j++];
+              if (j < bt.length) {
+                if (cmd === 'from') {
+                  const fromValue = bt[j++];
+                  if (fromValue.startsWith('{')) {
+                    fromList = unwrapBlock(fromValue)
+                      .split(/[,\s]+/)
+                      .filter(x => x.length > 0);
+                  } else {
+                    fromList = [fromValue];
+                  }
+                } else if (cmd === 'to') {
+                  to = bt[j++];
+                } else if (cmd === 'action') {
+                  actionName = bt[j++];
+                } else if (cmd === 'guard') {
+                  guard = unwrapBlock(bt[j++]);
+                } else if (cmd === 'cascade') {
+                  const target = bt[j++];
+                  if (j < bt.length) {
+                    cascades.push(parseCascade(target, unwrapBlock(bt[j++])));
+                  }
+                } else if (cmd === 'reference') {
+                  referenceIds.push(...tokenizePackage(bt[j++]));
+                } else {
+                  unwrapBlock(bt[j++]);
+                }
+              }
+            }
+            for (const from of fromList) {
+              result.transitions.push({
+                name,
+                from,
+                to,
+                actionName,
+                guard,
+                cascades,
+                referenceIds,
+              });
+            }
+            continue;
+          }
           if (fromTok.startsWith('[')) {
             let listText = fromTok;
             while (!listText.includes(']') && i < t.length) {
@@ -234,6 +305,53 @@ function parseFieldMap(block: string): Record<string, string> {
   return fields;
 }
 
+/** Emit one cascade block at the given indent (the body lines ride +2). */
+function emitCascade(c: Cascade, indent: number): string {
+  const pad = ' '.repeat(indent);
+  const pad2 = ' '.repeat(indent + 2);
+  let out = pad + 'cascade ' + c.targetEntity + ' {\n';
+  if (c.action) {
+    out += pad2 + 'action ' + c.action + '\n';
+  }
+  if (c.where) {
+    out += pad2 + 'where "' + escapeString(c.where) + '"\n';
+  }
+  // via sits between the selector (where) and the payload
+  // (with/set/create): select the records, route the status write,
+  // deliver the payload (smart gap-close E12).
+  if (c.via) {
+    out += pad2 + 'via ' + c.via + '\n';
+  }
+  if (c.with && Object.keys(c.with).length > 0) {
+    out += pad2 + 'with {\n';
+    for (const [k, v] of Object.entries(c.with)) {
+      out += ' '.repeat(indent + 4) + k + ': "' + escapeString(v) + '"\n';
+    }
+    out += pad2 + '}\n';
+  }
+  if (c.set.length > 0) {
+    out += pad2 + 'set {\n';
+    for (const st of c.set) {
+      out +=
+        ' '.repeat(indent + 4) +
+        st.field +
+        ': "' +
+        escapeString(st.value) +
+        '"\n';
+    }
+    out += pad2 + '}\n';
+  }
+  if (c.create && Object.keys(c.create).length > 0) {
+    out += pad2 + 'create {\n';
+    for (const [k, v] of Object.entries(c.create)) {
+      out += ' '.repeat(indent + 4) + k + ': "' + escapeString(v) + '"\n';
+    }
+    out += pad2 + '}\n';
+  }
+  out += pad + '}\n';
+  return out;
+}
+
 export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
   let out = 'state_machine ' + sm.entityName + ' {\n';
   // The family line is emitted only for operational machines: lifecycle is
@@ -251,37 +369,58 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
     out += '  initial ' + sm.initialState + '\n';
   }
   if (sm.states.length > 0) {
-    out += '  states {\n';
-    for (const s of sm.states) {
-      out += '    ' + s.name + '\n';
+    if (sm.statesDeclared) {
+      // The v3.4 bare declarations — replay the authored spelling.
+      for (const s of sm.states) {
+        out += '  state ' + s.name + '\n';
+      }
+    } else {
+      out += '  states {\n';
+      for (const s of sm.states) {
+        out += '    ' + s.name + '\n';
+      }
+      out += '  }\n';
     }
-    out += '  }\n';
   }
-  // Group consecutive multi-source transitions back into [A, B] -> D form
-  // (parse fans them out; dump re-groups when to/action/guard/cascades match).
-  const groups: Array<{
+  // Group consecutive transitions back into their authored forms (parse
+  // fans multi-source lists out; dump re-groups). Named transitions
+  // regroup by name, arrow transitions by the shared endpoints/action/
+  // guard/cascades key — the two spellings never merge into one another.
+  type Group = {
+    name?: string;
     to: string;
     actionName: string;
     guard: string;
     cascades: (typeof sm.transitions)[number]['cascades'];
     referenceIds: string[];
     froms: string[];
-  }> = [];
+  };
+  const arrowKey = (x: Omit<Transition, 'from'>) =>
+    [
+      x.to,
+      x.actionName,
+      x.guard,
+      JSON.stringify(x.cascades),
+      JSON.stringify(x.referenceIds),
+    ].join('|');
+  const groups: Group[] = [];
   for (const t of sm.transitions) {
-    const key = (x: typeof t) =>
-      [
-        x.to,
-        x.actionName,
-        x.guard,
-        JSON.stringify(x.cascades),
-        JSON.stringify(x.referenceIds),
-      ].join('|');
     const last = groups[groups.length - 1];
-    if (
-      last &&
-      key({ ...t, from: '' } as typeof t) ===
-        key({ ...last, from: '' } as never)
-    ) {
+    if (t.name) {
+      if (last && last.name === t.name && arrowKey(last) === arrowKey(t)) {
+        last.froms.push(t.from);
+      } else {
+        groups.push({
+          name: t.name,
+          to: t.to,
+          actionName: t.actionName,
+          guard: t.guard,
+          cascades: t.cascades,
+          referenceIds: t.referenceIds,
+          froms: [t.from],
+        });
+      }
+    } else if (last && !last.name && arrowKey(last) === arrowKey(t)) {
       last.froms.push(t.from);
     } else {
       groups.push({
@@ -295,9 +434,39 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
     }
   }
   for (const g of groups) {
-    const fromText =
+    const fromsText =
       g.froms.length > 1 ? '[' + g.froms.join(', ') + ']' : g.froms[0];
-    out += '  transition ' + fromText + ' -> ' + g.to;
+    if (g.name) {
+      // The named form. A bare from/to block stays on one line (the
+      // twin-cert corpus spelling); facets reopen the block.
+      const bare =
+        g.froms.length === 1 &&
+        !g.actionName &&
+        !g.guard &&
+        g.cascades.length === 0 &&
+        g.referenceIds.length === 0;
+      if (bare) {
+        out += '  transition ' + g.name + ' { from ' + fromsText;
+        out += ' to ' + g.to + ' }\n';
+        continue;
+      }
+      out += '  transition ' + g.name + ' {\n';
+      out += '    from ' + (g.froms.length > 1 ? '{ ' : '') + fromsText;
+      out += (g.froms.length > 1 ? ' }' : '') + '\n';
+      out += '    to ' + g.to + '\n';
+      if (g.actionName) {
+        out += '    action ' + g.actionName + '\n';
+      }
+      if (g.guard) {
+        out += '    guard "' + escapeString(g.guard) + '"\n';
+      }
+      for (const c of g.cascades) {
+        out += emitCascade(c, 4);
+      }
+      out += '  }\n';
+      continue;
+    }
+    out += '  transition ' + fromsText + ' -> ' + g.to;
     if (g.actionName) {
       out += ' action ' + g.actionName;
     }
@@ -306,41 +475,7 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
       out += '    guard "' + escapeString(g.guard) + '"\n';
     }
     for (const c of g.cascades) {
-      out += '    cascade ' + c.targetEntity + ' {\n';
-      if (c.action) {
-        out += '      action ' + c.action + '\n';
-      }
-      if (c.where) {
-        out += '      where "' + escapeString(c.where) + '"\n';
-      }
-      // via sits between the selector (where) and the payload
-      // (with/set/create): select the records, route the status write,
-      // deliver the payload (smart gap-close E12).
-      if (c.via) {
-        out += '      via ' + c.via + '\n';
-      }
-      if (c.with && Object.keys(c.with).length > 0) {
-        out += '      with {\n';
-        for (const [k, v] of Object.entries(c.with)) {
-          out += '        ' + k + ': "' + escapeString(v) + '"\n';
-        }
-        out += '      }\n';
-      }
-      if (c.set.length > 0) {
-        out += '      set {\n';
-        for (const s of c.set) {
-          out += '        ' + s.field + ': "' + escapeString(s.value) + '"\n';
-        }
-        out += '      }\n';
-      }
-      if (c.create && Object.keys(c.create).length > 0) {
-        out += '      create {\n';
-        for (const [k, v] of Object.entries(c.create)) {
-          out += '        ' + k + ': "' + escapeString(v) + '"\n';
-        }
-        out += '      }\n';
-      }
-      out += '    }\n';
+      out += emitCascade(c, 4);
     }
     out += '  }\n';
   }

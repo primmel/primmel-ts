@@ -62,6 +62,14 @@ export interface Cascade {
 }
 
 export interface Transition {
+  /**
+   * The transition's name — the v3.4 named form (`transition <name> { from
+   * A to B }`, spec section on state machines). Present: the machine
+   * declares the named form and the dumper emits it back. Absent: the
+   * legacy arrow form (`transition A -> B action n`), still canonical in
+   * the r144-era models.
+   */
+  name?: string;
   from: string;
   to: string;
   actionName: string;
@@ -87,6 +95,14 @@ interface StateMachine {
   kind: StateMachineKind;
   initialState: string;
   states: StateMachineState[];
+  /**
+   * The states arrived as bare `state <name>` declarations (the v3.4
+   * spelling, e.g. twin-cert) rather than the `states { … }` list — the
+   * dumper replays the authored spelling so the round trip is a
+   * fixpoint. A machine mixing both spellings canonicalizes to
+   * declarations on first dump.
+   */
+  statesDeclared?: boolean;
   transitions: Transition[];
   referenceIds: string[];
 }
