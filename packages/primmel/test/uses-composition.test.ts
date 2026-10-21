@@ -853,9 +853,7 @@ describe('the manifest-only stopgap resolves the scoped capability-closure form 
       join(recDir, 'package.primmel'),
       'package {\n  id rec-pkg\n  kind rec\n  title "Rec"\n  version "2021"\n  baseUrn "urn:example:rec:2021"\n  requires { iec-proc:test-procedure-burst }\n}',
     );
-    const c31 = checkManifestResolution(recDir).filter(
-      i => i.check === 'C31',
-    );
+    const c31 = checkManifestResolution(recDir).filter(i => i.check === 'C31');
     assert.equal(c31.length, 1);
     assert.match(c31[0].message, /iec-proc:test-procedure-burst/);
     assert.match(c31[0].message, /manifest-only/);

@@ -8881,9 +8881,7 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
     for (const req of m.requires ?? []) {
       const at = req.indexOf(':');
       const scoped =
-        at > 0
-          ? { pkg: req.slice(0, at), token: req.slice(at + 1) }
-          : null;
+        at > 0 ? { pkg: req.slice(0, at), token: req.slice(at + 1) } : null;
       const satisfied = scoped
         ? [...siblings.values()].some(
             other =>

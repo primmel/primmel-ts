@@ -556,7 +556,8 @@ describe('C80 under composition: the register is the union the closure declares'
   it('a pin to the declaring provider edition resolves under composition', () => {
     const { providerDir, consumerDir } = buildClosure('2013');
     const issues = checkPackage(consumerDir, {
-      resolvePackage: (id: string) => (id === 'provider-a' ? providerDir : undefined),
+      resolvePackage: (id: string) =>
+        id === 'provider-a' ? providerDir : undefined,
     } as never).filter(i => i.check === 'C80');
     assert.deepEqual(issues, []);
   });
@@ -564,7 +565,8 @@ describe('C80 under composition: the register is the union the closure declares'
   it('a pin no closure manifest declares still fails — INV-8 keeps its teeth', () => {
     const { providerDir, consumerDir } = buildClosure('2014');
     const c80 = checkPackage(consumerDir, {
-      resolvePackage: (id: string) => (id === 'provider-a' ? providerDir : undefined),
+      resolvePackage: (id: string) =>
+        id === 'provider-a' ? providerDir : undefined,
     } as never).filter(i => i.check === 'C80');
     assert.equal(c80.length, 1);
     assert.match(c80[0].message, /"2014" does not resolve/);
