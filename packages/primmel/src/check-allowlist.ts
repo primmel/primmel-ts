@@ -63,6 +63,15 @@ export interface AllowlistEntry {
   id?: string;
   reason: string;
   auditRef: string;
+  /** The deprecation ladder's entry vocabulary (spec §16, spec#58 —
+   *  optional, documented, never required):
+   *  `migrated_by` names the PR/wave that carries the fix the entry
+   *  dates; `retires_with` names the release or wave whose landing lets
+   *  the entry die (the C57 ratchet's planned death date). Tooling reads
+   *  both to audit the debt uniformly and to flag entries whose stated
+   *  wave has landed. */
+  migratedBy?: string;
+  retiresWith?: string;
 }
 
 export interface PackageAllowlist {
@@ -231,6 +240,10 @@ function parseEntry(block: string): AllowlistEntry {
       entry.reason = value;
     } else if (key === 'audit_ref') {
       entry.auditRef = value;
+    } else if (key === 'migrated_by') {
+      entry.migratedBy = value;
+    } else if (key === 'retires_with') {
+      entry.retiresWith = value;
     }
   }
   return entry;
@@ -273,6 +286,21 @@ function validateEntry(entry: AllowlistEntry): CheckIssue[] {
       check: 'C56',
       severity: 'error',
       message: `${ALLOWLIST_FILENAME}: entry${label} has no audit_ref — new allowlist entries require clause-referenced reasons (allowlist-malformed)`,
+    });
+  }
+  // The ladder vocabulary (spec#58): optional, but PRESENT means well-formed.
+  if (entry.migratedBy !== undefined && entry.migratedBy === '') {
+    issues.push({
+      check: 'C56',
+      severity: 'error',
+      message: `${ALLOWLIST_FILENAME}: entry${label} carries an empty migrated_by — name the wave that carries the fix, or drop the facet (allowlist-malformed)`,
+    });
+  }
+  if (entry.retiresWith !== undefined && entry.retiresWith === '') {
+    issues.push({
+      check: 'C56',
+      severity: 'error',
+      message: `${ALLOWLIST_FILENAME}: entry${label} carries an empty retires_with — name the release or wave the entry dies with, or drop the facet (allowlist-malformed)`,
     });
   }
   return issues;
@@ -330,7 +358,7 @@ export function applyAllowlist(
       out.push({
         check: 'C57',
         severity: 'error',
-        message: `${ALLOWLIST_FILENAME}: STALE entry [${entry.rule}] "${entry.match}" matches no issue — the data was fixed; remove the entry (allowlist-stale)`,
+        message: `${ALLOWLIST_FILENAME}: STALE entry [${entry.rule}] "${entry.match}" matches no issue — the data was fixed; remove the entry${entry.retiresWith ? ` (the entry declared retires_with "${entry.retiresWith}")` : ''} (allowlist-stale)`,
       });
     }
   }
