@@ -19,6 +19,7 @@ import type { Instance } from './types/Instance';
 import type { Variable } from './types/data';
 import type { StateTrajectoryEntry, FiredStep } from './operational-state';
 import { foldTrajectory } from './operational-state';
+import { isDateTime } from './time';
 
 /** One applied program step as executed: the ordered stimulus point's
  *  evaluated arguments and its acceptance outcome. */
@@ -84,6 +85,60 @@ export interface Run {
   trajectory: StateTrajectoryEntry[];
   /** The evidence records the run produced. */
   evidence: RunEvidenceRecord[];
+  /** The terminal abort (spec §10's abort transition, spec#56): present
+   *  exactly when the run's lifecycle state is `aborted`. The captured
+   *  evidence and programs STAND — the store holds what was captured
+   *  (the record is the record); the abort lives on the run's terminal
+   *  state, never as a deletion. */
+  abort?: RunAbort;
+}
+
+/** Who fired the abort (spec §10's transition semantics, spec#56): the
+ *  run's own performer (its `performed_by` actor — the operational
+ *  stop) or the scheme operator (the directed stop — which is itself a
+ *  candidate finding the SCHEME records, never a laboratory failure). */
+export type RunAbortActor = 'laboratory' | 'manufacturer' | 'scheme';
+
+/** The abort's mandatory evidence: WHO fired it and WHY — the reason is
+ *  the abort's load-bearing half (`invalid` names its violated
+ *  precondition; `aborted` names its reason), and `at` stamps the
+ *  transition when the consumer's clock is authoritative. */
+export interface RunAbort {
+  by: RunAbortActor;
+  reason: string;
+  at?: string;
+}
+
+/** Fire the abort transition on a run (spec §10, spec#56): validates
+ *  the transition's evidence — the actor is the closed vocabulary, the
+ *  reason is mandatory and non-empty (`at`, when present, is an ISO
+ *  8601 datetime) — stamps it on the run, and returns the run. The
+ *  captured evidence and programs are untouched: an aborted run's
+ *  partial records land in the declared store, marked by the terminal
+ *  state. Refiring on an already-aborted run is a no-op error — the
+ *  transition fires once. */
+export function abortRun(
+  run: Run,
+  abort: RunAbort,
+): Run {
+  if (abort.by !== 'laboratory' && abort.by !== 'manufacturer' && abort.by !== 'scheme') {
+    throw new Error(
+      `abort.by must be one of laboratory | manufacturer | scheme — got "${String(abort.by)}"`,
+    );
+  }
+  if (typeof abort.reason !== 'string' || abort.reason.trim() === '') {
+    throw new Error('abort.reason is mandatory — an abort without its reason is an unrecorded stop');
+  }
+  if (abort.at !== undefined && !isDateTime(abort.at)) {
+    throw new Error(`abort.at must be an ISO 8601 datetime — got "${abort.at}"`);
+  }
+  if (run.abort) {
+    throw new Error(
+      `the run is already aborted (by ${run.abort.by}: "${run.abort.reason}") — the abort transition fires once`,
+    );
+  }
+  run.abort = { ...abort, reason: abort.reason.trim() };
+  return run;
 }
 
 /** One run input: an applied load with its observed error — the world
