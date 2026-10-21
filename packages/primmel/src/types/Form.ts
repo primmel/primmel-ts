@@ -118,6 +118,12 @@ export interface FormField {
    *  A non-numeric bound (e.g. the template "${{ n_runs }}") is kept verbatim. */
   minItems?: number | string | null;
   maxItems?: number | string | null;
+  /** Scalar numeric range bounds (optional; parsed from min/max) — the
+   *  entry-validation facet for measured/quantitative fields (R 60 class
+   *  limits: emax/emin/vmin, temperature, humidity). A non-numeric bound
+   *  (the "${{ n }}" template) is kept verbatim. */
+  min?: number | string | null;
+  max?: number | string | null;
   // Subform reference (when this field composes a subform)
   subformRef: SubformRef | null;
 }

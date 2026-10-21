@@ -665,6 +665,9 @@ export function checkPackage(
   // ── C183: the record form's applied-input slice (spec §10, spec#57) ─
   issues.push(...checkRecordRunInputs(standard));
 
+  // ── C184: the form field's scalar numeric range (kernel#90) ─────────
+  issues.push(...checkFieldRange(standard));
+
   // ── C152: the typed payload rule (the typed kernel, R2) ────────────
   issues.push(...checkTypedPayloads(standard));
 
@@ -10614,6 +10617,74 @@ export function checkRecordRunInputs(standard: Standard): CheckIssue[] {
         });
       }
     }
+  }
+  return issues;
+}
+
+/**
+ * C184 — field-range-order (kernel#90): a form field's scalar numeric
+ * range facets (`min` / `max`, the entry-validation facet for measured
+ * fields) are each a numeric literal or a `${…}` template, and a field
+ * declaring BOTH bounds numerically declares an ordered range:
+ * min ≤ max. Nested fields are judged with the same rule (a subform's
+ * shape is the form's shape).
+ */
+export function checkFieldRange(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const TEMPLATE = /^\$\{.+\}$/;
+  const boundKind = (v: number | string | null | undefined) => {
+    if (v === undefined || v === null) {
+      return 'absent';
+    }
+    if (typeof v === 'number') {
+      return 'numeric';
+    }
+    if (TEMPLATE.test(v)) {
+      return 'template';
+    }
+    return 'invalid';
+  };
+  const walk = (
+    formId: string,
+    fields: readonly FormField[],
+    path: string,
+  ): void => {
+    for (const f of fields) {
+      const where = path === '' ? `field ${f.name}` : `field ${path}.${f.name}`;
+      const kMin = boundKind(f.min);
+      const kMax = boundKind(f.max);
+      if (kMin === 'invalid') {
+        issues.push({
+          check: 'C184',
+          severity: 'error',
+          message: `form ${formId}: ${where} min "${String(f.min)}" is neither a numeric literal nor a \${{…}} template (field-range-order)`,
+        });
+      }
+      if (kMax === 'invalid') {
+        issues.push({
+          check: 'C184',
+          severity: 'error',
+          message: `form ${formId}: ${where} max "${String(f.max)}" is neither a numeric literal nor a \${{…}} template (field-range-order)`,
+        });
+      }
+      if (
+        kMin === 'numeric' &&
+        kMax === 'numeric' &&
+        (f.min as number) > (f.max as number)
+      ) {
+        issues.push({
+          check: 'C184',
+          severity: 'error',
+          message: `form ${formId}: ${where} declares min ${f.min} > max ${f.max} — the range is empty by declaration (field-range-order)`,
+        });
+      }
+      if (f.fields?.length) {
+        walk(formId, f.fields, path === '' ? f.name : `${path}.${f.name}`);
+      }
+    }
+  };
+  for (const form of standard.forms ?? []) {
+    walk(form.id, form.fields ?? [], '');
   }
   return issues;
 }

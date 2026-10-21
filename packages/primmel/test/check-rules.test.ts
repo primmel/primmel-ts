@@ -52,18 +52,19 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // C158-C167 are the LML-aligned substrate (the spec's validation
     // contract — language-v3 §16); C168-C172, C176-C179 are the
     // expression plane and its co-rules; C180-C182 are the run plane
-    // and the series-record link (C173-C175 reserved).
+    // and the series-record link; C183 is the record-run link and C184
+    // the field's scalar range (C173-C175 reserved).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`).filter(
         id => id !== 'C112',
       ),
       ...Array.from({ length: 44 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 8 }, (_, i) => `C${i + 176}`),
+      ...Array.from({ length: 9 }, (_, i) => `C${i + 176}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128 except C112 (retired with the reference construct), C130-C173 (phase 2 retired C129), C176-C183 (C174-C175 reserved)',
+      'C1-C128 except C112 (retired with the reference construct), C130-C173 (phase 2 retired C129), C176-C184 (C174-C175 reserved)',
     );
   });
 
