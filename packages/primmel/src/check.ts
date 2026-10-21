@@ -635,7 +635,7 @@ export function checkPackage(
   // sibling manifests (C79) and the forward-edge coherence (C113), and the
   // INV-8 pin — every instance's definition_versions
   // resolves against the package's edition register (C80).
-  issues.push(...checkEditionLifecycle(dir, standard));
+  issues.push(...checkEditionLifecycle(dir, standard, compositionProviders));
 
   // ── C89: ISO 24229 spelling codes (TODO.roadmap/25, doctrine ch. 10) ──
   issues.push(...checkSpellingCodes(standard));
@@ -8873,13 +8873,28 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
   // Every requires entry (of the root and of every package in its
   // closure) names a composed package id or one of its provides entries
   // — satisfied by another package, never by the requiring one itself.
+  // The scoped form (`pkg:token`) matches the sibling that declares the
+  // package id AND carries the token in its provides — the same
+  // capability-closure semantics the composed check applies (requires
+  // never content-merges; the token names the package's own surface).
   for (const m of [root, ...closure.values()]) {
     for (const req of m.requires ?? []) {
-      const satisfied = [...closure.values()].some(
-        other =>
-          other.id !== m.id &&
-          (other.id === req || (other.provides ?? []).includes(req)),
-      );
+      const at = req.indexOf(':');
+      const scoped =
+        at > 0
+          ? { pkg: req.slice(0, at), token: req.slice(at + 1) }
+          : null;
+      const satisfied = scoped
+        ? [...siblings.values()].some(
+            other =>
+              other.id === scoped.pkg &&
+              (other.provides ?? []).includes(scoped.token),
+          )
+        : [...closure.values()].some(
+            other =>
+              other.id !== m.id &&
+              (other.id === req || (other.provides ?? []).includes(req)),
+          );
       if (!satisfied) {
         err(
           'C31',
@@ -10232,9 +10247,13 @@ export function checkLmlAligned(standard: Standard): CheckIssue[] {
  *      graph over sibling manifests is acyclic.
  *   C80 edition-pin-resolves (INV-8): every instance's
  *      definition_versions pin resolves against the package's edition
- *      register (editions ∪ {version}) — an unresolvable pin breaks the
- *      re-execution guarantee (§13.5: after an edition change the engine
- *      must know exactly which reports re-judge).
+ *      register (editions ∪ {version}) — under composition the union
+ *      the closure explicitly declares (every provider manifest's
+ *      register joins the root's, so a merged package's own instances
+ *      pin against their declaring package's register) — an
+ *      unresolvable pin breaks the re-execution guarantee (§13.5: after
+ *      an edition change the engine must know exactly which reports
+ *      re-judge).
  *   C85 baseurn-wellformed: the base URN is a well-formed IRI — it
  *      grounds every downstream IRI (the RDF projection, provenance
  *      comparisons), and the free-string field was the one manifest
@@ -10247,6 +10266,7 @@ export function checkLmlAligned(standard: Standard): CheckIssue[] {
 export function checkEditionLifecycle(
   dir: string,
   standard: Standard,
+  providers?: Array<{ id: string; dir: string }>,
 ): CheckIssue[] {
   const issues: CheckIssue[] = [];
   const err = (check: string, message: string) =>
@@ -10261,6 +10281,27 @@ export function checkEditionLifecycle(
     ...(m.editions ?? []),
     ...(m.version ? [m.version] : []),
   ]);
+  // Under composition the register is the union the closure EXPLICITLY
+  // declares: every provider manifest's editions join the root's, so a
+  // merged package's own instances pin against their declaring package's
+  // register, not the consumer's. Nothing implicit enters — a pin to an
+  // edition no closure manifest declares still fails (INV-8 keeps its
+  // teeth; the r60-lml closure's procedure packages are the case that
+  // named this).
+  for (const p of providers ?? []) {
+    try {
+      const pm = readPackageManifest(p.dir);
+      for (const e of pm.editions ?? []) {
+        register.add(e);
+      }
+      if (pm.version) {
+        register.add(pm.version);
+      }
+    } catch {
+      // An unparseable provider manifest is reported by the uses edges
+      // (C27); the register union silently skips it.
+    }
+  }
 
   // C77 — a current/preview edition is the register's newest entry.
   if (m.status === 'current' || m.status === 'preview') {

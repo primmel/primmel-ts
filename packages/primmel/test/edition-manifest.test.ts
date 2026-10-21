@@ -506,3 +506,67 @@ describe('edition lifecycle lint — seeded invalid manifests', () => {
     assert.match(c79[0].message, /superseded_by "not-a-urn" is not a URN/);
   });
 });
+
+describe('C80 under composition: the register is the union the closure declares', () => {
+  const PROVIDER = `package {
+  id provider-a
+  kind rec
+  title "Provider A"
+  version "2013"
+  editions { 2013 2005 }
+  baseUrn "urn:example:provider-a:2013"
+}`;
+  const CONSUMER = `package {
+  id consumer-b
+  kind rec
+  title "Consumer B"
+  version "2021"
+  editions { 2021 }
+  baseUrn "urn:example:consumer-b:2021"
+  uses { provider-a }
+}`;
+
+  const buildClosure = (
+    pin: string,
+  ): { providerDir: string; consumerDir: string } => {
+    const parent = mkdtempSync(join(tmpdir(), 'primmel-ed-closure-'));
+    const providerDir = join(parent, 'provider-a');
+    const consumerDir = join(parent, 'consumer-b');
+    mkdirSync(providerDir, { recursive: true });
+    mkdirSync(consumerDir, { recursive: true });
+    writeFileSync(join(providerDir, 'package.primmel'), PROVIDER);
+    mkdirSync(join(providerDir, 'model'), { recursive: true });
+    writeFileSync(
+      join(providerDir, 'model', 'classes.prl'),
+      'class ClimaticClass {\n  attribute kind, string {\n    modality SHALL\n    definition "The climatic class the procedure assigns."\n  }\n}\n',
+    );
+    writeFileSync(join(consumerDir, 'package.primmel'), CONSUMER);
+    mkdirSync(join(consumerDir, 'model'), { recursive: true });
+    writeFileSync(
+      join(consumerDir, 'model', 'instances.prl'),
+      `instance smp-1 {
+  of ClimaticClass
+  level sample
+  definition_versions { ClimaticClass : "${pin}" }
+}`,
+    );
+    return { providerDir, consumerDir };
+  };
+
+  it('a pin to the declaring provider edition resolves under composition', () => {
+    const { providerDir, consumerDir } = buildClosure('2013');
+    const issues = checkPackage(consumerDir, {
+      resolvePackage: (id: string) => (id === 'provider-a' ? providerDir : undefined),
+    } as never).filter(i => i.check === 'C80');
+    assert.deepEqual(issues, []);
+  });
+
+  it('a pin no closure manifest declares still fails — INV-8 keeps its teeth', () => {
+    const { providerDir, consumerDir } = buildClosure('2014');
+    const c80 = checkPackage(consumerDir, {
+      resolvePackage: (id: string) => (id === 'provider-a' ? providerDir : undefined),
+    } as never).filter(i => i.check === 'C80');
+    assert.equal(c80.length, 1);
+    assert.match(c80[0].message, /"2014" does not resolve/);
+  });
+});

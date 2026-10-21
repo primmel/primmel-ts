@@ -817,3 +817,47 @@ requirement /req/mine/local {
     assert.ok(standard.documentModules.some(m => m.id === 'toy_doc'));
   });
 });
+
+describe('the manifest-only stopgap resolves the scoped capability-closure form (library#80)', () => {
+  it('a scoped require names a sibling package id and its provides token', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'primmel-stopgap-scoped-'));
+    const procDir = join(parent, 'iec-proc');
+    const recDir = join(parent, 'rec-pkg');
+    mkdirSync(procDir, { recursive: true });
+    mkdirSync(recDir, { recursive: true });
+    writeFileSync(
+      join(procDir, 'package.primmel'),
+      'package {\n  id iec-proc\n  kind rec\n  title "Procedure"\n  version "2020"\n  baseUrn "urn:example:proc:2020"\n  provides { iec-proc:2020 test-procedure-burst }\n}',
+    );
+    writeFileSync(
+      join(recDir, 'package.primmel'),
+      'package {\n  id rec-pkg\n  kind rec\n  title "Rec"\n  version "2021"\n  baseUrn "urn:example:rec:2021"\n  requires { iec-proc:test-procedure-burst }\n}',
+    );
+    const issues = checkManifestResolution(recDir).filter(
+      i => i.check === 'C31',
+    );
+    assert.deepEqual(issues, []);
+  });
+
+  it('a scoped require naming a token the sibling does not declare fails', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'primmel-stopgap-scoped-bad-'));
+    const procDir = join(parent, 'iec-proc');
+    const recDir = join(parent, 'rec-pkg');
+    mkdirSync(procDir, { recursive: true });
+    mkdirSync(recDir, { recursive: true });
+    writeFileSync(
+      join(procDir, 'package.primmel'),
+      'package {\n  id iec-proc\n  kind rec\n  title "Procedure"\n  version "2020"\n  baseUrn "urn:example:proc:2020"\n  provides { test-procedure-other }\n}',
+    );
+    writeFileSync(
+      join(recDir, 'package.primmel'),
+      'package {\n  id rec-pkg\n  kind rec\n  title "Rec"\n  version "2021"\n  baseUrn "urn:example:rec:2021"\n  requires { iec-proc:test-procedure-burst }\n}',
+    );
+    const c31 = checkManifestResolution(recDir).filter(
+      i => i.check === 'C31',
+    );
+    assert.equal(c31.length, 1);
+    assert.match(c31[0].message, /iec-proc:test-procedure-burst/);
+    assert.match(c31[0].message, /manifest-only/);
+  });
+});
