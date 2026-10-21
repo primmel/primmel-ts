@@ -68,7 +68,10 @@ describe('the abort transition (spec#56)', () => {
       /reason is mandatory/,
     );
     // A padded reason is trimmed into the recorded evidence.
-    const r = abortRun(run(), { by: 'manufacturer', reason: '  operator safety stop  ' });
+    const r = abortRun(run(), {
+      by: 'manufacturer',
+      reason: '  operator safety stop  ',
+    });
     assert.equal(r.abort?.reason, 'operator safety stop');
   });
 
@@ -81,7 +84,10 @@ describe('the abort transition (spec#56)', () => {
 
   it('the transition fires once', () => {
     const r = abortRun(run(), { by: 'laboratory', reason: 'first' });
-    assert.throws(() => abortRun(r, { by: 'scheme', reason: 'second' }), /fires once/);
+    assert.throws(
+      () => abortRun(r, { by: 'scheme', reason: 'second' }),
+      /fires once/,
+    );
     assert.equal(r.abort?.reason, 'first');
   });
 });

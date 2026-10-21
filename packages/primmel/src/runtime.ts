@@ -117,20 +117,25 @@ export interface RunAbort {
  *  partial records land in the declared store, marked by the terminal
  *  state. Refiring on an already-aborted run is a no-op error — the
  *  transition fires once. */
-export function abortRun(
-  run: Run,
-  abort: RunAbort,
-): Run {
-  if (abort.by !== 'laboratory' && abort.by !== 'manufacturer' && abort.by !== 'scheme') {
+export function abortRun(run: Run, abort: RunAbort): Run {
+  if (
+    abort.by !== 'laboratory' &&
+    abort.by !== 'manufacturer' &&
+    abort.by !== 'scheme'
+  ) {
     throw new Error(
       `abort.by must be one of laboratory | manufacturer | scheme — got "${String(abort.by)}"`,
     );
   }
   if (typeof abort.reason !== 'string' || abort.reason.trim() === '') {
-    throw new Error('abort.reason is mandatory — an abort without its reason is an unrecorded stop');
+    throw new Error(
+      'abort.reason is mandatory — an abort without its reason is an unrecorded stop',
+    );
   }
   if (abort.at !== undefined && !isDateTime(abort.at)) {
-    throw new Error(`abort.at must be an ISO 8601 datetime — got "${abort.at}"`);
+    throw new Error(
+      `abort.at must be an ISO 8601 datetime — got "${abort.at}"`,
+    );
   }
   if (run.abort) {
     throw new Error(
