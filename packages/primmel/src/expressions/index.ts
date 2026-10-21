@@ -442,12 +442,41 @@ export function renderExpression(ast: ExprAst): string {
         ')'
       );
     case 'binop':
+      // The precedence-critical parens: a rendered operand wraps when it
+      // would reparse to a DIFFERENT tree — a lower-precedence operand
+      // under either side (or under and, etc.), or a same-precedence
+      // operand on the right (the parser folds same-level chains
+      // leftward, so a right-nested chain needs its parens back). The
+      // r144 measuring-range guard is the degeneration this prevents:
+      // bare `(a or b) and (c or d)` renders as `a or b and c or d` and
+      // reparses to a flat disjunction that cannot fail.
       return (
-        renderExpression(ast.left) +
+        renderBinopOperand(ast.left, ast.op, 'left') +
         ' ' +
         ast.op +
         ' ' +
-        renderExpression(ast.right)
+        renderBinopOperand(ast.right, ast.op, 'right')
       );
   }
+}
+
+const BINOP_LEVEL = new Map(
+  BINARY_LEVELS.flatMap((ops, level) => ops.map(op => [op, level] as const)),
+);
+
+function renderBinopOperand(
+  operand: ExprAst,
+  parentOp: string,
+  side: 'left' | 'right',
+): string {
+  const rendered = renderExpression(operand);
+  if (
+    operand.type === 'binop' &&
+    (side === 'right'
+      ? BINOP_LEVEL.get(operand.op)! <= BINOP_LEVEL.get(parentOp)!
+      : BINOP_LEVEL.get(operand.op)! < BINOP_LEVEL.get(parentOp)!)
+  ) {
+    return '(' + rendered + ')';
+  }
+  return rendered;
 }

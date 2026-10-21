@@ -11,6 +11,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  canonicalizeExpression,
   freeIdentifiers,
   parseExpression,
   renderExpression,
@@ -628,5 +629,31 @@ describe('the named-multiple limits with when-guards (register 18)', () => {
       msgs.some(m => m.includes('when-guard') && m.includes('ghost_limit')),
     );
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('the canonicalizer keeps precedence-critical parens (the r144 measuring-range guard)', () => {
+  const LEG = (c: string) =>
+    `(not model.classification.measurand_components -> exists(c | c = '${c}') or (model.parameters.${c}_range_min >= 10 and model.parameters.${c}_range_max <= 20000))`;
+  const GUARD = `${LEG('co')}\n  and ${LEG('no')}`;
+
+  it('the block body canonicalizes to a conjunction of legs, never a flat disjunction', () => {
+    const canon = canonicalizeExpression(GUARD);
+    const ast = parseExpression(canon);
+    assert.equal(ast.type, 'binop');
+    assert.equal((ast as { op: string }).op, 'and');
+    assert.match(canon, /^\(not .* or .* and .*\) and \(not /);
+  });
+
+  it('the canonical form is a fixpoint and an inner and under or keeps its parens', () => {
+    const canon = canonicalizeExpression(GUARD);
+    assert.equal(canonicalizeExpression(canon), canon);
+    // `a or (b and c)` — the and rides the or's right, tighter than or:
+    // bare is faithful. The inverse — or under and — must wrap.
+    const flat = canonicalizeExpression('x >= 1 or y >= 2 and z <= 3');
+    assert.equal(parseExpression(flat).type, 'binop');
+    assert.equal((parseExpression(flat) as { op: string }).op, 'or');
+    const mixed = canonicalizeExpression('(a >= 1 or b >= 2) and c <= 3');
+    assert.match(mixed, /^\(.* or .*\) and /);
   });
 });
