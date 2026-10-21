@@ -186,11 +186,11 @@ describe('allowlist malformed entries (C56)', () => {
     );
   });
 
-describe('the ladder entry vocabulary (spec#58)', () => {
-  it('migrated_by and retires_with parse and never trip the validator', () => {
-    const issues = checked(
-      ORPHAN_REQ,
-      `allowlist_entry {
+  describe('the ladder entry vocabulary (spec#58)', () => {
+    it('migrated_by and retires_with parse and never trip the validator', () => {
+      const issues = checked(
+        ORPHAN_REQ,
+        `allowlist_entry {
   rule C5
   match "requirement /req/no-such-req:*"
   reason "Fixed already."
@@ -199,14 +199,17 @@ describe('the ladder entry vocabulary (spec#58)', () => {
   retires_with "1.21.22"
 }
 `,
-    );
-    assert.deepEqual(issues.filter(i => i.check === 'C56'), []);
-  });
+      );
+      assert.deepEqual(
+        issues.filter(i => i.check === 'C56'),
+        [],
+      );
+    });
 
-  it('an empty migrated_by is malformed (C56)', () => {
-    const issues = checked(
-      ORPHAN_REQ,
-      `allowlist_entry {
+    it('an empty migrated_by is malformed (C56)', () => {
+      const issues = checked(
+        ORPHAN_REQ,
+        `allowlist_entry {
   rule C5
   match "requirement /req/no-such-req:*"
   reason "Fixed already."
@@ -214,16 +217,16 @@ describe('the ladder entry vocabulary (spec#58)', () => {
   migrated_by ""
 }
 `,
-    );
-    const c56 = issues.filter(i => i.check === 'C56');
-    assert.equal(c56.length, 1);
-    assert.ok(c56[0].message.includes('empty migrated_by'));
-  });
+      );
+      const c56 = issues.filter(i => i.check === 'C56');
+      assert.equal(c56.length, 1);
+      assert.ok(c56[0].message.includes('empty migrated_by'));
+    });
 
-  it('an empty retires_with is malformed (C56)', () => {
-    const issues = checked(
-      ORPHAN_REQ,
-      `allowlist_entry {
+    it('an empty retires_with is malformed (C56)', () => {
+      const issues = checked(
+        ORPHAN_REQ,
+        `allowlist_entry {
   rule C5
   match "requirement /req/no-such-req:*"
   reason "Fixed already."
@@ -231,12 +234,12 @@ describe('the ladder entry vocabulary (spec#58)', () => {
   retires_with ""
 }
 `,
-    );
-    const c56 = issues.filter(i => i.check === 'C56');
-    assert.equal(c56.length, 1);
-    assert.ok(c56[0].message.includes('empty retires_with'));
+      );
+      const c56 = issues.filter(i => i.check === 'C56');
+      assert.equal(c56.length, 1);
+      assert.ok(c56[0].message.includes('empty retires_with'));
+    });
   });
-});
 
   it('empty match / reason / audit_ref each fail', () => {
     const issues = checked(
