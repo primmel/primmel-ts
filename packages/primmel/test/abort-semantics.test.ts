@@ -52,7 +52,6 @@ describe('the abort transition (spec#56)', () => {
     for (const by of ['IA', 'lab', '', 42, null]) {
       assert.throws(
         () => abortRun(run(), { by: by as never, reason: 'x' }),
-        undefined,
         `refuses ${String(by)}`,
       );
     }
