@@ -488,6 +488,14 @@ export const CHECK_RULES: CheckRule[] = [
     'a series variable whose series declares a record form types its row members by that form\u2019s typed fields — a collection derivation\u2019s lambda members resolve against them, never kind-silent',
   ),
   R(
+    'C183',
+    'record-run-inputs',
+    'base',
+    'error',
+    'normal',
+    "a record form whose run_inputs names the applied-input slice the record carries — every name is the owning test's run.inputs member AND a field of the form's data class (spec#57, the record-run link machine-checked end to end)",
+  ),
+  R(
     'C173',
     'step-plane-refs-resolve',
     'process',

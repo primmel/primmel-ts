@@ -43,6 +43,7 @@ export const parseForm: Parser = function (id, data) {
     conformanceProcessId: '',
     section: '',
     requirements: [],
+    runInputs: [],
     formNotes: [],
     scope: '',
     formReferences: [],
@@ -73,6 +74,18 @@ export const parseForm: Parser = function (id, data) {
           result.section = stripWrapping(t[i++]);
         } else if (command === 'requirements') {
           result.requirements = tokenizePackage(t[i++]).map(stripWrapping);
+        } else if (command === 'run_inputs') {
+          // The record's applied-input slice (spec §10, spec#57): the
+          // owning test's run.inputs members this record reflects as
+          // fields — the record↔run link C183 machine-checks.
+          result.runInputs = tokenizePackage(t[i++])
+            .map(stripWrapping)
+            .filter(name => name.length > 0);
+          if (result.runInputs.length === 0) {
+            throw new Error(
+              `form ${id}: run_inputs declares no names — drop the facet or name the slice`,
+            );
+          }
         } else if (command === 'note') {
           result.formNotes.push(stripWrapping(t[i++]));
         } else if (command === 'scope') {
@@ -399,6 +412,9 @@ export const dumpForm: Dumper<Form> = function (f) {
   }
   if (f.requirements.length > 0) {
     out += '  requirements { ' + f.requirements.join(' ') + ' }\n';
+  }
+  if (f.runInputs && f.runInputs.length > 0) {
+    out += '  run_inputs { ' + f.runInputs.join(' ') + ' }\n';
   }
   for (const note of f.formNotes) {
     out += '  note "' + escapeString(note) + '"\n';

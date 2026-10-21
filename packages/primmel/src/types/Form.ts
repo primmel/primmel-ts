@@ -184,6 +184,11 @@ interface Form {
   section: string;
   /** Requirement ids this form provides evidence for. */
   requirements: string[];
+  /** The applied-input slice this record form carries (spec §10,
+   *  spec#57): names the owning test's `run.inputs` members the record
+   *  reflects as fields — the record↔run link, machine-checked by
+   *  C183 record-run-inputs. Absent: the form carries no run slice. */
+  runInputs?: string[];
   /** Free-text editorial notes (repeatable). */
   formNotes: string[];
   /** Form scope (e.g. administrative). */

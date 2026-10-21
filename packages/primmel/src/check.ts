@@ -662,6 +662,9 @@ export function checkPackage(
   // ── C150/C151: the attestation's references and claim lineage ──────
   issues.push(...checkAttestations(standard));
 
+  // ── C183: the record form's applied-input slice (spec §10, spec#57) ─
+  issues.push(...checkRecordRunInputs(standard));
+
   // ── C152: the typed payload rule (the typed kernel, R2) ────────────
   issues.push(...checkTypedPayloads(standard));
 
@@ -10504,4 +10507,74 @@ function findCycle(adj: Map<string, string[]>): string[] | null {
     }
   }
   return cycle;
+}
+
+/**
+ * C183 — record-run-inputs (spec §10, spec#57): a record form's
+ * `run_inputs { … }` names the applied-input slice the record carries,
+ * and the slice is MACHINE-CHECKED end to end — every name must
+ * (a) appear in the owning test's `run.inputs` (the applied-input
+ * contract: a record cannot carry what the run does not apply) and
+ * (b) be a field of the form's data class (the record's shape). The
+ * owning test resolves through the form's conformance-process binding
+ * (`conformance_process`, or each of `conformance_process_ids`); a
+ * slice whose owning test resolves to nothing is an error — the
+ * linkage IS the rule's point. A form declaring no slice is untouched
+ * (additive; the consuming application renders the applied inputs off
+ * the form alone).
+ */
+export function checkRecordRunInputs(standard: Standard): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const tests = new Map(
+    (standard.conformanceTests ?? []).map(t => [t.id, t] as const),
+  );
+  const classes = new Map(
+    (standard.dataclasses ?? []).map(d => [d.id, d] as const),
+  );
+  for (const form of standard.forms ?? []) {
+    const slice = form.runInputs ?? [];
+    if (slice.length === 0) {
+      continue;
+    }
+    const ownerIds = form.conformanceProcessIds?.length
+      ? form.conformanceProcessIds
+      : form.conformanceProcessId
+        ? [form.conformanceProcessId]
+        : [];
+    const owners = ownerIds
+      .map(id => tests.get(id))
+      .filter(t => t !== undefined);
+    if (owners.length === 0) {
+      issues.push({
+        check: 'C183',
+        severity: 'error',
+        message: `form ${form.id}: run_inputs names ${slice.join(' ')} but the form binds no conformance test — the slice's contract is the owning test's run.inputs (record-run-inputs)`,
+      });
+      continue;
+    }
+    // The data class id may carry the record-dialect suffix (ProbeRecord#data)
+    // or not — resolve both spellings.
+    const dataClass =
+      classes.get(form.dataClassId) ??
+      classes.get(form.dataClassId.replace(/#data$/, ''));
+    const attrIds = new Set((dataClass?.attributes ?? []).map(a => a.id));
+    for (const name of slice) {
+      const inTest = owners.some(t => (t.run?.inputs ?? []).includes(name));
+      if (!inTest) {
+        issues.push({
+          check: 'C183',
+          severity: 'error',
+          message: `form ${form.id}: run_inputs "${name}" is not in the owning test's run.inputs (${owners.map(o => o.id).join(', ')}) — a record cannot carry what the run does not apply (record-run-inputs)`,
+        });
+      }
+      if (!attrIds.has(name)) {
+        issues.push({
+          check: 'C183',
+          severity: 'error',
+          message: `form ${form.id}: run_inputs "${name}" is no field of the data class ${form.dataClassId} — the record's slice must be the record's shape (record-run-inputs)`,
+        });
+      }
+    }
+  }
+  return issues;
 }
