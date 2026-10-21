@@ -104,6 +104,7 @@ import { join } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { fmtPackage, type FmtResult } from '../src/fmt.ts';
 import { CHECK_RULES, formatRules } from '../src/check-rules.ts';
+import { CONSTRUCTS } from '../src/ser-des/config/index.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
 import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
 import { exportPackageRdf, type RdfExport } from '../src/export/rdf.ts';
@@ -240,8 +241,20 @@ function checkCli(args: string[]): void {
       `\n${CHECK_RULES.length} rules. Default level runs the normal rules; ` +
         '--audit adds the audit rules + the coverage budgets (C55/C72); --strict ' +
         'promotes warnings to errors (KNOWN/budgeted issues excepted).',
-    );
-    process.exit(0);
+    )
+    // The deprecation ladder's standing surface (spec §16, spec#58):
+    // C154's arms render their migration paths here, so an adopter reading
+    // a C154 warning finds the target WITHOUT hunting the spec.
+    const deprecated = CONSTRUCTS.filter(c => c.deprecated)
+    if (deprecated.length > 0) {
+      console.log('\ndeprecated constructs (C154 construct-deprecated warns on every use):')
+      for (const c of deprecated) {
+        console.log(`  ${c.keyword} — ${c.deprecated}`)
+      }
+    } else {
+      console.log('\ndeprecated constructs: none — the ladder (warn → error → parse-refuse) is idle.')
+    }
+    process.exit(0)
   }
 
   const dir = positional[0];

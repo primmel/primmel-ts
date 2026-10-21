@@ -130,6 +130,24 @@ describe('allowlist STALE discipline (C57)', () => {
     assert.ok(c57[0].message.includes('/req/no-such-req'));
   });
 
+  it('a stale entry names its declared retires_with (the ladder vocabulary, spec#58)', () => {
+    const issues = checked(
+      ORPHAN_REQ,
+      `allowlist_entry {
+  rule C5
+  match "requirement /req/no-such-req:*"
+  reason "Fixed already."
+  audit_ref "TODO.roadmap/17"
+  migrated_by "model-library#84"
+  retires_with "1.21.22"
+}
+`,
+    );
+    const c57 = issues.filter(i => i.check === 'C57');
+    assert.equal(c57.length, 1);
+    assert.ok(c57[0].message.includes('retires_with "1.21.22"'));
+  });
+
   it('an entry for an audit-level rule is dormant at the default level', () => {
     const issues = checked(
       ORPHAN_REQ,
@@ -166,6 +184,61 @@ describe('allowlist malformed entries (C56)', () => {
         i => i.check === 'C56' && i.message.includes('unknown rule "C999"'),
       ),
     );
+  });
+
+  describe('the ladder entry vocabulary (spec#58)', () => {
+    it('migrated_by and retires_with parse and never trip the validator', () => {
+      const issues = checked(
+        ORPHAN_REQ,
+        `allowlist_entry {
+  rule C5
+  match "requirement /req/no-such-req:*"
+  reason "Fixed already."
+  audit_ref "TODO.roadmap/17"
+  migrated_by "model-library#84"
+  retires_with "1.21.22"
+}
+`,
+      );
+      assert.deepEqual(
+        issues.filter(i => i.check === 'C56'),
+        [],
+      );
+    });
+
+    it('an empty migrated_by is malformed (C56)', () => {
+      const issues = checked(
+        ORPHAN_REQ,
+        `allowlist_entry {
+  rule C5
+  match "requirement /req/no-such-req:*"
+  reason "Fixed already."
+  audit_ref "TODO.roadmap/17"
+  migrated_by ""
+}
+`,
+      );
+      const c56 = issues.filter(i => i.check === 'C56');
+      assert.equal(c56.length, 1);
+      assert.ok(c56[0].message.includes('empty migrated_by'));
+    });
+
+    it('an empty retires_with is malformed (C56)', () => {
+      const issues = checked(
+        ORPHAN_REQ,
+        `allowlist_entry {
+  rule C5
+  match "requirement /req/no-such-req:*"
+  reason "Fixed already."
+  audit_ref "TODO.roadmap/17"
+  retires_with ""
+}
+`,
+      );
+      const c56 = issues.filter(i => i.check === 'C56');
+      assert.equal(c56.length, 1);
+      assert.ok(c56[0].message.includes('empty retires_with'));
+    });
   });
 
   it('empty match / reason / audit_ref each fail', () => {
