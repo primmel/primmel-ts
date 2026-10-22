@@ -114,6 +114,13 @@ export interface UnitDef {
   definition: string;
   /** The external unit-vocabulary bindings (v3.2, clause 13.4). */
   correspondences?: import('./Correspondence').Correspondence[];
+  /**
+   * The UnitsDB pin (kernel#87): the unit's identifiers in the
+   * unitsml/unitsdb release — the DB is authoritative for the
+   * decomposition STRUCTURE while this register keeps its authored
+   * conversion numbers (maps-to, never imports).
+   */
+  unitsdb?: { nist?: string; unitsml?: string };
 }
 
 /**

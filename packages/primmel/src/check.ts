@@ -424,6 +424,7 @@ import type ConformanceTest from './types/ConformanceTest';
 import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
 import type { FormField } from './types/Form';
+import { UnitsDb } from './unitsdb';
 import {
   isDate,
   isDateTime,
@@ -510,6 +511,13 @@ export interface CheckOptions {
    * stay silent (a linter cannot verify resolution without a locator).
    */
   resolvePackage?: ResolvePackage;
+  /**
+   * The UnitsDB data (kernel#87) — when supplied, C185 verifies each
+   * unitsdb-pinned register unit against it (the ids resolve, the
+   * decomposition terminates); without it the bindings are inert
+   * (parse-enforced shape only). The caller pins the snapshot.
+   */
+  unitsDb?: import('./unitsdb').UnitsDbData;
 }
 
 const BIND_SCOPES: Record<string, string> = {
@@ -667,6 +675,9 @@ export function checkPackage(
 
   // ── C184: the form field's scalar numeric range (kernel#90) ─────────
   issues.push(...checkFieldRange(standard));
+
+  // ── C185: the UnitsDB binding coherence (kernel#87) ─────────────────
+  issues.push(...checkUnitsDbBindings(standard, options.unitsDb));
 
   // ── C152: the typed payload rule (the typed kernel, R2) ────────────
   issues.push(...checkTypedPayloads(standard));
@@ -10685,6 +10696,61 @@ export function checkFieldRange(standard: Standard): CheckIssue[] {
   };
   for (const form of standard.forms ?? []) {
     walk(form.id, form.fields ?? [], '');
+  }
+  return issues;
+}
+
+/**
+ * C185 — unitsdb-binding-coherent (kernel#87): a register unit's
+ * `unitsdb { nist … unitsml … }` pin names entries in the supplied
+ * UnitsDB data, and the pinned entry resolves — the decomposition to SI
+ * bases terminates. The DB is authoritative for STRUCTURE while the
+ * register keeps its authored conversion numbers (maps-to, never
+ * imports): without a supplied DB the bindings are inert (the parse
+ * owns their shape), and the authored factor/offset is never judged
+ * against the DB because the interval-scale offsets (degC's 273.15)
+ * live in the register, not in the DB.
+ */
+export function checkUnitsDbBindings(
+  standard: Standard,
+  db?: import('./unitsdb').UnitsDbData,
+): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  if (!db) {
+    return issues;
+  }
+  const unitsdb = new UnitsDb(db);
+  for (const reg of standard.quantityRegisters ?? []) {
+    for (const unit of reg.units ?? []) {
+      const pin = unit.unitsdb;
+      if (!pin || (!pin.nist && !pin.unitsml)) {
+        continue;
+      }
+      for (const [kind, id] of [
+        ['nist', pin.nist],
+        ['unitsml', pin.unitsml],
+      ] as const) {
+        if (!id) {
+          continue;
+        }
+        try {
+          const structure = unitsdb.resolveUnit(id);
+          if (structure.siBases.length === 0) {
+            issues.push({
+              check: 'C185',
+              severity: 'error',
+              message: `quantity_register ${reg.id}: unit ${unit.id} pins ${kind} "${id}", whose decomposition resolves to no SI base (unitsdb-binding-coherent)`,
+            });
+          }
+        } catch (e) {
+          issues.push({
+            check: 'C185',
+            severity: 'error',
+            message: `quantity_register ${reg.id}: unit ${unit.id} pins ${kind} "${id}", which does not resolve in the supplied UnitsDB data — ${(e as Error).message.replace('[unitsdb] ', '')} (unitsdb-binding-coherent)`,
+          });
+        }
+      }
+    }
   }
   return issues;
 }
