@@ -129,6 +129,33 @@ state_machine App {
     assert.equal(dump(load(d1)), d1);
   });
 
+  it('references round-trip — bare and braced, machine and transition (kernel#198)', () => {
+    const src = `state_machine Ref {
+  initial A
+  state A
+  state B
+  reference { widget:calibration widget:procedure }
+  transition go {
+    from A
+    to B
+    cascade Reading { set { taken: "true" } }
+    reference widget:calibration
+  }
+}
+`;
+    const m = load(src);
+    const sm = m.stateMachines.find(s => s.entityName === 'Ref')!;
+    assert.deepEqual(sm.referenceIds, [
+      'widget:calibration',
+      'widget:procedure',
+    ]);
+    assert.deepEqual(sm.transitions[0]!.referenceIds, ['widget:calibration']);
+    const d1 = dump(m);
+    assert.match(d1, /reference \{ widget:calibration widget:procedure \}/);
+    assert.match(d1, / {4}reference \{ widget:calibration \}\n/);
+    assert.equal(dump(load(d1)), d1);
+  });
+
   it('the legacy list-and-arrow machine is untouched', () => {
     const src = `
 state_machine M {
