@@ -1707,10 +1707,30 @@ function stateMachineUnit(m: StateMachine): UnitContent {
     ...(presentList(m.transitions)
       ? {
           transitions: m.transitions.map(t => ({
+            ...(present(t.name) ? { name: t.name } : {}),
             from: t.from,
             to: t.to,
             ...(present(t.actionName) ? { action: t.actionName } : {}),
             ...(present(t.guard) ? { guard: t.guard } : {}),
+            // The authored side-effects and references are content
+            // (kernel#198): dropping them let a cascade edit leave the
+            // unit digest unmoved.
+            ...(t.cascades.length > 0
+              ? {
+                  cascades: t.cascades.map(c => ({
+                    ...(c.action ? { action: c.action } : {}),
+                    target: c.targetEntity,
+                    ...(present(c.where) ? { where: c.where } : {}),
+                    ...(present(c.via) ? { via: c.via } : {}),
+                    ...(Object.keys(c.with).length > 0 ? { with: c.with } : {}),
+                    ...(c.set.length > 0 ? { set: c.set } : {}),
+                    ...(c.create ? { create: c.create } : {}),
+                  })),
+                }
+              : {}),
+            ...(t.referenceIds.length > 0
+              ? { references: t.referenceIds }
+              : {}),
           })),
         }
       : {}),

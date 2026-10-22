@@ -663,6 +663,47 @@ describe('retrieval export — the unit payloads', () => {
       ['analogue', 'digital'],
     );
   });
+
+  it('a transition edit moves the machine unit digest — name, cascades, and references are content (kernel#198)', () => {
+    const dir = buildRetrievalFixturePackage();
+    const before = exportPackageRetrieval(dir);
+    const b = before.document.units.find(
+      u => u.id === '/state-machine/WidgetOperational',
+    )!;
+    const tb = (b.payload!.transitions as Array<Record<string, unknown>>)[0]!;
+    assert.deepEqual(tb, { from: 'off', to: 'ready', action: 'power_on' });
+    writeFileSync(
+      join(dir, 'model', 'state.prl'),
+      `state_machine WidgetOperational {
+  kind operational
+  initial off
+  states {
+    off
+    ready
+  }
+  transition power_up {
+    from off
+    to ready
+    action power_on
+    guard "supply_ok"
+    cascade Reading { set { taken: "true" } }
+    reference widget:calibration
+  }
+}`,
+    );
+    const after = exportPackageRetrieval(dir);
+    const a = after.document.units.find(
+      u => u.id === '/state-machine/WidgetOperational',
+    )!;
+    const ta = (a.payload!.transitions as Array<Record<string, unknown>>)[0]!;
+    assert.equal(ta.name, 'power_up');
+    assert.equal(ta.guard, 'supply_ok');
+    assert.deepEqual(ta.cascades, [
+      { target: 'Reading', set: [{ field: 'taken', value: 'true' }] },
+    ]);
+    assert.deepEqual(ta.references, ['widget:calibration']);
+    assert.notEqual(a.content_hash, b.content_hash);
+  });
 });
 
 describe('retrieval export — the structured acceptance (ask 8, #84)', () => {

@@ -6,7 +6,7 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { stripColon } from './field-parser';
+import { dumpBareSafe, stripColon } from './field-parser';
 import type StateMachine from '../../types/StateMachine';
 import type {
   Transition,
@@ -106,7 +106,7 @@ export const parseStateMachine: Parser = function (entityName, data) {
                     cascades.push(parseCascade(target, unwrapBlock(bt[j++])));
                   }
                 } else if (cmd === 'reference') {
-                  referenceIds.push(...tokenizePackage(bt[j++]));
+                  referenceIds.push(...referenceList(bt[j++]));
                 } else {
                   unwrapBlock(bt[j++]);
                 }
@@ -170,7 +170,7 @@ export const parseStateMachine: Parser = function (entityName, data) {
                     cascades.push(parseCascade(target, cascadeBlock));
                   }
                 } else if (cmd === 'reference') {
-                  referenceIds.push(...tokenizePackage(bt[j++]));
+                  referenceIds.push(...referenceList(bt[j++]));
                 } else {
                   unwrapBlock(bt[j++]);
                 }
@@ -189,7 +189,7 @@ export const parseStateMachine: Parser = function (entityName, data) {
             result.transitions.push(trans);
           }
         } else if (command === 'reference') {
-          result.referenceIds.push(...tokenizePackage(t[i++]));
+          result.referenceIds.push(...referenceList(t[i++]));
         } else {
           i++; // forward-compatible: skip unknown keyword value
         }
@@ -206,6 +206,13 @@ export const parseStateMachine: Parser = function (entityName, data) {
     return ctx;
   };
 };
+
+/** A `reference` value: a bare `<package>:<id>` token or a braced list.
+ *  tokenizePackage alone mangles a bare token (unwrapBlock strips the
+ *  first and last char); stripWrapping leaves it intact. */
+function referenceList(tok: string): string[] {
+  return tok.startsWith('{') ? tokenizePackage(tok) : [stripWrapping(tok)];
+}
 
 function parseCascade(target: string, block: string): Cascade {
   const cascade: Cascade = {
@@ -382,6 +389,10 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
       out += '  }\n';
     }
   }
+  if (sm.referenceIds.length > 0) {
+    out +=
+      '  reference { ' + sm.referenceIds.map(dumpBareSafe).join(' ') + ' }\n';
+  }
   // Group consecutive transitions back into their authored forms (parse
   // fans multi-source lists out; dump re-groups). Named transitions
   // regroup by name, arrow transitions by the shared endpoints/action/
@@ -463,6 +474,12 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
       for (const c of g.cascades) {
         out += emitCascade(c, 4);
       }
+      if (g.referenceIds.length > 0) {
+        out +=
+          '    reference { ' +
+          g.referenceIds.map(dumpBareSafe).join(' ') +
+          ' }\n';
+      }
       out += '  }\n';
       continue;
     }
@@ -476,6 +493,12 @@ export const dumpStateMachine: Dumper<StateMachine> = function (sm) {
     }
     for (const c of g.cascades) {
       out += emitCascade(c, 4);
+    }
+    if (g.referenceIds.length > 0) {
+      out +=
+        '    reference { ' +
+        g.referenceIds.map(dumpBareSafe).join(' ') +
+        ' }\n';
     }
     out += '  }\n';
   }
