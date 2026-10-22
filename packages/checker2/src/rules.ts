@@ -177,7 +177,11 @@ export interface Located {
   packages: Map<string, ParsedPackage>;
 }
 
-export function check(pkg: ParsedPackage, located?: Located): Issue[] {
+export function check(
+  pkg: ParsedPackage,
+  located?: Located,
+  options: { strictness?: 'normal' | 'audit' } = {},
+): Issue[] {
   const issues: Issue[] = [];
   const err = (rule: string, message: string): void => {
     issues.push({ rule, severity: 'error', message });
@@ -2802,6 +2806,1074 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
               'C185',
               `quantity_register ${reg.ident}: unit "${u.ident}" pins unitsdb with no identifier (nist / unitsml) (unitsdb-binding-coherent)`,
             );
+          }
+        }
+      }
+    }
+
+    // ── #196 parity wave: the mapping, chain, artifact, and LML
+    //    families — the kernel judgments checker2 had not mirrored.
+    //    Every leg reads the shape tree (never kernel code); the four
+    //    kernel-reserved entries (C137 no construct, C163 the diff
+    //    surface, C165/C166 the math plane) stay out of the register by
+    //    design — see conformance/checker2-rules.json.
+    {
+      const stripColon2 = (x: string): string =>
+        x.endsWith(':') && x.length > 1 ? x.slice(0, -1) : x;
+
+      /** The greedy key/value runs of a block (`x: 1 y: 2` on one
+       *  line): each `key:` opens an entry, the rest are its value. */
+      const parseKeyValues = (
+        block: Construct | undefined,
+      ): Array<[string, string]> => {
+        const out: Array<[string, string]> = [];
+        if (!block) {
+          return out;
+        }
+        for (const l of lines(block)) {
+          let key = stripColon2(l.key);
+          let vals: string[] = [];
+          const flush = (): void => {
+            if (key !== '') {
+              out.push([key, vals.join(' ')]);
+            }
+          };
+          for (const tok of l.tokens) {
+            if (tok.endsWith(':') && tok.length > 1) {
+              flush();
+              key = tok.slice(0, -1);
+              vals = [];
+            } else {
+              vals.push(tok);
+            }
+          }
+          flush();
+        }
+        return out;
+      };
+
+      const manifest = pkg.constructs.find(c => c.keyword === 'package');
+      const manifestFacet = (key: string): string =>
+        manifest ? (tokensOf(manifest, key)[0] ?? '') : '';
+      const localNs = manifestFacet('id');
+      const pkgKind = manifestFacet('kind');
+      const imported = new Set<string>();
+      if (manifest) {
+        for (const u of nested(manifest).filter(n => n.keyword === 'uses')) {
+          for (const t of rawTokensT(u)) {
+            imported.add(t.split('@')[0]!);
+          }
+        }
+        const ext = tokensOf(manifest, 'extends')[0];
+        if (ext) {
+          imported.add(ext.split('@')[0]!);
+        }
+      }
+      const siblingKind = (id: string): string => {
+        for (const sib of pkg.siblings ?? []) {
+          const pm = sib.constructs.find(c => c.keyword === 'package');
+          if (!pm) {
+            continue;
+          }
+          const sid = tokensOf(pm, 'id')[0];
+          if (sid !== id) {
+            continue;
+          }
+          return tokensOf(pm, 'kind')[0] ?? '';
+        }
+        return '';
+      };
+
+      // The component register (the kernel's componentIds): the
+      // constructs a mapping may name, plus the subject IO vocabulary.
+      const COMPONENT_KEYWORDS = new Set([
+        'process',
+        'provision',
+        'reg',
+        'approval',
+        'requirement',
+        'conformance_test',
+        'form',
+        'symbol',
+        'table',
+        'class',
+        'term',
+        'note',
+        'role',
+        'subject',
+        'instrument',
+        'behavior',
+      ]);
+      const collectByKeyword = (
+        list: Construct[],
+        keyword: string,
+      ): Construct[] => {
+        const out: Construct[] = [];
+        const walk = (c: Construct): void => {
+          if (c.keyword === keyword) {
+            out.push(c);
+          }
+          for (const n of nested(c)) {
+            walk(n);
+          }
+        };
+        for (const c of list) {
+          walk(c);
+        }
+        return out;
+      };
+      const allProcesses = collectByKeyword(closureConstructs, 'process');
+      const compIds = new Set<string>();
+      for (const c of closureConstructs) {
+        if (c.ident && COMPONENT_KEYWORDS.has(c.keyword)) {
+          compIds.add(c.ident);
+        }
+      }
+      for (const p of allProcesses) {
+        if (p.ident) {
+          compIds.add(p.ident);
+        }
+      }
+      for (const s of closureConstructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        for (const blk of nested(s)) {
+          if (
+            blk.keyword === 'is' ||
+            blk.keyword === 'has' ||
+            blk.keyword === 'does'
+          ) {
+            for (const sub of nested(blk)) {
+              if (
+                sub.keyword === 'attributes' ||
+                sub.keyword === 'test_context' ||
+                sub.keyword === 'design_parameters' ||
+                sub.keyword === 'characteristics' ||
+                sub.keyword === 'behaviors' ||
+                sub.keyword === 'promises'
+              ) {
+                for (const [k] of parseKeyValues(sub)) {
+                  compIds.add(k);
+                }
+                for (const child of nested(sub)) {
+                  compIds.add(child.ident || child.keyword);
+                }
+              }
+            }
+            for (const l of lines(blk)) {
+              if (l.key === 'behaviors' || l.key === 'artifacts') {
+                compIds.add(l.key);
+                for (const t of l.tokens) {
+                  compIds.add(t);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      interface ParityPair {
+        source: string;
+        target: string;
+        coverage?: string;
+        description: boolean;
+      }
+      const profiles: Array<{
+        id: string;
+        pairs: ParityPair[];
+        assertions: Array<[string, string]>;
+      }> = [];
+      for (const mp of closureConstructs.filter(
+        x => x.keyword === 'map_profile' && x.ident,
+      )) {
+        const pairs: ParityPair[] = [];
+        const pushPair = (l: {
+          key: string;
+          tokens: string[];
+          blocks: Item[][];
+        }): void => {
+          const ai = l.tokens.indexOf('->');
+          if (ai < 0 || ai + 1 >= l.tokens.length) {
+            return;
+          }
+          const facets = l.blocks.flat();
+          const coverage = facetTokens(facets, 'coverage')[0];
+          const description = facets.some(
+            f =>
+              f.kind === 'line' &&
+              (f.key === 'description' || f.tokens.includes('description')),
+          );
+          pairs.push({
+            source: stripColon2(l.key),
+            target: l.tokens[ai + 1]!,
+            coverage,
+            description,
+          });
+        };
+        for (const ln of lines(mp).filter(l => l.key === 'mapping')) {
+          for (const block of ln.blocks) {
+            for (const it of block) {
+              if (it.kind === 'line' && it.key !== undefined) {
+                pushPair({ key: it.key, tokens: it.tokens, blocks: it.blocks });
+              }
+            }
+          }
+        }
+        const mappingBlock = nested(mp).find(n => n.keyword === 'mapping');
+        if (mappingBlock) {
+          for (const l of lines(mappingBlock)) {
+            pushPair({ key: l.key, tokens: l.tokens, blocks: l.blocks });
+          }
+        }
+        const assertions: Array<[string, string]> = [];
+        const covBlock = nested(mp).find(n => n.keyword === 'coverage');
+        if (covBlock) {
+          for (const l of lines(covBlock)) {
+            assertions.push([stripColon2(l.key), l.tokens[0] ?? '']);
+          }
+        }
+        profiles.push({ id: mp.ident!, pairs, assertions });
+      }
+
+      const splitRef = (
+        raw: string,
+        defaultNs: string,
+      ): { ns: string; id: string; qualified: string } => {
+        const h = raw.indexOf('#');
+        const ns = h >= 0 ? raw.slice(0, h) : defaultNs;
+        const id = h >= 0 ? raw.slice(h + 1) : raw;
+        return { ns, id, qualified: `${ns}#${id}` };
+      };
+
+      // C21 mapping-resolves / C22 mapping-direction.
+      for (const mp of profiles) {
+        for (const pair of mp.pairs) {
+          if (pair.source.includes('#')) {
+            err(
+              'C22',
+              `map_profile ${mp.id}: mapping source "${pair.source}" is a namespaced reference element — the mapping direction is implementation → reference (mapping-direction)`,
+            );
+          } else if (!compIds.has(pair.source)) {
+            err(
+              'C21',
+              `map_profile ${mp.id}: mapping source "${pair.source}" is not a declared component (mapping-resolves)`,
+            );
+          }
+          const ref = splitRef(pair.target, mp.id);
+          if (ref.ns !== mp.id) {
+            err(
+              'C21',
+              `map_profile ${mp.id}: target "${pair.target}" carries namespace "${ref.ns}" ≠ the profile namespace "${mp.id}" (Namespace#ElementID aliasing) (mapping-resolves)`,
+            );
+          }
+          if (localNs && ref.ns === localNs) {
+            err(
+              'C22',
+              `map_profile ${mp.id}: target "${pair.target}" is in the model's own namespace — mapping to one's own components inverts the direction (implementation → reference) (mapping-direction)`,
+            );
+          }
+          if (!compIds.has(ref.qualified)) {
+            err(
+              'C21',
+              `map_profile ${mp.id}: target "${ref.qualified}" has no declared alias element — the implementation model declares local copies of the reference elements it maps to (mapping-resolves)`,
+            );
+          }
+          if (options.strictness === 'audit' && !pair.description) {
+            issues.push({
+              rule: 'C25',
+              severity: 'warning',
+              message: `map_profile ${mp.id}: mapping ${pair.source} -> ${ref.qualified} has no description — how the fulfilment works is demanded at audit strictness (mapping-description)`,
+            });
+          }
+        }
+      }
+
+      // C23 mapping-calculus-consistency: the alias forest per profile
+      // namespace (the implementation's local copies), the coverage
+      // walk (inheritance down, aggregation up), and the authored
+      // assertions checked against the computed levels.
+      const coverageLevels = (
+        ns: string,
+        pairs: ParityPair[],
+      ): Map<string, string> => {
+        const prefix = `${ns}#`;
+        const procs = allProcesses.filter(
+          x => x.ident && x.ident.startsWith(prefix),
+        );
+        interface CovNode {
+          id: string;
+          composition: 'all' | 'gateway';
+          children: CovNode[];
+        }
+        const nodes = new Map<string, CovNode>();
+        for (const p of procs) {
+          nodes.set(p.ident!, {
+            id: p.ident!.slice(prefix.length),
+            composition:
+              tokensOf(p, 'child_composition')[0] === 'gateway'
+                ? 'gateway'
+                : 'all',
+            children: [],
+          });
+        }
+        const parentOf = new Map<string, string>();
+        for (const p of procs) {
+          for (const child of nested(p).filter(
+            n => n.keyword === 'process' && n.ident && nodes.has(n.ident),
+          )) {
+            parentOf.set(child.ident!, p.ident!);
+          }
+        }
+        const roots: CovNode[] = [];
+        for (const p of procs) {
+          const node = nodes.get(p.ident!)!;
+          const parent = parentOf.get(p.ident!);
+          if (parent) {
+            nodes.get(parent)!.children.push(node);
+          } else {
+            roots.push(node);
+          }
+        }
+        const direct = new Set<string>();
+        for (const pair of pairs) {
+          const ref = splitRef(pair.target, ns);
+          if (ref.ns === ns) {
+            direct.add(ref.id);
+          }
+        }
+        const aggregate = (
+          composition: 'all' | 'gateway',
+          levels: string[],
+        ): string => {
+          if (levels.length === 0) {
+            return 'none';
+          }
+          if (levels.every(l => l === 'full')) {
+            return 'full';
+          }
+          if (
+            composition === 'gateway' &&
+            levels.some(l => l === 'full' || l === 'minimal')
+          ) {
+            return 'minimal';
+          }
+          return levels.some(l => l !== 'none') ? 'partial' : 'none';
+        };
+        const levels = new Map<string, string>();
+        const walk = (node: CovNode, inMappedSubtree: boolean): string => {
+          const underMapped = direct.has(node.id) || inMappedSubtree;
+          const childLevels = node.children.map(c => walk(c, underMapped));
+          const level = underMapped
+            ? 'full'
+            : node.children.length === 0
+              ? 'none'
+              : aggregate(node.composition, childLevels);
+          levels.set(node.id, level);
+          return level;
+        };
+        for (const root of roots) {
+          walk(root, false);
+        }
+        return levels;
+      };
+      for (const mp of profiles) {
+        if (mp.pairs.every(p => !p.coverage) && mp.assertions.length === 0) {
+          continue;
+        }
+        const levels = coverageLevels(mp.id, mp.pairs);
+        for (const pair of mp.pairs) {
+          if (!pair.coverage) {
+            continue;
+          }
+          const ref = splitRef(pair.target, mp.id);
+          const level = levels.get(ref.id);
+          if (level === undefined) {
+            continue;
+          }
+          if (level !== pair.coverage) {
+            err(
+              'C23',
+              `map_profile ${mp.id}: ${pair.source} -> ${ref.qualified} asserts coverage "${pair.coverage}" but the calculus computes "${level}" — coverage is computed, not authored (mapping-calculus-consistency)`,
+            );
+          }
+        }
+        for (const [target, asserted] of mp.assertions) {
+          const ref = splitRef(target, mp.id);
+          const level = levels.get(ref.id);
+          if (level === undefined) {
+            err(
+              'C23',
+              `map_profile ${mp.id}: coverage assertion for "${ref.qualified}" names a component outside the reference tree (mapping-calculus-consistency)`,
+            );
+            continue;
+          }
+          if (level !== asserted) {
+            err(
+              'C23',
+              `map_profile ${mp.id}: coverage assertion "${ref.qualified}: ${asserted}" disagrees with the computed "${level}" — coverage is computed, not authored (mapping-calculus-consistency)`,
+            );
+          }
+        }
+      }
+
+      // C24 import-not-mapping: an imported package's namespace may not
+      // double as a mapping namespace — unless the import is a product
+      // reference (the supply-chain exemption).
+      for (const mp of profiles) {
+        if (imported.has(mp.id) && siblingKind(mp.id) !== 'product_reference') {
+          err(
+            'C24',
+            `map_profile ${mp.id}: namespace "${mp.id}" is imported (uses/extends) — an import may not be expressed as a mapping, nor a mapping as an import; inclusion ≠ fulfilment (import-not-mapping)`,
+          );
+        }
+      }
+
+      // C26 view-read-only: a view names declared elements and reads
+      // against a namespace the model actually maps to.
+      const mappedNamespaces = new Set(profiles.map(p => p.id));
+      for (const vp of closureConstructs.filter(
+        x => x.keyword === 'view_profile' && x.ident,
+      )) {
+        for (const el of tokensOf(vp, 'visible')) {
+          if (!compIds.has(el)) {
+            err(
+              'C26',
+              `view_profile ${vp.ident}: visible element "${el}" is not a declared component — a view reads the model, it does not invent it (view-read-only)`,
+            );
+          }
+        }
+        const against = tokensOf(vp, 'against')[0];
+        if (against && !mappedNamespaces.has(against)) {
+          err(
+            'C26',
+            `view_profile ${vp.ident}: against "${against}" names no declared map_profile/mapSet namespace — a view reads coverage, it does not create it (view-read-only)`,
+          );
+        }
+      }
+
+      // C14 process-timer-recurrence / C15 process-timer-period: a flow
+      // cycle must pass through a period-carrying timer; a timer_event
+      // declares its period.
+      for (const p of allProcesses.filter(x => x.ident)) {
+        const timersWith = new Set<string>();
+        const timersWithout = new Set<string>();
+        const edges: Array<{ from: string; to: string }> = [];
+        const visit = (c: Construct): void => {
+          for (const it of c.items) {
+            if (it.kind === 'line') {
+              if (it.key === 'timer_event') {
+                const id = it.tokens[0];
+                if (id) {
+                  timersWithout.add(id);
+                }
+              }
+              const addEdges = (l: {
+                key?: string;
+                tokens: string[];
+              }): void => {
+                if (l.key === undefined || !l.tokens.includes('->')) {
+                  return;
+                }
+                for (const t of l.tokens) {
+                  if (t !== '->') {
+                    edges.push({ from: l.key, to: t });
+                  }
+                }
+              };
+              addEdges(it);
+              for (const block of it.blocks) {
+                for (const x of block) {
+                  if (x.kind === 'line') {
+                    addEdges(x);
+                  }
+                }
+              }
+            } else if (it.kind === 'construct' && it.construct) {
+              const cc = it.construct;
+              if (cc.keyword === 'timer_event' && cc.ident) {
+                if (tokensOf(cc, 'period').length > 0) {
+                  timersWith.add(cc.ident);
+                } else {
+                  timersWithout.add(cc.ident);
+                }
+              }
+              visit(cc);
+            }
+          }
+        };
+        visit(p);
+        for (const id of timersWithout) {
+          err(
+            'C15',
+            `process ${p.ident}: timer_event "${id}" declares no period — a timer event without a recurrence period cannot guard a loop (process-timer-period)`,
+          );
+        }
+        const adj = new Map<string, string[]>();
+        for (const e of edges) {
+          if (timersWith.has(e.from) || timersWith.has(e.to)) {
+            continue;
+          }
+          adj.set(e.from, [...(adj.get(e.from) ?? []), e.to]);
+        }
+        const cycle = findCycle(adj);
+        if (cycle) {
+          err(
+            'C14',
+            `process ${p.ident}: recurrence ${cycle.join(' → ')} contains no timer event — an unguarded infinite self-loop (process-timer-recurrence)`,
+          );
+        }
+      }
+
+      // C17 instance-scope / C19 chain-acyclic: the instance plane's
+      // scope discipline and the subject-chain integrity.
+      const LEVEL_ORDER: Record<string, number> = {
+        family: 0,
+        group: 1,
+        model: 2,
+        sample: 3,
+      };
+      const instances = closureConstructs.filter(
+        x => x.keyword === 'instance' && x.ident,
+      );
+      const instanceIds = new Set(instances.map(x => x.ident!));
+      const attrScopes = new Map<string, string>();
+      for (const ad of closureConstructs.filter(
+        x => x.keyword === 'attribute_definition' && x.ident,
+      )) {
+        const scope = tokensOf(ad, 'scope')[0];
+        if (scope) {
+          attrScopes.set(ad.ident!, scope);
+        }
+      }
+      const dimScopes = new Map<string, string>();
+      for (const d of closureConstructs.filter(
+        x => x.keyword === 'dimension' && x.ident,
+      )) {
+        const scope = tokensOf(d, 'scope')[0];
+        if (scope) {
+          dimScopes.set(d.ident!, scope);
+        }
+      }
+      for (const inst of closureConstructs.filter(
+        x => x.keyword === 'instrument' && x.ident,
+      )) {
+        for (const d of nested(inst).filter(n => n.keyword === 'dimension')) {
+          const id = d.ident || d.keyword;
+          const scope = tokensOf(d, 'scope')[0];
+          if (id && scope) {
+            dimScopes.set(id, scope);
+          }
+        }
+      }
+      for (const ad of closureConstructs.filter(
+        x => x.keyword === 'attribute_definition' && x.ident,
+      )) {
+        if (tokensOf(ad, 'is_dimension')[0] === 'true') {
+          const scope = tokensOf(ad, 'scope')[0];
+          if (scope && !dimScopes.has(ad.ident!)) {
+            dimScopes.set(ad.ident!, scope);
+          }
+        }
+      }
+      const hasBlock = (
+        inst: Construct,
+        key: string,
+      ): Construct | undefined => {
+        const has = nested(inst).find(n => n.keyword === 'has');
+        return has ? nested(has).find(n => n.keyword === key) : undefined;
+      };
+      for (const inst of instances) {
+        const level = tokensOf(inst, 'level')[0] ?? '';
+        const levelIdx = LEVEL_ORDER[level];
+        if (levelIdx === undefined) {
+          err(
+            'C17',
+            `instance ${inst.ident}: level "${level}" is not a chain level (family | group | model | sample) (instance-scope)`,
+          );
+        }
+        for (const [key] of parseKeyValues(hasBlock(inst, 'attributes'))) {
+          const scope = attrScopes.get(key);
+          if (scope === undefined) {
+            err(
+              'C17',
+              `instance ${inst.ident}: attribute "${key}" is not a declared attribute_definition — scope cannot be checked (instance-scope)`,
+            );
+          } else if (scope === 'sample') {
+            err(
+              'C17',
+              `instance ${inst.ident}: sample-scope attribute "${key}" stated in has.attributes — sample-scope values live in has.test_context and are never inherited (instance-scope)`,
+            );
+          } else if (
+            levelIdx !== undefined &&
+            LEVEL_ORDER[scope] !== undefined &&
+            levelIdx < LEVEL_ORDER[scope]
+          ) {
+            err(
+              'C17',
+              `instance ${inst.ident}: attribute "${key}" (scope ${scope}) stated at ${level} level — values are stated at their declared scope or lower (instance-scope)`,
+            );
+          }
+        }
+        for (const [key] of parseKeyValues(hasBlock(inst, 'test_context'))) {
+          if (level !== 'sample') {
+            err(
+              'C17',
+              `instance ${inst.ident}: test_context value "${key}" on a ${level}-level instance — test_context exists only at sample level (instance-scope)`,
+            );
+          }
+          const scope = attrScopes.get(key);
+          if (scope === undefined) {
+            err(
+              'C17',
+              `instance ${inst.ident}: attribute "${key}" is not a declared attribute_definition — scope cannot be checked (instance-scope)`,
+            );
+          } else if (scope !== 'sample') {
+            err(
+              'C17',
+              `instance ${inst.ident}: attribute "${key}" (scope ${scope}) stated in test_context — test_context holds sample-scope attributes only (instance-scope)`,
+            );
+          }
+        }
+        for (const [key] of parseKeyValues(hasBlock(inst, 'dimensions'))) {
+          if (level === 'sample') {
+            err(
+              'C17',
+              `instance ${inst.ident}: classification "${key}" on a sample-level instance — samples carry no classification (instance-scope)`,
+            );
+          }
+          const scope = dimScopes.get(key);
+          if (scope === undefined) {
+            err(
+              'C17',
+              `instance ${inst.ident}: classification dimension "${key}" is not declared (instance-scope)`,
+            );
+          } else if (
+            levelIdx !== undefined &&
+            LEVEL_ORDER[scope] !== undefined &&
+            levelIdx < LEVEL_ORDER[scope]
+          ) {
+            err(
+              'C17',
+              `instance ${inst.ident}: classification dimension "${key}" (scope ${scope}) stated at ${level} level — values are stated at their declared scope or lower (instance-scope)`,
+            );
+          }
+        }
+      }
+      const instAdj = new Map<string, string[]>();
+      for (const inst of instances) {
+        const targets: string[] = [];
+        for (const kind of ['model', 'group', 'family']) {
+          const target = tokensOf(inst, kind)[0];
+          if (target) {
+            if (!instanceIds.has(target)) {
+              err(
+                'C19',
+                `instance ${inst.ident}: chain link ${kind} "${target}" is not a declared instance (chain-acyclic)`,
+              );
+            } else {
+              targets.push(target);
+            }
+          }
+        }
+        if (targets.length > 0) {
+          instAdj.set(inst.ident!, targets);
+        }
+      }
+      const instCycle = findCycle(instAdj);
+      if (instCycle) {
+        err(
+          'C19',
+          `instance subject chain cycle: ${instCycle.join(' → ')} (chain-acyclic)`,
+        );
+      }
+
+      // C45 artifact-def-contract / C46 artifact-instance-resolves /
+      // C47 artifact-evidence-separation / C153
+      // artifact-contract-derivation.
+      const artifactDefs = new Map<string, Construct>();
+      for (const d of closureConstructs.filter(
+        x => x.keyword === 'artifact_definition' && x.ident,
+      )) {
+        artifactDefs.set(d.ident!, d);
+      }
+      const artifactInstIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'artifact_instance' && x.ident)
+          .map(x => x.ident!),
+      );
+      interface ContractField {
+        name: string;
+        type: string;
+        optional: boolean;
+      }
+      const contractOf = (
+        d: Construct,
+      ): { fields: ContractField[]; media: string[]; hasContract: boolean } => {
+        const cc = nested(d).find(n => n.keyword === 'content_contract');
+        const fieldsBlock = cc
+          ? nested(cc).find(n => n.keyword === 'fields')
+          : undefined;
+        const fields: ContractField[] = [];
+        if (fieldsBlock) {
+          for (const l of lines(fieldsBlock)) {
+            const name = stripColon2(l.key);
+            if (name === '') {
+              continue;
+            }
+            fields.push({
+              name,
+              type: l.tokens.find(t => t !== 'optional') ?? '',
+              optional: l.tokens.includes('optional'),
+            });
+          }
+        }
+        const mediaBlock = cc
+          ? nested(cc).find(n => n.keyword === 'media')
+          : undefined;
+        const media = mediaBlock
+          ? nested(mediaBlock).map(m => m.ident || m.keyword)
+          : [];
+        return { fields, media, hasContract: !!cc };
+      };
+      const KNOWN_PRODUCED_WHEN = new Set([
+        'per_measurement',
+        'per_interval',
+        'on_event',
+      ]);
+      const DURATION_RE =
+        /^P(?:(\d+(?:[.,]\d+)?)Y)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)D)?(?:T(?:(\d+(?:[.,]\d+)?)H)?(?:(\d+(?:[.,]\d+)?)M)?(?:(\d+(?:[.,]\d+)?)S)?)?(?:(\d+(?:[.,]\d+)?)W)?$/;
+      const isIsoDuration = (x: string): boolean => {
+        const m = DURATION_RE.exec(x);
+        if (!m) {
+          return false;
+        }
+        const components = m.slice(1).filter(y => y !== undefined);
+        if (components.length === 0) {
+          return false;
+        }
+        return m[7] === undefined || components.length === 1;
+      };
+      for (const [id, d] of artifactDefs) {
+        const contract = contractOf(d);
+        const contractFrom = tokensOf(d, 'contract_from')[0];
+        if (!contractFrom && contract.fields.length === 0) {
+          err(
+            'C45',
+            `artifact definition ${id}: content contract declares no fields — a definition must contract SOME content (artifact-def-contract)`,
+          );
+        }
+        const seenFields = new Set<string>();
+        for (const f of contract.fields) {
+          if (seenFields.has(f.name)) {
+            err(
+              'C45',
+              `artifact definition ${id}: duplicate contract field "${f.name}" (artifact-def-contract)`,
+            );
+          }
+          seenFields.add(f.name);
+          if (!f.type) {
+            err(
+              'C45',
+              `artifact definition ${id}: contract field "${f.name}" has no type — fields are named AND typed (artifact-def-contract)`,
+            );
+          }
+        }
+        for (const field of contract.media) {
+          if (!seenFields.has(field)) {
+            err(
+              'C45',
+              `artifact definition ${id}: media entry refines "${field}", which is not a declared contract field (artifact-def-contract)`,
+            );
+          }
+        }
+        const producedWhen = tokensOf(d, 'produced_when');
+        const kind = producedWhen[0] ?? '';
+        if (!KNOWN_PRODUCED_WHEN.has(kind)) {
+          err(
+            'C45',
+            `artifact definition ${id}: produced_when "${kind}" is not one of per_measurement | per_interval | on_event (artifact-def-contract)`,
+          );
+        } else if (
+          kind === 'per_interval' &&
+          !isIsoDuration(producedWhen[1] ?? '')
+        ) {
+          err(
+            'C45',
+            `artifact definition ${id}: produced_when per_interval "${producedWhen[1] ?? ''}" is not an ISO-8601 duration (artifact-def-contract)`,
+          );
+        } else if (kind === 'on_event' && producedWhen[1] === undefined) {
+          err(
+            'C45',
+            `artifact definition ${id}: produced_when on_event names no event (artifact-def-contract)`,
+          );
+        }
+      }
+      for (const t of closureConstructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        for (const a of tokensOf(t, 'produces_artifacts')) {
+          if (!artifactDefs.has(a)) {
+            err(
+              'C46',
+              `conformance test ${t.ident}: produces_artifacts "${a}" is not a declared artifact_definition (artifact-instance-resolves)`,
+            );
+          }
+        }
+      }
+      for (const s of closureConstructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        const isB = nested(s).find(n => n.keyword === 'is');
+        const hasB = nested(s).find(n => n.keyword === 'has');
+        const artB = isB
+          ? nested(isB).find(n => n.keyword === 'artifacts')
+          : undefined;
+        if (artB) {
+          for (const a of rawTokensT(artB)) {
+            if (!artifactDefs.has(a)) {
+              err(
+                'C46',
+                `subject ${s.ident}: is.artifacts entry "${a}" is not a declared artifact_definition (artifact-instance-resolves)`,
+              );
+            }
+          }
+        }
+        const instB = hasB
+          ? nested(hasB).find(n => n.keyword === 'artifact_instances')
+          : undefined;
+        if (instB) {
+          for (const a of rawTokensT(instB)) {
+            if (!artifactInstIds.has(a)) {
+              err(
+                'C46',
+                `subject ${s.ident}: has.artifact_instances entry "${a}" is not a declared artifact_instance (artifact-instance-resolves)`,
+              );
+            }
+          }
+        }
+      }
+      for (const inst of closureConstructs.filter(
+        x => x.keyword === 'artifact_instance' && x.ident,
+      )) {
+        const of = tokensOf(inst, 'of')[0] ?? '';
+        const def = artifactDefs.get(of);
+        if (!def) {
+          err(
+            'C46',
+            `artifact instance ${inst.ident}: of "${of}" is not a declared artifact_definition (artifact-instance-resolves)`,
+          );
+          continue;
+        }
+        if (!tokensOf(inst, 'by')[0]) {
+          err(
+            'C46',
+            `artifact instance ${inst.ident}: no producer (by) — an artifact instance is unattributable without its producing subject (artifact-instance-resolves)`,
+          );
+        }
+        const contentBlock = nested(inst).find(n => n.keyword === 'content');
+        const content = new Map(parseKeyValues(contentBlock));
+        const contract = contractOf(def);
+        const contractFields = new Map(contract.fields.map(f => [f.name, f]));
+        for (const key of content.keys()) {
+          if (!contractFields.has(key)) {
+            err(
+              'C46',
+              `artifact instance ${inst.ident}: content field "${key}" is not in the contract of ${of} (artifact-instance-resolves)`,
+            );
+          }
+        }
+        for (const [name, f] of contractFields) {
+          if (!f.optional && !content.has(name)) {
+            err(
+              'C46',
+              `artifact instance ${inst.ident}: required contract field "${name}" of ${of} is not populated (artifact-instance-resolves)`,
+            );
+          }
+        }
+        const producedWhen = tokensOf(def, 'produced_when')[0];
+        const linksB = nested(inst).find(n => n.keyword === 'links');
+        const links = linksB ? rawTokensT(linksB) : [];
+        if (producedWhen === 'per_measurement' && links.length === 0) {
+          err(
+            'C46',
+            `artifact instance ${inst.ident}: ${of} is produced per_measurement but the instance links no run/report — link the producing measurement run or report (artifact-instance-resolves)`,
+          );
+        }
+      }
+      const evidenceSlots = new Map<string, string>();
+      const addEvidenceSlot = (name: string, where: string): void => {
+        if (name && !evidenceSlots.has(name)) {
+          evidenceSlots.set(name, where);
+        }
+      };
+      for (const t of closureConstructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        for (const key of ['variables', 'observables']) {
+          const block = nested(t).find(n => n.keyword === key);
+          if (!block) {
+            continue;
+          }
+          for (const v of nested(block)) {
+            addEvidenceSlot(
+              v.ident || v.keyword,
+              `a ${key.slice(0, -1)} of conformance test ${t.ident}`,
+            );
+          }
+          for (const [name] of parseKeyValues(block)) {
+            addEvidenceSlot(
+              name,
+              `a ${key.slice(0, -1)} of conformance test ${t.ident}`,
+            );
+          }
+        }
+      }
+      const TYPE_TOKENS = new Set([
+        'string',
+        'number',
+        'integer',
+        'decimal',
+        'boolean',
+        'date',
+        'time',
+        'datetime',
+        'duration',
+        'structure',
+        'media',
+        'enum',
+        'reference',
+        'quantity',
+      ]);
+      const addFormFields = (form: Construct, holder: Construct): void => {
+        const fieldsBlock = nested(holder).find(n => n.keyword === 'fields');
+        if (fieldsBlock) {
+          addFormFields(form, fieldsBlock);
+        }
+        for (const l of lines(holder)) {
+          if (l.tokens.some(t => TYPE_TOKENS.has(t))) {
+            addEvidenceSlot(
+              stripColon2(l.key),
+              `a field of form ${form.ident}`,
+            );
+          }
+        }
+        for (const f of nested(holder).filter(n => n.keyword === 'field')) {
+          addEvidenceSlot(
+            f.ident || f.keyword,
+            `a field of form ${form.ident}`,
+          );
+        }
+      };
+      for (const form of closureConstructs.filter(
+        x => x.keyword === 'form' && x.ident,
+      )) {
+        addFormFields(form, form);
+      }
+      for (const [id, d] of artifactDefs) {
+        for (const f of contractOf(d).fields) {
+          const where = evidenceSlots.get(f.name);
+          if (where) {
+            err(
+              'C47',
+              `artifact definition ${id}: contract field "${f.name}" is also ${where} — an artifact is an output OF the instrument, not a record OF the test; keep artifact content out of evidence-record shapes (and vice versa) (artifact-evidence-separation)`,
+            );
+          }
+        }
+      }
+      const promiseSetIds = new Set<string>();
+      for (const ps of closureConstructs.filter(
+        x => x.keyword === 'promise_set' && x.ident,
+      )) {
+        promiseSetIds.add(ps.ident!);
+        promiseSetIds.add(`${ps.ident!}.promise_set`);
+      }
+      for (const s of closureConstructs.filter(
+        x => x.keyword === 'subject' && x.ident,
+      )) {
+        const isB = nested(s).find(n => n.keyword === 'is');
+        const promises = isB
+          ? nested(isB).find(n => n.keyword === 'promises')
+          : undefined;
+        if (promises && nested(promises).length > 0) {
+          promiseSetIds.add(s.ident!);
+          promiseSetIds.add(`${s.ident!}.promise_set`);
+        }
+      }
+      for (const [id, d] of artifactDefs) {
+        const contractFrom = tokensOf(d, 'contract_from')[0];
+        if (!contractFrom) {
+          continue;
+        }
+        if (!promiseSetIds.has(contractFrom)) {
+          err(
+            'C153',
+            `artifact_definition ${id}: contract_from "${contractFrom}" does not resolve to a declared promise set (artifact-contract-derivation)`,
+          );
+        }
+        const contract = contractOf(d);
+        if (contract.fields.length > 0 || contract.media.length > 0) {
+          err(
+            'C153',
+            `artifact_definition ${id}: declares both contract_from and inline contract fields — the derived contract is the referenced set's projection, never a restatement (artifact-contract-derivation)`,
+          );
+        }
+      }
+
+      // C160 signature-closure: every name a check consumes resolves to
+      // a declared datum or symbol.
+      const datumIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'datum' && x.ident)
+          .map(x => x.ident!),
+      );
+      const symbolIds = new Set(
+        closureConstructs
+          .filter(x => x.keyword === 'symbol' && x.ident)
+          .map(x => x.ident!),
+      );
+      for (const c of closureConstructs.filter(
+        x => x.keyword === 'check' && x.ident,
+      )) {
+        const inputsB = nested(c).find(n => n.keyword === 'inputs');
+        const inputs = inputsB ? rawTokensT(inputsB) : tokensOf(c, 'inputs');
+        for (const inp of inputs) {
+          if (!(datumIds.has(inp) || symbolIds.has(inp))) {
+            err(
+              'C160',
+              `check ${c.ident}: input "${inp}" resolves to no declared datum or symbol — the check consumes an undeclared name (signature-closure)`,
+            );
+          }
+        }
+      }
+
+      // C82 product-unmapped-promises: a product reference package's
+      // block-form IS promise must be a mapping source.
+      if (pkgKind === 'product_reference') {
+        const mappedSources = new Set<string>();
+        for (const mp of profiles) {
+          for (const pair of mp.pairs) {
+            mappedSources.add(pair.source);
+          }
+        }
+        for (const s of closureConstructs.filter(
+          x => x.keyword === 'subject' && x.ident,
+        )) {
+          const isB = nested(s).find(n => n.keyword === 'is');
+          const promises = isB
+            ? nested(isB).find(n => n.keyword === 'promises')
+            : undefined;
+          if (!promises) {
+            continue;
+          }
+          for (const p of nested(promises)) {
+            const id = p.ident || p.keyword;
+            if (!mappedSources.has(id)) {
+              issues.push({
+                rule: 'C82',
+                severity: 'warning',
+                message: `subject ${s.ident}: promise "${id}" is not mapped to any standard — an unmapped promise is a brochure claim; the mapping is the conformance claim made computable (product-unmapped-promises)`,
+              });
+            }
           }
         }
       }

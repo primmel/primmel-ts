@@ -210,12 +210,6 @@ export default interface Standard {
    *  pattern, the explicit characteristic rows, the ANR section. */
   attestations: Attestation[];
   certificateTemplates: CertificateTemplate[];
-  /** The certification workflow step registers (smart TODO.roadmap/40
-   *  batch 3): the core layer carries the OIML-CS skeleton, the rec
-   *  packages overlay it (the B3.1 deep merge). */
-  /** The named pipeline stages (smart TODO.roadmap/40 batch 5) — the
-   *  workflow constructs grouped per stage: member processes, the
-   *  bracketing (documentary) events, the approvals and gateways. */
   /** The verification pathways beyond type evaluation (smart
    *  TODO.roadmap/40 batch 3) — VIML 2.09/2.12–2.14. */
   verificationPathways: VerificationPathway[];
