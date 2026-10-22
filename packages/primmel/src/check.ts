@@ -1088,6 +1088,14 @@ export function checkPackage(
     'sum',
     'count',
     'exists',
+    // The series-access vocabulary (the series construct's read
+    // operations): window selects the readings inside a range of an
+    // axis, reading_at reads one cell's value at an axis point — the
+    // creep-family derivations are their case. oclIsUndefined is the
+    // OCL null-check the tiered lookups compose with.
+    'window',
+    'reading_at',
+    'oclIsUndefined',
     'forall',
     'oclIsUndefined',
     'oclIsKindOf',
@@ -1240,6 +1248,12 @@ export function checkPackage(
         // dispatch-context doctrine the inline arm applies): the root
         // never resolves against the scope — skipped whole.
         if (n === 'self' || n.startsWith('self.')) {
+          continue;
+        }
+        // A dotted path whose ROOT is a declared sibling rides the
+        // record — the fields are the record's own (initial_run.span_vmin
+        // is the case).
+        if (n.includes('.') && scopeSet.has(n.split('.')[0]!)) {
           continue;
         }
         push(n);
@@ -1619,6 +1633,12 @@ export function checkPackage(
           }
           const arg = args.find(a => a.name === root);
           return arg ? argKindOf(arg.source) : undefined;
+        }
+        case 'member': {
+          // The property's kind is the result record's — not derivable
+          // here; the object walked for the operands it carries.
+          kindOf(node.object);
+          return undefined;
         }
         case 'call': {
           if (node.callee.includes('.')) {
