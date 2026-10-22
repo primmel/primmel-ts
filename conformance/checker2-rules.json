@@ -1,5 +1,5 @@
 {
- "$comment": "The second checker's rule register: the rules checker2 (packages/checker2) implements over the PG grammar's shape tree, sharing no code with the kernel. The register only grows as rules are re-implemented, and the leg errors on drift in either direction \u2014 an implemented rule missing from the register, or a registered rule the implementation does not carry. Every corpus case whose expectation stays within the implemented set runs through BOTH implementations under the same runner; the rest wait for their rules (the first slice: the structural family C1, C2, C4, C10, C11, C96, C109).",
+ "$comment": "The second checker's rule register: the rules checker2 (packages/checker2) implements over the PG grammar's shape tree, sharing no code with the kernel. The register only grows as rules are re-implemented, and the leg errors on drift in either direction \u2014 an implemented rule missing from the register, or a registered rule the implementation does not carry. Every corpus case whose expectation stays within the implemented set runs through BOTH implementations under the same runner; the rest wait for their rules (the first slice: the structural family C1, C2, C4, C10, C11, C96, C109). The outOfSurface map declares the ids the runtime catalog carries but no single-package checker can mirror (a retired construct, the diff surface, the reserved math plane) \u2014 the parity boundary is visible, never silent.",
  "implemented": [
   "C1",
   "C2",
@@ -14,9 +14,19 @@
   "C11",
   "C12",
   "C13",
+  "C14",
+  "C15",
   "C16",
+  "C17",
   "C18",
+  "C19",
   "C20",
+  "C21",
+  "C22",
+  "C23",
+  "C24",
+  "C25",
+  "C26",
   "C27",
   "C28",
   "C29",
@@ -35,6 +45,9 @@
   "C42",
   "C43",
   "C44",
+  "C45",
+  "C46",
+  "C47",
   "C48",
   "C49",
   "C50",
@@ -69,6 +82,7 @@
   "C79",
   "C80",
   "C81",
+  "C82",
   "C83",
   "C84",
   "C85",
@@ -136,12 +150,14 @@
   "C150",
   "C151",
   "C152",
+  "C153",
   "C154",
   "C155",
   "C156",
   "C157",
   "C158",
   "C159",
+  "C160",
   "C161",
   "C162",
   "C164",
@@ -162,5 +178,11 @@
   "C183",
   "C184",
   "C185"
- ]
+ ],
+ "outOfSurface": {
+  "C137": "RESERVED in the kernel \u2014 the workflow_config construct retired in phase 6 (no parser, loader slot, or leg remains); the id can never fire",
+  "C163": "change-levels runs over primmel diff (two packages, the diff classifier) \u2014 outside a single-package checker",
+  "C165": "RESERVED in the kernel for the calculation math plane (Formula 1 / plurimath-ts) \u2014 no kernel leg exists",
+  "C166": "RESERVED in the kernel for the calculation math plane (the Plurimath-conformant parse) \u2014 no kernel leg exists"
+ }
 }
