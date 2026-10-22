@@ -100,7 +100,7 @@
 // deployed consumer's pins key on. JSON, byte-deterministic; default
 // stdout, --out writes the document to a file.
 import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { fmtPackage, type FmtResult } from '../src/fmt.ts';
 import { CHECK_RULES, formatRules } from '../src/check-rules.ts';
@@ -526,12 +526,70 @@ function fmtCli(argv: string[]): void {
 }
 
 const args = process.argv.slice(2);
+async function awaitImportPackCli(): Promise<{
+  compileAndWritePack: (
+    dir: string,
+    outDir: string,
+    opts: { resolvePackage?: (id: string) => string | undefined },
+  ) => unknown;
+}> {
+  return import('../src/pack-cli') as never;
+}
+
+function packCli(args: string[]): void {
+  void (async () => {
+  // (the body runs async — the import below awaits)
+  const dirArg = args.find(a => !a.startsWith('--'));
+  const outIx = args.indexOf('--out');
+  const outDir = outIx >= 0 ? args[outIx + 1] : undefined;
+  if (!dirArg || !outDir) {
+    console.error(
+      'usage: primmel pack <package-dir> --out <archive-dir> [--with <pkg-id>=<dir>]…',
+    );
+    process.exit(2);
+  }
+  // The sibling locator, wired the same way check's --with does: the
+  // uses closure composes for the archive (the pack IS the linked
+  // whole, the requires pinning its dependencies).
+  // The --with locator, parsed inline (the same spec the check arm uses):
+  // the uses closure composes for the archive — the pack IS the linked
+  // whole, the manifest pinning its dependencies.
+  const resolvePackage = (id: string): string | undefined => {
+    const eqIx = args.indexOf('--with');
+    let found: string | undefined;
+    for (let i2 = 0; i2 < args.length - 1; i2++) {
+      if (args[i2] === '--with') {
+        const spec = args[i2 + 1]!;
+        const eq = spec.indexOf('=');
+        if (eq > 0 && spec.slice(0, eq) === id) found = spec.slice(eq + 1);
+      }
+    }
+    void eqIx;
+    return found;
+  };
+  const { compileAndWritePack } = await awaitImportPackCli();
+  const manifest = compileAndWritePack(
+    resolve(dirArg),
+    resolve(outDir),
+    { resolvePackage },
+  );
+  console.log(
+    `pack: ${manifest.id}@${manifest.version} — ${manifest.files.length} files, ${manifest.requires.length} pinned dependencies → ${outDir}`,
+  );
+  })().catch((e: unknown) => {
+    console.error(String((e as Error)?.message ?? e));
+    process.exit(1);
+  });
+}
+
 if (args[0] === 'diff') {
   diffCli(args.slice(1));
 } else if (args[0] === 'check') {
   checkCli(args.slice(1));
 } else if (args[0] === 'export') {
   exportCli(args.slice(1));
+} else if (args[0] === 'pack') {
+  void packCli(args.slice(1));
 } else if (args[0] === 'fmt') {
   fmtCli(args.slice(1));
 } else {
