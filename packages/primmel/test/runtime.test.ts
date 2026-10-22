@@ -382,5 +382,11 @@ describe(
         60,
       );
     });
+
+    it('the number grammar accepts exponent and leading-dot forms (kernel#197)', () => {
+      assert.equal(evaluateExpression('1.5e3 + x', { x: 0 }), 1500);
+      assert.equal(evaluateExpression('.5 * x', { x: 8 }), 4);
+      assert.equal(evaluateExpression('2.5E-2 * x', { x: 100 }), 2.5);
+    });
   },
 );

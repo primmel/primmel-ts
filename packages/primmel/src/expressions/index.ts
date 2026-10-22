@@ -6,7 +6,7 @@
 // ── the tokens ─────────────────────────────────────────────────────────
 
 export type ExprToken =
-  | { kind: 'num'; value: number }
+  | { kind: 'num'; value: number; literal?: string }
   | { kind: 'str'; value: string }
   | { kind: 'name'; value: string }
   | { kind: 'op'; value: string };
@@ -54,12 +54,39 @@ export function lex(src: string): ExprToken[] {
       i = j + 1;
       continue;
     }
-    if (/[0-9]/.test(c)) {
-      let j = i;
-      while (j < src.length && /[0-9.]/.test(src[j])) {
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i + 1] ?? ''))) {
+      // The number grammar (kernel#197): integer, fraction, leading
+      // dot, and exponent forms; the AUTHORED text rides the token —
+      // the literal is a precision statement, never a misspelling of
+      // the canonical number.
+      let j = i + 1;
+      while (j < src.length && /[0-9]/.test(src[j])) {
         j += 1;
       }
-      tokens.push({ kind: 'num', value: Number(src.slice(i, j)) });
+      if (src[j] === '.') {
+        j += 1;
+        while (j < src.length && /[0-9]/.test(src[j])) {
+          j += 1;
+        }
+      }
+      if (src[j] === 'e' || src[j] === 'E') {
+        let k = j + 1;
+        if (src[k] === '+' || src[k] === '-') {
+          k += 1;
+        }
+        if (/[0-9]/.test(src[k] ?? '')) {
+          j = k;
+          while (j < src.length && /[0-9]/.test(src[j])) {
+            j += 1;
+          }
+        }
+      }
+      const text = src.slice(i, j);
+      tokens.push({
+        kind: 'num',
+        value: Number(text),
+        ...(text !== String(Number(text)) ? { literal: text } : {}),
+      });
       i = j;
       continue;
     }
@@ -91,7 +118,7 @@ export function lex(src: string): ExprToken[] {
 // ── the AST ────────────────────────────────────────────────────────────
 
 export type ExprAst =
-  | { type: 'num'; value: number }
+  | { type: 'num'; value: number; literal?: string }
   | { type: 'str'; value: string }
   | { type: 'bool'; value: boolean }
   | { type: 'name'; path: string[] }
@@ -206,7 +233,11 @@ class ExprParser {
   private parsePrimary(): ExprAst {
     const tok = this.take();
     if (tok.kind === 'num') {
-      return { type: 'num', value: tok.value };
+      return {
+        type: 'num',
+        value: tok.value,
+        ...(tok.literal !== undefined ? { literal: tok.literal } : {}),
+      };
     }
     if (tok.kind === 'str') {
       return { type: 'str', value: tok.value };
@@ -446,7 +477,10 @@ export function freeIdentifiers(ast: ExprAst): ExprIdentifiers {
 export function renderExpression(ast: ExprAst): string {
   switch (ast.type) {
     case 'num':
-      return String(ast.value);
+      // The authored literal is a precision statement (kernel#197):
+      // it renders verbatim; the canonical number only when the
+      // authored form carries nothing extra.
+      return ast.literal ?? String(ast.value);
     case 'str':
       return "'" + ast.value + "'";
     case 'bool':

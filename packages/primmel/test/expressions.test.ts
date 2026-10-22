@@ -632,6 +632,24 @@ describe('the named-multiple limits with when-guards (register 18)', () => {
   });
 });
 
+describe('authored literals ride the canonical form (kernel#197)', () => {
+  it('keeps the authored precision, exponent, and leading-dot spellings', () => {
+    for (const src of ['2.10 + mpe', '1.5e3 * x', '.5 * y']) {
+      assert.equal(canonicalizeExpression(src), src);
+      assert.equal(canonicalizeExpression(canonicalizeExpression(src)), src);
+    }
+  });
+
+  it('the AST carries the literal beside the value', () => {
+    assert.deepEqual(parseExpression('2.10'), {
+      type: 'num',
+      value: 2.1,
+      literal: '2.10',
+    });
+    assert.deepEqual(parseExpression('2'), { type: 'num', value: 2 });
+  });
+});
+
 describe('the canonicalizer keeps precedence-critical parens (the r144 measuring-range guard)', () => {
   const LEG = (c: string) =>
     `(not model.classification.measurand_components -> exists(c | c = '${c}') or (model.parameters.${c}_range_min >= 10 and model.parameters.${c}_range_max <= 20000))`;

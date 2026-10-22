@@ -172,9 +172,29 @@ function tokenize(src: string): Tok[] {
       continue;
     }
     if (/[0-9]/.test(ch) || (ch === '.' && /[0-9]/.test(s[i + 1] ?? ''))) {
+      // The same number grammar as the expression parser (kernel#197):
+      // integer, fraction, leading dot, and exponent forms.
       let j = i;
-      while (j < s.length && /[0-9.]/.test(s[j]!)) {
+      while (j < s.length && /[0-9]/.test(s[j]!)) {
         j++;
+      }
+      if (s[j] === '.') {
+        j++;
+        while (j < s.length && /[0-9]/.test(s[j]!)) {
+          j++;
+        }
+      }
+      if (s[j] === 'e' || s[j] === 'E') {
+        let k = j + 1;
+        if (s[k] === '+' || s[k] === '-') {
+          k++;
+        }
+        if (/[0-9]/.test(s[k] ?? '')) {
+          j = k;
+          while (j < s.length && /[0-9]/.test(s[j]!)) {
+            j++;
+          }
+        }
       }
       out.push({ t: 'num', v: Number(s.slice(i, j)) });
       i = j;
