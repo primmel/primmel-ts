@@ -656,14 +656,11 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
 // The marker stays opt-in per collection: everything else keeps
 // uses-no-redefine, and terms keep their whole-value replace.
 //
-// The set grows per collection as its construct lands: workflowConfigs
-// (B3.7), testReportChecklists (B3.10) — a field name listed before its
+// The set grows per collection as its construct lands:
+// testReportChecklists (B3.10) — a field name listed before its
 // collection exists would be dead config.
 // ─────────────────────────────────────────────────────────────────────
 export const OVERLAY_DEEP_MERGE_FIELDS: ReadonlySet<string> = new Set([
-  // The workflow step register (B3.7): a rec package's overlay-marked
-  // workflow_config merges field-wise into the core skeleton (steps
-  // union by id in first-seen order, gates append as a union).
   // The OIML-CS test-report checklist (B3.10): a rec package's
   // overlay-marked test_report_checklist merges field-wise into the
   // oiml-cs base — entry scalars land IN PLACE (the base order

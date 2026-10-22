@@ -860,7 +860,7 @@ export const CHECK_RULES: CheckRule[] = [
     'composition',
     'error',
     'normal',
-    'smart TODO.roadmap/40 batch 3 (the packages-as-SSOT epic)',
+    'RESERVED — the workflow_config construct retired in phase 6 (no package used it; the parser, loader slot, and check were removed); the id is reserved and no leg runs',
   ),
   // C138 (smart TODO.roadmap/40 batch 3; the packages-as-SSOT epic): the
   // verification pathways — the tests/covers resolutions (gated), the
