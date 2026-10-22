@@ -1217,17 +1217,50 @@ export function checkPackage(
     const scopeSet = new Set([...scope, ...globalExprNames]);
     const seen = new Set<string>();
     const out: string[] = [];
-    for (const id of exprIds(expr)) {
+    const push = (id: string): void => {
       if (seen.has(id)) {
-        continue;
+        return;
       }
       seen.add(id);
       if (OCL_WORDS.has(id) || scopeSet.has(id) || usesCovers(uses, id)) {
-        continue;
+        return;
       }
       out.push(id);
+    };
+    // The lambda-aware walk: the nav iterators (runs->collect(r | …))
+    // scope their variable, and calls resolve as CALLABLES (the
+    // calculation registry) with their arguments walked as names — the
+    // regex extractor counted the iterator variable and the nav method
+    // as free names (the r60-lml repeatability derivations were the
+    // case). A body that does not parse falls back to the regex view.
+    try {
+      const ids = freeIdentifiers(parseExpression(expr));
+      for (const n of ids.names) {
+        // The self-rooted paths read the entity's own fields (the
+        // dispatch-context doctrine the inline arm applies): the root
+        // never resolves against the scope — skipped whole.
+        if (n === 'self' || n.startsWith('self.')) {
+          continue;
+        }
+        push(n);
+      }
+      for (const c of ids.calls) {
+        if (
+          c.includes('.') &&
+          (scopeSet.has(c.split('.')[0]!) ||
+            CONTEXT_ROOTS.has(c.split('.')[0]!))
+        ) {
+          continue;
+        }
+        push(c);
+      }
+      return out;
+    } catch {
+      for (const id of exprIds(expr)) {
+        push(id);
+      }
+      return out;
     }
-    return out;
   };
   // The mapped computations (register: the mapped-callee plane): a
   // certification program maps to its Recommendations (`maps_to`), and
