@@ -2639,6 +2639,174 @@ export function check(pkg: ParsedPackage, located?: Located): Issue[] {
       }
     }
 
+    // C183 record-run-inputs (kernel#57's slice): the record form's
+    // run_inputs names the applied-input slice — every name is the
+    // owning test's run.inputs member and a field of the form's data
+    // class; the owning test resolves through the form's
+    // conformance_process binding.
+    {
+      const classFields = new Map<string, Set<string>>();
+      for (const dc of closureConstructs.filter(
+        x => x.keyword === 'class' && x.ident,
+      )) {
+        const fields = new Set<string>();
+        for (const g of nested(dc).filter(n => n.keyword === 'attributes')) {
+          for (const a of nested(g)) {
+            if (a.ident) {
+              fields.add(a.ident);
+            }
+          }
+        }
+        classFields.set(dc.ident!, fields);
+      }
+      const testInputs = new Map<string, string[]>();
+      for (const t of closureConstructs.filter(
+        x => x.keyword === 'conformance_test' && x.ident,
+      )) {
+        for (const run of nested(t).filter(n => n.keyword === 'run')) {
+          const inputs: string[] = [];
+          for (const inp of nested(run).filter(n => n.keyword === 'inputs')) {
+            inputs.push(...rawTokensT(inp));
+          }
+          if (inputs.length) {
+            testInputs.set(t.ident!, inputs);
+          }
+        }
+      }
+      for (const form of closureConstructs.filter(
+        x => x.keyword === 'form' && x.ident,
+      )) {
+        const slice = facetTokens(form.items, 'run_inputs');
+        if (slice.length === 0) {
+          continue;
+        }
+        const proc = facetTokens(form.items, 'conformance_process')[0] ?? '';
+        const inputs = testInputs.get(proc);
+        if (!inputs) {
+          err(
+            'C183',
+            `form ${form.ident}: run_inputs names ${slice.join(' ')} but the form binds no conformance test — the slice's contract is the owning test's run.inputs (record-run-inputs)`,
+          );
+          continue;
+        }
+        const dc = facetTokens(form.items, 'data_class')[0] ?? '';
+        const fields =
+          classFields.get(dc) ?? classFields.get(dc.replace(/#data$/, ''));
+        for (const name of slice) {
+          if (!inputs.includes(name)) {
+            err(
+              'C183',
+              `form ${form.ident}: run_inputs "${name}" is not in the owning test's run.inputs (${proc}) — a record cannot carry what the run does not apply (record-run-inputs)`,
+            );
+          }
+          if (!fields || !fields.has(name)) {
+            err(
+              'C183',
+              `form ${form.ident}: run_inputs "${name}" is no field of the data class ${dc} — the record's slice must be the record's shape (record-run-inputs)`,
+            );
+          }
+        }
+      }
+    }
+
+    // C184 field-range-order (kernel#90): the form field's scalar
+    // min/max — each a numeric literal or a template, a numerically
+    // bounded pair ordered min ≤ max; the nested fields judged with
+    // the same rule.
+    {
+      const rangeOk = (
+        v: string | undefined,
+      ): 'absent' | 'numeric' | 'template' | 'invalid' => {
+        if (v === undefined) {
+          return 'absent';
+        }
+        if (/^-?\d+(\.\d+)?$/.test(v)) {
+          return 'numeric';
+        }
+        if (/^\$\{.+\}$/.test(v)) {
+          return 'template';
+        }
+        return 'invalid';
+      };
+      const walkFields = (
+        formIdent: string,
+        fields: Construct[],
+        path: string,
+      ): void => {
+        for (const f of fields) {
+          const where =
+            path === ''
+              ? `field ${f.ident ?? ''}`
+              : `field ${path}.${f.ident ?? ''}`;
+          const kMin = rangeOk(facetTokens(f.items, 'min')[0]);
+          const kMax = rangeOk(facetTokens(f.items, 'max')[0]);
+          const minV = facetTokens(f.items, 'min')[0];
+          const maxV = facetTokens(f.items, 'max')[0];
+          if (kMin === 'invalid') {
+            err(
+              'C184',
+              `form ${formIdent}: ${where} min "${minV}" is neither a numeric literal nor a template (field-range-order)`,
+            );
+          }
+          if (kMax === 'invalid') {
+            err(
+              'C184',
+              `form ${formIdent}: ${where} max "${maxV}" is neither a numeric literal nor a template (field-range-order)`,
+            );
+          }
+          if (
+            kMin === 'numeric' &&
+            kMax === 'numeric' &&
+            Number(minV) > Number(maxV)
+          ) {
+            err(
+              'C184',
+              `form ${formIdent}: ${where} declares min ${minV} > max ${maxV} — the range is empty by declaration (field-range-order)`,
+            );
+          }
+          walkFields(
+            formIdent,
+            nested(f).filter(n => n.keyword === 'fields'),
+            path === '' ? (f.ident ?? '') : `${path}.${f.ident ?? ''}`,
+          );
+        }
+      };
+      for (const form of closureConstructs.filter(
+        x => x.keyword === 'form' && x.ident,
+      )) {
+        walkFields(
+          form.ident!,
+          nested(form).filter(n => n.keyword === 'field'),
+          '',
+        );
+      }
+    }
+
+    // C185 unitsdb-binding-coherent (kernel#87): checker2 runs without
+    // the UnitsDB snapshot — the binding's shape is the judgement here
+    // (a pin carries at least one identifier); the resolution against a
+    // supplied DB is the kernel's option, mirrored never imported.
+    {
+      for (const reg of closureConstructs.filter(
+        x => x.keyword === 'quantity_register' && x.ident,
+      )) {
+        for (const u of nested(reg).filter(n => n.keyword === 'unit')) {
+          const pin = nested(u).find(n => n.keyword === 'unitsdb');
+          if (!pin) {
+            continue;
+          }
+          const nist = facetTokens(pin.items, 'nist')[0];
+          const unitsml = facetTokens(pin.items, 'unitsml')[0];
+          if (!nist && !unitsml) {
+            err(
+              'C185',
+              `quantity_register ${reg.ident}: unit "${u.ident}" pins unitsdb with no identifier (nist / unitsml) (unitsdb-binding-coherent)`,
+            );
+          }
+        }
+      }
+    }
+
     // C176 language-declared-wellformed: a declared language generation
     // must be well-formed (v<major>[.<minor>]) — the strict-parse
     // contract's key; this rule checks the declaration's shape.
