@@ -96,6 +96,13 @@ export type ExprAst =
   | { type: 'bool'; value: boolean }
   | { type: 'name'; path: string[] }
   | { type: 'call'; callee: string; args: ExprAst[] }
+  /**
+   * The member access on a call result (the OCL property navigation):
+   * `lookupProfile('n_LC_range', cls).min` — the range record's field.
+   * The property is not an identifier; freeIdentifiers walks the object
+   * alone.
+   */
+  | { type: 'member'; object: ExprAst; property: string }
   | { type: 'binop'; op: string; left: ExprAst; right: ExprAst }
   | { type: 'unop'; op: string; operand: ExprAst }
   /**
@@ -275,7 +282,40 @@ class ExprParser {
         if (close.kind !== 'op' || close.value !== ')') {
           throw new Error('expression: expected closing parenthesis');
         }
-        return { type: 'call', callee: segs.join('.'), args };
+        let node: ExprAst = { type: 'call', callee: segs.join('.'), args };
+        // The member access on the call result (the OCL property
+        // navigation): `.min` / `.max` chain after the closing paren; a
+        // zero-arg call on the chain (`.oclIsUndefined()`) wraps the
+        // chain as its receiver — the OCL null-check the tiered lookups
+        // compose with.
+        while (this.peek()?.kind === 'op' && this.peek()!.value === '.') {
+          this.take();
+          const prop = this.take();
+          if (prop.kind !== 'name') {
+            throw new Error('expression: expected a property name after "."');
+          }
+          // The name token carries its dots whole — the segments chain
+          // as members, the last one the operation when a call follows.
+          const segs = prop.value.split('.');
+          for (const seg of segs) {
+            node = { type: 'member', object: node, property: seg };
+          }
+          if (this.peek()?.kind === 'op' && this.peek()!.value === '(') {
+            this.take();
+            const closing = this.take();
+            if (closing.kind !== 'op' || closing.value !== ')') {
+              throw new Error(
+                'expression: expected closing parenthesis — the property call takes no arguments',
+              );
+            }
+            node = {
+              type: 'call',
+              callee: segs[segs.length - 1]!,
+              args: [node],
+            };
+          }
+        }
+        return node;
       }
       // the collection navigation (register 24):
       // source -> forAll(v | body) / exists / select
@@ -378,6 +418,10 @@ export function freeIdentifiers(ast: ExprAst): ExprIdentifiers {
           walk(a, bound);
         }
         return;
+      case 'member':
+        // the property is the result's own field — the object walked
+        walk(node.object, bound);
+        return;
       case 'unop':
         walk(node.operand, bound);
         return;
@@ -421,6 +465,8 @@ export function renderExpression(ast: ExprAst): string {
       return ast.path.join('.');
     case 'call':
       return ast.callee + '(' + ast.args.map(renderExpression).join(', ') + ')';
+    case 'member':
+      return renderExpression(ast.object) + '.' + ast.property;
     case 'unop': {
       // a unary over a binary needs the parens back — the rendered
       // source must reparse to the same tree
