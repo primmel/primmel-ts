@@ -99,7 +99,7 @@
 // digest + machine passport, and the package-byte source_hash the
 // deployed consumer's pins key on. JSON, byte-deterministic; default
 // stdout, --out writes the document to a file.
-import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { fmtPackage, type FmtResult } from '../src/fmt.ts';
@@ -126,7 +126,7 @@ import { formatDiffReport } from '../src/model-diff.ts';
 import type { ResolvePackage } from '../src/ser-des/package.ts';
 
 const CHECK_USAGE =
-  'Usage: primmel check [--strict] [--audit] [--coverage] [--rules] [--with <pkg-id>=<dir>]… <package-dir>';
+  'Usage: primmel check [--strict] [--audit] [--coverage] [--rules] [--unitsdb <file>] [--with <pkg-id>=<dir>]… <package-dir>';
 const DIFF_USAGE =
   'Usage: primmel diff [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>';
 const EXPORT_USAGE =
@@ -219,14 +219,31 @@ function parseArgs(
 }
 
 function checkCli(args: string[]): void {
-  const { flags, locator, positional } = parseArgs(
+  const { flags, locator, values, positional } = parseArgs(
     args,
     ['--strict', '--audit', '--coverage', '--rules'],
     CHECK_USAGE,
+    ['--unitsdb'],
   );
   const strict = flags.has('--strict');
   const audit = flags.has('--audit');
   const coverage = flags.has('--coverage');
+  // The UnitsDB snapshot (kernel#87's plane): a JSON file in the
+  // unitsdb release export's shape — the caller supplies the data, the
+  // kernel owns no copy. C185 reads it; without it the pins stay
+  // inert.
+  const unitsdbPath = values.get('--unitsdb');
+  let unitsDb: import('./unitsdb').UnitsDbData | undefined;
+  if (unitsdbPath !== undefined) {
+    try {
+      unitsDb = JSON.parse(readFileSync(unitsdbPath, 'utf8')) as import(
+        './unitsdb'
+      ).UnitsDbData;
+    } catch (e) {
+      console.error(`cannot read the unitsdb snapshot at ${unitsdbPath}: ${(e as Error).message}`);
+      process.exit(2);
+    }
+  }
 
   if (flags.has('--rules')) {
     const fam = (f: string) => f.padEnd(15);
@@ -281,6 +298,7 @@ function checkCli(args: string[]): void {
   const issues = checkPackage(dir, {
     strictness: audit ? 'audit' : 'normal',
     strict,
+    ...(unitsDb !== undefined ? { unitsDb } : {}),
     ...(locator.size > 0
       ? { resolvePackage: (id: string) => locator.get(id) }
       : {}),
