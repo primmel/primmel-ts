@@ -32,6 +32,8 @@ export interface UnitsDbUnit {
   /** The measurement scale (continuous_interval for degC — the interval
    *  scale whose offset the REGISTER authors as offsetToSI). */
   scale_reference?: UnitsDbIdentifier;
+  /** The quantities the unit measures (NISTq* / q:*). */
+  quantity_references?: UnitsDbIdentifier[];
   unit_system_reference?: UnitsDbIdentifier[];
   symbols?: Array<{ id?: string; ascii?: string; unicode?: string }>;
   short?: string;
@@ -46,13 +48,67 @@ export interface UnitsDbPrefix {
   symbols?: Array<{ id?: string; ascii?: string }>;
 }
 
+export interface UnitsDbQuantity {
+  identifiers?: UnitsDbIdentifier[];
+  /** The dimension the quantity belongs to (NISTd* / d:*). */
+  dimension_reference?: UnitsDbIdentifier;
+  names?: Array<{ value?: string; lang?: string }>;
+  /** base | derived (the release's quantity_type). */
+  quantity_type?: string;
+  short?: string;
+}
+
+/** One per-base-quantity component of a dimension vector. The release
+ *  spells the power either as a bare number or as an object carrying
+ *  the symbol (`thermodynamic_temperature: 1` beside
+ *  `electric_current: { power: -1, symbol: "I" }`). */
+export type UnitsDbDimensionComponent =
+  number | { power?: number; symbol?: string };
+
+export interface UnitsDbDimension {
+  identifiers?: UnitsDbIdentifier[];
+  names?: Array<{ value?: string; lang?: string }>;
+  short?: string;
+  /** The per-base-quantity components, keyed by the base quantity's
+   *  short name (length, mass, time, electric_current,
+   *  thermodynamic_temperature, …). */
+  [key: string]: UnitsDbDimensionComponent | unknown;
+}
+
+export interface UnitsDbScaleProperties {
+  continuous?: boolean;
+  ordered?: boolean;
+  logarithmic?: boolean;
+  interval?: boolean;
+  ratio?: boolean;
+}
+
+export interface UnitsDbScale {
+  identifiers?: UnitsDbIdentifier[];
+  names?: Array<{ value?: string; lang?: string }>;
+  short?: string;
+  properties?: UnitsDbScaleProperties;
+}
+
 export interface UnitsDbData {
   units: UnitsDbUnit[];
   prefixes: UnitsDbPrefix[];
-  quantities?: unknown[];
-  dimensions?: unknown[];
-  scales?: unknown[];
+  quantities?: UnitsDbQuantity[];
+  dimensions?: UnitsDbDimension[];
+  scales?: UnitsDbScale[];
 }
+
+/** The normalized dimension vector: base-quantity short name → signed
+ *  power; absent keys are 0. Dimension equality is scale-independent
+ *  (the kelvin and the ITS-90 celsius share one vector). */
+export type DimensionVector = Record<string, number>;
+
+const DIMENSION_META_KEYS = new Set([
+  'identifiers',
+  'names',
+  'references',
+  'short',
+]);
 
 /** One resolved SI-base factor: the base unit's id and its signed power
  *  (the prefix powers fold into the carrying factor, the unit powers
@@ -82,6 +138,9 @@ export interface ResolvedUnitStructure {
 export class UnitsDb {
   private readonly byId = new Map<string, UnitsDbUnit>();
   private readonly prefixesBySymbol = new Map<string, UnitsDbPrefix>();
+  private readonly quantitiesById = new Map<string, UnitsDbQuantity>();
+  private readonly dimensionsById = new Map<string, UnitsDbDimension>();
+  private readonly scalesById = new Map<string, UnitsDbScale>();
 
   constructor(data: UnitsDbData) {
     for (const u of data.units ?? []) {
@@ -112,6 +171,36 @@ export class UnitsDb {
         if (s.ascii) {
           this.prefixesBySymbol.set(s.ascii, p);
         }
+      }
+    }
+    for (const q of data.quantities ?? []) {
+      for (const i of q.identifiers ?? []) {
+        if (i.id) {
+          this.quantitiesById.set(i.id, q);
+        }
+      }
+      if (q.short) {
+        this.quantitiesById.set(q.short, q);
+      }
+    }
+    for (const d of data.dimensions ?? []) {
+      for (const i of d.identifiers ?? []) {
+        if (i.id) {
+          this.dimensionsById.set(i.id, d);
+        }
+      }
+      if (d.short) {
+        this.dimensionsById.set(d.short, d);
+      }
+    }
+    for (const s of data.scales ?? []) {
+      for (const i of s.identifiers ?? []) {
+        if (i.id) {
+          this.scalesById.set(i.id, s);
+        }
+      }
+      if (s.short) {
+        this.scalesById.set(s.short, s);
       }
     }
   }
@@ -208,6 +297,138 @@ export class UnitsDb {
           : undefined,
       scale: unit.scale_reference?.id,
     };
+  }
+
+  // ── The second half (kernel#208): quantities, dimensions, scales —
+  //    the data plane the evaluation engine reads. Same law as the
+  //    first half: the DB is authoritative for STRUCTURE, a miss in
+  //    the supplied data is the caller's data gap and throws.
+
+  quantity(id: string): UnitsDbQuantity | undefined {
+    return this.quantitiesById.get(id);
+  }
+
+  dimension(id: string): UnitsDbDimension | undefined {
+    return this.dimensionsById.get(id);
+  }
+
+  scale(id: string): UnitsDbScale | undefined {
+    return this.scalesById.get(id);
+  }
+
+  /** The unit's declared quantities, in authored order. The id may be
+   *  a plain id or a prefixed unitsml spelling — both resolve to the
+   *  DB entry first. */
+  quantitiesOfUnit(id: string): UnitsDbQuantity[] {
+    const unit = this.resolveUnit(id).unit;
+    return (unit.quantity_references ?? []).map(ref => {
+      const qid = ref.id;
+      const q = qid ? this.quantitiesById.get(qid) : undefined;
+      if (!q) {
+        throw new Error(
+          `[unitsdb] "${id}" names quantity "${qid ?? '?'}" which is not in the supplied data`,
+        );
+      }
+      return q;
+    });
+  }
+
+  /** The unit's primary quantity — the first declared reference that
+   *  carries a dimension (a unit may serve several quantities; the
+   *  first is the naming one). */
+  primaryQuantityOfUnit(id: string): UnitsDbQuantity {
+    const q = this.quantitiesOfUnit(id).find(x => x.dimension_reference?.id);
+    if (!q) {
+      throw new Error(
+        `[unitsdb] "${id}" declares no quantity carrying a dimension`,
+      );
+    }
+    return q;
+  }
+
+  /** The dimension of one quantity id (the quantity's
+   *  dimension_reference, resolved). */
+  dimensionOfQuantity(qid: string): UnitsDbDimension {
+    const q = this.quantitiesById.get(qid);
+    const ref = q?.dimension_reference?.id;
+    const d = ref ? this.dimensionsById.get(ref) : undefined;
+    if (!d) {
+      throw new Error(
+        `[unitsdb] quantity "${qid}" names dimension "${ref ?? '?'}" which is not in the supplied data`,
+      );
+    }
+    return d;
+  }
+
+  /** The normalized dimension vector of one dimension entry: the
+   *  per-base-quantity components (bare numbers or { power, symbol })
+   *  collected to signed powers; meta keys skipped; zero powers
+   *  dropped. */
+  normalizeDimension(d: UnitsDbDimension): DimensionVector {
+    const out: DimensionVector = {};
+    for (const [key, value] of Object.entries(d)) {
+      if (DIMENSION_META_KEYS.has(key)) {
+        continue;
+      }
+      let power: number | undefined;
+      if (typeof value === 'number') {
+        power = value;
+      } else if (
+        value !== null &&
+        typeof value === 'object' &&
+        typeof (value as { power?: unknown }).power === 'number'
+      ) {
+        power = (value as { power: number }).power;
+      } else if (value !== null && typeof value === 'object') {
+        // A component with a symbol but no power states the axis.
+        power = 1;
+      } else {
+        continue;
+      }
+      if (power !== 0) {
+        out[key] = (out[key] ?? 0) + power;
+      }
+    }
+    return out;
+  }
+
+  /** The unit's dimension vector, through its primary quantity. A
+   *  prefixed spelling (`u:kV`) resolves to the root unit's vector —
+   *  the prefix scales the magnitude, never the dimension. */
+  dimensionVectorOfUnit(id: string): DimensionVector {
+    const q = this.primaryQuantityOfUnit(id);
+    const qid =
+      q.identifiers?.find(i => i.type === 'nist')?.id ??
+      q.identifiers?.[0]?.id ??
+      q.short ??
+      '';
+    return this.normalizeDimension(this.dimensionOfQuantity(qid));
+  }
+
+  /** Dimension equality: every axis in the union carries the same
+   *  signed power (absent = 0). */
+  sameDimension(a: DimensionVector, b: DimensionVector): boolean {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    for (const k of keys) {
+      if ((a[k] ?? 0) !== (b[k] ?? 0)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** The unit's measurement scale, resolved through its
+   *  scale_reference. */
+  scaleOfUnit(id: string): UnitsDbScale {
+    const unit = this.unit(id);
+    const sid = unit?.scale_reference?.id;
+    const s = sid ? this.scalesById.get(sid) : undefined;
+    if (!s) {
+      throw new Error(
+        `[unitsdb] "${id}" names scale "${sid ?? '?'}" which is not in the supplied data`,
+      );
+    }
+    return s;
   }
 }
 

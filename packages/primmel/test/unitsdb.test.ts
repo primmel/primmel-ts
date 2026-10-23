@@ -100,6 +100,72 @@ describe('the UnitsDB binding (kernel#87)', () => {
     );
   });
 
+  // ── The second half (kernel#208): quantities, dimensions, scales.
+
+  it('the volt carries its dimension vector through the primary quantity', () => {
+    const db = loadUnitsDb(DB);
+    const v = db.dimensionVectorOfUnit('u:volt');
+    // V = kg·m²·s⁻³·A⁻¹ (NISTd18 through NISTq24).
+    assert.deepEqual(v, {
+      electric_current: -1,
+      length: 2,
+      mass: 1,
+      time: -3,
+    });
+  });
+
+  it('a prefixed spelling carries the root vector; the meter is L¹', () => {
+    const db = loadUnitsDb(DB);
+    assert.ok(
+      db.sameDimension(
+        db.dimensionVectorOfUnit('u:kV'),
+        db.dimensionVectorOfUnit('u:volt'),
+      ),
+    );
+    assert.deepEqual(db.dimensionVectorOfUnit('u:meter'), { length: 1 });
+    assert.ok(
+      !db.sameDimension(
+        db.dimensionVectorOfUnit('u:volt'),
+        db.dimensionVectorOfUnit('u:meter'),
+      ),
+    );
+  });
+
+  it('the kelvin and the ITS-90 celsius share one dimension and differ only in scale', () => {
+    const db = loadUnitsDb(DB);
+    const k = db.dimensionVectorOfUnit('u:kelvin');
+    const c = db.dimensionVectorOfUnit('u:degree_Celsius');
+    assert.deepEqual(k, { thermodynamic_temperature: 1 });
+    assert.deepEqual(c, k);
+    // The scale is the distinction: interval forbids ratios; the
+    // register's authored 273.15 offset lives on the interval side.
+    assert.equal(db.scaleOfUnit('u:degree_Celsius').properties?.interval, true);
+    assert.equal(db.scaleOfUnit('u:degree_Celsius').properties?.ratio, false);
+    assert.equal(db.scaleOfUnit('u:kelvin').properties?.ratio, true);
+  });
+
+  it('a bare-number dimension component normalizes as the power', () => {
+    const db = loadUnitsDb(DB);
+    const d = db.dimensionOfQuantity('NISTq192');
+    assert.deepEqual(db.normalizeDimension(d), {
+      thermodynamic_temperature: 1,
+    });
+  });
+
+  it('quantities and misses name their resolution path', () => {
+    const db = loadUnitsDb(DB);
+    const qs = db.quantitiesOfUnit('u:volt');
+    assert.equal(qs[0].short, 'electric_potential_difference');
+    assert.equal(
+      db.primaryQuantityOfUnit('u:volt').short,
+      'electric_potential_difference',
+    );
+    assert.throws(
+      () => db.dimensionVectorOfUnit('u:furlong'),
+      /not in the supplied data/,
+    );
+  });
+
   it('C185 is inert without a supplied DB', () => {
     const m = load(REGISTER) as unknown as Standard;
     assert.deepEqual(checkUnitsDbBindings(m), []);
