@@ -7284,6 +7284,17 @@ export function checkPackage(
       const edges =
         (g as { edges?: { target: string; condition: string }[] }).edges ?? [];
       const where = `exclusive_gateway ${g.id}`;
+      // The exhaustive gateway's dead-route leg: the conditions cover
+      // the dimension domain, so a declared default can never fire.
+      if (
+        (g as { exhaustive?: boolean }).exhaustive &&
+        edges.some(e => e.condition === 'default')
+      ) {
+        err(
+          'C142',
+          `${where}: declares a default edge but the conditions are exhaustive — the catch-all can never fire (gateway-edges-resolve)`,
+        );
+      }
       edges.forEach((e, i) => {
         if (gwProcessIds.size > 0 && !gwProcessIds.has(e.target)) {
           err(
@@ -7292,7 +7303,7 @@ export function checkPackage(
           );
         }
       });
-      if (edges.length > 0) {
+      if (edges.length > 0 && !(g as { exhaustive?: boolean }).exhaustive) {
         const defaults = edges
           .map((e, i) => ({ e, i }))
           .filter(x => x.e.condition === 'default');
