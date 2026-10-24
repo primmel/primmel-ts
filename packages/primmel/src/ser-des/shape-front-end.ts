@@ -222,6 +222,42 @@ function toDeclarations(
         payload: source.slice(afterKey, end).trim(),
         start: { line: -1, col: -1, offset: key.offset },
       });
+    } else if (
+      'root_decl' in n ||
+      'version_decl' in n ||
+      'include_decl' in n ||
+      'value_decl' in n
+    ) {
+      // Captured declarations (rs#293): the maps-win shape law keeps
+      // only hash iterations, so every declaration carries a capture
+      // and materializes from its inner tokens the same way the raw
+      // path did — known keywords only, payload = the trailing words.
+      const declKey = (
+        ['root_decl', 'version_decl', 'include_decl', 'value_decl'] as const
+      ).find(k => k in n)!;
+      const c = n[declKey] as Record<string, unknown>;
+      if (declKey === 'value_decl') {
+        const name = pos(c['name']);
+        const kind = pos(c['kind']);
+        const value = pos(c['value']);
+        if (name && kind && value && parsers[name.value] !== undefined) {
+          out.push({
+            keyword: name.value,
+            payload: `${kind.value} ${value.value}`,
+            start: { line: -1, col: -1, offset: name.offset },
+          });
+        }
+      } else {
+        const kwName = declKey.replace(/_decl$/, '');
+        const payload = pos(c[kwName]);
+        if (payload && parsers[kwName] !== undefined) {
+          out.push({
+            keyword: kwName,
+            payload: payload.value,
+            start: { line: -1, col: -1, offset: payload.offset },
+          });
+        }
+      }
     } else {
       // A raw item: an uncaptured line (`root Root`, `include "…"`, a
       // comment, a value declaration). Tokenize the matched text; a
