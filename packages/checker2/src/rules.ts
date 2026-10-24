@@ -6626,7 +6626,7 @@ export function check(
 
     // ── Batch A: the shapes/vocabulary family. C154 the deprecation
     //     inventory, C90/C91 invariants, C92/C93 test sequences, C147/
-    //     C148 the executable test programs, C94 formulas-used, C89 the
+    //     C148 the executable test programs, C89 the
     //     spelling codes, C158 prose-quarantine, C159 urn-only-refs,
     //     C161 check-surface, C84 the when-guard-is-a-predicate shape.
     {
@@ -6982,50 +6982,6 @@ export function check(
                 );
               }
             }
-          }
-        }
-      }
-      // C94 — the formulas-used traces.
-      const FORMULA_ID_SHAPE = /^[a-z][a-z0-9_]*$/;
-      for (const fu of closureConstructs.filter(
-        x => x.keyword === 'formulas_used',
-      )) {
-        if (!fu.ident || fu.ident.trim() === '') {
-          err(
-            'C94',
-            `formulas_used: declares no test reference — the block symbol is the conformance-test reference the trace is keyed by (formulas-used-shape)`,
-          );
-        }
-        const name = facetTokens(fu.items, 'name')[0];
-        const description = facetTokens(fu.items, 'description')[0];
-        if (!name) {
-          err(
-            'C94',
-            `formulas_used ${fu.ident}: declares no name — a formulas-used trace carries a short name (formulas-used-shape)`,
-          );
-        }
-        if (!description) {
-          err(
-            'C94',
-            `formulas_used ${fu.ident}: declares no description — a formulas-used trace carries what the listed formulas compute (formulas-used-shape)`,
-          );
-        }
-        const formulas = nested(fu).find(n => n.keyword === 'formulas');
-        const ids = formulas
-          ? lines(formulas).flatMap(l => [l.key ?? '', ...l.tokens])
-          : facetTokens(fu.items, 'formulas');
-        if (ids.length === 0) {
-          err(
-            'C94',
-            `formulas_used ${fu.ident}: declares no formulas — a formulas-used trace is a non-empty registry-formula id list (formulas-used-shape)`,
-          );
-        }
-        for (const f of ids) {
-          if (!FORMULA_ID_SHAPE.test(f)) {
-            err(
-              'C94',
-              `formulas_used ${fu.ident}: formula id "${f}" is not a well-formed registry identifier — the snake_case shape the calculations registry uses (formulas-used-shape)`,
-            );
           }
         }
       }

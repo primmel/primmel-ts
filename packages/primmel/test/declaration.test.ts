@@ -6,7 +6,6 @@
 // Fixtures:
 //   KINDS    — the IA Declaration (obligation, no content slots) and the
 //              Utilizer Declaration (four acceptance content slots).
-//   STATUSES — the four Declaration lifecycle states.
 //   GATE     — the PD-08 cl. 5 signing-gate invariant.
 // ─────────────────────────────────────────────────────────────────────
 
@@ -41,21 +40,6 @@ declaration_kind utilizer_declaration {
     description "Whether the Utilizer accepts OIML certificates and/or type evaluation reports issued on the basis of test reports from a Manufacturer's Test Laboratory (§5.6.3) — acceptance is voluntary and requires no justification (PD-08 cl. 6)."
   }
   ref derives-from "urn:oiml:pub:b:18:2025#clause-5.6.1"
-}
-`;
-
-const STATUSES = `
-declaration_status draft {
-  description "Initiated, not yet signed by the participant."
-}
-declaration_status signed {
-  description "Signed by the participant and recorded by the Executive Secretary — the only status that discharges the signing gate."
-}
-declaration_status suspended {
-  description "The participant is suspended by the Management Committee (§11.4) — no new applications (PD-03 cl. 8)."
-}
-declaration_status withdrawn {
-  description "Participation withdrawn; the Declaration no longer grounds issuance or acceptance."
 }
 `;
 
@@ -103,19 +87,6 @@ describe('declaration_kind construct (smart TODO.roadmap/40)', () => {
     assert.ok(dumped.includes('content mtl_acceptance_policy {'));
     const m2 = load(dumped);
     assert.deepEqual(m2.declarationKinds, m1.declarationKinds);
-    assert.equal(dump(m2), dumped);
-  });
-});
-
-describe('declaration_status construct (smart TODO.roadmap/40)', () => {
-  it('parses the four lifecycle states and round-trips (fixpoint)', () => {
-    const m1 = load(STATUSES);
-    assert.equal(m1.declarationStatuses.length, 4);
-    const signed = m1.declarationStatuses.find(s => s.id === 'signed')!;
-    assert.ok(signed.description.includes('discharges the signing gate'));
-    const dumped = dump(m1);
-    const m2 = load(dumped);
-    assert.deepEqual(m2.declarationStatuses, m1.declarationStatuses);
     assert.equal(dump(m2), dumped);
   });
 });

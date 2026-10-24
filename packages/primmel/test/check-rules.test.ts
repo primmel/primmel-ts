@@ -56,7 +56,7 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // the field's scalar range (C173-C175 reserved).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`).filter(
-        id => id !== 'C112',
+        id => id !== 'C112' && id !== 'C94',
       ),
       ...Array.from({ length: 44 }, (_, i) => `C${i + 130}`),
       ...Array.from({ length: 10 }, (_, i) => `C${i + 176}`),
@@ -64,7 +64,7 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128 except C112 (retired with the reference construct), C130-C173 (phase 2 retired C129), C176-C185 (C174-C175 reserved)',
+      'C1-C128 except C112 (retired with the reference construct) and C94 (retired with the formulas_used construct), C130-C173 (phase 2 retired C129), C176-C185 (C174-C175 reserved)',
     );
   });
 

@@ -603,7 +603,6 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   // package's supplemental YAML; as model content they compose through
   // `uses` like every doctrine collection, with uses-no-redefine
   // protection.
-  'formulasUsed',
   'texts',
   // The certification-framework registers (smart TODO.roadmap/40; the
   // packages-as-SSOT epic) — the framework package's participant kinds
@@ -611,13 +610,11 @@ export const MERGE_FIELDS: (keyof ParseContext)[] = [
   'participantKinds',
   'governanceOrgans',
   'declarationKinds',
-  'declarationStatuses',
   'declarationGates',
   'schemeDefinitions',
   'schemeLifecycles',
   'frameworkDocuments',
   'documentPrecedences',
-  'autoInclusions',
   'decisionRules',
   // The document modules + informative annexes (smart TODO.roadmap/40
   // batch 2) compose like the framework registers they sit beside.

@@ -1902,31 +1902,6 @@ describe('Batch A — the shapes/vocabulary family (13 rules)', () => {
       ['C148:error'],
     );
   });
-  it('C94: the formulas-used trace shape', () => {
-    const rules = ['C94'];
-    const base = `formulas_used /conf/mpe {
- name "MPE"
- description "The envelope."
- formulas { mpe_envelope relative_error }
-}
-`;
-    assert.deepEqual(t(base, rules), []);
-    const badId = base.replace('mpe_envelope', 'MpeEnvelope');
-    assert.deepEqual(t(badId, rules), ['C94:error']);
-    const noFormulas = base.replace(
-      'formulas { mpe_envelope relative_error }',
-      'formulas { }',
-    );
-    assert.deepEqual(
-      t(noFormulas, rules).filter(x => x.startsWith('C94')).length,
-      1,
-    );
-    const noDesc = base.replace(' description "The envelope."\n', '');
-    assert.deepEqual(
-      t(noDesc, rules).filter(x => x.startsWith('C94')).length,
-      1,
-    );
-  });
 
   it('C89: the spelling codes', () => {
     const rules = ['C89'];

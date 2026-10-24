@@ -54,7 +54,6 @@ import { dumpBareSafe, readSource } from './field-parser';
 import DeclarationKind, {
   DeclarationContentSlot,
   DeclarationGate,
-  DeclarationStatus,
 } from '../../types/Declaration';
 import { dumpSourceRefAsRef, refTargetToSourceRef } from './ref';
 
@@ -189,35 +188,6 @@ export const dumpDeclarationKind: Dumper<DeclarationKind> = function (k) {
   }
   if (k.source.doc || k.source.clause) {
     out += dumpSourceBlock(k.source);
-  }
-  out += '}\n';
-  return out;
-};
-
-export const parseDeclarationStatus: Parser = (id: string, data: string) => {
-  const status: DeclarationStatus = { id, description: '' };
-  forEachEntry(
-    data,
-    (keyword, value) => {
-      if (keyword === 'description') {
-        status.description = stripWrapping(value());
-      } else {
-        return false;
-      }
-      return true;
-    },
-    { construct: 'declaration_status', id },
-  );
-  return ctx => {
-    ctx.declarationStatuses[id] = status;
-    return ctx;
-  };
-};
-
-export const dumpDeclarationStatus: Dumper<DeclarationStatus> = function (s) {
-  let out: string = 'declaration_status ' + s.id + ' {\n';
-  if (s.description) {
-    out += '  description "' + escapeString(s.description) + '"\n';
   }
   out += '}\n';
   return out;

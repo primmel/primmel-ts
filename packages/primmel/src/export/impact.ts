@@ -232,11 +232,6 @@ export function impactGraph(standard: Standard): ImpactGraph {
 
   // formulas_used (the form family's derivation row — a top-level
   // construct keyed by the test reference)
-  for (const fu of standard.formulasUsed ?? []) {
-    for (const formula of fu.formulas ?? []) {
-      add(fu.id, fu, 'derivation', 'formulas_used', formula);
-    }
-  }
 
   // dimension: value implies (both placements — the instrument-inline
   // blocks and the top-level declarations)

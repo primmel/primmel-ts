@@ -78,14 +78,6 @@ process evaluation {
 `;
 
 const LIFECYCLE = `
-auto_inclusion auto_inclusion {
-  clause "4.2"
-  statement "Categories are automatically included when the Recommendation specifies the following."
-  condition requirements {
-    clause "4.2 a)"
-    description "The Recommendation specifies the requirements."
-  }
-}
 scheme_lifecycle category_scheme {
   applies_to instrument_category
   initial SCHEME_B
@@ -93,7 +85,6 @@ scheme_lifecycle category_scheme {
     action category_included
     automatic true
     clause "15.1"
-    conditions_ref auto_inclusion
   }
   transition SCHEME_B -> SCHEME_A action transition_period_elapsed {
     clause "15.2"
@@ -211,17 +202,14 @@ describe('C120 framework-references-resolve (smart TODO.roadmap/40)', () => {
     assert.ok(issues[0]!.message.includes('"ciml"'));
   });
 
-  it('flags a dangling conditions_ref and a dangling exemption kind', () => {
+  it('flags a dangling exemption kind', () => {
     const issues = c119Issues(
       FRAMEWORK.replace(
-        'conditions_ref auto_inclusion',
-        'conditions_ref missing_block',
-      ).replace(
         'no_entrance_fees_for { issuing_authority test_laboratory }',
         'no_entrance_fees_for { issuing_authority expert }',
       ),
     );
-    assert.equal(issues.length, 2);
+    assert.equal(issues.length, 1);
   });
 
   it('flags a dangling organ on a decision_rule and a dangling approved_by', () => {

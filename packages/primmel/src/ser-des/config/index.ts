@@ -166,7 +166,6 @@ import { monitorConstruct } from './monitor';
 import { passportConstruct } from './passport';
 import { invariantConstruct } from './invariant';
 import { testSequenceConstruct } from './testSequence';
-import { formulasUsedConstruct } from './formulasUsed';
 import { parseText, dumpText } from './text';
 import { quantityRegisterConstruct } from './quantityRegister';
 import { dualConstruct } from './dual';
@@ -182,10 +181,8 @@ import { dumpGovernanceOrgan, parseGovernanceOrgan } from './governanceOrgan';
 import {
   dumpDeclarationGate,
   dumpDeclarationKind,
-  dumpDeclarationStatus,
   parseDeclarationGate,
   parseDeclarationKind,
-  parseDeclarationStatus,
 } from './declaration';
 import {
   dumpSchemeDefinition,
@@ -194,10 +191,8 @@ import {
   parseSchemeLifecycle,
 } from './scheme';
 import {
-  dumpAutoInclusion,
   dumpDocumentPrecedence,
   dumpFrameworkDocument,
-  parseAutoInclusion,
   parseDocumentPrecedence,
   parseFrameworkDocument,
 } from './frameworkDocument';
@@ -776,13 +771,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     dump: dumpDeclarationKind as never,
   }),
   defineConstruct({
-    keyword: 'declaration_status',
-    field: 'declarationStatuses',
-    takesID: true,
-    parse: parseDeclarationStatus,
-    dump: dumpDeclarationStatus as never,
-  }),
-  defineConstruct({
     keyword: 'declaration_gate',
     field: 'declarationGates',
     takesID: true,
@@ -820,13 +808,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseDocumentPrecedence,
     dump: dumpDocumentPrecedence as never,
-  }),
-  defineConstruct({
-    keyword: 'auto_inclusion',
-    field: 'autoInclusions',
-    takesID: true,
-    parse: parseAutoInclusion,
-    dump: dumpAutoInclusion as never,
   }),
   // The organs' decision rules (clauses 9–16).
   defineConstruct({
@@ -894,7 +875,6 @@ export const CONSTRUCTS: ConstructDefinition[] = [
   // for the hand-authored supplemental formulas-used.yaml — a registry
   // block keyed by the conformance-test reference, a sibling collection
   // of `testSequences`.
-  formulasUsedConstruct as ConstructDefinition,
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
   // ch. 10): the text block — per-spelling alternate values of one prose
   // field, addressed `<element-id>.<field>`.

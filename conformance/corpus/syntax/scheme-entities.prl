@@ -36,7 +36,6 @@ scheme_lifecycle category_scheme {
     action category_included
     automatic true
     clause "15.1"
-    conditions_ref auto_inclusion
     description "A category of measuring instrument covered by a new or existing OIML Recommendation is automatically included in the OIML-CS in Scheme B when the conditions of §4.2 are met (§15.1); the initial placement in Scheme B is §4.3."
   }
   transition SCHEME_B -> SCHEME_A action transition_period_elapsed {

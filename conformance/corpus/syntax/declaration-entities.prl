@@ -1,5 +1,5 @@
 # Conformance corpus: the Declaration constructs (v3.3) —
-# declaration_kind, declaration_status, declaration_gate.
+# declaration_kind, declaration_gate.
 # Clause: FWK-03 (positive).
 
 declaration_kind issuing_authority_declaration {
@@ -31,21 +31,9 @@ declaration_kind utilizer_declaration {
   ref derives-from "urn:oiml:pub:b:18:2025#clause-5.6.1"
 }
 
-declaration_status draft {
-  description "Initiated, not yet signed by the participant."
-}
 
-declaration_status signed {
-  description "Signed by the participant and recorded by the Executive Secretary — the only status that discharges the signing gate."
-}
 
-declaration_status suspended {
-  description "The participant is suspended by the Management Committee (§11.4) — no new applications (PD-03 cl. 8)."
-}
 
-declaration_status withdrawn {
-  description "Participation withdrawn; the Declaration no longer grounds issuance or acceptance."
-}
 
 declaration_gate declaration-signed-before-issuance {
   clause "PD-08 cl. 5"

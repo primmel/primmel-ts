@@ -52,28 +52,5 @@ export interface DocumentPrecedence {
 }
 
 /** One automatic-inclusion condition (§4.2 a)–d)). */
-export interface AutoInclusionCondition {
-  /** Snake-case or hyphenated condition id. */
-  id: string;
-  /** The §4.2 list item (e.g. "4.2 a)"). */
-  clause: string;
-  /** What the Recommendation must specify. */
-  description: string;
-}
-
 /** The §4.2 automatic-inclusion block (the scheme lifecycle's entry
  *  conditions_ref target). */
-export interface AutoInclusion {
-  /** Snake-case block id (auto_inclusion). */
-  id: string;
-  /** The clause governing inclusion. */
-  clause: string;
-  /** The inclusion statement. */
-  statement: string;
-  /** The conditions (all must hold). */
-  conditions: AutoInclusionCondition[];
-  /** Reading note (the §4.2 Note + the §4.5 BIML list); '' = none. */
-  note: string;
-  /** Clause-URN provenance (doc + clause). */
-  source: SourceRef;
-}
