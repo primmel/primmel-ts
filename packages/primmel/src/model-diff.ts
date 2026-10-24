@@ -211,7 +211,6 @@ export const TIER_BY_FIELD: Record<string, TierName> = {
   // conformance test's evaluation invokes, not a test itself — the
   // entry references the test and the formulas; the trace itself
   // declares.
-  formulasUsed: 'cross-cutting',
   links: 'cross-cutting',
   // Text content sets (TODO.roadmap/25 + smart gap-close E13; TODO.v2/12)
   // are cross-cutting beside notes: an alternate spelling is annotation

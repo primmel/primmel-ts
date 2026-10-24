@@ -1133,7 +1133,6 @@ const TEXT_ADDRESS_COLLECTIONS: (keyof Standard)[] = [
   'passports',
   'invariants',
   'testSequences',
-  'formulasUsed',
   'stateMachines',
   'figures',
   'links',

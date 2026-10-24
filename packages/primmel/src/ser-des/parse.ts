@@ -253,13 +253,11 @@ export function parseDeclarations(
     participantKinds: {},
     governanceOrgans: {},
     declarationKinds: {},
-    declarationStatuses: {},
     declarationGates: {},
     schemeDefinitions: {},
     schemeLifecycles: {},
     frameworkDocuments: {},
     documentPrecedences: {},
-    autoInclusions: {},
     decisionRules: {},
     // The document modules + informative annexes (smart TODO.roadmap/40 batch 2)
     documentModules: {},
@@ -276,7 +274,6 @@ export function parseDeclarations(
     // The required test orderings (smart gap-close E10)
     testSequences: {},
     // The per-test evaluation-formula traces (smart gap-close E11)
-    formulasUsed: {},
     // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25)
     texts: {},
     // Primmel v3.1 dataspace + trust (TODO.primmel/10)

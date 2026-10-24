@@ -53,20 +53,16 @@ import type { Monitor } from '../types/Monitor';
 import type { Passport } from '../types/Passport';
 import type { Invariant } from '../types/Invariant';
 import type { TestSequence } from '../types/TestSequence';
-import type { FormulasUsed } from '../types/FormulasUsed';
 import type TextContent from '../types/Text';
 import type ActivityArchetype from '../types/ActivityArchetype';
 import type ParticipantKind from '../types/ParticipantKind';
 import type GovernanceOrgan from '../types/GovernanceOrgan';
 import type DeclarationKind from '../types/Declaration';
-import type { DeclarationGate, DeclarationStatus } from '../types/Declaration';
+import type { DeclarationGate } from '../types/Declaration';
 import type { SchemeDefinition, SchemeLifecycle } from '../types/Scheme';
 import SchemeType, { SchemeActivityKind } from '../types/SchemeType';
 import type FrameworkDocument from '../types/FrameworkDocument';
-import type {
-  AutoInclusion,
-  DocumentPrecedence,
-} from '../types/FrameworkDocument';
+import type { DocumentPrecedence } from '../types/FrameworkDocument';
 import type DecisionRule from '../types/DecisionRule';
 import type DocumentModule from '../types/DocumentModule';
 import type InformativeAnnex from '../types/InformativeAnnex';
@@ -305,13 +301,11 @@ export interface ParseContext {
   participantKinds: Record<string, ParticipantKind>;
   governanceOrgans: Record<string, GovernanceOrgan>;
   declarationKinds: Record<string, DeclarationKind>;
-  declarationStatuses: Record<string, DeclarationStatus>;
   declarationGates: Record<string, DeclarationGate>;
   schemeDefinitions: Record<string, SchemeDefinition>;
   schemeLifecycles: Record<string, SchemeLifecycle>;
   frameworkDocuments: Record<string, FrameworkDocument>;
   documentPrecedences: Record<string, DocumentPrecedence>;
-  autoInclusions: Record<string, AutoInclusion>;
   decisionRules: Record<string, DecisionRule>;
 
   // The per-document content modules + the informative annexes (smart
@@ -343,7 +337,6 @@ export interface ParseContext {
   // The per-test evaluation-formula traces (smart gap-close E11): the
   // first-class replacement for the hand-authored supplemental
   // formulas-used.yaml — a sibling collection of `testSequences`.
-  formulasUsed: Record<string, FormulasUsed>;
 
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25): per-spelling
   // alternate values of prose fields, addressed `<element-id>.<field>`.

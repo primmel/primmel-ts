@@ -453,8 +453,6 @@ import {
   PASSPORT_UPI_LEVELS,
 } from './types/Passport';
 import { TEST_SEQUENCE_STEP_ROLES } from './types/TestSequence';
-import { FORMULA_ID_SHAPE } from './types/FormulasUsed';
-import { stripWrapping } from './ser-des/tokenize';
 import { MAPPING_FORMATS, MATH_NOTATIONS } from './ser-des/config/lmlAligned';
 import { extractStateGates } from './operational-state';
 import { activeRuleIds } from './check-rules';
@@ -3245,9 +3243,6 @@ export function checkPackage(
   const organIds = new Set((standard.governanceOrgans ?? []).map(o => o.id));
   const kindIds = new Set((standard.participantKinds ?? []).map(k => k.id));
   const declIds = new Set((standard.declarationKinds ?? []).map(d => d.id));
-  const autoInclusionIds = new Set(
-    (standard.autoInclusions ?? []).map(a => a.id),
-  );
   const frameworkProcessIds = new Set(
     (standard.processes ?? []).map(p => p.id),
   );
@@ -3322,17 +3317,6 @@ export function checkPackage(
   }
   for (const l of standard.schemeLifecycles ?? []) {
     const where = `scheme_lifecycle ${l.id}`;
-    if (
-      autoInclusionIds.size > 0 &&
-      l.entry &&
-      l.entry.conditions_ref !== '' &&
-      !autoInclusionIds.has(l.entry.conditions_ref)
-    ) {
-      err(
-        'C120',
-        `${where}: entry.conditions_ref "${l.entry.conditions_ref}" is not a declared auto_inclusion block (framework-references-resolve)`,
-      );
-    }
     const actionIds = new Set(l.transitions.map(t => t.action));
     for (const t of l.transitions) {
       resolveOrgan(
@@ -5967,58 +5951,6 @@ export function checkPackage(
   // ── C94: the per-test evaluation-formula traces (smart gap-close E11,
   // analysis/architecture-gaps-2026-07.md; the smart contract
   // data/schemas/formulas-used.yaml) ──
-  // The `formulas_used` construct is the first-class replacement for the
-  // hand-authored supplemental formulas-used.yaml. C94
-  // formulas-used-shape: every trace carries a non-empty test reference
-  // (the block symbol — reachable empty only through a quoted-empty id
-  // spelling), name, description, and a non-empty formulas list; every
-  // formula identifier is well-formed — the snake_case shape the
-  // calculations registry uses for output names (FORMULA_ID_SHAPE).
-  // Entry UNIQUENESS per test is the parse-time duplicate-id rule's
-  // (surfaced as C96) — the collection key IS the test reference, so a
-  // second trace for the same test is the same-id declaration every
-  // id-keyed collection judges. Formula-id RESOLUTION (does e_l exist in
-  // the calculations ∪ formulas registries) is the smart-side linker rule
-  // R41's crosswalk
-  // — the kernel checks syntax/shape only, exactly like E9's C90/C91 vs
-  // R38 and E10's C92/C93 vs R39 split. Packages without formulas-used
-  // traces are untouched — the loop is empty.
-  {
-    for (const fu of standard.formulasUsed ?? []) {
-      if (stripWrapping(fu.id) === '') {
-        err(
-          'C94',
-          `formulas_used ${fu.id}: declares no test reference — the block symbol is the conformance-test reference the trace is keyed by (formulas-used-shape)`,
-        );
-      }
-      if (fu.name === '') {
-        err(
-          'C94',
-          `formulas_used ${fu.id}: declares no name — a formulas-used trace carries a short name (formulas-used-shape)`,
-        );
-      }
-      if (fu.description === '') {
-        err(
-          'C94',
-          `formulas_used ${fu.id}: declares no description — a formulas-used trace carries what the listed formulas compute, with the clause evidence (the default spelling inline; alternates ride text ${fu.id}.description blocks) (formulas-used-shape)`,
-        );
-      }
-      if (fu.formulas.length === 0) {
-        err(
-          'C94',
-          `formulas_used ${fu.id}: declares no formulas — a formulas-used trace is a non-empty registry-formula id list (formulas-used-shape)`,
-        );
-      }
-      for (const f of fu.formulas) {
-        if (!FORMULA_ID_SHAPE.test(f)) {
-          err(
-            'C94',
-            `formulas_used ${fu.id}: formula id "${f}" is not a well-formed registry identifier — the snake_case shape the calculations registry uses (^[a-z][a-z0-9_]*$; resolution is the smart-side linker R41's, never the kernel's) (formulas-used-shape)`,
-          );
-        }
-      }
-    }
-  }
 
   // ── C32–C36: quantities, time, and the IS↔HAS duality ──
   // (TODO.roadmap/06; doctrine ch. 6). Coherence is judged on quantity
@@ -8752,7 +8684,6 @@ export function checkPackage(
     collect('competence_kind', standard.competenceKinds ?? []);
     collect('constraint', standard.constraints ?? []);
     collect('test_sequence', standard.testSequences ?? []);
-    collect('formulas_used', standard.formulasUsed ?? []);
     collect('process', standard.processes ?? []);
     for (const f of standard.forms ?? []) {
       for (const fld of f.fields ?? []) {
@@ -9577,7 +9508,6 @@ export function checkSpellingCodes(standard: Standard): CheckIssue[] {
     'passports',
     'invariants',
     'testSequences',
-    'formulasUsed',
     'stateMachines',
     'figures',
     'links',
@@ -9847,9 +9777,6 @@ export function checkDeclaredPredicates(standard: Standard): CheckIssue[] {
   }
   for (const k of standard.competenceKinds ?? []) {
     visit(`competence_kind ${k.id}`, k.refs);
-  }
-  for (const f of standard.formulasUsed ?? []) {
-    visit(`formulas_used ${f.id}`, f.refs);
   }
   for (const s of standard.testSequences ?? []) {
     visit(`test_sequence ${s.id}`, s.refs);

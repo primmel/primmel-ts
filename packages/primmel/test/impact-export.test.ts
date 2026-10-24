@@ -106,11 +106,6 @@ form /form/eval {
     targets { /req/metrological/mpe }
   }
 }
-formulas_used /conf/mpe-test {
-  name "MPE formulas"
-  description "d"
-  formulas { mpe_absolute }
-}
 instance smp-1 {
   of LoadCell
   level sample
@@ -214,7 +209,7 @@ describe('impact-graph export', () => {
     });
   });
 
-  it('the form rows: requirements / calculation_context / field bindings / formulas_used', () => {
+  it('the form rows: requirements / calculation_context / field bindings', () => {
     const edges = graph.forward['/form/eval'];
     const kinds = edges.map(e => `${e.kind}:${e.facet}:${e.target}`);
     assert.ok(
@@ -228,12 +223,6 @@ describe('impact-graph export', () => {
     assert.ok(kinds.includes('binding:field.targets:/req/metrological/mpe'));
     const bindEdge = edges.find(e => e.facet === 'field.bind');
     assert.equal(bindEdge?.via, 'error_at_load');
-    const fu = graph.forward['/conf/mpe-test'].filter(
-      e => e.facet === 'formulas_used',
-    );
-    assert.equal(fu.length, 1);
-    assert.equal(fu[0].target, 'mpe_absolute');
-    assert.equal(fu[0].kind, 'derivation');
   });
 
   it('the dimension row: value implies as subsumption edges', () => {

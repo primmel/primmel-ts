@@ -1617,27 +1617,6 @@ export const CHECK_RULES: CheckRule[] = [
     'the typed kernel clause 10 (TODO.reconfigure/07-subjects-twins-attestation.md)',
   ),
   // ── the per-test evaluation-formula traces (smart gap-close E11,
-  // analysis/architecture-gaps-2026-07.md; the smart contract
-  // data/schemas/formulas-used.yaml) ──
-  // The `formulas_used` construct is the first-class replacement for
-  // the hand-authored supplemental formulas-used.yaml. C94 is the
-  // declaration shape: every trace carries a non-empty test reference
-  // (the block symbol), name, description, and a non-empty formulas
-  // list; every formula identifier is well-formed — the snake_case
-  // shape the calculations registry uses for output names. Entry
-  // uniqueness per test is the parse-time duplicate-id rule's, surfaced
-  // as C96 (the collection key IS the test reference). Formula-id
-  // RESOLUTION
-  // (calculations ∪ formulas registries) is the smart-side linker rule
-  // R41's crosswalk — the kernel checks syntax/shape only.
-  R(
-    'C94',
-    'formulas-used-shape',
-    'base',
-    'error',
-    'normal',
-    'smart architecture-gaps-2026-07.md E11, data/schemas/formulas-used.yaml',
-  ),
   // ── cascade machine routing (smart gap-close E12,
   // analysis/cascade-machine-routing-design.md §4–§5) ──
   // A status-writing cascade step (a mechanical `set` containing
@@ -1669,8 +1648,7 @@ export const CHECK_RULES: CheckRule[] = [
   // The parser stays total on a second declaration of one id in one
   // id-keyed collection (last wins the slot) and collects a duplicate-id
   // parse issue; checkPackage surfaces those under C96 — the visibility
-  // half of every per-collection uniqueness delegation (C84 constraints,
-  // C94 formulas-used; the E11 review finding). Parse-time detection is
+  // half of every per-collection uniqueness delegation (C84 constraints; the E11 review finding). Parse-time detection is
   // load-bearing: the parser overwrites the ctx slot, so post-parse the
   // earlier declaration is unrecoverable.
   R(

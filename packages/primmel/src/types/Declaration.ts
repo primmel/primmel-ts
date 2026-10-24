@@ -59,13 +59,6 @@ export default interface DeclarationKind {
 }
 
 /** One lifecycle state of a Declaration instance (PD-08 cl. 5). */
-export interface DeclarationStatus {
-  /** Snake-case status id (draft | signed | suspended | withdrawn). */
-  id: string;
-  /** What the state means for issuance/acceptance. */
-  description: string;
-}
-
 /** The signing-gate invariant (PD-08 clause 5): the constrained holder
  *  issues nothing within the Declaration's scope before signature. */
 export interface DeclarationGate {

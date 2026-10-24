@@ -49,16 +49,15 @@ import type { Monitor } from './Monitor';
 import type { Passport } from './Passport';
 import type { Invariant } from './Invariant';
 import type { TestSequence } from './TestSequence';
-import type { FormulasUsed } from './FormulasUsed';
 import type ActivityArchetype from './ActivityArchetype';
 import type ParticipantKind from './ParticipantKind';
 import type GovernanceOrgan from './GovernanceOrgan';
 import type DeclarationKind from './Declaration';
-import type { DeclarationGate, DeclarationStatus } from './Declaration';
+import type { DeclarationGate } from './Declaration';
 import type { SchemeDefinition, SchemeLifecycle } from './Scheme';
 import SchemeType, { SchemeActivityKind } from './SchemeType';
 import type FrameworkDocument from './FrameworkDocument';
-import type { AutoInclusion, DocumentPrecedence } from './FrameworkDocument';
+import type { DocumentPrecedence } from './FrameworkDocument';
 import type DecisionRule from './DecisionRule';
 import type DocumentModule from './DocumentModule';
 import type InformativeAnnex from './InformativeAnnex';
@@ -258,7 +257,6 @@ export default interface Standard {
   // the Declaration kinds with their scope models and content slots, the
   // lifecycle states, and the signing-gate invariants.
   declarationKinds: DeclarationKind[];
-  declarationStatuses: DeclarationStatus[];
   declarationGates: DeclarationGate[];
 
   // The two-Scheme architecture (B 18:2025 3.37/3.38, §5.4) and the
@@ -272,7 +270,6 @@ export default interface Standard {
   // lifecycle's entry references.
   frameworkDocuments: FrameworkDocument[];
   documentPrecedences: DocumentPrecedence[];
-  autoInclusions: AutoInclusion[];
 
   // The organs' decision rules (B 18:2025 clauses 9–16): participation
   // decisions with their voting blocks, advisory tasks, appeal rulings,
@@ -329,7 +326,6 @@ export default interface Standard {
   // conformance test's evaluation invokes — the first-class replacement
   // for the hand-authored supplemental formulas-used.yaml, a sibling
   // collection of `testSequences`.
-  formulasUsed: FormulasUsed[];
 
   // Primmel v3 ISO 24229 multilinguality (TODO.roadmap/25 — doctrine
   // ch. 10): per-spelling alternate values of prose fields, addressed

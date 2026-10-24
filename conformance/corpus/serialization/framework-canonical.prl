@@ -65,7 +65,6 @@ scheme_lifecycle category_scheme {
     action category_included
     automatic true
     clause "15.1"
-    conditions_ref auto_inclusion
   }
   transition SCHEME_B -> SCHEME_A action transition_period_elapsed {
     clause "15.2"
@@ -88,14 +87,6 @@ framework_document b18 {
   title "Framework for the OIML Certification System (OIML-CS)"
   approved_by management_committee
   clause "6 a)"
-}
-auto_inclusion auto_inclusion {
-  clause "4.2"
-  statement "Categories are automatically included when the Recommendation specifies the following."
-  condition requirements {
-    clause "4.2 a)"
-    description "The Recommendation specifies the requirements."
-  }
 }
 decision_rule scheme-financing {
   organ management_committee

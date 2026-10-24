@@ -40,8 +40,6 @@ import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import FrameworkDocument, {
-  AutoInclusion,
-  AutoInclusionCondition,
   DocumentPrecedence,
 } from '../../types/FrameworkDocument';
 import { dumpSourceRefAsRef, refTargetToSourceRef } from './ref';
@@ -175,105 +173,6 @@ export const dumpDocumentPrecedence: Dumper<DocumentPrecedence> = function (p) {
   }
   if (p.source.doc || p.source.clause) {
     out += dumpSourceBlock(p.source);
-  }
-  out += '}\n';
-  return out;
-};
-
-function parseCondition(id: string, block: string): AutoInclusionCondition {
-  const condition: AutoInclusionCondition = { id, clause: '', description: '' };
-  forEachEntry(
-    block,
-    (keyword, value) => {
-      if (keyword === 'clause') {
-        condition.clause = stripWrapping(value());
-      } else if (keyword === 'description') {
-        condition.description = stripWrapping(value());
-      } else {
-        return false;
-      }
-      return true;
-    },
-    { construct: 'auto_inclusion condition', id },
-  );
-  return condition;
-}
-
-export const parseAutoInclusion: Parser = (id: string, data: string) => {
-  const inclusion: AutoInclusion = {
-    id,
-    clause: '',
-    statement: '',
-    conditions: [],
-    note: '',
-    source: { doc: '', clause: '' },
-  };
-  // `condition <id> { … }` — the two-token nested-entry shape.
-  forEachEntry(
-    data,
-    (keyword, value, peek) => {
-      if (keyword === 'clause') {
-        inclusion.clause = stripWrapping(value());
-      } else if (keyword === 'statement') {
-        inclusion.statement = stripWrapping(value());
-      } else if (keyword === 'condition') {
-        const condId = stripWrapping(value());
-        const head = peek();
-        if (head === undefined || !head.startsWith('{')) {
-          throw new Error(
-            `Parsing error: auto_inclusion. ID ${id}: condition ${condId} is missing its block`,
-          );
-        }
-        inclusion.conditions.push(parseCondition(condId, unwrapBlock(value())));
-      } else if (keyword === 'note') {
-        inclusion.note = stripWrapping(value());
-      } else if (keyword === 'source') {
-        inclusion.source = readSource(unwrapBlock(value()));
-      } else if (keyword === 'ref') {
-        const predicate = stripWrapping(value());
-        const target = stripWrapping(value());
-        if (predicate === 'derives-from') {
-          const b = refTargetToSourceRef(target);
-          if (b) {
-            inclusion.source = b;
-          }
-        }
-      } else {
-        return false;
-      }
-      return true;
-    },
-    { construct: 'auto_inclusion', id },
-  );
-  return ctx => {
-    ctx.autoInclusions[id] = inclusion;
-    return ctx;
-  };
-};
-
-export const dumpAutoInclusion: Dumper<AutoInclusion> = function (a) {
-  let out: string = 'auto_inclusion ' + a.id + ' {\n';
-  if (a.clause) {
-    out += '  clause "' + escapeString(a.clause) + '"\n';
-  }
-  if (a.statement) {
-    out += '  statement "' + escapeString(a.statement) + '"\n';
-  }
-  for (const c of a.conditions) {
-    out += '  condition ' + dumpBareSafe(c.id) + ' {\n';
-    if (c.clause) {
-      out += '    clause "' + escapeString(c.clause) + '"\n';
-    }
-    if (c.description) {
-      out += '    description "' + escapeString(c.description) + '"\n';
-    }
-    out += '  }\n';
-  }
-  if (a.note) {
-    out += '  note "' + escapeString(a.note) + '"\n';
-  }
-  if (a.source.doc || a.source.clause) {
-    out += dumpSourceBlock(a.source);
   }
   out += '}\n';
   return out;
