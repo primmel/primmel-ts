@@ -49,10 +49,16 @@ grammar Primmel version "0.1.0" {
   # ── document and declarations ────────────────────────────────────
   document = *(gap declaration) gap !any_char
   declaration = construct / root_decl / version_decl / include_decl / value_decl / entry_line
-  include_decl = "include" gap string
-  value_decl = bare gap bare gap string
-  root_decl = "root" gap bare
-  version_decl = "version" gap string
+  # Every declaration child carries a capture: the shape tree's
+  # repetition law keeps exactly the map iterations when any iteration
+  # is one (the maps-win law, ruby#231) — uncaptured siblings vanish
+  # from the document's item stream the moment one construct appears.
+  # rs#293: the 9edfb18-era engine kept the text items (a divergence
+  # from Ruby); 0.18.16+ matches Ruby, so the grammar must capture.
+  include_decl = ("include" gap (string as include)) as include_decl
+  value_decl = ((bare as name) gap (bare as kind) gap (string as value)) as value_decl
+  root_decl = ("root" gap (bare as root)) as root_decl
+  version_decl = ("version" gap (string as version)) as version_decl
   # Every sequence child is captured: an uncaptured child that reaches a
   # repetition is array-valued, and a mixed sequence never merges its
   # hashes — the shape tree would flatten to leaf captures (the
