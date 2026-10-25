@@ -527,6 +527,41 @@ describe('instrument fidelity extensions', () => {
     assert.deepEqual(m2.instruments, m1.instruments);
     assert.equal(dump(m2), dumped);
   });
+
+  const ORG_SRC = `instrument InspectionBody {
+  kind organization
+  definition "The inspection body operating under ISO/IEC 17020:2012."
+}
+`;
+
+  it('parses and round-trips the organization subject kind', () => {
+    const m1 = load(ORG_SRC);
+    const inst = m1.instruments[0];
+    assert.equal(inst.kind, 'organization');
+    assert.equal(inst.measurandKind, undefined);
+    const dumped = dump(m1);
+    assert.ok(dumped.includes('kind organization'));
+    const m2 = load(dumped);
+    assert.deepEqual(m2.instruments, m1.instruments);
+    assert.equal(dump(m2), dumped);
+  });
+
+  it('parses the default product kind but omits it from the dump', () => {
+    const m = load(
+      'instrument LoadCell {\n  kind product\n  definition "A load cell."\n}\n',
+    );
+    assert.equal(m.instruments[0].kind, 'product');
+    const dumped = dump(m);
+    assert.ok(!dumped.includes('kind product'));
+    assert.equal(dump(load(dumped)), dumped);
+  });
+
+  it('rejects unknown kinds (closed vocabulary)', () => {
+    assert.throws(
+      () => load('instrument X {\n  kind legal_entity\n  definition "X."\n}\n'),
+      /instrument kind must be 'product' or 'organization'/,
+    );
+  });
 });
 
 // ── §11 form + field ─────────────────────────────────────────────────

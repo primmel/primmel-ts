@@ -169,6 +169,13 @@ export interface Instrument {
   /** Measurand kind the instrument measures (e.g. force). */
   measurandKind?: string;
   /**
+   * The subject kind this declaration models: `product` (default — a
+   * measuring instrument) or `organization` (a conformity assessment
+   * body; the CASCO/1702x family, model-library#111/#205). The loop's
+   * grammar is invariant; the subject kind varies by family.
+   */
+  kind?: 'product' | 'organization';
+  /**
    * First-class measurand block with measurement context (TODO.roadmap/19,
    * gap audit G8) — the measurand-on-another-object form.
    */
