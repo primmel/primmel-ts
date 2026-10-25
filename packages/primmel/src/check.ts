@@ -5945,6 +5945,33 @@ export function checkPackage(
           }
         }
       }
+      // The declared procedure's typed-step discipline (TODO.lang-spec/04):
+      // the `step <id>` forms carry the sequence, so a procedure mixing
+      // them with the retired numbered facet is ambiguous, and a duplicate
+      // id makes the sequence unresolvable. Pure-numbered procedures (the
+      // legacy spelling, migrating) stay silent here — the deprecation
+      // travels with the corpus migration, not a rule.
+      if (ct.procedure.length > 0) {
+        const typed = ct.procedure.filter(s => s.id !== undefined);
+        const numbered = ct.procedure.length - typed.length;
+        if (typed.length > 0 && numbered > 0) {
+          err(
+            'C147',
+            `conformance_test ${ct.id}: the procedure mixes typed steps with ${numbered} numbered step(s) — the named typed step is the one form (the ids are the sequence); re-spell the numbered entries as step <id> (test-program-shape)`,
+          );
+        }
+        const ids = new Set<string>();
+        for (const s of typed) {
+          if (ids.has(s.id!)) {
+            err(
+              'C147',
+              `conformance_test ${ct.id}: procedure step "${s.id}" is declared twice — the typed ids are unique within the procedure (test-program-shape)`,
+            );
+          } else {
+            ids.add(s.id!);
+          }
+        }
+      }
     }
   }
 

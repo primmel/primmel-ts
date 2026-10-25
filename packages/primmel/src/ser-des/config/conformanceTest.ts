@@ -861,7 +861,47 @@ export const parseConformanceTest: Parser = function (id, data) {
         const block = value();
         const tokens = tokenizePackage(block);
         let i = 0;
+        let typedOrder = 0;
         while (i < tokens.length) {
+          if (tokens[i] === 'step' && tokens[i + 1] !== undefined) {
+            // The named typed step (TODO.lang-spec/04): `step <id>`
+            // ["text"] [inputs { … }] [outputs { … }] — the declaration
+            // order IS the procedure sequence; procedure_steps retires
+            // onto this facet.
+            const id = stripWrapping(tokens[i + 1]);
+            i += 2;
+            let action = '';
+            if (
+              i < tokens.length &&
+              tokens[i].startsWith('"') &&
+              tokens[i].endsWith('"')
+            ) {
+              action = unwrapped(() => tokens[i]);
+              i += 1;
+            }
+            const step: {
+              order: number;
+              id?: string;
+              action: string;
+              outputs: string[];
+              inputs?: string[];
+            } = {
+              order: ++typedOrder,
+              id,
+              action,
+              outputs: [],
+            };
+            if (tokens[i] === 'inputs' && i + 1 < tokens.length) {
+              step.inputs = readStringList(tokens[i + 1]);
+              i += 2;
+            }
+            if (tokens[i] === 'outputs' && i + 1 < tokens.length) {
+              step.outputs = readStringList(tokens[i + 1]);
+              i += 2;
+            }
+            result.procedure.push(step);
+            continue;
+          }
           const order = parseInt(tokens[i], 10);
           if (!isNaN(order) && i + 1 < tokens.length) {
             const action = unwrapped(() => tokens[i + 1]);
@@ -1071,7 +1111,17 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.procedure.length > 0) {
     out += '  procedure {\n';
     for (const step of ct.procedure) {
-      let line = '    ' + step.order + ' "' + escapeString(step.action) + '"';
+      let line: string;
+      if (step.id) {
+        // The named typed step (TODO.lang-spec/04) — the id is the
+        // sequence carrier; the prose rides when authored.
+        line = '    step ' + step.id;
+        if (step.action) {
+          line += ' "' + escapeString(step.action) + '"';
+        }
+      } else {
+        line = '    ' + step.order + ' "' + escapeString(step.action) + '"';
+      }
       if (step.inputs && step.inputs.length > 0) {
         line += ' inputs { ' + step.inputs.join(' ') + ' }';
       }
