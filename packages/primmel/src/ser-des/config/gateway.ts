@@ -46,6 +46,12 @@ export const parseExclusiveGate: Parser = function (id, data) {
     (command, value) => {
       if (command === 'label') {
         gateway.label = unwrapped(value);
+      } else if (command === 'exhaustive') {
+        // exhaustive true — the conditions are exhaustive over their
+        // dimension domain: no default edge is required (C142 waives
+        // the catch-all discipline; a declared default would be a dead
+        // route).
+        gateway.exhaustive = stripWrapping(value()) === 'true';
       } else if (command === 'edge') {
         // edge <target-process-id> { condition "…"|default label "…" }
         const edge: GatewayEdge = {
@@ -87,6 +93,9 @@ function dumpEGate(egate: ExclusiveGateway) {
   let out: string = 'exclusive_gateway ' + egate.id + ' {\n';
   if (egate.label !== '') {
     out += '  label "' + escapeString(egate.label) + '"\n';
+  }
+  if (egate.exhaustive) {
+    out += '  exhaustive true\n';
   }
   for (const e of egate.edges ?? []) {
     out += '  edge ' + dumpBareSafe(e.target) + ' {';

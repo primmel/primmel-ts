@@ -210,6 +210,30 @@ ${GATEWAY}
     assert.match(midList[0]!.message, /not last/);
   });
 
+  it('C142: an exhaustive gateway needs no default — and a declared default is a dead route', () => {
+    const exhaustive = checkPackage(
+      makePackage(
+        'exclusive_gateway g { exhaustive true edge a { condition "x" } edge b { condition "y" } }',
+      ),
+    ).filter(i => i.check === 'C142');
+    assert.deepEqual(exhaustive, []);
+    const deadRoute = checkPackage(
+      makePackage(
+        'exclusive_gateway g { exhaustive true edge a { condition "x" } edge b { condition "y" } edge z { condition default } }',
+      ),
+    ).filter(i => i.check === 'C142');
+    assert.equal(deadRoute.length, 1);
+    assert.match(deadRoute[0]!.message, /can never fire/);
+  });
+
+  it('the exhaustive facet round-trips (fixpoint)', () => {
+    const src =
+      'exclusive_gateway g { exhaustive true edge a { condition "x" } edge b { condition "y" } }';
+    const dumped = dump(load(src));
+    assert.match(dumped, /exhaustive true/);
+    assert.equal(dump(load(dumped)), dumped);
+  });
+
   it('C142: an edge-less (label-only) gateway carries no routing — skipped', () => {
     const issues = checkPackage(
       makePackage('exclusive_gateway g { label "Just a label" }'),

@@ -32,6 +32,12 @@ export interface ExclusiveGateway extends Gateway {
   label: string;
   /** The outgoing routing cascade (declaration order = match order). */
   edges: GatewayEdge[];
+  /** The conditions are EXHAUSTIVE over their dimension domain: every
+   *  value the dimension admits matches some edge, so no default edge
+   *  is required — and a declared default would be a dead route (C142
+   *  waives the catch-all discipline; the exhaustion claim is the
+   *  author's, grounded in the dimension register). */
+  exhaustive?: boolean;
 }
 
 export interface ParallelGateway extends Gateway {

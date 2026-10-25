@@ -2038,6 +2038,10 @@ export function check(
     // ── C142: the exclusive gateway's edge discipline — edge targets
     //    resolve to declared processes, and exactly one default edge.
     if (c.keyword === 'exclusive_gateway') {
+      // exhaustive true — the conditions are exhaustive over their
+      // dimension domain: no default edge is required (a declared
+      // default would be a dead route).
+      const exhaustive = facetTokens(c.items, 'exhaustive')[0] === 'true';
       let defaults = 0;
       for (const e of nested(c)) {
         if (e.keyword !== 'edge') {
@@ -2067,7 +2071,18 @@ export function check(
           }
         }
       }
-      if (defaults > 1) {
+      const edgesPresent = nested(c).some(e => e.keyword === 'edge');
+      if (exhaustive && defaults > 0) {
+        err(
+          'C142',
+          `exclusive_gateway ${c.ident}: declares a default edge but the conditions are exhaustive — the catch-all can never fire (gateway-edges-resolve)`,
+        );
+      } else if (!exhaustive && defaults === 0 && edgesPresent) {
+        err(
+          'C142',
+          `exclusive_gateway ${c.ident}: no default edge — the first-match-wins cascade needs its catch-all (gateway-edges-resolve)`,
+        );
+      } else if (defaults > 1) {
         err(
           'C142',
           `exclusive_gateway ${c.ident}: ${defaults} default edges — exactly one catch-all is allowed (gateway-edges-resolve)`,
