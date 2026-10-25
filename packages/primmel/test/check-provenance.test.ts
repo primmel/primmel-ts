@@ -122,4 +122,22 @@ describe('C169 provenance-clause-resolves', () => {
     const msgs = withAnchors(['table-4', 42, null, 'clause-A.2/table-1']);
     assert.deepEqual(msgs, []);
   });
+
+  it('resolves a cited subclause of a modeled parent fragment', () => {
+    // clause-5 ships whole; clause-5.1 exists in the source the
+    // fragment carries. clause-53 must NOT ride the boundary.
+    const msgs = issues({
+      'sources-prd/pkg.sentences.json': JSON.stringify({
+        ...JSON.parse(PRD['sources-prd/pkg.sentences.json']),
+        anchors: ['clause-3', 'clause-3.1', 'clause-5'],
+      }),
+      'specification/r.prl':
+        req('urn:x:doc:1#clause-5.1') + req('urn:x:doc:1#clause-53'),
+    });
+    assert.deepEqual(
+      msgs.filter(i => i.severity === 'warning'),
+      [],
+    );
+    assert.equal(msgs.filter(i => i.severity === 'error').length, 1);
+  });
 });

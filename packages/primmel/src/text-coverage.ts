@@ -670,6 +670,22 @@ export function computeTextCoverage(
           break;
         }
       }
+      if (!resolved) {
+        // A cited CHILD of a modeled fragment resolves at a boundary:
+        // the extract may keep a clause whole (clause-5) while the
+        // citation names its subclause (clause-5.1) — the child exists
+        // in the source document the fragment carries. The dot/slash
+        // boundary keeps clause-10 from matching clause-1.
+        for (const f of fragments) {
+          if (
+            b.fragmentPath.startsWith(f + '.') ||
+            b.fragmentPath.startsWith(f + '/')
+          ) {
+            resolved = true;
+            break;
+          }
+        }
+      }
       if (resolved) {
         continue;
       }
