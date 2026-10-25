@@ -1,5 +1,15 @@
 # 04 — One procedure step form (and its labels resolve)
 
+**Status: LANDED (2026-10-26, phase 1 — the typed form).** The named typed
+step parses and dumps: `procedure { step <id> ["prose"] [inputs { ... }] [outputs { ... }] }`
+— the declaration order IS the sequence. C147's new legs reject a procedure
+mixing the typed form with the numbered facet and duplicate ids (the kernel
+half and the checker2 mirror agree; the conformance corpus carries the
+round-trip fixture; spec §Conformance classes and conformance tests documents
+the facet). Phase 2 — the corpus/library migration re-spells the numbered
+procedures and retires `procedure_steps` (parse-refuse) — travels with the
+consumers.
+
 ## The gap
 Requirements and tests carry BOTH `procedure { 1 "…" outputs { … } }` (numbered
 text) and `procedure_steps { labels }` (the named sequence) — the labels

@@ -26,6 +26,7 @@ import {
   mkdtempSync,
   mkdirSync,
   readdirSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -511,6 +512,67 @@ conformance_test /conf/t {
       ),
       `expected the freshness-shape leg, got: ${bad.map(i => i.message).join('\n')}`,
     );
+  });
+
+  it('C147: the typed procedure is the one form — a mixed procedure errors, duplicate ids error', () => {
+    const mixed = makeTmpPackage(`conformance_test Mixed {
+  name "Mixed"
+  type Testing
+  procedure {
+    step check_test_conditions "Review"
+    2 "Numbered leftovers" outputs { x }
+  }
+}
+`);
+    try {
+      const issues = testProgramIssues(mixed);
+      assert.ok(
+        issues.some(
+          i =>
+            i.check === 'C147' &&
+            i.message.includes('mixes typed steps with 1 numbered step'),
+        ),
+        `expected the mixed-form leg, got: ${issues.map(i => i.message).join('\n')}`,
+      );
+    } finally {
+      rmSync(mixed, { recursive: true, force: true });
+    }
+
+    const dup = makeTmpPackage(`conformance_test Dup {
+  name "Dup"
+  type Testing
+  procedure {
+    step apply_load "Apply"
+    step apply_load "Apply again"
+  }
+}
+`);
+    try {
+      const issues = testProgramIssues(dup);
+      assert.ok(
+        issues.some(
+          i => i.check === 'C147' && i.message.includes('declared twice'),
+        ),
+        `expected the duplicate-id leg, got: ${issues.map(i => i.message).join('\n')}`,
+      );
+    } finally {
+      rmSync(dup, { recursive: true, force: true });
+    }
+
+    const clean = makeTmpPackage(`conformance_test Clean {
+  name "Clean"
+  type Testing
+  procedure {
+    step check_test_conditions "Review"
+    step apply_load "Apply" outputs { e_l }
+  }
+}
+`);
+    try {
+      assert.deepEqual(testProgramIssues(clean), []);
+    } finally {
+      rmSync(clean, { recursive: true, force: true });
+    }
   });
 });
 

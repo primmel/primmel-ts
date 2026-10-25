@@ -216,6 +216,54 @@ describe('conformance_test fidelity extensions', () => {
     assert.deepEqual(m2.conformanceTests, m1.conformanceTests);
     assert.equal(dump(m2), dumped);
   });
+
+  const TYPED_SRC = `conformance_test TypedProc {
+  name "Typed procedure"
+  type Testing
+  procedure {
+    step check_test_conditions "Review the test conditions" inputs { reference_conditions }
+    step apply_test_load_points "Apply the test loads" outputs { e_l e_r }
+    step record_indications
+  }
+}
+`;
+
+  it('parses the named typed procedure steps (TODO.lang-spec/04)', () => {
+    const m = load(TYPED_SRC);
+    const steps = m.conformanceTests[0].procedure;
+    assert.deepEqual(
+      steps.map(s => ({ id: s.id, order: s.order, action: s.action })),
+      [
+        {
+          id: 'check_test_conditions',
+          order: 1,
+          action: 'Review the test conditions',
+        },
+        {
+          id: 'apply_test_load_points',
+          order: 2,
+          action: 'Apply the test loads',
+        },
+        { id: 'record_indications', order: 3, action: '' },
+      ],
+    );
+    assert.deepEqual(steps[0].inputs, ['reference_conditions']);
+    assert.deepEqual(steps[1].outputs, ['e_l', 'e_r']);
+  });
+
+  it('round-trips the typed procedure (parse → dump → parse, identical AST)', () => {
+    const m1 = load(TYPED_SRC);
+    const dumped = dump(m1);
+    assert.ok(
+      dumped.includes(
+        'step check_test_conditions "Review the test conditions" inputs { reference_conditions }',
+      ),
+    );
+    assert.ok(dumped.includes('step record_indications'));
+    const m2 = load(dumped);
+    assert.deepEqual(m2.conformanceTests, m1.conformanceTests);
+    assert.equal(dump(m2), dumped);
+  });
 });
 
 // ── §7 table ─────────────────────────────────────────────────────────

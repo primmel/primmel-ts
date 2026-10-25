@@ -1,0 +1,14 @@
+# Conformance corpus: the named typed procedure steps (TODO.lang-spec/04).
+# Clauses: SER-01 (positive). The declaration order IS the procedure
+# sequence — procedure_steps retires onto the step ids; a step carries
+# the id, optional prose, inputs, outputs.
+conformance_test TypedProcedure {
+  name "The typed procedure"
+  type Testing
+  procedure {
+    step check_test_conditions "Review the test conditions" inputs { reference_conditions }
+    step apply_test_load_points "Apply the test loads" outputs { e_l e_r }
+    step record_indications
+  }
+  ref derives-from "urn:oiml:pub:r:60-2:2021#clause-2.10.1.7"
+}

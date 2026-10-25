@@ -219,7 +219,7 @@
         "roundtrip": "ok"
       },
       "summary": "The requirement entity round-trips."
-    },
+    }, {"id": "ser-01-pos-typed-procedure", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/typed-procedure.prl", "expect": {"roundtrip": "ok"}, "summary": "The named typed procedure steps round-trip \u2014 the declaration order is the sequence (TODO.lang-spec/04)."},
     {
       "id": "ser-01-pos-conformance-test",
       "clause": "SER-01",

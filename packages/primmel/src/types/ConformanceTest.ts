@@ -7,6 +7,12 @@ import type SourceDiscrepancy from './SourceDiscrepancy';
 
 export interface ConformanceTestStep {
   order: number;
+  /**
+   * The typed step id — the sequence carrier (TODO.lang-spec/04): the
+   * declaration order of the `step <id>` forms IS the procedure, so the
+   * bare `procedure_steps` annotation retires onto this facet.
+   */
+  id?: string;
   action: string;
   /** Observable/value ids this step produces. */
   outputs: string[];
