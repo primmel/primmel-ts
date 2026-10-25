@@ -234,6 +234,18 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       result.extends = stripWrapping(t[i++]);
     } else if (cmd === 'measurand_kind') {
       result.measurandKind = stripWrapping(t[i++]);
+    } else if (cmd === 'kind') {
+      // kind <product|organization> — the subject kind (closed
+      // vocabulary; organization models a conformity assessment body).
+      const k = stripWrapping(t[i++]);
+      if (k !== 'product' && k !== 'organization') {
+        throw new Error(
+          "Parsing error: instrument kind must be 'product' or 'organization' (got '" +
+            k +
+            "')",
+        );
+      }
+      result.kind = k;
     } else if (cmd === 'measurand') {
       result.measurand = parseMeasurand(unwrapBlock(t[i++]));
     } else if (cmd === 'component') {
@@ -809,6 +821,9 @@ const dumpInstrument = function (inst: Instrument): string {
   let out = 'instrument ' + inst.id + ' {\n';
   if (inst.extends) {
     out += '  extends ' + inst.extends + '\n';
+  }
+  if (inst.kind && inst.kind !== 'product') {
+    out += '  kind ' + inst.kind + '\n';
   }
   if (inst.perChannel) {
     out += '  per_channel ' + inst.perChannel + '\n';
