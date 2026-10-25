@@ -70,6 +70,13 @@ export interface SentencesManifest {
   prd_sentences: string;
   document: { urn: string; short?: string; part?: string };
   sentences: SentenceRecord[];
+  /**
+   * The document's full fragment-anchor set (the generator emits it —
+   * smart's prd-sentences), sentence-less fragments (tables, figures,
+   * empty clauses) included. Optional: 0.1.0 manifests without it stay
+   * valid; C169 verifies citations against it when present (#206).
+   */
+  anchors?: string[];
 }
 
 export interface CoverageAllowance {
@@ -146,6 +153,13 @@ export function loadTextCoverageData(dir: string): {
         message: `${rel}: not a prd_sentences ${SENTENCES_FORMAT} manifest (document.urn + sentences[{address, fragment, modality, text}]) — regenerate the package (text-coverage-config)`,
       });
       continue;
+    }
+    if (Array.isArray(raw.anchors)) {
+      // Additive 0.1.0 field — non-string entries are ignored, never a
+      // C73: an old generator's manifest stays valid.
+      raw.anchors = raw.anchors.filter(
+        (a): a is string => typeof a === 'string',
+      );
     }
     manifests.push(raw);
   }
@@ -627,6 +641,12 @@ export function computeTextCoverage(
     for (const s of manifest.sentences) {
       fragments.add(s.fragment);
       addresses.add(s.address);
+    }
+    // The document's full anchor set (primmel-ts#206) — a table or
+    // figure the extract models but whose "prose" decomposes to nothing
+    // is still a real anchor the citation can land on.
+    for (const a of manifest.anchors ?? []) {
+      fragments.add(a);
     }
     for (const b of bindings) {
       if (b.doc !== urn) {

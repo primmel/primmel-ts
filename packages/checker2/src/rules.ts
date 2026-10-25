@@ -4179,6 +4179,17 @@ export function check(
               break;
             }
           }
+          if (!resolved) {
+            // A cited CHILD of a modeled fragment resolves at a
+            // boundary: the extract may keep a clause whole (clause-5)
+            // while the citation names its subclause (clause-5.1).
+            for (const f of d.fragments) {
+              if (b.path.startsWith(f + '.') || b.path.startsWith(f + '/')) {
+                resolved = true;
+                break;
+              }
+            }
+          }
           if (resolved) {
             continue;
           }

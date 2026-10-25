@@ -84,4 +84,42 @@ describe('C169 provenance-clause-resolves', () => {
     assert.equal(msgs.filter(i => i.severity === 'warning').length, 1);
     assert.equal(msgs.filter(i => i.severity === 'error').length, 0);
   });
+
+  const withAnchors = (anchors: unknown[]) =>
+    issues({
+      'sources-prd/pkg.sentences.json': JSON.stringify({
+        ...JSON.parse(PRD['sources-prd/pkg.sentences.json']),
+        anchors,
+      }),
+      'specification/r.prl':
+        req('urn:x:doc:1#table-4') + req('urn:x:doc:1#clause-A.2/table-1'),
+    });
+
+  it('verifies a citation against the manifest anchor set (#206)', () => {
+    // table-4 is a real anchor the extract models even though its prose
+    // decomposes to nothing; the annex table lands exactly too.
+    const msgs = withAnchors([
+      'clause-3',
+      'clause-3.1',
+      'table-4',
+      'clause-A.2/table-1',
+    ]);
+    assert.deepEqual(msgs, []);
+  });
+
+  it('still flags a citation no anchor carries', () => {
+    const others = issues({
+      'sources-prd/pkg.sentences.json': JSON.stringify({
+        ...JSON.parse(PRD['sources-prd/pkg.sentences.json']),
+        anchors: ['clause-3', 'clause-3.1'],
+      }),
+      'specification/r.prl': req('urn:x:doc:1#table-9'),
+    });
+    assert.equal(others.filter(i => i.severity === 'warning').length, 1);
+  });
+
+  it('ignores non-string anchor entries (additive 0.1.0 field)', () => {
+    const msgs = withAnchors(['table-4', 42, null, 'clause-A.2/table-1']);
+    assert.deepEqual(msgs, []);
+  });
 });
