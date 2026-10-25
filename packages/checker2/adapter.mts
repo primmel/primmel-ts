@@ -133,6 +133,7 @@ async function main(): Promise<void> {
           prd_sentences?: string;
           document?: { urn?: string };
           sentences?: { address?: string; fragment?: string; modality?: string; kind?: string; text?: string }[];
+          anchors?: string[];
         };
         try {
           raw = JSON.parse(read(f));
@@ -172,6 +173,16 @@ async function main(): Promise<void> {
             kind: s2.kind ?? '',
             text: s2.text ?? '',
           });
+        }
+        // The document's full anchor set (primmel-ts#206) — the
+        // sentence-less fragments (tables, figures) a citation can land
+        // on; non-string entries are ignored, never malformed.
+        if (Array.isArray(raw.anchors)) {
+          for (const a of raw.anchors) {
+            if (typeof a === 'string') {
+              fragments.add(a);
+            }
+          }
         }
         documents.push({ urn: raw.document.urn, fragments, addresses, sentences });
       }
