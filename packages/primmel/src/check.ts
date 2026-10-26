@@ -5946,31 +5946,39 @@ export function checkPackage(
         }
       }
       // The declared procedure's typed-step discipline (TODO.lang-spec/04):
-      // the `step <id>` forms carry the sequence, so a procedure mixing
-      // them with the retired numbered facet is ambiguous, and a duplicate
-      // id makes the sequence unresolvable. Pure-numbered procedures (the
-      // legacy spelling, migrating) stay silent here — the deprecation
-      // travels with the corpus migration, not a rule.
+      // the named typed step is the one form. The deprecation rung — the
+      // numbered facet and the bare procedure_steps annotation still parse
+      // (the corpus sweep migrates package by package) and warn as C154;
+      // the parse-refusal release follows the sweep. The typed ids are
+      // unique within the procedure — a duplicate makes it unresolvable.
       if (ct.procedure.length > 0) {
-        const typed = ct.procedure.filter(s => s.id !== undefined);
-        const numbered = ct.procedure.length - typed.length;
-        if (typed.length > 0 && numbered > 0) {
-          err(
-            'C147',
-            `conformance_test ${ct.id}: the procedure mixes typed steps with ${numbered} numbered step(s) — the named typed step is the one form (the ids are the sequence); re-spell the numbered entries as step <id> (test-program-shape)`,
+        const numbered = ct.procedure.filter(s => s.numbered).length;
+        if (numbered > 0) {
+          warn(
+            'C154',
+            `conformance_test ${ct.id}: ${numbered} numbered procedure step(s) — the named typed step is the one form (the ids are the sequence); re-spell as step <id> before the refusal release (construct-deprecated)`,
           );
         }
         const ids = new Set<string>();
-        for (const s of typed) {
-          if (ids.has(s.id!)) {
+        for (const s of ct.procedure) {
+          if (!s.id) {
+            continue;
+          }
+          if (ids.has(s.id)) {
             err(
               'C147',
               `conformance_test ${ct.id}: procedure step "${s.id}" is declared twice — the typed ids are unique within the procedure (test-program-shape)`,
             );
           } else {
-            ids.add(s.id!);
+            ids.add(s.id);
           }
         }
+      }
+      if (ct.procedureSteps && ct.procedureSteps.length > 0) {
+        warn(
+          'C154',
+          `conformance_test ${ct.id}: procedure_steps { ${ct.procedureSteps.slice(0, 3).join(' ')}${ct.procedureSteps.length > 3 ? ' …' : ''} } — the annotation is deprecated: move the ids onto the typed steps (procedure { step <id> ... }) and drop it (construct-deprecated)`,
+        );
       }
     }
   }
@@ -8813,6 +8821,12 @@ export function checkPackage(
         allowlist.textCoverageBudget !== null
       ) {
         continue; // the text budget governs these — C72 reports the excess
+      }
+      // The deprecation rung is advisory by definition (TODO.lang-spec/04):
+      // a warn-rung C154 cannot gate the trunk while the corpus sweep
+      // migrates — the refusal release converts these to errors.
+      if (i.check === 'C154' && i.message.includes('(construct-deprecated)')) {
+        continue;
       }
       i.severity = 'error';
     }

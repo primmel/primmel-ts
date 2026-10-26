@@ -514,9 +514,10 @@ conformance_test /conf/t {
     );
   });
 
-  it('C147: the typed procedure is the one form — a mixed procedure errors, duplicate ids error', () => {
-    const mixed = makeTmpPackage(`conformance_test Mixed {
-  name "Mixed"
+  it('C154: the retired spellings warn — the deprecation rung (the refusal rides the corpus sweep)', () => {
+    // The numbered facet: still parses; C154 warns with the fix.
+    const numbered = makeTmpPackage(`conformance_test Numbered {
+  name "Numbered"
   type Testing
   procedure {
     step check_test_conditions "Review"
@@ -525,17 +526,49 @@ conformance_test /conf/t {
 }
 `);
     try {
-      const issues = testProgramIssues(mixed);
+      const issues = checkPackage(numbered);
       assert.ok(
         issues.some(
           i =>
-            i.check === 'C147' &&
-            i.message.includes('mixes typed steps with 1 numbered step'),
+            i.check === 'C154' &&
+            i.severity === 'warning' &&
+            i.message.includes('1 numbered procedure step(s)'),
         ),
-        `expected the mixed-form leg, got: ${issues.map(i => i.message).join('\n')}`,
+        `expected the numbered deprecation, got: ${issues.map(i => `[${i.check}] ${i.message}`).join('\n')}`,
+      );
+      // The rung is advisory under --strict too — the sweep migrates
+      // before the refusal release converts these to errors.
+      const strict = checkPackage(numbered, { strict: true });
+      assert.ok(
+        strict.some(i => i.check === 'C154' && i.severity === 'warning'),
+        'the deprecation rung must not promote under --strict',
       );
     } finally {
-      rmSync(mixed, { recursive: true, force: true });
+      rmSync(numbered, { recursive: true, force: true });
+    }
+
+    // procedure_steps: still parses; C154 warns pointing at the typed ids.
+    const stepped = makeTmpPackage(`conformance_test Stepped {
+  name "Stepped"
+  type Testing
+  procedure {
+    step check_test_conditions "Review"
+  }
+  procedure_steps { check_test_conditions insert_load_cell }
+}
+`);
+    try {
+      const issues = checkPackage(stepped);
+      assert.ok(
+        issues.some(
+          i =>
+            i.check === 'C154' &&
+            i.message.includes('move the ids onto the typed steps'),
+        ),
+        `expected the annotation deprecation, got: ${issues.map(i => `[${i.check}] ${i.message}`).join('\n')}`,
+      );
+    } finally {
+      rmSync(stepped, { recursive: true, force: true });
     }
 
     const dup = makeTmpPackage(`conformance_test Dup {

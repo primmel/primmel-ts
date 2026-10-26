@@ -10,6 +10,24 @@ the facet). Phase 2 — the corpus/library migration re-spells the numbered
 procedures and retires `procedure_steps` (parse-refuse) — travels with the
 consumers.
 
+**Phase 2 LANDED (2026-10-26, model-library#119 + tag v0.33.11, smart#743).**
+The 19 r60-lml tests re-spelled as the typed skeleton (the explicit
+per-test mapping table rides as the library's
+scripts/migrate-typed-procedures.mjs); the app's run plane (the
+procedure panel, the leg alignment — identity by id in the typed world,
+the lab-coverage skeleton, the wizard) re-sourced from `steps[].id`.
+
+**Phase 3 — the deprecation rung LANDED.** The retired spellings warn
+(C154 construct-deprecated — the numbered facet and the bare
+`procedure_steps` annotation both still parse and dump byte-stably);
+checker2's mirror carries the same warning over the shape tree; the
+spec's facet section states the ladder. **Phase 4 — the parse-refusal
+release — follows the corpus-wide sweep**: the migration inventory
+beyond the r60-lml wave is ~220 numbered steps across 16 files
+(r144, r129, r134, d036, r7, r49, r79, r138, twin-cert), including
+per-test prose-to-id alignment; the refusal lands only when that
+sweep ships.
+
 ## The gap
 Requirements and tests carry BOTH `procedure { 1 "…" outputs { … } }` (numbered
 text) and `procedure_steps { labels }` (the named sequence) — the labels

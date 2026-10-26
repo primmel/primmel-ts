@@ -54,8 +54,8 @@ conformance_test /conf/metrological-tests/measurement-error-repeatability-mdlo {
   }
   conditions_to_enforce { temperature barometric_pressure }
   procedure {
-    1 "Check test conditions"
-    2 "Apply loads in ascending order"
+    step check_test_conditions "Check test conditions"
+    step apply_loads_in_ascending_order "Apply loads in ascending order"
   }
   acceptance_criteria {
     criterion within_mpe { pass_if "ocl{abs(e_l) <= mpe}" requirement /req/metrological/mpe }

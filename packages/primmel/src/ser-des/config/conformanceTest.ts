@@ -901,35 +901,45 @@ export const parseConformanceTest: Parser = function (id, data) {
             }
             result.procedure.push(step);
             continue;
-          }
-          const order = parseInt(tokens[i], 10);
-          if (!isNaN(order) && i + 1 < tokens.length) {
-            const action = unwrapped(() => tokens[i + 1]);
-            const step: {
-              order: number;
-              action: string;
-              outputs: string[];
-              inputs?: string[];
-            } = {
-              order,
-              action,
-              outputs: [],
-            };
-            i += 2;
-            if (tokens[i] === 'inputs' && i + 1 < tokens.length) {
-              step.inputs = readStringList(tokens[i + 1]);
-              i += 2;
-            }
-            if (tokens[i] === 'outputs' && i + 1 < tokens.length) {
-              step.outputs = readStringList(tokens[i + 1]);
-              i += 2;
-            }
-            result.procedure.push(step);
           } else {
-            i++;
+            // The numbered facet's deprecation rung (TODO.lang-spec/04):
+            // still parsed — the corpus sweep migrates package by
+            // package; the checker's C154 leg warns, and the
+            // parse-refusal release follows the sweep.
+            const order = parseInt(tokens[i], 10);
+            if (!isNaN(order) && i + 1 < tokens.length) {
+              const step: {
+                order: number;
+                action: string;
+                outputs: string[];
+                inputs?: string[];
+                numbered?: boolean;
+              } = {
+                order,
+                action: unwrapped(() => tokens[i + 1]),
+                outputs: [],
+                numbered: true,
+              };
+              i += 2;
+              if (tokens[i] === 'inputs' && i + 1 < tokens.length) {
+                step.inputs = readStringList(tokens[i + 1]);
+                i += 2;
+              }
+              if (tokens[i] === 'outputs' && i + 1 < tokens.length) {
+                step.outputs = readStringList(tokens[i + 1]);
+                i += 2;
+              }
+              result.procedure.push(step);
+            } else {
+              i++;
+            }
           }
         }
       } else if (keyword === 'procedure_steps') {
+        // The deprecation rung (TODO.lang-spec/04): the annotation still
+        // parses — the corpus sweep migrates package by package; the
+        // checker's C154 leg warns, and the parse-refusal release
+        // follows the sweep.
         result.procedureSteps = readStringList(value());
       } else if (keyword === 'preparation') {
         // The executable preparation program (smart TODO.twin-demo/03).
@@ -1111,16 +1121,11 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   if (ct.procedure.length > 0) {
     out += '  procedure {\n';
     for (const step of ct.procedure) {
-      let line: string;
-      if (step.id) {
-        // The named typed step (TODO.lang-spec/04) — the id is the
-        // sequence carrier; the prose rides when authored.
-        line = '    step ' + step.id;
-        if (step.action) {
-          line += ' "' + escapeString(step.action) + '"';
-        }
-      } else {
-        line = '    ' + step.order + ' "' + escapeString(step.action) + '"';
+      // The named typed step (TODO.lang-spec/04) — the id is the
+      // sequence carrier; the prose rides when authored.
+      let line = '    step ' + step.id;
+      if (step.action) {
+        line += ' "' + escapeString(step.action) + '"';
       }
       if (step.inputs && step.inputs.length > 0) {
         line += ' inputs { ' + step.inputs.join(' ') + ' }';

@@ -7011,23 +7011,24 @@ export function check(
           }
         }
         // The declared procedure's typed-step discipline
-        // (TODO.lang-spec/04) — the mirror of the kernel's C147 legs: the
-        // `step <id>` forms carry the sequence, so a procedure mixing
-        // them with the retired numbered facet is ambiguous, and a
-        // duplicate id makes the sequence unresolvable.
+        // (TODO.lang-spec/04) — the mirror of the kernel's deprecation
+        // rung: the numbered facet and the bare procedure_steps
+        // annotation warn (C154); the parse-refusal release follows the
+        // corpus sweep. The typed ids stay unique (C147).
         const procBlock = nested(ct).find(n => n.keyword === 'procedure');
         if (procBlock) {
           const procLines = procBlock.items.filter(i2 => i2.kind === 'line');
-          const typedSteps = procLines.filter(l => l.key === 'step');
           const numberedSteps = procLines.filter(
             l => l.key !== 'step' && /^\d+$/.test(l.key ?? ''),
           );
-          if (typedSteps.length > 0 && numberedSteps.length > 0) {
-            err(
-              'C147',
-              `conformance_test ${ct.ident}: the procedure mixes typed steps with ${numberedSteps.length} numbered step(s) — the named typed step is the one form (the ids are the sequence); re-spell the numbered entries as step <id> (test-program-shape)`,
-            );
+          if (numberedSteps.length > 0) {
+            issues.push({
+              rule: 'C154',
+              severity: 'warning',
+              message: `conformance_test ${ct.ident}: ${numberedSteps.length} numbered procedure step(s) — the named typed step is the one form (the ids are the sequence); re-spell as step <id> before the refusal release (construct-deprecated)`,
+            });
           }
+          const typedSteps = procLines.filter(l => l.key === 'step');
           const typedIds = new Set<string>();
           for (const l of typedSteps) {
             const id = l.tokens[0];
