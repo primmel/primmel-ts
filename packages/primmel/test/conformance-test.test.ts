@@ -29,9 +29,9 @@ conformance_test MeasurementError {
     ProvMPE
   }
   procedure {
-    1 "Check test conditions"
-    2 "Insert load cell"
-    3 "Record indications"
+    step check_test_conditions "Check test conditions"
+    step insert_load_cell "Insert load cell"
+    step record_indications "Record indications"
   }
   validate_measurement {
     "[error] <= [mpe_limit]"
@@ -88,7 +88,7 @@ conformance_test CT1 {
     ProvMPE
   }
   procedure {
-    1 "Step one"
+    step step_one "Step one"
   }
 }
 
@@ -107,7 +107,7 @@ canvas Root {
     assert.ok(dumped.includes('conformance_test CT1'));
     assert.ok(dumped.includes('name "Test CT"'));
     assert.ok(dumped.includes('type Inspection'));
-    assert.ok(dumped.includes('1 "Step one"'));
+    assert.ok(dumped.includes('step step_one "Step one"'));
 
     const reloaded = load(dumped);
     assert.equal(reloaded.conformanceTests.length, 1);

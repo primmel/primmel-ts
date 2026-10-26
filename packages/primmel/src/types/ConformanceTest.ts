@@ -10,15 +10,23 @@ export interface ConformanceTestStep {
   /**
    * The typed step id — the sequence carrier (TODO.lang-spec/04): the
    * declaration order of the `step <id>` forms IS the procedure, so the
-   * bare `procedure_steps` annotation retires onto this facet.
+   * bare `procedure_steps` annotation retires onto this facet. The
+   * legacy numbered steps carry no id and set `numbered` (the C154
+   * deprecation warns until the corpus sweep retires them).
    */
   id?: string;
+  /** True on a legacy numbered step (the C154 deprecation's subject). */
+  numbered?: boolean;
   action: string;
   /** Observable/value ids this step produces. */
   outputs: string[];
   /** Value ids this step consumes. */
   inputs?: string[];
 }
+
+/* Named string step references (the R 60-style procedure_steps
+ * annotation) — the deprecation rung: the field rides until the
+ * corpus sweep retires the spellings. */
 
 /**
  * Probe-channel provenance on a measured test variable (smart TODO.v2/01
@@ -242,6 +250,9 @@ export default interface ConformanceTest {
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];
   procedure: ConformanceTestStep[];
+  /** The bare procedure_steps annotation — the deprecation rung
+   *  (TODO.lang-spec/04); the checker's C154 leg warns per use. */
+  procedureSteps?: string[];
   /**
    * The test's executable PREPARATION program (smart TODO.twin-demo/03):
    * `preparation { step <order> { … } source { … } }` — warm-up, preload
@@ -258,8 +269,6 @@ export default interface ConformanceTest {
    * collision.)
    */
   stimulus?: TestProgram<StimulusPoint> | null;
-  /** Named string step references (R 60-style procedure_steps). */
-  procedureSteps?: string[];
   measurements: string[];
   // v2 G4 additions
   kind: string;

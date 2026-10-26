@@ -114,10 +114,9 @@ const CT_SRC = `conformance_test ErrorTest {
   guidance "Run at reference conditions."
   applicability { accuracy_class: [A, B] match all }
   procedure {
-    1 "Apply test loads" outputs { e_l e_r mpe }
-    2 "Record indications"
+    step apply_test_loads "Apply test loads" outputs { e_l e_r mpe }
+    step record_indications "Record indications"
   }
-  procedure_steps { check_test_conditions insert_load_cell }
   reference_materials { cgm }
   acceptance_criteria {
     type composite
@@ -152,18 +151,16 @@ describe('conformance_test fidelity extensions', () => {
     ]);
     assert.deepEqual(ct.procedure[0], {
       order: 1,
+      id: 'apply_test_loads',
       action: 'Apply test loads',
       outputs: ['e_l', 'e_r', 'mpe'],
     });
     assert.deepEqual(ct.procedure[1], {
       order: 2,
+      id: 'record_indications',
       action: 'Record indications',
       outputs: [],
     });
-    assert.deepEqual(ct.procedureSteps, [
-      'check_test_conditions',
-      'insert_load_cell',
-    ]);
     assert.deepEqual(ct.referenceMaterials, ['cgm']);
     assert.deepEqual(ct.dependencies, ['/conf/metrological-tests/warm-up']);
   });
@@ -206,7 +203,7 @@ describe('conformance_test fidelity extensions', () => {
     const dumped = dump(m1);
     assert.ok(
       dumped.includes(
-        'procedure_steps { check_test_conditions insert_load_cell }',
+        'step apply_test_loads "Apply test loads" outputs { e_l e_r mpe }',
       ),
     );
     assert.ok(dumped.includes('outputs { e_l e_r mpe }'));

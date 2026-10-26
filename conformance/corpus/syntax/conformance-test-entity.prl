@@ -13,8 +13,8 @@ conformance_test ErrorTest {
     ProvMPE
   }
   procedure {
-    1 "Apply the test load"
-    2 "Record the indication"
+    step apply_the_test_load "Apply the test load"
+    step record_the_indication "Record the indication"
   }
   validate_measurement {
     "[error] <= [mpe]"
