@@ -322,6 +322,13 @@ export interface Behavior {
   response: string;
   source: SourceRef | null;
   verifiedBy: string[];
+  /**
+   * The processes that realize this behavior — the explicit, C2-resolved
+   * form of the realization link (TODO.lang-spec/13): a process whose id
+   * names a declared behavior MUST be declared here (C186 — the
+   * id-matching convention made checkable).
+   */
+  realizedBy?: string[];
   referenceIds: string[];
   /** All provenance bindings (docs/primmel/18 §18.4 — the derives-from
    *  fold target; `source` stays the first entry). */

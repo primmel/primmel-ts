@@ -412,6 +412,7 @@ import type {
   SubjectPromise,
 } from './types/Subject';
 import type { DataClass } from './types/data';
+import Process from './types/process';
 import type { ProcessParameter, ProcessStep } from './types/process';
 import type { Requirement, RequirementLimit } from './types/Requirement';
 import {
@@ -701,6 +702,9 @@ export function checkPackage(
   // binds_to / limit.uses may reference them (e.g. sample.test_context
   // quantities that are measured test outputs).
   const symbolIds = new Set((standard.symbols ?? []).map((s: Symbol) => s.id));
+  const processIds = new Set(
+    (standard.processes ?? []).map((p: Process) => p.id),
+  );
   // The applicability dimension namespace (MN 114 v3.2, clause 11.1.1):
   // the union of the instruments' classification dimensions, the
   // attribute definitions declared is_dimension true (the bound enum or
@@ -835,6 +839,27 @@ export function checkPackage(
       if (!testIds.has(t)) {
         err('C2', `behavior ${b.id}: verified_by "${t}" not found`);
       }
+    }
+    // The realization link, made explicit (TODO.lang-spec/13): the
+    // declared process ids resolve (C2), and a process whose id names
+    // the behavior MUST be declared here — the id-matching convention
+    // became a check (C186).
+    for (const pid of b.realizedBy ?? []) {
+      if (!processIds.has(pid)) {
+        err(
+          'C186',
+          `behavior ${b.id}: realized_by "${pid}" is not a declared process (behavior-realized-by-declared)`,
+        );
+      }
+    }
+  }
+  for (const p of standard.processes ?? []) {
+    const b = (standard.behaviors ?? []).find(x => x.id === p.id);
+    if (b && !(b.realizedBy ?? []).includes(p.id)) {
+      err(
+        'C186',
+        `process ${p.id}: the id names declared behavior ${b.id} — the realization must be declared explicitly (behavior ${b.id}: realized_by { ${p.id} … }) (behavior-realized-by-declared)`,
+      );
     }
   }
   // A verdict's behavior link (TODO.roadmap/10) resolves to a declared

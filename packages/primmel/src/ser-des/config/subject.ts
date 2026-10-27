@@ -1409,6 +1409,8 @@ const parseBehavior: ConstructDefinition['parse'] = function (id, data) {
       result.stimulus = stripWrapping(t[i++]);
     } else if (cmd === 'response') {
       result.response = stripWrapping(t[i++]);
+    } else if (cmd === 'realized_by') {
+      result.realizedBy = readReference(t[i++]);
     } else if (cmd === 'source' || cmd === 'reference') {
       // Repeated provenance blocks accumulate; `source` stays the first.
       const src = readSource(unwrapBlock(t[i++]));
@@ -1452,6 +1454,7 @@ const dumpBehavior = function (b: Behavior): string {
   if (b.response) {
     out += '  response "' + escapeString(b.response) + '"\n';
   }
+  out += dumpIdList('realized_by', b.realizedBy ?? [], '  ');
   const behaviorSources =
     b.sourceRefs && b.sourceRefs.length > 0
       ? b.sourceRefs

@@ -512,6 +512,14 @@ export const CHECK_RULES: CheckRule[] = [
     "a register unit's unitsdb pin names entries in the supplied UnitsDB data and the decomposition to SI bases terminates — the DB is authoritative for structure, the register keeps its authored conversion (kernel#87)",
   ),
   R(
+    'C186',
+    'behavior-realized-by-declared',
+    'base',
+    'error',
+    'normal',
+    'TODO.lang-spec/13 (the realization link, made explicit)',
+  ),
+  R(
     'C173',
     'step-plane-refs-resolve',
     'process',
