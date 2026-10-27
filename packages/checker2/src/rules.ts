@@ -7295,6 +7295,53 @@ export function check(
           .filter(x => x.keyword === 'process' && x.ident)
           .map(x => x.ident!),
       );
+      // C186 — the realization link, made explicit (TODO.lang-spec/13):
+      // the behavior's declared realized_by process ids resolve, and a
+      // process whose id names a declared behavior MUST be declared
+      // there (the id-matching convention became a check).
+      {
+        const procBlockById = new Map(
+          pkg.constructs
+            .filter(x => x.keyword === 'process' && x.ident)
+            .map(x => [x.ident!, x]),
+        );
+        for (const b of closureConstructs.filter(
+          x => x.keyword === 'behavior' && x.ident,
+        )) {
+          const rb = nested(b).find(n => n.keyword === 'realized_by');
+          for (const l of rb ? lines(rb) : []) {
+            for (const pid of l.tokens) {
+              if (!processIdsB.has(pid)) {
+                err(
+                  'C186',
+                  `behavior ${b.ident}: realized_by "${pid}" is not a declared process (behavior-realized-by-declared)`,
+                );
+              }
+            }
+          }
+        }
+        for (const p of pkg.constructs.filter(
+          x => x.keyword === 'process' && x.ident,
+        )) {
+          const b = closureConstructs.find(
+            x => x.keyword === 'behavior' && x.ident === p.ident,
+          );
+          if (!b) {
+            continue;
+          }
+          const rb = nested(b).find(n => n.keyword === 'realized_by');
+          const declared = rb
+            ? lines(rb).some(l => l.tokens.includes(p.ident!))
+            : false;
+          if (!declared) {
+            err(
+              'C186',
+              `process ${p.ident}: the id names declared behavior ${p.ident} — the realization must be declared explicitly (behavior ${p.ident}: realized_by { ${p.ident} ... }) (behavior-realized-by-declared)`,
+            );
+          }
+          void procBlockById;
+        }
+      }
       // The dimension registry: id → value domain (null when open). The
       // spellings: instrument/dimension `values { … }` blocks, the
       // attribute_definition `is_dimension true` + enum facets, and the

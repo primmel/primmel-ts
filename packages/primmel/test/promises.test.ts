@@ -11,7 +11,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { load, dump } from '../src/ser-des/index';
@@ -664,5 +664,81 @@ subject LoadCell {
       checkPackage(dir).filter(i => i.check === 'C131'),
       [],
     );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// The behavior's realization link (TODO.lang-spec/13): realized_by is
+// the explicit C2-resolved form; a process whose id names a declared
+// behavior MUST be declared there (C186 — the id-matching convention
+// made checkable).
+// ─────────────────────────────────────────────────────────────────────
+
+describe('behavior realized_by — the realization link made explicit (C186)', () => {
+  const SRC = (realized: string) => `behavior measure {
+  kind measurement
+  stimulus force
+  response "transduced"
+  ${realized}
+}
+subject LoadCell {
+  does {
+    behavior measure
+  }
+}
+process measure {
+  name "The measurement"
+}
+`;
+  it('parses realized_by and round-trips it', () => {
+    const m = load(SRC('realized_by { measure }'));
+    const b = m.behaviors[0]!;
+    assert.deepEqual(b.realizedBy, ['measure']);
+    const dumped = dump(m);
+    assert.ok(dumped.includes('realized_by { measure }'));
+    assert.equal(dump(load(dumped)), dumped);
+  });
+
+  it('C186: an id-matched process with no declared realized_by errors', () => {
+    const dir = makeTmpPackage(SRC(''));
+    try {
+      const issues = checkPackage(dir).filter(i => i.check === 'C186');
+      assert.ok(
+        issues.length >= 1 &&
+          issues.some(i =>
+            i.message.includes('the realization must be declared explicitly'),
+          ),
+        `expected the explicit-link error, got: ${issues.map(i => i.message).join('\n')}`,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('C186: the declared link clears it; a dangling id still errors', () => {
+    const ok = makeTmpPackage(SRC('realized_by { measure }'));
+    try {
+      assert.deepEqual(
+        checkPackage(ok).filter(i => i.check === 'C186'),
+        [],
+      );
+    } finally {
+      rmSync(ok, { recursive: true, force: true });
+    }
+    const bad = makeTmpPackage(SRC('realized_by { ghost_process }'));
+    try {
+      const issues = checkPackage(bad).filter(i => i.check === 'C186');
+      // Two legs fire: the dangling id AND the id-matched process still
+      // unlisted (the declared id does not discharge the convention).
+      assert.ok(
+        issues.some(i => i.message.includes('is not a declared process')) &&
+          issues.some(i =>
+            i.message.includes('the realization must be declared explicitly'),
+          ),
+        `expected both legs, got: ${issues.map(i => i.message).join('\n')}`,
+      );
+    } finally {
+      rmSync(bad, { recursive: true, force: true });
+    }
   });
 });
