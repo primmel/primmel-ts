@@ -902,45 +902,21 @@ export const parseConformanceTest: Parser = function (id, data) {
             result.procedure.push(step);
             continue;
           } else {
-            // The numbered facet's deprecation rung (TODO.lang-spec/04):
-            // still parsed — the corpus sweep migrates package by
-            // package; the checker's C154 leg warns, and the
-            // parse-refusal release follows the sweep.
-            const order = parseInt(tokens[i], 10);
-            if (!isNaN(order) && i + 1 < tokens.length) {
-              const step: {
-                order: number;
-                action: string;
-                outputs: string[];
-                inputs?: string[];
-                numbered?: boolean;
-              } = {
-                order,
-                action: unwrapped(() => tokens[i + 1]),
-                outputs: [],
-                numbered: true,
-              };
-              i += 2;
-              if (tokens[i] === 'inputs' && i + 1 < tokens.length) {
-                step.inputs = readStringList(tokens[i + 1]);
-                i += 2;
-              }
-              if (tokens[i] === 'outputs' && i + 1 < tokens.length) {
-                step.outputs = readStringList(tokens[i + 1]);
-                i += 2;
-              }
-              result.procedure.push(step);
-            } else {
-              i++;
+            // The numbered facet is retired (the corpus sweep completed —
+            // v0.33.12): the named typed step is the one form — the ids
+            // are the sequence.
+            if (!tokens[i].startsWith('"') && !isNaN(parseInt(tokens[i], 10))) {
+              throw new Error(
+                `Parsing error: the numbered procedure facet is retired — re-spell the step as: step <id> ${tokens[i + 1] ?? '...'} (procedure { step <id> ... })`,
+              );
             }
+            i++;
           }
         }
       } else if (keyword === 'procedure_steps') {
-        // The deprecation rung (TODO.lang-spec/04): the annotation still
-        // parses — the corpus sweep migrates package by package; the
-        // checker's C154 leg warns, and the parse-refusal release
-        // follows the sweep.
-        result.procedureSteps = readStringList(value());
+        throw new Error(
+          'Parsing error: the procedure_steps { ... } annotation is retired — the named typed steps carry the sequence (procedure { step <id> ... }); the ids live on the steps',
+        );
       } else if (keyword === 'preparation') {
         // The executable preparation program (smart TODO.twin-demo/03).
         result.preparation = parsePreparation(unwrapBlock(value()), id);
@@ -1136,9 +1112,6 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
       out += line + '\n';
     }
     out += '  }\n';
-  }
-  if (ct.procedureSteps && ct.procedureSteps.length > 0) {
-    out += '  procedure_steps { ' + ct.procedureSteps.join(' ') + ' }\n';
   }
   if (ct.preparation) {
     out += dumpPreparation(ct.preparation);

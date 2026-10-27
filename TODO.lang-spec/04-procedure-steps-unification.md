@@ -17,16 +17,19 @@ scripts/migrate-typed-procedures.mjs); the app's run plane (the
 procedure panel, the leg alignment — identity by id in the typed world,
 the lab-coverage skeleton, the wizard) re-sourced from `steps[].id`.
 
-**Phase 3 — the deprecation rung LANDED.** The retired spellings warn
-(C154 construct-deprecated — the numbered facet and the bare
-`procedure_steps` annotation both still parse and dump byte-stably);
-checker2's mirror carries the same warning over the shape tree; the
-spec's facet section states the ladder. **Phase 4 — the parse-refusal
-release — follows the corpus-wide sweep**: the migration inventory
-beyond the r60-lml wave is ~220 numbered steps across 16 files
-(r144, r129, r134, d036, r7, r49, r79, r138, twin-cert), including
-per-test prose-to-id alignment; the refusal lands only when that
-sweep ships.
+**Phase 3 — the deprecation rung LANDED** (the retired spellings warned
+C154 while the sweep ran).
+
+**Phase 4 LANDED — the refusal.** The corpus-wide sweep completed first
+(model-library#121, tag v0.33.12): the remaining 185 numbered steps
+across the 14 conformance files re-spelled as the typed skeleton (the
+id = the slug of the step's own prose; the r49/r138 tables.prl numbered
+lines are table data rows — untouched). With zero numbered steps left
+in the corpus, `procedure_steps { … }` and the numbered facet refuse at
+parse; the dead surfaces (the type fields, the dump replay, the C154
+legs, the strict exemption) are gone; checker2's mirror flags the
+retired facet for documents that reach it untyped; the spec's facet
+section states the refusal.
 
 ## The gap
 Requirements and tests carry BOTH `procedure { 1 "…" outputs { … } }` (numbered
