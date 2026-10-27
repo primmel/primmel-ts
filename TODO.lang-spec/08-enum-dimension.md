@@ -1,5 +1,13 @@
 # 08 — The dimension declares its enum
 
+**Status: RESOLVED (2026-10-27) — `enum` stays, by the corpus's own evidence.**
+No realized model declares a standalone enum, but the mechanism the
+item's rule asks for already exists: the classification dimension
+references the value-set primitive (`enumRef`, the C3 resolution leg —
+check.ts's enumDef lookup), so a dimension's values MAY be a declared
+enum's. `enum` is the value-set primitive and the dimension references
+it; Annex D gains nothing.
+
 ## The gap
 `enum` (member fields) and the classification `dimension` values are two
 closed-value-set mechanisms.
