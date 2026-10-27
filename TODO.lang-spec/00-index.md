@@ -6,6 +6,28 @@ proposal (PROPOSAL-language-ergonomics.md). One file per gap; the
 dispositions route through `registry-triage.prl` under the construction
 freeze.
 
+## The 2026-10-27 audit
+
+RESOLVED: 01 (landed with 01a) · 02 (the parity audit passes) ·
+03 (rescoped: the acceptance surface is unified; decision_rule is the
+GOVERNANCE register, §20) · 04 (all four phases — the typed step, the
+corpus migration, the rung, the refusal) · 05 (rescoped: formula_note
+stays as the shared-note reference form) · 06 (resolved under (b) —
+three planes, stated semantics) · 08 (enum stays; the dimension
+references it) · 11 (the doctrine sentence entered the spec) ·
+18, 19, 22, 23, 24, 26 (landed earlier).
+
+OPEN — real design waves, scoped: **07** the one gating primitive (five
+process gate fields → kinds) · **09** the reference plane (ref is the
+primitive; references/links fold or justify) · **10** the registry
+plane (one registry construct, register kinds) · **12** the layout
+facets → the presentation sidecar · **13** realizedBy's convention →
+the checker leg · **14** the citation→document mapping framing ·
+**15** locator-qualified imports (the workspace design,
+PROPOSAL-model-separation §2a) · **17** the SDU superset verification ·
+**20** RESOLVED (the MECE sentences entered the spec). The gate:
+spec#75/#76 carry 20 and 11.
+
 - [01 — Requirement containment: restore MMEL's structural hierarchy](01-requirement-containment.md)
 - [02 — Provision parity: the MMEL requirement unit](02-provision-parity.md)
 - [03 — One acceptance surface](03-acceptance-unification.md)
