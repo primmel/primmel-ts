@@ -5946,19 +5946,10 @@ export function checkPackage(
         }
       }
       // The declared procedure's typed-step discipline (TODO.lang-spec/04):
-      // the named typed step is the one form. The deprecation rung — the
-      // numbered facet and the bare procedure_steps annotation still parse
-      // (the corpus sweep migrates package by package) and warn as C154;
-      // the parse-refusal release follows the sweep. The typed ids are
-      // unique within the procedure — a duplicate makes it unresolvable.
+      // the parse refuses the retired spellings (the corpus sweep
+      // completed — v0.33.12), so every step here is typed; a duplicate
+      // id makes the sequence unresolvable.
       if (ct.procedure.length > 0) {
-        const numbered = ct.procedure.filter(s => s.numbered).length;
-        if (numbered > 0) {
-          warn(
-            'C154',
-            `conformance_test ${ct.id}: ${numbered} numbered procedure step(s) — the named typed step is the one form (the ids are the sequence); re-spell as step <id> before the refusal release (construct-deprecated)`,
-          );
-        }
         const ids = new Set<string>();
         for (const s of ct.procedure) {
           if (!s.id) {
@@ -5973,12 +5964,6 @@ export function checkPackage(
             ids.add(s.id);
           }
         }
-      }
-      if (ct.procedureSteps && ct.procedureSteps.length > 0) {
-        warn(
-          'C154',
-          `conformance_test ${ct.id}: procedure_steps { ${ct.procedureSteps.slice(0, 3).join(' ')}${ct.procedureSteps.length > 3 ? ' …' : ''} } — the annotation is deprecated: move the ids onto the typed steps (procedure { step <id> ... }) and drop it (construct-deprecated)`,
-        );
       }
     }
   }
@@ -8821,12 +8806,6 @@ export function checkPackage(
         allowlist.textCoverageBudget !== null
       ) {
         continue; // the text budget governs these — C72 reports the excess
-      }
-      // The deprecation rung is advisory by definition (TODO.lang-spec/04):
-      // a warn-rung C154 cannot gate the trunk while the corpus sweep
-      // migrates — the refusal release converts these to errors.
-      if (i.check === 'C154' && i.message.includes('(construct-deprecated)')) {
-        continue;
       }
       i.severity = 'error';
     }

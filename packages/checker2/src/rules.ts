@@ -7011,10 +7011,10 @@ export function check(
           }
         }
         // The declared procedure's typed-step discipline
-        // (TODO.lang-spec/04) — the mirror of the kernel's deprecation
-        // rung: the numbered facet and the bare procedure_steps
-        // annotation warn (C154); the parse-refusal release follows the
-        // corpus sweep. The typed ids stay unique (C147).
+        // (TODO.lang-spec/04) — the mirror of the kernel's refusal: the
+        // numbered facet is a parse error kernel-side; the shape walk
+        // flags it here for documents that reach it untyped. The typed
+        // ids stay unique (C147).
         const procBlock = nested(ct).find(n => n.keyword === 'procedure');
         if (procBlock) {
           const procLines = procBlock.items.filter(i2 => i2.kind === 'line');
@@ -7022,11 +7022,10 @@ export function check(
             l => l.key !== 'step' && /^\d+$/.test(l.key ?? ''),
           );
           if (numberedSteps.length > 0) {
-            issues.push({
-              rule: 'C154',
-              severity: 'warning',
-              message: `conformance_test ${ct.ident}: ${numberedSteps.length} numbered procedure step(s) — the named typed step is the one form (the ids are the sequence); re-spell as step <id> before the refusal release (construct-deprecated)`,
-            });
+            err(
+              'C147',
+              `conformance_test ${ct.ident}: the numbered procedure facet is retired — re-spell the ${numberedSteps.length} numbered step(s) as step <id> (test-program-shape)`,
+            );
           }
           const typedSteps = procLines.filter(l => l.key === 'step');
           const typedIds = new Set<string>();

@@ -9,14 +9,11 @@ export interface ConformanceTestStep {
   order: number;
   /**
    * The typed step id — the sequence carrier (TODO.lang-spec/04): the
-   * declaration order of the `step <id>` forms IS the procedure, so the
-   * bare `procedure_steps` annotation retires onto this facet. The
-   * legacy numbered steps carry no id and set `numbered` (the C154
-   * deprecation warns until the corpus sweep retires them).
+   * declaration order of the `step <id>` forms IS the procedure. The
+   * legacy spellings (the numbered facet, the bare procedure_steps
+   * annotation) are parse errors — the corpus sweep completed.
    */
   id?: string;
-  /** True on a legacy numbered step (the C154 deprecation's subject). */
-  numbered?: boolean;
   action: string;
   /** Observable/value ids this step produces. */
   outputs: string[];
@@ -250,9 +247,6 @@ export default interface ConformanceTest {
   /** Classification applicability filter (dimension → allowed values). */
   applicability: ApplicabilityEntry[];
   procedure: ConformanceTestStep[];
-  /** The bare procedure_steps annotation — the deprecation rung
-   *  (TODO.lang-spec/04); the checker's C154 leg warns per use. */
-  procedureSteps?: string[];
   /**
    * The test's executable PREPARATION program (smart TODO.twin-demo/03):
    * `preparation { step <order> { … } source { … } }` — warm-up, preload
