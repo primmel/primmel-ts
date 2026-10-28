@@ -1,5 +1,17 @@
 # 14 — Path expressions (LutaML Path)
 
+**Status: DECLINED (2026-10-28) — out of scope, recorded: the two
+addresses already have two owners.** INTERNAL addressing is the
+expression language's collection navigation (TODO.lang-spec/18 + 24,
+landed: navigation members, lambdas — `readNavMembers` in the
+expression reader); EXTERNAL addressing is the urn (a citation into a
+published document — provenance, never navigation). A standalone
+lutaml-path layer would be a third address between two MECE owners,
+answering a query the corpus does not ask: no cross-model path appears
+in any package source. The kernel and Studio navigate internally over
+object graphs — that is code's business, not the language's. Reopen on
+first in-source cross-model selection need.**
+
 **LML (lutaml-path).** A path language over models: navigation
 segments, predicates, path roots, model queries — the addressing
 layer for selections and cross-model references WITHIN a corpus.

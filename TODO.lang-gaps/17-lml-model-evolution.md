@@ -1,5 +1,17 @@
 # 17 — Source-declared versions and change levels
 
+**Status: RESOLVED (2026-10-28) — every element already landed.
+**In-source version: `version "x.y.z"` on every package manifest (the
+declared form; numbers chosen by the owner — never tooling). Change
+levels: C163 `change-levels` — the classifier runs over `primmel
+diff` output (patch/minor/major semantics; checker2 declares it
+outOfSurface because it is a two-package diff surface, not a
+single-package rule). Edition lifecycle: the manifest's
+supersedes/replaces/validity/status fields, C77–C80. CO-RELEASE: the
+lockstep discipline already practiced — package + conformance corpus +
+grammar artifact move together in one release wave (the wave pattern;
+the corpus job reads library MAIN, the grammar leg pins 103/103).**
+
 **LML (model-evolution).** `models X version "x.y.z"` IN SOURCE
 (recorded as the schema's version surface); change levels (patch =
 no consumer action; minor = additive; major = breaking, consumer

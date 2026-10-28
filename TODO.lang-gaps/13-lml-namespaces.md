@@ -1,5 +1,9 @@
 # 13 — Namespaces: single string vs uri + prefix
 
+**Status: RESOLVED (v3.3, TODO.lang-spec/20) — the two senses are
+declared MECE: the package IS the model namespace; the `namespace`
+construct is the wire plane (`NamespaceDecl`, types/LmlAligned.ts).**
+
 **LML (lang §Namespacing).** `namespace X { uri "…" prefix "…" }`
 declared in the models scope; mappings reference by name; one
 namespace applies implicitly, several without explicit reference =

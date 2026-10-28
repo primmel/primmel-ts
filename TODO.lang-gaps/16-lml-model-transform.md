@@ -1,5 +1,19 @@
 # 16 — Model/value transforms as language artifacts
 
+**Status: RESOLVED BY DECLARED ARTIFACTS (2026-10-28) — three
+transform planes are in-language; the automap's working state stays
+ephemeral BY DESIGN.** Model→model: `maps_to { … }` on the
+product_reference manifest (aspect-by-aspect, the doctrine ch. 15
+mapping — validated, coverage-computed). Template→flavor: module-slot
+overlays (spec#28). Class→wire: `mapping <fmt> <class>` (v3.2,
+TODO.lang-gaps/09). All three are reviewable, versioned, re-runnable
+from source. What does NOT become language: the Studio automap's
+in-flight state (scores, candidate pairs, rejections) — the recorded
+design decision stands ("mapping rejections live in their own stores —
+never the AST, never serialized"): working state is runtime evidence,
+not source; the ACCEPTED result is the declared artifact. Value
+transforms slot into the datum conversions (04) when that wave lands.**
+
 **LML (model-transform).** Declared transforms between source and
 target models (model transform) and over values (value transform).
 

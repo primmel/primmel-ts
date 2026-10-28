@@ -1,5 +1,15 @@
 # 18 — Operations (UML round-trip structural metadata)
 
+**Status: DECLINED (2026-10-28) — posture (b), recorded: Primmel
+models subjects-and-loops, not class diagrams.** Zero corpus demand
+(no operations construct in any package source; no EA/XMI corpus
+source in the estate). Operations carrying NO executable semantics
+would be inert ballast in a language whose behaviors are verified
+domain claims (behaviors + tests), not method signatures. XMI sources
+convert their behavioral surface into behaviors/processes at adoption
+time — the adoption gate, not the language, owns that mapping.
+Reopen only if a real XMI corpus source arrives (the recorded trigger).**
+
 **LML (RS 3010 §Operations).** Classes may carry operations — name,
 visibility (+,-,#,~), parameters (direction/type/default), return
 type + cardinality, property modifiers (ordered/unique/query) —

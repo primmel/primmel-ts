@@ -1,5 +1,8 @@
 # 11 — Grammar-backed string formats (string_format)
 
+**Status: RESOLVED (v3.3) — grammar-backed formats are declared
+(`StringFormat`, types/LmlAligned.ts); the index row is swept here.**
+
 **LML (RS 3010).** A class declares `string_format :name { artifact
 "<ref>" root "<rule>" }` — instances serialize to/from an identifier
 STRING parsed by a grammar artifact (e.g. pubid/iso). The declaration

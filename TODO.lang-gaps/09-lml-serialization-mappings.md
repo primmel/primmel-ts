@@ -1,5 +1,10 @@
 # 09 — LML serialization mappings are not declared in the package surface
 
+**Status: RESOLVED (v3.2) — `mapping <fmt> <class>` is declared in the
+package surface (`WireMapping`, types/LmlAligned.ts; the wireMappings
+collection on Standard; Annex A row `mapping`, "The LML mapping surface
+— one class's declared wire form per format").**
+
 **LML (RS 3010 §Serialization).** `mapping <format> <class>` blocks:
 xml (`element`, `namespace`, `map_element`, `map_attribute`,
 `map_content`, `mixed_content`) and key-value (`map`, `map_key
