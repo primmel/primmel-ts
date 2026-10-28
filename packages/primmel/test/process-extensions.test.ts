@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────
 // Process model extensions (Primmel v3, TODO.roadmap/02) — abstract and
-// executable process forms, the full step vocabulary with executor
-// typing, the gate facet (TODO.lang-spec/07), per-classification
+// executable process forms, the full step vocabulary with role-named
+// steps, the gate facet (TODO.lang-spec/07), per-classification
 // instances, flow edges with
 // OCL conditions, and the C10–C14 linter rules.
 //
@@ -9,7 +9,7 @@
 //   CREEP_METHOD  — an ABSTRACT process (signature + invariants +
 //                   no `does` body): always valid.
 //   CREEP_RUN     — its EXECUTABLE refinement (R 60-style creep method
-//                   sketch): does body, executor-typed steps, a gateway
+//                   sketch): does body, role-named steps, a gateway
 //                   with OCL-conditioned edges, per-class instances.
 //   REVERIFICATION — a timer recurrence sketch: timer_event with a
 //                   period closing the self-loop, plus a signal_event.
@@ -67,10 +67,10 @@ process creep_run {
   }
   does {
     start_event s
-    action stabilize { executor actor role lab_technician capture stabilization_form write { conditions_log } }
-    action apply_load { executor actor role lab_technician capture load_form read { applied_load } }
-    action hold { executor machine wait duration }
-    action record { executor machine read { applied_load } write { indication_series } }
+    action stabilize { role lab_technician capture stabilization_form write { conditions_log } }
+    action apply_load { role lab_technician capture load_form read { applied_load } }
+    action hold { wait duration }
+    action record { read { applied_load } write { indication_series } }
     gateway enough
     end_event done
     end_event aborted
@@ -93,10 +93,10 @@ process reverification {
   registers { re_verdict : verdict }
   does {
     start_event issued
-    action initial_verify { executor machine read { last_verdict } write { re_verdict } }
+    action initial_verify { read { last_verdict } write { re_verdict } }
     timer_event every_12m { period "P12M" }
     signal_event tyre_change { signal "tyre-changed" }
-    action reverify { executor actor role lab_technician capture reverify_form read { last_verdict } write { re_verdict } }
+    action reverify { role lab_technician capture reverify_form read { last_verdict } write { re_verdict } }
     end_event withdrawn
     flow {
       issued -> initial_verify -> every_12m
@@ -115,8 +115,8 @@ process vocabulary {
   registers { x : dimensionless }
   does {
     start_event s
-    action a { executor machine }
-    approval sign { executor actor role reviewer capture sign_form }
+    action a { }
+    approval sign { role reviewer capture sign_form }
     gateway g
     parallel_gateway both
     timer_event t { period "P1M" }
@@ -194,7 +194,7 @@ describe('v3 process — abstract form (signature + invariants)', () => {
 });
 
 describe('v3 process — executable form (does body)', () => {
-  it('parses steps with executor typing and per-class instances', () => {
+  it('parses steps with role bindings and per-class instances', () => {
     const m = load(CREEP_RUN);
     const p = m.processes.find(x => x.id === 'creep_run')!;
     assert.ok(p.does);
@@ -206,13 +206,11 @@ describe('v3 process — executable form (does body)', () => {
     assert.equal(byId.get('s')!.kind, 'start_event');
     const stabilize = byId.get('stabilize')!;
     assert.equal(stabilize.kind, 'action');
-    assert.equal(stabilize.executor, 'actor');
     assert.equal(stabilize.role, 'lab_technician');
     assert.equal(stabilize.capture, 'stabilization_form');
     assert.deepEqual(stabilize.writes, ['conditions_log']);
 
     const hold = byId.get('hold')!;
-    assert.equal(hold.executor, 'machine');
     assert.equal(hold.wait, 'duration');
 
     const record = byId.get('record')!;
@@ -319,9 +317,7 @@ describe('v3 process — executable form (does body)', () => {
     const dumped = dump(m1);
     assert.ok(dumped.includes('parallel_gateway both'));
     assert.ok(
-      dumped.includes(
-        'approval sign { executor actor role reviewer capture sign_form }',
-      ),
+      dumped.includes('approval sign { role reviewer capture sign_form }'),
     );
     const m2 = load(dumped);
     assert.deepEqual(m2.processes, m1.processes);
@@ -377,7 +373,7 @@ describe('v3 process linter (C10–C14)', () => {
   it('C10 fires when the start event is missing or duplicated', () => {
     const missing = makeProcessPackage(`process p {
   does {
-    action a { executor machine }
+    action a { }
     end_event e
     flow { a -> e }
   }
@@ -392,7 +388,7 @@ describe('v3 process linter (C10–C14)', () => {
   does {
     start_event s1
     start_event s2
-    action a { executor machine }
+    action a { }
     end_event e
     flow { s1 -> a s2 -> a a -> e }
   }
@@ -407,7 +403,7 @@ describe('v3 process linter (C10–C14)', () => {
     const dir = makeProcessPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     flow { s -> a }
   }
 }
@@ -460,7 +456,7 @@ describe('v3 process linter (C10–C14)', () => {
     const dir = makeProcessPackage(`process p {
   does {
     start_event s
-    action a { executor machine write { bogus_reg } }
+    action a { write { bogus_reg } }
     end_event e
     flow { s -> a -> e }
   }
@@ -480,7 +476,7 @@ describe('v3 process linter (C10–C14)', () => {
   registers { result : mass }
   does {
     start_event s
-    action a { executor machine read { applied } }
+    action a { read { applied } }
     end_event e
     flow { s -> a -> e }
   }
@@ -499,8 +495,8 @@ describe('v3 process linter (C10–C14)', () => {
     const dir = makeProcessPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
-    action b { executor machine }
+    action a { }
+    action b { }
     end_event e
     flow {
       s -> a
@@ -521,7 +517,7 @@ describe('v3 process linter (C10–C14)', () => {
     const dir = makeProcessPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     end_event e
     flow {
       s -> a
@@ -544,13 +540,34 @@ describe('v3 process linter (C10–C14)', () => {
 });
 
 describe('v3 process parser robustness', () => {
+  it('rejects the retired step-level executor facet with the exact refusal text', () => {
+    let message = '';
+    try {
+      load(`process p {
+  does {
+    start_event s
+    action a { executor machine }
+    end_event e
+    flow { s -> a -> e }
+  }
+}
+`);
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    assert.equal(
+      message,
+      'Parsing error: process step. ID a: the executor facet is retired (TODO.lang-gaps/05) — the step names its role (role <id>); the run binds the executor that acts as the role',
+    );
+  });
+
   it('rejects a fused arrow chain (s->a->e) with a clear parse error', () => {
     assert.throws(
       () =>
         load(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     end_event e
     flow { s->a->e }
   }
@@ -566,7 +583,7 @@ describe('v3 process parser robustness', () => {
         load(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     end_event e
     flow { s→a→e }
   }
@@ -620,8 +637,8 @@ describe('v3 process parser robustness', () => {
     const m = load(`process p {
   does {
     start_event s
-    action a { executor actor future_hint draft { note "v" } role lab_technician }
-    action b { note_block { x y } executor machine }
+    action a { future_hint draft { note "v" } role lab_technician }
+    action b { note_block { x y } capture b_form }
     end_event e
     flow { s -> a -> b -> e }
   }
@@ -629,10 +646,9 @@ describe('v3 process parser robustness', () => {
 `);
     const byId = new Map(m.processes[0].does!.steps.map(s => [s.id, s]));
     // `future_hint draft { note "v" }` skipped whole — role still lands.
-    assert.equal(byId.get('a')!.executor, 'actor');
     assert.equal(byId.get('a')!.role, 'lab_technician');
-    // `note_block { x y }` (bare block, no value) skipped — executor lands.
-    assert.equal(byId.get('b')!.executor, 'machine');
+    // `note_block { x y }` (bare block, no value) skipped — capture lands.
+    assert.equal(byId.get('b')!.capture, 'b_form');
   });
 
   it('an unknown entry in the gates block does not misalign the walk', () => {

@@ -1,5 +1,11 @@
 # 02 — THE PROSE QUARANTINE (critical)
 
+**Status (2026-10-28): DECLARED, ENFORCEMENT PARTIAL.** Spec §16
+declares C158 an error; the kernel enforces the datum-description
+proxy. The corpus still carries the bare strings (~1,181 statement,
+~2,203 definition, 191 summary, 88 response, 174 criteria); the
+global linter leg lands with the prose-surface migration.
+
 **Rule (owner, 2026-10-12).** Primmel is a DATA MODELING LANGUAGE. NO
 prose in semantic positions — everything is explicit and useable.
 Human language lives ONLY in `label` (short display string — itself

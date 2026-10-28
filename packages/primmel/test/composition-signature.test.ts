@@ -60,7 +60,6 @@ process caller {
   does {
     start_event s
     action run {
-      executor machine
       read { test_load soak }
       calls callee {
         with {
@@ -132,7 +131,7 @@ describe('calls syntax (parse + round-trip)', () => {
     const m1 = load(`process p {
   does {
     start_event s
-    action a { executor machine calls legacy_helper }
+    action a {calls legacy_helper }
     end_event e
     flow { s -> a -> e }
   }
@@ -156,8 +155,8 @@ describe('C74 process-io-type-coherence', () => {
   registers { indication : time }
   does {
     start_event s
-    action a { executor machine write { indication } }
-    action b { executor machine read { indication } }
+    action a {write { indication } }
+    action b {read { indication } }
     end_event e
     flow { s -> a -> b -> e }
   }
@@ -231,7 +230,7 @@ describe('C75 process-flow-io-cover', () => {
   registers { x : mass }
   does {
     start_event s
-    action a { executor machine read { x } }
+    action a {read { x } }
     end_event e
     flow { s -> a -> e }
   }
@@ -248,9 +247,9 @@ describe('C75 process-flow-io-cover', () => {
   registers { x : mass }
   does {
     start_event s
-    action a { executor machine write { x } }
-    action b { executor machine }
-    action c { executor machine read { x } }
+    action a {write { x } }
+    action b {}
+    action c {read { x } }
     end_event e
     flow { s -> a -> c  s -> b -> c  c -> e }
   }
@@ -266,9 +265,9 @@ describe('C75 process-flow-io-cover', () => {
   registers { x : mass }
   does {
     start_event s
-    action a { executor machine write { x } }
-    action b { executor machine write { x } }
-    action c { executor machine read { x } }
+    action a {write { x } }
+    action b {write { x } }
+    action c {read { x } }
     end_event e
     flow { s -> a -> c  s -> b -> c  c -> e }
   }
@@ -283,7 +282,7 @@ describe('C75 process-flow-io-cover', () => {
   registers { x : mass }
   does {
     start_event s
-    action a { executor machine }
+    action a {}
     gateway g
     end_event e
     end_event f
@@ -312,7 +311,7 @@ describe('C75 process-flow-io-cover', () => {
   }
   does {
     start_event s
-    action a { executor machine read { applied_load n_runs } write { count } }
+    action a {read { applied_load n_runs } write { count } }
     gateway g
     end_event e
     flow {
@@ -331,8 +330,8 @@ describe('C75 process-flow-io-cover', () => {
   registers { x : mass y : mass }
   does {
     start_event s
-    action a { executor machine write { x } }
-    action b { executor machine read { x } write { y } }
+    action a {write { x } }
+    action b {read { x } write { y } }
     end_event e
     flow { s -> a -> b -> e }
   }
@@ -351,8 +350,8 @@ describe('C75 process-flow-io-cover', () => {
   registers { conditions_log : text result : mass }
   does {
     start_event s
-    action stabilize { executor actor role tech capture stab_form write { conditions_log } }
-    action record { executor machine write { result } }
+    action stabilize {role tech capture stab_form write { conditions_log } }
+    action record {write { result } }
     end_event e
     flow { s -> stabilize -> record -> e }
   }
@@ -367,10 +366,10 @@ describe('C75 process-flow-io-cover', () => {
   registers { re_verdict : verdict }
   does {
     start_event issued
-    action initial_verify { executor machine read { last_verdict } write { re_verdict } }
+    action initial_verify {read { last_verdict } write { re_verdict } }
     timer_event every_12m { period "P12M" }
     signal_event tyre_change { signal "tyre-changed" }
-    action reverify { executor machine read { last_verdict } write { re_verdict } }
+    action reverify {read { last_verdict } write { re_verdict } }
     end_event withdrawn
     flow {
       issued -> initial_verify -> every_12m
@@ -393,7 +392,6 @@ describe('C76 subprocess-signature-bound', () => {
   does {
     start_event s
     action run {
-      executor machine
       read { test_load soak }
       calls callee ${withBlock}
       write { raw }
@@ -408,7 +406,7 @@ describe('C76 subprocess-signature-bound', () => {
     const dir = makeProcessPackage(`process p {
   does {
     start_event s
-    action a { executor machine calls ghost }
+    action a {calls ghost }
     end_event e
     flow { s -> a -> e }
   }
@@ -489,7 +487,6 @@ process caller {
   does {
     start_event s
     action run {
-      executor machine
       calls callee {
         with {
           in { applied_load : load }
@@ -517,7 +514,7 @@ process caller {
         `process p {
   does {
     start_event s
-    action a { executor machine calls helper { with { in { x : y } } } }
+    action a {calls helper { with { in { x : y } } } }
     end_event e
     flow { s -> a -> e }
   }
@@ -533,7 +530,7 @@ process caller {
         `process p {
   does {
     start_event s
-    action a { executor machine calls helper }
+    action a {calls helper }
     end_event e
     flow { s -> a -> e }
   }
@@ -555,7 +552,6 @@ process caller {
   does {
     start_event s
     action run {
-      executor machine
       read { soak }
       calls callee {
         with {
@@ -609,7 +605,6 @@ describe('C76 across a uses boundary (post-merge)', () => {
   does {
     start_event s
     action run {
-      executor machine
       calls callee {
         with {
           in { applied_load : when duration : soak }
@@ -637,7 +632,6 @@ describe('C76 across a uses boundary (post-merge)', () => {
   does {
     start_event s
     action run {
-      executor machine
       read { test_load soak }
       calls callee {
         with {

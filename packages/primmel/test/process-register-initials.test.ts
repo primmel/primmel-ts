@@ -38,7 +38,7 @@ process creep_run {
   }
   does {
     start_event s
-    action record { executor machine read { n_runs } write { indication_series } }
+    action record {read { n_runs } write { indication_series } }
     end_event e
     flow { s -> record -> e }
   }
@@ -132,7 +132,7 @@ describe('register initial values (TODO.roadmap/50)', () => {
 process caller {
   does {
     start_event s
-    action c { executor machine calls callee { with { in { x : a = 5 } } } }
+    action c {calls callee { with { in { x : a = 5 } } } }
     end_event e
     flow { s -> c -> e }
   }

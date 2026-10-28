@@ -564,7 +564,7 @@ describe('primmel check — C35 time-format', () => {
       'proc.prl': `process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     timer_event tick { period "every 12 months" }
     end_event e
     flow { s -> a -> tick -> e }
@@ -585,7 +585,7 @@ describe('primmel check — C35 time-format', () => {
       'proc.prl': `process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     timer_event tick { period "P12M" }
     end_event e
     flow { s -> a -> tick -> e }

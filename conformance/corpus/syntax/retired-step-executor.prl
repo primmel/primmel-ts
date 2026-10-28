@@ -1,0 +1,8 @@
+process retired_step_executor {
+  does {
+    start_event s
+    action examine { executor machine }
+    end_event e
+    flow { s -> examine -> e }
+  }
+}

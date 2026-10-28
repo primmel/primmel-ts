@@ -1,7 +1,7 @@
 process review {
   does {
     start_event begin
-    action examine { executor machine }
+    action examine { }
     end_event done
     flow { begin -> examine -> done }
   }

@@ -1,4 +1,9 @@
 {
- "$comment": "The grammar leg's skip register: parse-kind cases whose rejection lives outside the grammar layer's reach. EMPTY as of suite 3.10.0 — the per-construct typed surface in grammar/primmel.parg (the dispatch, the required-value badness predicates, the closed facet vocabularies, the scoped sub-block dispatch with sub-keyword-excluded bares) carries the kernel's per-construct parse discipline for every corpus case. The register only shrinks and may only be repopulated with a reason a future case proves; the leg errors on a stale entry (a case that agrees without the skip), on an entry naming a case that no longer exists, and on a disagreement whose case is not registered.",
- "skips": []
+ "$comment": "The grammar leg's skip register: parse-kind cases whose rejection lives outside the grammar layer's reach. EMPTY as of suite 3.10.0 — the per-construct typed surface in grammar/primmel.parg (the dispatch, the required-value badness predicates, the closed facet vocabularies, the scoped sub-block dispatch with sub-keyword-excluded bares) carried the kernel's per-construct parse discipline for every corpus case then in the suite. The register only shrinks and may only be repopulated with a reason a future case proves; the leg errors on a stale entry (a case that agrees without the skip), on an entry naming a case that no longer exists, and on a disagreement whose case is not registered.",
+ "skips": [
+  {
+   "id": "wf-01-parse-neg-step-executor",
+   "reason": "the retired step-level executor facet is refused by the kernel's per-construct step-body parse discipline (a closed facet vocabulary of the step body); the PG grammar's process block is the open item stream and cannot express the scoped step dispatch yet — the grammar-side enforcement (a scoped does-block step rule with a badness predicate) is the recorded reopen trigger (TODO.lang-gaps/05)"
+  }
+ ]
 }

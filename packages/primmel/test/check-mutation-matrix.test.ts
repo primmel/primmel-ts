@@ -66,8 +66,8 @@ subject LoadCell {
       'model/p.prl': `process p {
   does {
     start_event s
-    action a { executor machine }
-    action a { executor actor }
+    action a { }
+    action a { }
     end_event e
     flow { s -> a a -> e }
   }

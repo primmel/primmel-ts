@@ -1,5 +1,10 @@
 # 06 — Variants vs dimensions: the classification said twice
 
+**Status (2026-10-28): OPEN.** r60's instrument.prl still declares 4
+`variant` blocks duplicating the `technology` dimension values. The
+fix needs the spec §09 variant retirement, a value-level `ref` facet,
+and the corpus dedupe — not started.
+
 **Gap.** r60's instrument.prl declares FOUR variants
 (analogue-passive/analogue-active/digital/digital-with-processing, 3.1.3.x)
 AND a `technology` dimension whose FOUR typed values carry the same

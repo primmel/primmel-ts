@@ -2673,6 +2673,18 @@
       "summary": "A phase keyword with no value token is rejected at parse."
     },
     {
+      "id": "wf-01-parse-neg-step-executor",
+      "clause": "WF-01",
+      "polarity": "negative",
+      "kind": "parse",
+      "path": "syntax/retired-step-executor.prl",
+      "expect": {
+        "parse": "error",
+        "errorMatch": "the executor facet is retired"
+      },
+      "summary": "The retired step-level executor facet is rejected at parse; the step names its role and the run binds the executor."
+    },
+    {
       "id": "wf-01-check-pos",
       "clause": "WF-01",
       "polarity": "positive",
