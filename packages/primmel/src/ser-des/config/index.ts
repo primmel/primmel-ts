@@ -411,6 +411,11 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseLink,
     dump: dumpLink as never,
+    // The deprecation rung (TODO.lang-spec/09): the typed ref plane
+    // (docs/primmel/18) is the pointer primitive — ref <predicate>
+    // "target"; the REPO/URL link has zero corpus uses and no legs.
+    deprecated:
+      'the typed ref plane (docs/primmel/18) carries the pointer — declare ref <predicate> "target"',
   }),
   defineConstruct({
     keyword: 'comment',

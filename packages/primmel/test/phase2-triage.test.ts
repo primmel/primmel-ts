@@ -36,14 +36,22 @@ describe('phase 2 triage dispositions', () => {
     }
   });
 
-  it('no construct carries a deprecation note — the report is empty', () => {
+  it('the deprecation register carries exactly the swept constructs', () => {
+    // The deprecation ladder is live again (TODO.lang-spec/09): `link`
+    // (the MMEL REPO/URL pointer — zero corpus uses) warns C154; the
+    // typed ref plane carries the pointer.
     assert.deepEqual(
       CONSTRUCTS.filter(c => c.deprecated).map(c => c.keyword),
-      [],
+      ['link'],
     );
     const issues = checkPackage(
+      makePackage('link repo_x { kind REPO target "https://x" }'),
+    ).filter(i => i.check === 'C154');
+    assert.equal(issues.length, 1);
+    assert.ok(issues[0]!.message.includes('the typed ref plane'));
+    const clean = checkPackage(
       makePackage('instrument X { definition "X." }'),
     ).filter(i => i.check === 'C154');
-    assert.deepEqual(issues, []);
+    assert.deepEqual(clean, []);
   });
 });
