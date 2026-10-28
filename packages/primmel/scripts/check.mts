@@ -9,6 +9,7 @@
 //   primmel export impact <package-dir> [--out <file>]
 //   primmel export cddal <package-dir> [--out <file>]
 //   primmel fmt [--check] <package-dir>
+//   primmel closure <package-dir> [--with <pkg-id>=<dir>]…
 //
 // (The `check` token is optional for back-compatibility: `primmel
 // [--strict]… <package-dir>` runs check as before.)
@@ -123,6 +124,7 @@ import {
 } from '../src/text-coverage.ts';
 import { diffPackageDirs } from '../src/package-diff.ts';
 import { formatDiffReport } from '../src/model-diff.ts';
+import { closureReport } from '../src/ser-des/package.ts';
 import type { ResolvePackage } from '../src/ser-des/package.ts';
 
 const CHECK_USAGE =
@@ -600,8 +602,52 @@ function packCli(args: string[]): void {
   });
 }
 
+function closureCli(args: string[]): void {
+  const { locator, positional } = parseArgs(
+    args,
+    [],
+    'Usage: primmel closure [--with <pkg-id>=<dir>]… <package-dir>',
+  );
+  const dir = positional[0];
+  if (!dir || positional.length !== 1) {
+    console.error('Usage: primmel closure [--with <pkg-id>=<dir>]… <package-dir>');
+    process.exit(2);
+  }
+  const problem = readablePackageDirProblem(dir, true);
+  if (problem !== null) {
+    console.error(`cannot read package at ${dir}: ${problem}`);
+    process.exit(2);
+  }
+  for (const target of locator.values()) {
+    const targetProblem = readablePackageDirProblem(target, true);
+    if (targetProblem !== null) {
+      console.error(`cannot read package at ${target}: ${targetProblem}`);
+      process.exit(2);
+    }
+  }
+  // The closure report (TODO.lang-spec/15, §2a) — machine-readable
+  // JSON: the per-dependency state (closed / interface-closed /
+  // unresolved), the workspace locator file in scope, and the root.
+  // The report is the license boundary: what closed fully, what closed
+  // at the interface, what lies outside the licensed scope.
+  try {
+    const report = closureReport(dir, {
+      ...(locator.size > 0
+        ? { resolvePackage: (id: string) => locator.get(id) }
+        : {}),
+    });
+    console.log(JSON.stringify(report, null, 2));
+    process.exit(0);
+  } catch (e) {
+    console.error(`closure: ${(e as Error).message}`);
+    process.exit(1);
+  }
+}
+
 if (args[0] === 'diff') {
   diffCli(args.slice(1));
+} else if (args[0] === 'closure') {
+  closureCli(args.slice(1));
 } else if (args[0] === 'check') {
   checkCli(args.slice(1));
 } else if (args[0] === 'export') {

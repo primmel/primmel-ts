@@ -519,6 +519,29 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'TODO.lang-spec/13 (the realization link, made explicit)',
   ),
+  // ── C187/C188: the workspace locator plane (TODO.lang-spec/15, the
+  // model-separation proposal §2a) ── the workspace declares the named
+  // resolution endpoints its packages compose through; the import
+  // carries its resolution in its own name (`<locator>::<id>`). The
+  // qualifier plane judges the qualified entry, never C27; the closure
+  // states (closed / interface-closed / unresolved) are the closure
+  // report's data — the license boundary, never a crash.
+  R(
+    'C187',
+    'workspace-locator-declared',
+    'composition',
+    'error',
+    'normal',
+    'a locator-qualified import names a locator endpoint the workspace declares, and the workspace declarations are well-formed (TODO.lang-spec/15)',
+  ),
+  R(
+    'C188',
+    'locator-credential-reference',
+    'composition',
+    'error',
+    'normal',
+    'a locator auth carries a credential REFERENCE (env:VAR, vault:path) — an inline secret in a locator is an error (TODO.lang-spec/15)',
+  ),
   R(
     'C173',
     'step-plane-refs-resolve',

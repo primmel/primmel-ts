@@ -388,11 +388,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import {
   CompositionError,
+  closureReport,
   effectiveUses,
   loadPackageWithIssues,
   readPackageManifest,
   type ResolvePackage,
 } from './ser-des/package';
+import { findWorkspaceLocators } from './ser-des/locators';
 import type { PackageManifest } from './types/Package';
 import { loadPrm, prmToMapProfiles } from './ser-des/prm';
 import {
@@ -605,6 +607,7 @@ export function checkPackage(
     'uses-cycle': 'C29',
     'requires-satisfied': 'C31',
     'namespace-pin-violation': 'C119',
+    'locator-undeclared': 'C187',
   };
   let standard: Standard;
   let compositionProviders: NonNullable<
@@ -640,6 +643,16 @@ export function checkPackage(
     }
     throw e;
   }
+
+  // The workspace locator plane (TODO.lang-spec/15): the workspace's
+  // declared endpoints are hygiene every package under it carries — a
+  // malformed declaration or an inline credential is reported from every
+  // package that reads the file (C187's declaration legs, C188), and a
+  // qualified import naming no declared endpoint is C187. The composed
+  // path throws locator-undeclared before this line (the load cannot
+  // proceed); the manifest-only path would otherwise never judge the
+  // qualifier plane.
+  issues.push(...checkWorkspaceLocators(dir, standard.packageManifest));
 
   // Manifest-only stopgap: without a locator the composition rules cannot
   // run, but the declared imports can still be verified against the
@@ -8877,6 +8890,96 @@ export function checkPackage(
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────
+// The workspace locator plane (TODO.lang-spec/15, PROPOSAL-model-
+// separation §2a). The workspace declares the named resolution
+// endpoints its packages compose through (.primmel/locators.prl, found
+// by walking up from the package directory); the import carries its
+// resolution in its own name (`<locator>::<id>`). Two rules:
+//   C187 workspace-locator-declared — a qualified import names a
+//      locator the workspace declares, and the declarations themselves
+//      are well-formed (a scheme, the scheme's required facet, a name
+//      declared once); the qualifier plane judges the qualified entry,
+//      never C27;
+//   C188 locator-credential-reference — the credentials are REFERENCES
+//      ONLY (`auth env:VAR` or `auth vault:path`); an inline secret in
+//      a locator is an error.
+// The closure states themselves (closed / interface-closed / unresolved)
+// are DATA — closureReport() classifies, the report is the license
+// boundary; nothing here errors on a state.
+// ─────────────────────────────────────────────────────────────────────
+export function checkWorkspaceLocators(
+  dir: string,
+  manifest?: PackageManifest | null,
+): CheckIssue[] {
+  const issues: CheckIssue[] = [];
+  const err = (check: string, message: string) =>
+    issues.push({ check, severity: 'error', message });
+
+  const ws = findWorkspaceLocators(dir);
+  if (ws === null) {
+    // No workspace vocabulary: a qualified import has no endpoint to
+    // name — declared unresolved is a workspace declaration away, never
+    // a guess.
+    for (const [id, locator] of Object.entries(manifest?.useLocators ?? {})) {
+      err(
+        'C187',
+        `package "${manifest?.id ?? ''}" uses "${locator}::${id}", but no workspace locator file (.primmel/locators.prl) is in scope — the workspace declares no locator endpoint "${locator}" (workspace-locator-declared)`,
+      );
+    }
+    return issues;
+  }
+
+  // The file's own discipline: shape (C187's declaration legs), then
+  // the credential plane (C188).
+  for (const i of ws.issues) {
+    err(
+      i.code === 'locator-credential' ? 'C188' : 'C187',
+      `${i.message} (${ws.file})`,
+    );
+  }
+
+  // The qualifier plane: every qualified import names a declared
+  // endpoint.
+  for (const [id, locator] of Object.entries(manifest?.useLocators ?? {})) {
+    if (!ws.locators.some(l => l.name === locator)) {
+      err(
+        'C187',
+        `package "${manifest?.id ?? ''}" uses "${locator}::${id}", but the workspace declares no locator endpoint "${locator}" (${ws.file}) (workspace-locator-declared)`,
+      );
+    }
+  }
+
+  // The closure states ride the check as data (the license boundary is
+  // evidence, computed once here): a DECLARED endpoint that does not
+  // reach its id is the declared unresolved state — visible as data,
+  // never a crash, never silently dropped. (A bare import's miss is
+  // C27's matter, the manifest-only scan or the composition error; an
+  // undeclared qualifier already errored above.)
+  try {
+    const declared = new Set(ws.locators.map(l => l.name));
+    const report = closureReport(dir);
+    for (const d of report.dependencies) {
+      if (
+        d.state === 'unresolved' &&
+        d.locator !== undefined &&
+        declared.has(d.locator)
+      ) {
+        issues.push({
+          check: 'C187',
+          severity: 'warning',
+          message: `package "${report.root}": dependency "${d.id}" through locator "${d.locator}" is unresolved — the endpoint is declared, no locator reaches it (the closure report carries the state)`,
+        });
+      }
+    }
+  } catch {
+    // The report never throws for missing content; an unreadable ROOT
+    // manifest is the load's own error, already reported.
+  }
+
+  return issues;
+}
+
 // Manifest-only resolution stopgap (TODO.roadmap/05).
 //
 // The shipped package.primmel declarations (uses/requires/provides) are
@@ -8944,6 +9047,12 @@ export function checkManifestResolution(dir: string): CheckIssue[] {
         continue;
       }
       if (c === 2) {
+        continue;
+      }
+      // A locator-qualified entry (TODO.lang-spec/15) resolves through
+      // the workspace's named endpoint — never the ambient sibling
+      // scan; the qualifier plane (checkWorkspaceLocators) judged it.
+      if (m.useLocators?.[dep] !== undefined) {
         continue;
       }
       const dm = siblings.get(dep);

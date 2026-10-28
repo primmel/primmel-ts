@@ -93,6 +93,18 @@ export interface PackageManifest {
    * Keyed by the bare package id.
    */
   usePins?: Record<string, string>;
+  /**
+   * Locator qualifiers parsed from `uses` entries of the form
+   * `<locator>::<package-id>` (TODO.lang-spec/15, the model-separation
+   * proposal §2a): the qualifier names a workspace locator endpoint —
+   * the workspace's `.primmel/locators.prl` — the import resolves
+   * through, and it is carried in the import's own name. The bare id
+   * stays the resolution target and this list's key; the qualifier
+   * plane is judged by C187 (workspace-locator-declared) and the
+   * closure report classifies the dependency through the endpoint
+   * (closed / interface-closed / unresolved).
+   */
+  useLocators?: Record<string, string>;
   /** Package tier; absent means an ordinary (rec) package. */
   kind?: PackageKind;
   /**
