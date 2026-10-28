@@ -1,0 +1,8 @@
+package {
+  id corpus-checks-c170-missing
+  kind rec
+  title "Edition mapping missing"
+  version "2021"
+  editions { 2021 2017 }
+  baseUrn "urn:example:corpus:c170:2021"
+}

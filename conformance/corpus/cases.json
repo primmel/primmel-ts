@@ -3242,6 +3242,54 @@
         ]
       },
       "summary": "A completion naming an undeclared io is air — C173 names it against the step's declared inputs and outputs."
+    },
+    {
+      "id": "chk-169-pos-landings",
+      "clause": "CHK-169",
+      "polarity": "positive",
+      "kind": "check",
+      "path": "checks/provenance-clause-resolves-ok",
+      "expect": {
+        "clean": true
+      },
+      "summary": "Provenance bindings landing exactly, as a cited child, and by enclosure on the shipped harvest stay C169-clean."
+    },
+    {
+      "id": "chk-169-neg-air",
+      "clause": "CHK-169",
+      "polarity": "negative",
+      "kind": "check",
+      "path": "checks/provenance-clause-resolves-air",
+      "expect": {
+        "rules": [
+          "C169"
+        ]
+      },
+      "summary": "A clause-qualified citation landing nowhere on the shipped harvest is linked to air: C169."
+    },
+    {
+      "id": "chk-170-pos-mapping",
+      "clause": "CHK-170",
+      "polarity": "positive",
+      "kind": "check",
+      "path": "checks/edition-mapping-ok",
+      "expect": {
+        "clean": true
+      },
+      "summary": "A two-edition package carrying edition-mapping.json (primmel-edition-mapping/1) naming both states stays C170-clean."
+    },
+    {
+      "id": "chk-170-neg-missing",
+      "clause": "CHK-170",
+      "polarity": "negative",
+      "kind": "check",
+      "path": "checks/edition-mapping-missing",
+      "expect": {
+        "rules": [
+          "C170"
+        ]
+      },
+      "summary": "A two-edition package with no edition-mapping.json leaves the cross-edition linkage implicit: C170."
     }
   ]
 }

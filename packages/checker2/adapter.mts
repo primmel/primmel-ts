@@ -127,7 +127,25 @@ async function main(): Promise<void> {
         sentences: { address: string; fragment: string; modality: string; kind: string; text: string }[];
         malformed?: string;
       }[] = [];
-      for (const f of manifestFiles.filter(x => x.includes('sources-prd/') && x.endsWith('.sentences.json'))) {
+      // The shipped payloads are JSON, not .prl — collectPrlFiles never
+      // returns them, so the harvest indexes walk the directory
+      // themselves (deterministic order, the C169/C71-C73 inputs).
+      const sourcesPrd: string[] = [];
+      const walkPrd = (d: string): void => {
+        if (!existsSync(d)) {
+          return;
+        }
+        for (const e of readdirSync(d).sort()) {
+          const p = `${d}/${e}`;
+          if (statSync(p).isDirectory()) {
+            walkPrd(p);
+          } else if (p.includes('sources-prd/') && p.endsWith('.json')) {
+            sourcesPrd.push(p);
+          }
+        }
+      };
+      walkPrd(target);
+      for (const f of sourcesPrd.filter(x => x.endsWith('.sentences.json'))) {
         const rel = f.slice(f.indexOf('sources-prd/'));
         let raw: {
           prd_sentences?: string;
@@ -186,7 +204,7 @@ async function main(): Promise<void> {
         }
         documents.push({ urn: raw.document.urn, fragments, addresses, sentences });
       }
-      const coveragePath = manifestFiles.find(x => x.endsWith('sources-prd/coverage.json'));
+      const coveragePath = sourcesPrd.find(x => x.endsWith('coverage.json'));
       let coverage: { config?: unknown; parseError?: string } | undefined;
       if (coveragePath !== undefined) {
         try {

@@ -1,0 +1,18 @@
+{
+ "prd_sentences": "0.1.0",
+ "document": { "urn": "urn:x:corpus:c169", "short": "C169" },
+ "sentences": [
+  {
+   "address": "clause-3/s1",
+   "fragment": "clause-3",
+   "modality": "normative",
+   "text": "The instrument shall bear markings."
+  },
+  {
+   "address": "clause-3.1/s1",
+   "fragment": "clause-3.1",
+   "modality": "normative",
+   "text": "The markings shall be legible."
+  }
+ ]
+}

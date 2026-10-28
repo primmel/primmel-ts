@@ -1,0 +1,16 @@
+{
+ "kind": "primmel-edition-mapping/1",
+ "package": { "id": "corpus-checks-c170-ok", "path": "." },
+ "from": {
+  "edition": "2017",
+  "model_state": null,
+  "note": "the corpus fixture maps the declared lineage"
+ },
+ "to": {
+  "edition": "2021",
+  "model_state": { "git_commit": "corpus", "path": ".", "note": "the shipped edition state this fixture maps into" }
+ },
+ "summary": { "added": 0, "removed": 0, "changed": 0, "moved": 0, "unchanged": 0 },
+ "lineage": ["2021", "2017"],
+ "clauses": []
+}
