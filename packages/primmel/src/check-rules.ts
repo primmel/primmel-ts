@@ -421,7 +421,7 @@ export const CHECK_RULES: CheckRule[] = [
     'base',
     'error',
     'normal',
-    'a provenance binding citing a shipped document lands on a real fragment or sentence of that document — nothing linked to air',
+    "every document mapping's target resolves in the mapped document — a provenance binding citing a shipped document lands on a real fragment or sentence of it; nothing linked to air",
   ),
   R(
     'C170',
