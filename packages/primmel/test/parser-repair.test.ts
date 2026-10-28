@@ -43,13 +43,14 @@ describe('W1a parser repair', () => {
     assert.equal(f.defaultValue, '42');
   });
 
-  it('3. calculation_bindings / evaluation / items / min/max_items / nested fields populate', () => {
+  it('3. binding edges / evaluation / items / min/max_items / nested fields populate', () => {
     const src = `form F1 {
   name "F"
   field loads : array {
     label "Loads"
     calculation loadCellError
-    calculation_bindings { dMin: d_min dMax: d_max }
+    binding { from d_min to dMin }
+    binding { from d_max to dMax }
     evaluation { rule "r1" condition "c1" reference { REF1 } }
     items { number }
     min_items 2
@@ -62,9 +63,9 @@ describe('W1a parser repair', () => {
     const m = load(src);
     const f = formById(m, 'F1').fields[0];
     assert.equal(f.calculationId, 'loadCellError');
-    assert.deepEqual(f.calculationBindings, [
-      { inputName: 'dMin', pathExpr: 'd_min' },
-      { inputName: 'dMax', pathExpr: 'd_max' },
+    assert.deepEqual(f.bindings, [
+      { from: 'd_min', to: 'dMin' },
+      { from: 'd_max', to: 'dMax' },
     ]);
     assert.deepEqual(f.evaluation, {
       rule: 'r1',
@@ -185,7 +186,7 @@ variable M2 { type number definition "d" }`;
     required true
     measurement_method direct
     calculation loadCellError
-    calculation_bindings { dMin: d_min }
+    binding { from d_min to dMin }
     derivation "ocl{a + b}"
     evaluation { rule "r" condition "c" reference { R1 } }
     min_items 2

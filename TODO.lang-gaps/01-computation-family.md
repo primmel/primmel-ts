@@ -1,10 +1,13 @@
 # 01 — The computation family: steps with signatures
 
-**Status (2026-10-28): PARTIALLY LANDED.** Typed steps landed 1.21.35
+**Status (2026-10-29): RESOLVED (1.21.44).** Typed steps landed 1.21.35
 (the corpus carries 467 `step` declarations and 13 `binding` edges);
 `machine_steps` retired via the `gates { machine_service … }` facet
-(1.21.39/40 — see 07). Remaining: the form-plane `calculation_bindings`
-rename maps (36 corpus sites) await the form-side `binding` grammar.
+(1.21.39/40 — see 07); the form-plane `calculation_bindings` rename
+maps (36 corpus sites, 93 bound pairs) retired in 1.21.44 — each
+calculation input binds through its own `binding { from <source> to
+<input> }` edge (the form projection of §11's one dataflow edge; the
+corpus migrated in model-library v0.33.19).
 
 **Gap.** The computation wiring is split across three vocabularies that
 grew in three planes: `calculation` (declared signature: inputs/output/

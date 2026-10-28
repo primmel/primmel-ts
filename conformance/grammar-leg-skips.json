@@ -4,6 +4,10 @@
   {
    "id": "wf-01-parse-neg-step-executor",
    "reason": "the retired step-level executor facet is refused by the kernel's per-construct step-body parse discipline (a closed facet vocabulary of the step body); the PG grammar's process block is the open item stream and cannot express the scoped step dispatch yet — the grammar-side enforcement (a scoped does-block step rule with a badness predicate) is the recorded reopen trigger (TODO.lang-gaps/05)"
+  },
+  {
+   "id": "syn-05-parse-neg-calculation-bindings",
+   "reason": "the retired form-field calculation_bindings facet is refused by the kernel's per-construct field-body parse discipline (a closed facet vocabulary of the field body); the PG grammar's form block is the open item stream and cannot express the scoped field dispatch yet — the grammar-side enforcement (a scoped field-body rule with a badness predicate) is the recorded reopen trigger (TODO.lang-gaps/01)"
   }
  ]
 }

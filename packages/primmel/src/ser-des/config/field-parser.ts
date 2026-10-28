@@ -29,7 +29,6 @@
 import type {
   FormField,
   ApplicabilityEntry,
-  CalculationBinding,
   EvaluationRule,
   RoleReference,
   SubformRef,
@@ -259,7 +258,7 @@ export function parseFormField(
     refs: [],
     measurementMethod: '',
     calculationId: null,
-    calculationBindings: [],
+    bindings: [],
     derivation: '',
     evaluation: null,
     values: [],
@@ -341,7 +340,22 @@ export function parseFormField(
       field.calculationId = stripWrapping(read.text);
       i = read.next;
     } else if (cmd === 'calculation_bindings') {
-      field.calculationBindings = parseCalculationBindings(unwrapBlock(t[i++]));
+      throw new Error(
+        `Parsing error: form field ${name}: the calculation_bindings facet is retired (TODO.lang-gaps/01) — each calculation input binds through its own binding { from <source> to <input> } edge`,
+      );
+    } else if (cmd === 'binding') {
+      // The field-level dataflow edge (spec §11's binding, the form
+      // projection): `binding { from <source-path> to <input-name> }`.
+      const bt = tokenize(unwrapBlock(t[i++]));
+      const b: FormField['bindings'][number] = { from: '', to: '' };
+      for (let k = 0; k < bt.length; k++) {
+        if (bt[k] === 'from') {
+          b.from = stripWrapping(bt[++k] ?? '');
+        } else if (bt[k] === 'to') {
+          b.to = stripWrapping(bt[++k] ?? '');
+        }
+      }
+      field.bindings.push(b);
     } else if (cmd === 'derivation') {
       field.derivation = stripWrapping(t[i++]);
     } else if (cmd === 'evaluation') {
@@ -446,26 +460,6 @@ export function parseFormField(
     }
   }
   return field;
-}
-
-/** `calculation_bindings { inputName: pathExpr … }` */
-function parseCalculationBindings(block: string): CalculationBinding[] {
-  const out: CalculationBinding[] = [];
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const key = stripColon(t[i++]);
-    if (i >= t.length) {
-      break;
-    }
-    if (t[i] === ':') {
-      i++;
-    }
-    if (i < t.length) {
-      out.push({ inputName: key, pathExpr: stripWrapping(t[i++]) });
-    }
-  }
-  return out;
 }
 
 /** `evaluation { rule "…" verdict <id> op <op> limit "…" condition "…" reference { … } source_discrepancy { … } }` */
@@ -730,14 +724,8 @@ export function dumpFormField(field: FormField, indent: string): string {
   if (field.calculationId) {
     inner.push('calculation ' + dumpBareSafe(field.calculationId));
   }
-  if (field.calculationBindings.length > 0) {
-    inner.push(
-      'calculation_bindings { ' +
-        field.calculationBindings
-          .map(b => b.inputName + ': ' + b.pathExpr)
-          .join(' ') +
-        '}',
-    );
+  for (const b of field.bindings) {
+    inner.push('binding { from ' + b.from + ' to ' + b.to + ' }');
   }
   if (field.derivation) {
     inner.push('derivation "' + escapeString(field.derivation) + '"');
