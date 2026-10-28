@@ -136,32 +136,63 @@ export const parsePackage: Parser = function (data) {
     } else if (cmd === 'extends') {
       manifest.extends = stripWrapping(t[i++]);
     } else if (cmd === 'uses') {
-      // Entries are bare package ids, or version-pinned abstract imports
+      // Entries are bare package ids, version-pinned abstract imports
       // `<id>@<edition>` of a product reference package (TODO.roadmap/36
-      // — the pin lands in usePins; C83 checks it).
+      // — the pin lands in usePins; C83 checks it), or locator-qualified
+      // imports `<locator>::<id>` (TODO.lang-spec/15 — the qualifier
+      // names a workspace locator endpoint and lands in useLocators;
+      // C187 judges the qualifier plane). The forms compose:
+      // `<locator>::<id>@<edition>`.
       const ids: string[] = [];
       const pins: Record<string, string> = {};
+      const locators: Record<string, string> = {};
       for (const entry of readList(t[i++])) {
-        const at = entry.indexOf('@');
+        let rest = entry;
+        let qualifier = '';
+        const dc = rest.indexOf('::');
+        if (dc !== -1) {
+          qualifier = rest.slice(0, dc);
+          rest = rest.slice(dc + 2);
+          if (
+            !qualifier ||
+            !rest ||
+            rest.includes('::') ||
+            qualifier.includes('@')
+          ) {
+            throw new Error(
+              `Parsing error: package: malformed uses entry "${entry}" — the locator-qualified form is <locator>::<package-id>`,
+            );
+          }
+        }
+        const at = rest.indexOf('@');
         if (at === -1) {
-          ids.push(entry);
-          continue;
+          ids.push(rest);
+        } else {
+          const id = rest.slice(0, at);
+          const pin = rest.slice(at + 1);
+          if (!id || !pin || pin.includes('@')) {
+            throw new Error(
+              `Parsing error: package: malformed uses entry "${entry}" — the version-pin form is <package-id>@<edition>`,
+            );
+          }
+          ids.push(id);
+          if (!(id in pins)) {
+            pins[id] = pin;
+          }
         }
-        const id = entry.slice(0, at);
-        const pin = entry.slice(at + 1);
-        if (!id || !pin || pin.includes('@')) {
-          throw new Error(
-            `Parsing error: package: malformed uses entry "${entry}" — the version-pin form is <package-id>@<edition>`,
-          );
-        }
-        ids.push(id);
-        if (!(id in pins)) {
-          pins[id] = pin;
+        if (qualifier) {
+          const bare = at === -1 ? rest : rest.slice(0, at);
+          if (!(bare in locators)) {
+            locators[bare] = qualifier;
+          }
         }
       }
       manifest.uses = ids;
       if (Object.keys(pins).length > 0) {
         manifest.usePins = pins;
+      }
+      if (Object.keys(locators).length > 0) {
+        manifest.useLocators = locators;
       }
     } else if (cmd === 'kind') {
       const k = stripWrapping(t[i++]);
@@ -364,10 +395,14 @@ export function dumpPackage(m: PackageManifest): string {
     out += '  extends ' + m.extends + '\n';
   }
   if (m.uses && m.uses.length > 0) {
-    out +=
-      '  uses { ' +
-      m.uses.map(u => (m.usePins?.[u] ? `${u}@${m.usePins[u]}` : u)).join(' ') +
-      ' }\n';
+    const entry = (u: string): string => {
+      let e = m.usePins?.[u] ? `${u}@${m.usePins[u]}` : u;
+      if (m.useLocators?.[u]) {
+        e = `${m.useLocators[u]}::${e}`;
+      }
+      return e;
+    };
+    out += '  uses { ' + m.uses.map(entry).join(' ') + ' }\n';
   }
   if (m.provides && m.provides.length > 0) {
     out += '  provides { ' + m.provides.join(' ') + ' }\n';

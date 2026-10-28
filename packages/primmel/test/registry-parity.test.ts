@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PARSER_CONFIG } from '../src/ser-des/config';
+import { LOCATOR_KEYWORD } from '../src/ser-des/locators';
 
 const pkgRoot = join(__dirname, '..');
 
@@ -87,7 +88,10 @@ describe('R1 registry parity (spec Annex A ↔ parser CONSTRUCTS)', () => {
   const sources = specRoot();
   const skip = sources === null;
 
-  // The parser's keyword universe: every registered keyword + alias.
+  // The parser's keyword universe: every registered keyword + alias,
+  // plus the workspace-file parsers outside the package grammar (the
+  // locator file is the workspace's own — its parser lives in
+  // ser-des/locators.ts).
   const parserKeywords = new Map<string, string>(); // keyword → construct keyword
   for (const [kw, cfg] of Object.entries(PARSER_CONFIG)) {
     const aliases = ((cfg as unknown as { aliases?: string[] }).aliases ??
@@ -97,6 +101,7 @@ describe('R1 registry parity (spec Annex A ↔ parser CONSTRUCTS)', () => {
       parserKeywords.set(a, kw);
     }
   }
+  parserKeywords.set(LOCATOR_KEYWORD, LOCATOR_KEYWORD);
 
   (skip ? it.skip : it)('every parser keyword has a normative home', () => {
     const annex = annexAKeywords(sources!);

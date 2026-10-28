@@ -183,6 +183,8 @@
   "C137": "RESERVED in the kernel \u2014 the workflow_config construct retired in phase 6 (no parser, loader slot, or leg remains); the id can never fire",
   "C163": "change-levels runs over primmel diff (two packages, the diff classifier) \u2014 outside a single-package checker",
   "C165": "RESERVED in the kernel for the calculation math plane (Formula 1 / plurimath-ts) \u2014 no kernel leg exists",
-  "C166": "RESERVED in the kernel for the calculation math plane (the Plurimath-conformant parse) \u2014 no kernel leg exists"
+  "C166": "RESERVED in the kernel for the calculation math plane (the Plurimath-conformant parse) \u2014 no kernel leg exists",
+  "C187": "the workspace locator plane (TODO.lang-spec/15) \u2014 the locators file is the WORKSPACE\u2019s own (.primmel/locators.prl), never package content; a single-package checker never sees it",
+  "C188": "the workspace locator plane (TODO.lang-spec/15) \u2014 the locator auth facet lives in the workspace\u2019s locators file, outside a single-package checker\u2019s surface"
  }
 }

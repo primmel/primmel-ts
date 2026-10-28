@@ -17,6 +17,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONSTRUCTS } from '../src/ser-des/config';
+import { LOCATOR_KEYWORD } from '../src/ser-des/locators';
 
 interface Row {
   keyword: string;
@@ -53,7 +54,9 @@ function specAnnexPath(): string {
 function parseRows(text: string): Row[] {
   const rows: Row[] = [];
   for (const line of text.split('\n')) {
-    const m = line.match(/^\|`([a-z_]+)`\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)(?:\|([^|]*))?\|?$/);
+    const m = line.match(
+      /^\|`([a-z_]+)`\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)(?:\|([^|]*))?\|?$/,
+    );
     if (!m) {
       continue;
     }
@@ -74,7 +77,8 @@ function parseRows(text: string): Row[] {
 }
 
 function rowLine(r: Row): string {
-  const aliasCell = r.aliases.length > 0 ? '`' + r.aliases.join('` `') + '`' : '';
+  const aliasCell =
+    r.aliases.length > 0 ? '`' + r.aliases.join('` `') + '`' : '';
   return `|\`${r.keyword}\` |${aliasCell ? ' ' + aliasCell : ''} |${r.collection ? ' ' + r.collection : ''} |${r.since ? ' ' + r.since : ''} |${r.clause ? ' ' + r.clause : ''} |${r.basis ? ' ' + r.basis : ''}`;
 }
 
@@ -101,6 +105,18 @@ for (const k of special) {
   }
 }
 
+// The workspace-file keywords: parsed outside the package grammar (the
+// locator file is the WORKSPACE's own data, never package content), so
+// they have no CONSTRUCTS entry — still one row in the registry, and
+// the parity check judges the row's editorial cells like any other.
+parserRows.push({
+  keyword: LOCATOR_KEYWORD,
+  aliases: [],
+  collection: 'locators',
+  since: '',
+  clause: '',
+});
+
 // ── the spec's current table ─────────────────────────────────────────
 const path = specAnnexPath();
 const text = readFileSync(path, 'utf8');
@@ -117,7 +133,9 @@ for (const pr of parserRows) {
   pr.since = existing?.since ?? '?? (fill before merge)';
   pr.clause = existing?.clause ?? '?? (fill before merge)';
   const basis = basisMap[pr.keyword];
-  pr.basis = basis ? `${basis.mode}: ${basis.basis}` : '?? (basis missing — map it)';
+  pr.basis = basis
+    ? `${basis.mode}: ${basis.basis}`
+    : '?? (basis missing — map it)';
 }
 
 // The triage list: constructs the specification has not yet registered
@@ -144,22 +162,30 @@ if (mode === '--write') {
   // header row (|Keyword …).
   const registryHeader = lines.findIndex(l => /^\|Keyword/.test(l));
   if (registryHeader < 0) {
-    console.error('the construct registry header row was not found — refusing to write');
+    console.error(
+      'the construct registry header row was not found — refusing to write',
+    );
     process.exit(1);
   }
-  const firstRow = lines.findIndex((l, i) => i > registryHeader && /^\|`[a-z_]+`/.test(l));
+  const firstRow = lines.findIndex(
+    (l, i) => i > registryHeader && /^\|`[a-z_]+`/.test(l),
+  );
   const lastRow =
     lines.length -
     1 -
     [...lines].reverse().findIndex(l => /^\|`[a-z_]+`/.test(l));
-  const sorted = [...parserRows].sort((a, b) => a.keyword.localeCompare(b.keyword));
+  const sorted = [...parserRows].sort((a, b) =>
+    a.keyword.localeCompare(b.keyword),
+  );
   const out = [
     ...lines.slice(0, firstRow),
     ...sorted.map(rowLine),
     ...lines.slice(lastRow + 1),
   ];
   writeFileSync(path, out.join('\n'));
-  console.log(`regenerated Annex A: ${sorted.length} construct rows (editorial columns preserved)`);
+  console.log(
+    `regenerated Annex A: ${sorted.length} construct rows (editorial columns preserved)`,
+  );
   process.exit(0);
 }
 
@@ -170,12 +196,16 @@ for (const pr of parserRows) {
   const sr = byKeyword.get(pr.keyword);
   if (!sr) {
     if (!triage.has(pr.keyword)) {
-      drift.push(`missing from Annex A: ${pr.keyword} (the registry is the parser — add the row or the triage entry)`);
+      drift.push(
+        `missing from Annex A: ${pr.keyword} (the registry is the parser — add the row or the triage entry)`,
+      );
     }
     continue;
   }
   if (triage.has(pr.keyword)) {
-    drift.push(`${pr.keyword}: still triage-listed but present in Annex A — remove the registry-triage.prl entry (the list only shrinks)`);
+    drift.push(
+      `${pr.keyword}: still triage-listed but present in Annex A — remove the registry-triage.prl entry (the list only shrinks)`,
+    );
     continue;
   }
   if (sr.aliases.join(',') !== pr.aliases.join(',')) {
@@ -184,7 +214,9 @@ for (const pr of parserRows) {
     );
   }
   if (sr.since.includes('??') || sr.clause.includes('??')) {
-    drift.push(`${pr.keyword}: editorial placeholder unfilled — the construction freeze requires the section first`);
+    drift.push(
+      `${pr.keyword}: editorial placeholder unfilled — the construction freeze requires the section first`,
+    );
   }
   if (sr.basis !== pr.basis) {
     drift.push(
@@ -204,4 +236,6 @@ if (drift.length > 0) {
   }
   process.exit(1);
 }
-console.log(`Annex A matches the parser: ${parserRows.length} constructs, mechanical columns verified.`);
+console.log(
+  `Annex A matches the parser: ${parserRows.length} constructs, mechanical columns verified.`,
+);

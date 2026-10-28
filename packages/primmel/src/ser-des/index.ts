@@ -99,8 +99,26 @@ export {
   type ProvenancePosition,
   type ResolvePackage,
   type SourceFileGroups,
+  closureReport,
+  type ClosureReport,
 } from './package';
 export { dumpPackage } from './config/packageManifest';
+export {
+  parseLocators,
+  findWorkspaceLocators,
+  locatorByName,
+  substituteId,
+  localEndpointDir,
+  isCredentialReference,
+  LOCATOR_FILE,
+  type LocatorEndpoint,
+  type LocatorScheme,
+  type LocatorIssue,
+  type ParsedLocators,
+  type Workspace,
+  type ClosureState,
+  type ClosureEntry,
+} from './locators';
 export {
   loadPrm,
   dumpPrm,

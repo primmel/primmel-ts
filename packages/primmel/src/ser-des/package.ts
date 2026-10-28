@@ -32,6 +32,12 @@ import parse from './parse';
 import resolveFromConfig from './resolve';
 import { PARSER_CONFIG, RESOLVER_CONFIG } from './config';
 import { preprocessIncludes } from './includes';
+import {
+  findWorkspaceLocators,
+  localEndpointDir,
+  type ClosureEntry,
+  type Workspace,
+} from './locators';
 import { parsePackage } from './config/packageManifest';
 import type { Position } from './tokenize';
 import type { LoadOptions, LoadResult } from './index';
@@ -438,6 +444,17 @@ export interface CompositionInfo {
    * pass). Absent on a non-composed load.
    */
   providers?: Array<{ id: string; dir: string }>;
+  /**
+   * The closure classification (TODO.lang-spec/15, §2a): per-dependency
+   * resolution state — `closed` (the content is present locally and
+   * composed), `interface-closed` (the endpoint is declared — a
+   * registry or git locator, or a product_reference cited not merged —
+   * and the content sits behind the interface), `unresolved` (known by
+   * name, no locator reaches it — a bare import's declared state, or a
+   * local endpoint that misses). The report is the license boundary.
+   * Absent when composition did not run.
+   */
+  closure?: ClosureEntry[];
 }
 
 export type CompositionRule =
@@ -445,7 +462,8 @@ export type CompositionRule =
   | 'uses-no-redefine'
   | 'uses-cycle'
   | 'requires-satisfied'
-  | 'namespace-pin-violation';
+  | 'namespace-pin-violation'
+  | 'locator-undeclared';
 
 /** A composition failure — a hard load error. checkPackage reports these
  *  as linter issues C27–C29, C31 and C119 instead of throwing. */
@@ -755,6 +773,25 @@ function composePackage(
   const dirs = new Map<string, string>([[rootId, resolve(rootDir)]]);
   const manifests = new Map<string, PackageManifest>([[rootId, rootManifest]]);
 
+  // The workspace (TODO.lang-spec/15): discovered once, when the first
+  // locator-qualified import needs it. Its named endpoints are the ONLY
+  // resolution plane a qualified import has — never the ambient
+  // locator, never a sibling scan.
+  let workspace: Workspace | null | undefined;
+  const workspaceOf = (): Workspace | null => {
+    if (workspace === undefined) {
+      workspace = findWorkspaceLocators(rootDir);
+    }
+    return workspace;
+  };
+
+  // The closure classification (TODO.lang-spec/15, §2a): every edge
+  // lands here exactly once — closed (content composed),
+  // interface-closed (the endpoint is declared, the content sits behind
+  // the interface: a registry/git locator, or a product_reference cited
+  // not merged), unresolved (known by name, no locator reaches it).
+  const closure: ClosureEntry[] = [];
+
   // Resolve the uses graph and order it topologically (dependencies
   // first, root last). DFS post-order over the declared uses order —
   // deterministic for a given manifest set.
@@ -776,12 +813,59 @@ function composePackage(
         continue;
       }
       if (!dirs.has(dep)) {
-        const dir = locate(dep);
-        if (!dir) {
-          throw new CompositionError(
-            'uses-resolves',
-            `package "${id}" uses "${dep}", which the package locator cannot resolve (uses-resolves)`,
-          );
+        // The qualifier plane (TODO.lang-spec/15): a
+        // `<locator>::<id>` import resolves through the workspace's
+        // named endpoint — the qualifier is judged by C187
+        // (workspace-locator-declared), never by C27.
+        const qualifier = manifests.get(id)!.useLocators?.[dep];
+        let dir: string | undefined;
+        if (qualifier !== undefined) {
+          const ws = workspaceOf();
+          const ep = ws?.locators.find(l => l.name === qualifier);
+          if (!ep) {
+            throw new CompositionError(
+              'locator-undeclared',
+              `package "${id}" uses "${qualifier}::${dep}", but the workspace declares no locator endpoint "${qualifier}" (workspace-locator-declared)`,
+            );
+          }
+          if (ep.scheme === 'local') {
+            dir = localEndpointDir(ws!, ep, dep);
+            if (!dir) {
+              // Declared, not reached: the declared unresolved state —
+              // data in the closure report, never a crash, never
+              // silently dropped (§2a: the report is the license
+              // boundary).
+              closure.push({
+                id: dep,
+                locator: qualifier,
+                scheme: 'local',
+                state: 'unresolved',
+              });
+              color.set(dep, 2);
+              continue;
+            }
+          } else {
+            // A registry or git endpoint: declared, the content sits
+            // behind the credential — interface-closed. The kernel
+            // fetches nothing; the platform layer's resolvers compile
+            // behind the same interface.
+            closure.push({
+              id: dep,
+              locator: qualifier,
+              scheme: ep.scheme,
+              state: 'interface-closed',
+            });
+            color.set(dep, 2);
+            continue;
+          }
+        } else {
+          dir = locate(dep);
+          if (!dir) {
+            throw new CompositionError(
+              'uses-resolves',
+              `package "${id}" uses "${dep}", which the package locator cannot resolve (uses-resolves)`,
+            );
+          }
         }
         const m = readPackageManifest(dir);
         if (m.id !== dep) {
@@ -801,9 +885,24 @@ function composePackage(
           // pin-checked (C83), but contributes nothing to the merge
           // order and its own uses closure is not traversed — a
           // point-in-time import composes nothing downstream.
+          closure.push({
+            id: dep,
+            ...(qualifier !== undefined
+              ? { locator: qualifier, scheme: 'local' as const }
+              : {}),
+            state: 'interface-closed',
+          });
           color.set(dep, 2);
           continue;
         }
+        closure.push({
+          id: dep,
+          ...(qualifier !== undefined
+            ? { locator: qualifier, scheme: 'local' as const }
+            : {}),
+          state: 'closed',
+          dir: resolve(dir),
+        });
       }
       visit(dep);
     }
@@ -1070,7 +1169,9 @@ function composePackage(
       order,
       providers: order
         .slice(0, -1)
+        .filter(id => dirs.has(id))
         .map(id => ({ id, dir: resolve(dirs.get(id)!) })),
+      closure,
     },
   };
   if (withProvenance) {
@@ -1099,4 +1200,149 @@ function composePackage(
     };
   }
   return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// The closure report (TODO.lang-spec/15, PROPOSAL-model-separation §2a).
+//
+// Model closure is a first-class, declared state of a workspace. The
+// report classifies every dependency of the package at `dir` —
+//   closed            every dependency's content is present locally;
+//   interface-closed  the endpoint is declared (a registry or git
+//                     locator, or a product_reference cited not merged)
+//                     and the content sits behind the interface;
+//   unresolved        known by name, no locator reaches it — a bare
+//                     import's declared state, or a local endpoint that
+//                     misses.
+// The report is DATA — never a crash, never silently dropped: it is the
+// license boundary, per-package evidence of what closed fully, what
+// closed at the interface, and what lies outside the licensed scope.
+// Unlike composePackage (whose composition failures are hard errors the
+// linter reports under C27–C29/C187), the report never throws: an
+// unparseable or missing manifest classifies the dependency unresolved.
+// ─────────────────────────────────────────────────────────────────────
+
+export interface ClosureReport {
+  /** The root package id. */
+  root: string;
+  /** The workspace locator file, when an ancestor declares one. */
+  workspace: string | null;
+  /** Per-dependency state, in declared DFS order (each id once). */
+  dependencies: ClosureEntry[];
+}
+
+/**
+ * The per-dependency closure state of the package at `dir`. Bare
+ * imports resolve through the caller's `resolvePackage` locator (the
+ * CLI's `--with` map); locator-qualified imports resolve through the
+ * workspace's named endpoints. The kernel's local-endpoint resolution
+ * is the same one composePackage uses, so a report and a composition
+ * agree on every state.
+ */
+export function closureReport(
+  dir: string,
+  options: { resolvePackage?: ResolvePackage } = {},
+): ClosureReport {
+  const locate = options.resolvePackage;
+  const rootDir = resolve(dir);
+  const workspace = findWorkspaceLocators(rootDir);
+  const rootManifest = readPackageManifest(rootDir);
+  const rep: ClosureReport = {
+    root: rootManifest.id,
+    workspace: workspace?.file ?? null,
+    dependencies: [],
+  };
+  const seen = new Set<string>();
+
+  // A located directory: the manifest decides closed vs
+  // interface-closed (a product_reference is cited, never merged) and
+  // carries the traversal; an unreadable one is unresolved.
+  const visitLocal = (id: string, depDir: string, qualifier?: string): void => {
+    let m: PackageManifest | null = null;
+    try {
+      m = readPackageManifest(depDir);
+    } catch {
+      m = null;
+    }
+    if (!m || m.id !== id) {
+      rep.dependencies.push({
+        id,
+        ...(qualifier !== undefined
+          ? { locator: qualifier, scheme: 'local' as const }
+          : {}),
+        state: 'unresolved',
+      });
+      return;
+    }
+    if (m.kind === 'product_reference') {
+      rep.dependencies.push({
+        id,
+        ...(qualifier !== undefined
+          ? { locator: qualifier, scheme: 'local' as const }
+          : {}),
+        state: 'interface-closed',
+      });
+      return;
+    }
+    rep.dependencies.push({
+      id,
+      ...(qualifier !== undefined
+        ? { locator: qualifier, scheme: 'local' as const }
+        : {}),
+      state: 'closed',
+      dir: resolve(depDir),
+    });
+    visit(m);
+  };
+
+  const visit = (m: PackageManifest): void => {
+    for (const dep of effectiveUses(m)) {
+      if (seen.has(dep)) {
+        continue;
+      }
+      seen.add(dep);
+      const qualifier = m.useLocators?.[dep];
+      if (qualifier !== undefined) {
+        const ep = workspace?.locators.find(l => l.name === qualifier);
+        if (!ep) {
+          rep.dependencies.push({
+            id: dep,
+            locator: qualifier,
+            state: 'unresolved',
+          });
+          continue;
+        }
+        if (ep.scheme === 'local') {
+          const depDir = localEndpointDir(workspace!, ep, dep);
+          if (!depDir) {
+            rep.dependencies.push({
+              id: dep,
+              locator: qualifier,
+              scheme: 'local',
+              state: 'unresolved',
+            });
+            continue;
+          }
+          visitLocal(dep, depDir, qualifier);
+        } else {
+          rep.dependencies.push({
+            id: dep,
+            locator: qualifier,
+            scheme: ep.scheme,
+            state: 'interface-closed',
+          });
+        }
+        continue;
+      }
+      const depDir = locate?.(dep);
+      if (!depDir) {
+        rep.dependencies.push({ id: dep, state: 'unresolved' });
+        continue;
+      }
+      visitLocal(dep, depDir);
+    }
+  };
+
+  visit(rootManifest);
+  return rep;
 }

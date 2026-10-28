@@ -59,12 +59,12 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
         id => id !== 'C112' && id !== 'C94',
       ),
       ...Array.from({ length: 44 }, (_, i) => `C${i + 130}`),
-      ...Array.from({ length: 11 }, (_, i) => `C${i + 176}`),
+      ...Array.from({ length: 13 }, (_, i) => `C${i + 176}`),
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128 except C112 (retired with the reference construct) and C94 (retired with the formulas_used construct), C130-C173 (phase 2 retired C129), C176-C186 (C174-C175 reserved; C186 the realization link, TODO.lang-spec/13)',
+      'C1-C128 except C112 (retired with the reference construct) and C94 (retired with the formulas_used construct), C130-C173 (phase 2 retired C129), C176-C188 (C174-C175 reserved; C186 the realization link TODO.lang-spec/13; C187-C188 the workspace locator plane, TODO.lang-spec/15)',
     );
   });
 
