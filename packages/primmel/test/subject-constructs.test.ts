@@ -10,8 +10,14 @@ const PACKAGE = `
 instrument LoadCell {
   extends MeasuringInstrumentModel
   definition "Measuring transducer that produces an output in response to an applied load."
-  variant AnaloguePassiveLoadCell { definition "Output provides measurable data; may use passive electronics." }
-  variant DigitalLoadCell { definition "Analogue-active including A/D conversion." }
+  dimension technology {
+    label "Technology"
+    scope group
+    values {
+      analogue-passive { description "Output provides measurable data; may use passive electronics." }
+      digital { description "Analogue-active including A/D conversion." }
+    }
+  }
   dimension accuracy_class {
     label "Accuracy class"
     scope group
@@ -104,14 +110,19 @@ behavior creep {
 `;
 
 describe('W1b subject-chain constructs', () => {
-  it('parses instrument with variants, dimensions, family criteria, model group', () => {
+  it('refuses the retired subject variant facet, naming the dimension doctrine', () => {
+    assert.throws(
+      () => load('instrument X { variant digital { definition "Digital." } }'),
+      /the variant facet is retired \(TODO\.lang-gaps\/06\)/,
+    );
+  });
+
+  it('parses instrument with dimensions, family criteria, model group', () => {
     const m = load(PACKAGE);
     const inst = m.instruments.find(x => x.id === 'LoadCell')!;
     assert.ok(inst);
     assert.equal(inst.extends, 'MeasuringInstrumentModel');
-    assert.equal(inst.variants.length, 2);
-    assert.equal(inst.variants[1].id, 'DigitalLoadCell');
-    const dim = inst.dimensions[0];
+    const dim = inst.dimensions.find(x => x.id === 'accuracy_class')!;
     assert.equal(dim.id, 'accuracy_class');
     assert.equal(dim.scope, 'group');
     assert.deepEqual(dim.source, {
@@ -127,6 +138,7 @@ describe('W1b subject-chain constructs', () => {
       description: '',
       payload: {},
       implies: [],
+      source: null,
     });
     assert.deepEqual(inst.familyCriteria, [
       'same material or combination of materials',

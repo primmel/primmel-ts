@@ -2,7 +2,7 @@
  * Subject-chain constructs (Primmel v2, gap G1).
  *
  * The MeasuringInstrument taxonomy — what an instrument IS and CAN DO:
- * subject type + variants, classification dimensions, family criteria,
+ * subject type, classification dimensions, family criteria,
  * model groups ("inner families"), attribute definitions (the INV-2
  * schema layer), capability mixins, behaviors, and operating condition sets.
  *
@@ -24,16 +24,11 @@ export interface SourceRef {
 }
 
 /** instrument <Id> — the subject type definition (one per Recommendation). */
-export interface SubjectVariant {
-  id: string;
-  /** Display name (e.g. "Digital load cell"). */
-  name?: string;
-  definition: string;
-  /** Free-text editorial note. */
-  note?: string;
-  source?: SourceRef | null;
-}
-
+/**
+ * DimensionValue.provenance: the derives-from fold of a typed ref
+ * (TODO.lang-gaps/06 — the value carries its clause citation; the
+ * retired subject-level variant fold moved here).
+ */
 export interface DimensionValue {
   id: string;
   /** Display label of the value (certificate classification labels). */
@@ -56,6 +51,10 @@ export interface DimensionValue {
    * this value (TODO.refactor/13 R17 — terminology cross-link).
    */
   termRef?: string;
+  /** The derives-from fold of the value's typed ref. */
+  source?: SourceRef | null;
+  /** Typed references whose predicates did not fold. */
+  refs?: import('./Ref').Ref[];
 }
 
 export interface ClassificationDimension {
@@ -185,7 +184,6 @@ export interface Instrument {
   note?: string;
   /** Source provenance of the instrument definition. */
   source?: SourceRef | null;
-  variants: SubjectVariant[];
   dimensions: ClassificationDimension[];
   /**
    * Channel dimension id (a dimension with cardinality set, e.g.
