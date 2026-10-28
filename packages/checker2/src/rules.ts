@@ -967,7 +967,11 @@ export function check(
 
   // ── the edition/composition family grows (the register's reach) ────
   {
-    const manifests = [pkg, ...(pkg.siblings ?? [])]
+    // C170 judges the CHECKED package only: each package's artifact
+    // deficit is that package's own finding, judged when the checker
+    // runs on it — a sibling's deficit is not this run's error (the
+    // kernel reads the package dir; the fixtures pin the judgment).
+    const manifests = [pkg]
       .map(x => x.constructs.find(c => c.keyword === 'package'))
       .filter((m): m is Construct => !!m);
 
@@ -984,10 +988,12 @@ export function check(
       const dirEntry =
         pkg.dir === undefined || pkg.files === undefined
           ? null
-          : (pkg.files ?? []).find(f => f === 'edition-mapping.json');
-      const siblingFiles = (pkg.siblings ?? []).flatMap(s => s.files ?? []);
-      const carried =
-        dirEntry !== null || siblingFiles.includes('edition-mapping.json');
+          : ((pkg.files ?? []).find(f => f === 'edition-mapping.json') ?? null);
+      // The artifact is the declaring package's OWN dir cargo — a
+      // sibling package's edition-mapping.json never carries this
+      // package's cross-edition linkage (the kernel reads the package
+      // dir; the conformance fixtures pin the same judgment).
+      const carried = dirEntry !== null;
       if (!carried) {
         err(
           'C170',

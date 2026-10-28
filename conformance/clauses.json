@@ -809,6 +809,18 @@
       "area": "checking",
       "title": "Step-plane references resolve",
       "statement": "A signature step's completion is one expression over the step's own declared ios; the calls bindings resolve the callee's declared signature; the dot-descent (process:step.io) resolves to a declared io of that step — nothing linked to air (C173)."
+    },
+    {
+      "id": "CHK-169",
+      "area": "checking",
+      "title": "Provenance clause resolves",
+      "statement": "Every document mapping's target resolves in the mapped document: a provenance binding citing a SHIPPED document lands on real content of that document — exact, subtree, or enclosure. A clause-qualified citation landing nowhere is air (an error); a bare subpart citation is unverifiable debt (a warning) (C169)."
+    },
+    {
+      "id": "CHK-170",
+      "area": "checking",
+      "title": "Edition lineage declared",
+      "statement": "A package declaring more than one edition carries edition-mapping.json (primmel-edition-mapping/1) naming both edition states — the cross-edition linkage is an artifact, never implicit (C170)."
     }
   ]
 }
