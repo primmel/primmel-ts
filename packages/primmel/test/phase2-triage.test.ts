@@ -39,16 +39,29 @@ describe('phase 2 triage dispositions', () => {
   it('the deprecation register carries exactly the swept constructs', () => {
     // The deprecation ladder is live again (TODO.lang-spec/09): `link`
     // (the MMEL REPO/URL pointer — zero corpus uses) warns C154; the
-    // typed ref plane carries the pointer.
+    // typed ref plane carries the pointer. The presentation sidecar's
+    // cargo follows (TODO.lang-spec/12): `canvas` and `view_profile`
+    // are the layout's ladder rung — the canvas file beside the model
+    // carries the pages and their geometry.
     assert.deepEqual(
       CONSTRUCTS.filter(c => c.deprecated).map(c => c.keyword),
-      ['link'],
+      ['canvas', 'link', 'view_profile'],
     );
     const issues = checkPackage(
       makePackage('link repo_x { kind REPO target "https://x" }'),
     ).filter(i => i.check === 'C154');
     assert.equal(issues.length, 1);
     assert.ok(issues[0]!.message.includes('the typed ref plane'));
+    const canvas = checkPackage(makePackage('canvas p { }')).filter(
+      i => i.check === 'C154',
+    );
+    assert.equal(canvas.length, 1);
+    assert.ok(canvas[0]!.message.includes('presentation sidecar'));
+    const profile = checkPackage(makePackage('view_profile vp { }')).filter(
+      i => i.check === 'C154',
+    );
+    assert.equal(profile.length, 1);
+    assert.ok(profile[0]!.message.includes('presentation sidecar'));
     const clean = checkPackage(
       makePackage('instrument X { definition "X." }'),
     ).filter(i => i.check === 'C154');

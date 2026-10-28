@@ -383,6 +383,12 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     parse: parseSubprocess,
     resolve: resolveSubprocess as never,
     dump: dumpSubprocess as never,
+    // The presentation sidecar's cargo (TODO.lang-spec/12): the pages
+    // and their geometry belong to the canvas file beside the model
+    // (the v2 bridge's domain) — the model language carries the process
+    // graph, never the diagram.
+    deprecated:
+      "the layout is the presentation sidecar's cargo — the canvas file beside the model carries the pages and their geometry; the model carries the process graph, never the diagram",
   }),
   defineConstruct({
     keyword: 'note',
@@ -440,6 +446,10 @@ export const CONSTRUCTS: ConstructDefinition[] = [
     takesID: true,
     parse: parseViewProfile,
     dump: dumpViewProfile as never,
+    // The presentation sidecar's cargo (TODO.lang-spec/12): the
+    // read-only projection is declared beside the model, never in it.
+    deprecated:
+      "the view profile is the presentation sidecar's cargo — the read-only projection is declared beside the model, never in it",
   }),
   // Primmel extensions (MN 113-6 to 113-10)
   defineConstruct({
