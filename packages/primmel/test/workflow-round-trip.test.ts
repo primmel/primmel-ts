@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────
 // The workflow fidelity facets (smart TODO.roadmap/40 batch 5; the
 // packages-as-SSOT epic; closes the kernel half of smart's
-// TODO.refactor/16) — the process facet additions (guard / phase /
-// machine_steps), the gateway edges (5b), the approval provenance +
-// resolution (5c), and the workflow_stage register (5d). The fixtures
-// carry the real r60 evaluation shapes (inline, the conformance-corpus
-// precedent — no cross-repo dependency).
+// TODO.refactor/16) — the process facet additions (phase + the gate
+// facet's machine_service entries, TODO.lang-spec/07), the gateway edges
+// (5b), the approval provenance + resolution (5c), and the workflow_stage
+// register (5d). The fixtures carry the real r60 evaluation shapes
+// (inline, the conformance-corpus precedent — no cross-repo dependency).
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -35,9 +35,11 @@ process conduct_tests {
   name "Conduct tests"
   modality shall
   phase testing
-  guard "Each TestRequest references >= 1 MeasuringInstrumentSample"
-  guard "TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes"
-  machine_steps { verdict_computation evaluation_aggregation certificate_characteristics_derivation }
+  gates {
+    entry_condition { check "Each TestRequest references >= 1 MeasuringInstrumentSample" on_violation invalid }
+    entry_condition { check "TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes" on_violation invalid }
+    machine_service { verdict_computation evaluation_aggregation certificate_characteristics_derivation }
+  }
   reference_data_registry {
     testRequests
   }
@@ -49,20 +51,36 @@ process conduct_tests {
 `;
 
 describe('process workflow facets (smart TODO.roadmap/40 batch 5, step 5a)', () => {
-  it('parses phase, the ordered guards, and the machine_steps list', () => {
+  it('parses phase, the anonymous entry conditions, and the machine_service entry', () => {
     const m = load(PROCESS);
     assert.equal(m.processes.length, 1);
     const p = m.processes[0]!;
     assert.equal(p.modality, 'shall');
     assert.equal(p.phase, 'testing');
-    assert.deepEqual(p.guards, [
-      'Each TestRequest references >= 1 MeasuringInstrumentSample',
-      'TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes',
-    ]);
-    assert.deepEqual(p.machineSteps, [
-      'verdict_computation',
-      'evaluation_aggregation',
-      'certificate_characteristics_derivation',
+    assert.deepEqual(p.gates, [
+      {
+        kind: 'entry_condition',
+        id: '',
+        check: 'Each TestRequest references >= 1 MeasuringInstrumentSample',
+        description: '',
+        onViolation: 'invalid',
+      },
+      {
+        kind: 'entry_condition',
+        id: '',
+        check:
+          'TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes',
+        description: '',
+        onViolation: 'invalid',
+      },
+      {
+        kind: 'machine_service',
+        steps: [
+          'verdict_computation',
+          'evaluation_aggregation',
+          'certificate_characteristics_derivation',
+        ],
+      },
     ]);
     assert.deepEqual(
       p.input.map(r => r.id),
@@ -77,13 +95,12 @@ describe('process workflow facets (smart TODO.roadmap/40 batch 5, step 5a)', () 
     assert.ok(out.includes('  phase testing\n'));
     assert.ok(
       out.includes(
-        '  guard "Each TestRequest references >= 1 MeasuringInstrumentSample"\n' +
-          '  guard "TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes"\n',
+        '    entry_condition { check "Each TestRequest references >= 1 MeasuringInstrumentSample" on_violation invalid }\n',
       ),
     );
     assert.ok(
       out.includes(
-        '  machine_steps { verdict_computation evaluation_aggregation certificate_characteristics_derivation }\n',
+        '    machine_service { verdict_computation evaluation_aggregation certificate_characteristics_derivation }\n',
       ),
     );
     assert.ok(

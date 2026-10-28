@@ -1,12 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────
 // Process model extensions (Primmel v3, TODO.roadmap/02) — abstract and
 // executable process forms, the full step vocabulary with executor
-// typing, preconditions, per-classification instances, flow edges with
+// typing, the gate facet (TODO.lang-spec/07), per-classification
+// instances, flow edges with
 // OCL conditions, and the C10–C14 linter rules.
 //
 // Fixtures:
 //   CREEP_METHOD  — an ABSTRACT process (signature + invariants +
-//                   preconditions, no `does` body): always valid.
+//                   no `does` body): always valid.
 //   CREEP_RUN     — its EXECUTABLE refinement (R 60-style creep method
 //                   sketch): does body, executor-typed steps, a gateway
 //                   with OCL-conditioned edges, per-class instances.
@@ -32,8 +33,8 @@ process creep_method {
   invariants {
     "ocl{self.applied_load <= self.e_max}"
   }
-  preconditions {
-    precondition warmed-up {
+  gates {
+    entry_condition warmed-up {
       check "ocl{self.state = #ready and self.warmed_up}"
       description "Run-validity: an unwarmed run is invalid, never a fail."
       on_violation invalid
@@ -52,8 +53,8 @@ process creep_run {
     in { applied_load : mass duration : time }
     out { indication_series : mass_series }
   }
-  preconditions {
-    precondition warmed-up {
+  gates {
+    entry_condition warmed-up {
       check "ocl{self.state = #ready}"
       on_violation invalid
     }
@@ -143,7 +144,7 @@ function makeProcessPackage(body: string): string {
 }
 
 describe('v3 process — abstract form (signature + invariants)', () => {
-  it('parses signature, invariants, preconditions, executor, registers, state', () => {
+  it('parses signature, invariants, the gate facet, executor, registers, state', () => {
     const m = load(CREEP_METHOD);
     const p = m.processes.find(x => x.id === 'creep_method')!;
     assert.ok(p);
@@ -156,8 +157,9 @@ describe('v3 process — abstract form (signature + invariants)', () => {
       outputs: [{ name: 'indication_series', type: 'mass_series' }],
     });
     assert.deepEqual(p.invariants, ['ocl{self.applied_load <= self.e_max}']);
-    assert.equal(p.preconditions.length, 1);
-    assert.deepEqual(p.preconditions[0], {
+    assert.equal(p.gates.length, 1);
+    assert.deepEqual(p.gates[0], {
+      kind: 'entry_condition',
       id: 'warmed-up',
       check: 'ocl{self.state = #ready and self.warmed_up}',
       description: 'Run-validity: an unwarmed run is invalid, never a fail.',
@@ -175,7 +177,8 @@ describe('v3 process — abstract form (signature + invariants)', () => {
     const m1 = load(CREEP_METHOD);
     const dumped = dump(m1);
     assert.ok(dumped.includes('signature {'));
-    assert.ok(dumped.includes('preconditions {'));
+    assert.ok(dumped.includes('gates {'));
+    assert.ok(dumped.includes('entry_condition warmed-up {'));
     const m2 = load(dumped);
     assert.deepEqual(m2.processes, m1.processes);
     assert.equal(dump(m2), dumped);
@@ -350,7 +353,7 @@ describe('v3 process — executable form (does body)', () => {
     assert.equal(p.name, 'Legacy v2 process');
     assert.equal(p.signature, null);
     assert.deepEqual(p.invariants, []);
-    assert.deepEqual(p.preconditions, []);
+    assert.deepEqual(p.gates, []);
     assert.equal(p.executor, '');
     assert.deepEqual(p.registers, []);
     assert.equal(p.state, '');
@@ -632,16 +635,17 @@ describe('v3 process parser robustness', () => {
     assert.equal(byId.get('b')!.executor, 'machine');
   });
 
-  it('an unknown `kw value { block }` entry in preconditions does not misalign the walk', () => {
+  it('an unknown entry in the gates block does not misalign the walk', () => {
     const m = load(`process p {
-  preconditions {
+  gates {
     future_entry meta { tag "v" }
-    precondition warmed { check "ocl{self.x}" on_violation invalid }
+    entry_condition warmed { check "ocl{self.x}" on_violation invalid }
   }
 }
 `);
-    assert.equal(m.processes[0].preconditions.length, 1);
-    assert.deepEqual(m.processes[0].preconditions[0], {
+    assert.equal(m.processes[0].gates.length, 1);
+    assert.deepEqual(m.processes[0].gates[0], {
+      kind: 'entry_condition',
       id: 'warmed',
       check: 'ocl{self.x}',
       description: '',

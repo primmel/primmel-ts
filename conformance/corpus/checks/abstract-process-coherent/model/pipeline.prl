@@ -1,8 +1,8 @@
 // Conformance corpus: a coherent framework plus an abstract-process
 // pipeline — every batch-2 facet edge (roles, organs, participant
-// kinds, decision rule, declaration kind + gate, realized_by,
-// approved_by)
-// resolves against its in-scope register. C121 stays silent.
+// kinds, decision rule, declaration kind, the gate facet's discharge +
+// window entries, realized_by, approved_by) resolves against its
+// in-scope register. C121 stays silent.
 // Clause: FWK-12 (positive).
 
 governance_organ management_committee {
@@ -68,10 +68,8 @@ process ia_application {
   }
   decision { rule mc-participation-decision clause "PD-03, 5.3.2" }
   declaration { kind issuing_authority_declaration action sign }
-  discharges_gate declaration-signed-before-issuance
-  realized_by { submit_application }
-  approved_by { ia_accept_application }
-  windows {
+  gates {
+    discharge declaration-signed-before-issuance
     window lodging_window {
       kind max_elapsed
       clause "PD-01, 8.2/8.3"
@@ -89,6 +87,8 @@ process ia_application {
       window { years 1 }
     }
   }
+  realized_by { submit_application }
+  approved_by { ia_accept_application }
   activity_kind { selection }
   ref derives-from "urn:oiml:pub:cs:pd-05:2024#clause-4.1"
 }

@@ -319,7 +319,8 @@
 //      batch 2): the abstract-process model's framework bindings resolve
 //      — roles/organs/participant_kinds lists, decision.rule, the
 //      declaration kind + sign|update action vocabulary,
-//      discharges_gate, realized_by → process, approved_by → approval,
+//      the gate facet's discharge entries, realized_by → process,
+//      approved_by → approval,
 //      the calendar windows' shape (kind vocabulary; exactly one of
 //      years/months), and the process_model's sequence + register
 //      maintainer edges. Per-register gating (the C58 doctrine)
@@ -413,7 +414,12 @@ import type {
 } from './types/Subject';
 import type { DataClass } from './types/data';
 import Process from './types/process';
-import type { ProcessParameter, ProcessStep } from './types/process';
+import type {
+  ProcessGateEntryCondition,
+  ProcessGateWindow,
+  ProcessParameter,
+  ProcessStep,
+} from './types/process';
 import type { Requirement, RequirementLimit } from './types/Requirement';
 import {
   freeIdentifiers,
@@ -422,7 +428,6 @@ import {
 } from './expressions';
 import type { ExprAst } from './expressions';
 import type ConformanceTest from './types/ConformanceTest';
-import type { TestPrecondition } from './types/ConformanceTest';
 import type Symbol from './types/Symbol';
 import type { FormField } from './types/Form';
 import { UnitsDb } from './unitsdb';
@@ -456,6 +461,20 @@ import {
 import { TEST_SEQUENCE_STEP_ROLES } from './types/TestSequence';
 import { MAPPING_FORMATS, MATH_NOTATIONS } from './ser-des/config/lmlAligned';
 import { extractStateGates } from './operational-state';
+
+/**
+ * The process's entry-condition gate entries (TODO.lang-spec/07) — the
+ * may-only-run-when declarations the state-gate (C39) and outcome (C41)
+ * legs judge. The anonymous entries (the folded guard prose) ride along;
+ * their prose checks never extract a state gate and their outcome is the
+ * `invalid` default, so both legs stay silent on them.
+ */
+function entryConditionsOf(p: Process): ProcessGateEntryCondition[] {
+  return (p.gates ?? []).filter(
+    (g): g is ProcessGateEntryCondition => g.kind === 'entry_condition',
+  );
+}
+
 import { activeRuleIds } from './check-rules';
 import { delegationSuccessors } from './instance-resolution';
 import {
@@ -3480,11 +3499,12 @@ export function checkPackage(
   // The abstract-process model's framework bindings resolve against the
   // composed registers: the role binding list, the organ and participant
   // kind facets, the decision rule, the declaration kind (plus the sign |
-  // update action vocabulary), the discharged declaration gate, the
-  // realizing processes and the authorizing approvals; the calendar
-  // windows' shape legs (the max_elapsed | min_elapsed kind vocabulary;
-  // exactly one of years/months — the scheme_lifecycle duration
-  // sub-grammar) are register-free. The process_model's sequence members
+  // update action vocabulary), the discharged declaration gates (the
+  // gate facet's discharge entries — TODO.lang-spec/07), the realizing
+  // processes and the authorizing approvals; the calendar windows' shape
+  // legs (the max_elapsed | min_elapsed kind vocabulary; exactly one of
+  // years/months — the scheme_lifecycle duration sub-grammar) are
+  // register-free. The process_model's sequence members
   // (→ process) and register maintainers (→ governance_organ) ride the
   // same rule. Per-register gating (the C58 doctrine): an edge is checked
   // only when its target register is in composition scope. The windows'
@@ -3581,15 +3601,17 @@ export function checkPackage(
           );
         }
       }
-      if (
-        p.dischargesGate !== '' &&
-        apGateIds.size > 0 &&
-        !apGateIds.has(p.dischargesGate)
-      ) {
-        err(
-          'C121',
-          `${where}: discharges_gate "${p.dischargesGate}" is not a declared declaration gate (abstract-process-references-resolve)`,
-        );
+      for (const g of p.gates ?? []) {
+        if (
+          g.kind === 'discharge' &&
+          apGateIds.size > 0 &&
+          !apGateIds.has(g.gate)
+        ) {
+          err(
+            'C121',
+            `${where}: gate discharge "${g.gate}" is not a declared declaration gate (abstract-process-references-resolve)`,
+          );
+        }
       }
       for (const r of p.realizedBy ?? []) {
         resolveProcessRef(where, 'realized_by', r);
@@ -3604,12 +3626,14 @@ export function checkPackage(
           }
         }
       }
-      for (const w of p.windows ?? []) {
+      for (const w of (p.gates ?? []).filter(
+        g => g.kind === 'window',
+      ) as ProcessGateWindow[]) {
         const wwhere = `${where} window ${w.id}`;
-        if (w.kind !== 'max_elapsed' && w.kind !== 'min_elapsed') {
+        if (w.windowKind !== 'max_elapsed' && w.windowKind !== 'min_elapsed') {
           err(
             'C121',
-            `${wwhere}: kind "${w.kind || '(none)'}" — a calendar window is a deadline or a cooling-off (valid: max_elapsed, min_elapsed) (abstract-process-references-resolve)`,
+            `${wwhere}: kind "${w.windowKind || '(none)'}" — a calendar window is a deadline or a cooling-off (valid: max_elapsed, min_elapsed) (abstract-process-references-resolve)`,
           );
         }
         if (w.windowYears > 0 === w.windowMonths > 0) {
@@ -8177,10 +8201,10 @@ export function checkPackage(
   // rule that actually uses it.
   for (const p of standard.processes ?? []) {
     const firedSteps = (p.does?.steps ?? []).filter(s => s.fires);
-    const gates: Array<{ preconditionId: string; state: string }> = [];
-    for (const pc of p.preconditions ?? []) {
-      for (const g of extractStateGates(pc.check)) {
-        gates.push({ preconditionId: pc.id, state: g.state });
+    const stateGates: Array<{ entryId: string; state: string }> = [];
+    for (const ec of entryConditionsOf(p)) {
+      for (const g of extractStateGates(ec.check)) {
+        stateGates.push({ entryId: ec.id, state: g.state });
       }
     }
     const bound = p.state ? machineById.get(p.state) : undefined;
@@ -8211,11 +8235,11 @@ export function checkPackage(
         }
       }
     }
-    if (gates.length > 0) {
+    if (stateGates.length > 0) {
       if (!p.state) {
         err(
           'C39',
-          `process ${p.id}: precondition "${gates[0].preconditionId}" gates on self.state but the process binds no state machine — declare state <machineRef> (state-machine-states-referenced)`,
+          `process ${p.id}: entry_condition "${stateGates[0].entryId}" gates on self.state but the process binds no state machine — declare state <machineRef> (state-machine-states-referenced)`,
         );
       } else if (!bound) {
         err(
@@ -8224,11 +8248,11 @@ export function checkPackage(
         );
       } else {
         const states = new Set(bound.states.map(s => s.name));
-        for (const g of gates) {
+        for (const g of stateGates) {
           if (!states.has(g.state)) {
             err(
               'C39',
-              `process ${p.id}: precondition "${g.preconditionId}" gates on #${g.state}, which is not a declared state of machine "${p.state}" (state-machine-states-referenced)`,
+              `process ${p.id}: entry_condition "${g.entryId}" gates on #${g.state}, which is not a declared state of machine "${p.state}" (state-machine-states-referenced)`,
             );
           }
         }
@@ -8268,31 +8292,45 @@ export function checkPackage(
   const checkOnViolation = (
     ownerKind: string,
     ownerId: string,
-    pc: TestPrecondition,
+    entryName: string,
+    check: string,
+    onViolation: string,
   ): void => {
-    if (pc.onViolation === 'invalid') {
+    if (onViolation === 'invalid') {
       return;
     }
-    if (pc.onViolation === 'fail' && extractStateGates(pc.check).length > 0) {
+    if (onViolation === 'fail' && extractStateGates(check).length > 0) {
       warn(
         'C41',
-        `${ownerKind} ${ownerId}: precondition "${pc.id}" declares on_violation fail — a violated run-validity precondition VOIDS the run (invalid); it never fails the instrument (doctrine ch. 04 §4.5) (precondition-on-violation-known)`,
+        `${ownerKind} ${ownerId}: ${entryName} declares on_violation fail — a violated run-validity precondition VOIDS the run (invalid); it never fails the instrument (doctrine ch. 04 §4.5) (precondition-on-violation-known)`,
       );
     } else {
       warn(
         'C41',
-        `${ownerKind} ${ownerId}: precondition "${pc.id}" declares on_violation "${pc.onViolation}" — the only known outcome is "invalid" (precondition-on-violation-known)`,
+        `${ownerKind} ${ownerId}: ${entryName} declares on_violation "${onViolation}" — the only known outcome is "invalid" (precondition-on-violation-known)`,
       );
     }
   };
   for (const p of standard.processes ?? []) {
-    for (const pc of p.preconditions ?? []) {
-      checkOnViolation('process', p.id, pc);
+    for (const ec of entryConditionsOf(p)) {
+      checkOnViolation(
+        'process',
+        p.id,
+        `entry_condition "${ec.id}"`,
+        ec.check,
+        ec.onViolation,
+      );
     }
   }
   for (const t of standard.conformanceTests ?? []) {
     for (const pc of t.preconditions ?? []) {
-      checkOnViolation('conformance_test', t.id, pc);
+      checkOnViolation(
+        'conformance_test',
+        t.id,
+        `precondition "${pc.id}"`,
+        pc.check,
+        pc.onViolation,
+      );
     }
   }
 

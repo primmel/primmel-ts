@@ -414,7 +414,7 @@
       "id": "FWK-08",
       "area": "framework",
       "title": "The abstract-process facets",
-      "statement": "An abstract process carries its framework-binding facets: the summary; the roles, organs, and participant_kinds lists; the evidence block (each item with its description and required flag); the decision binding (rule and clause); the declaration binding (kind and sign|update action); the discharged declaration gate; the realized_by and approved_by lists; and the calendar windows (max_elapsed deadline or min_elapsed cooling-off, exactly one of years or months, with anchor, applies_to, and optional breach and description). A value-taking keyword inside the body must carry its value.",
+      "statement": "An abstract process carries its framework-binding facets: the summary; the roles, organs, and participant_kinds lists; the evidence block (each item with its description and required flag); the decision binding (rule and clause); the declaration binding (kind and sign|update action); the gate facet's kind-discriminated entries (TODO.lang-spec/07): the discharge entry naming the declaration gate the process discharges, and the window entries (max_elapsed deadline or min_elapsed cooling-off, exactly one of years or months, with anchor, applies_to, and optional breach and description); and the realized_by and approved_by lists. A value-taking keyword inside the body must carry its value.",
       "specAnchor": "MN 114 v3.3 (the abstract-process facets)",
       "rules": []
     },
@@ -668,7 +668,7 @@
       "id": "WF-01",
       "area": "wf",
       "title": "The workflow-process facets",
-      "statement": "The workflow-process facets: phase (the pipeline phase token), the ordered repeatable guard criteria, and machine_steps (the documentary engine-run steps) parse and re-serialize in declaration order; provenance is spelled ONLY source { doc clause } — free citation strings land in doc. The facet vocabularies are intentionally open (the codec stays total); a value-taking keyword with no value token is a parse error.",
+      "statement": "The workflow-process facets: phase (the pipeline phase token), and the gate facet (TODO.lang-spec/07 — the one gating primitive): anonymous entry_condition entries carry the ordered guard criteria, the machine_service entry carries the documentary engine-run services; entries parse and re-serialize in declaration order. Provenance is spelled ONLY ref derives-from — free citation strings land in doc. The facet vocabularies are intentionally open (the codec stays total); a value-taking keyword with no value token is a parse error.",
       "specAnchor": "MN 114 v3.3 (the workflow-process facets, smart TODO.roadmap/40 batch 5)",
       "rules": []
     },

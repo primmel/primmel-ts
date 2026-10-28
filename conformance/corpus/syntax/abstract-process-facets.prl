@@ -1,8 +1,9 @@
 # Conformance corpus: the abstract-process framework-binding facets —
 # summary, the roles/organs/participant_kinds lists, evidence with its
-# required flag, the decision and declaration bindings, discharges_gate,
-# realized_by/approved_by, and the calendar windows (max_elapsed and
-# min_elapsed, the scheme_lifecycle window sub-grammar).
+# required flag, the decision and declaration bindings, the gate facet's
+# discharge and window entries (TODO.lang-spec/07 — the one gating
+# primitive), realized_by/approved_by. The windows keep the max_elapsed
+# and min_elapsed kinds (the scheme_lifecycle window sub-grammar).
 # Clause: FWK-08 (positive).
 process submit_application {
   name "Submit application (the realizing concrete process)"
@@ -27,10 +28,8 @@ process ia_application {
   }
   decision { rule mc-participation-decision clause "PD-03, 5.3.2" }
   declaration { kind issuing_authority_declaration action sign }
-  discharges_gate declaration-signed-before-issuance
-  realized_by { submit_application }
-  approved_by { ia_accept_application }
-  windows {
+  gates {
+    discharge declaration-signed-before-issuance
     window lodging_window {
       kind max_elapsed
       clause "PD-01, 8.2/8.3"
@@ -48,6 +47,8 @@ process ia_application {
       window { years 1 }
     }
   }
+  realized_by { submit_application }
+  approved_by { ia_accept_application }
   activity_kind { selection }
   ref derives-from "urn:oiml:pub:cs:pd-05:2024#clause-4.1"
 }

@@ -2,8 +2,9 @@
 // The abstract-process model (smart TODO.roadmap/40 batch 2; the
 // packages-as-SSOT epic) — the process construct's framework-binding
 // facets (summary, roles/organs/participant_kinds, evidence, decision,
-// declaration, discharges_gate, realized_by/approved_by, the calendar
-// windows), the untyped signature parameter (bare name = entity-store
+// declaration, realized_by/approved_by, and the gate facet's discharge +
+// window entries — TODO.lang-spec/07, the one gating primitive), the
+// untyped signature parameter (bare name = entity-store
 // reference), the abstract-process sequence (the canvas form; the
 // registers), and the C121 abstract-process-references-resolve linter
 // rule (per-register gated, the C58 doctrine).
@@ -91,10 +92,8 @@ process ia_application {
   invariants { "[application].issuing_authority_id is not null" }
   decision { rule mc-participation-decision clause "PD-03, 5.3.2" }
   declaration { kind issuing_authority_declaration action sign }
-  discharges_gate declaration-signed-before-issuance
-  realized_by { submit_application }
-  approved_by { ia_accept_application }
-  windows {
+  gates {
+    discharge declaration-signed-before-issuance
     window lodging_window {
       kind max_elapsed
       clause "PD-01, 8.2/8.3"
@@ -112,6 +111,8 @@ process ia_application {
       window { years 1 }
     }
   }
+  realized_by { submit_application }
+  approved_by { ia_accept_application }
   activity_kind { selection }
   ref derives-from "urn:oiml:pub:cs:pd-05:2024#clause-4.1"
 }
@@ -176,13 +177,22 @@ describe('abstract-process facets (smart TODO.roadmap/40 batch 2)', () => {
       kind: 'issuing_authority_declaration',
       action: 'sign',
     });
-    assert.equal(p.dischargesGate, 'declaration-signed-before-issuance');
     assert.deepEqual(p.realizedBy, ['submit_application']);
     assert.deepEqual(p.approvedBy, ['ia_accept_application']);
-    assert.equal(p.windows.length, 2);
-    const w = p.windows[0]!;
+    assert.equal(p.gates.length, 3);
+    const d = p.gates[0]!;
+    assert.equal(d.kind, 'discharge');
+    assert.equal(
+      d.kind === 'discharge' && d.gate,
+      'declaration-signed-before-issuance',
+    );
+    const w = p.gates[1]!;
+    assert.equal(w.kind, 'window');
+    if (w.kind !== 'window') {
+      throw new Error('unreachable');
+    }
     assert.equal(w.id, 'lodging_window');
-    assert.equal(w.kind, 'max_elapsed');
+    assert.equal(w.windowKind, 'max_elapsed');
     assert.equal(w.clause, 'PD-01, 8.2/8.3');
     assert.equal(w.anchor, 'informed_at');
     assert.equal(w.applies_to, 'lodged_at');
@@ -190,8 +200,9 @@ describe('abstract-process facets (smart TODO.roadmap/40 batch 2)', () => {
     assert.equal(w.windowMonths, 1);
     assert.equal(w.breach, 'rule_inadmissible');
     assert.ok(w.description.startsWith('The written appeal'));
-    assert.equal(p.windows[1]!.kind, 'min_elapsed');
-    assert.equal(p.windows[1]!.windowYears, 1);
+    const w2 = p.gates[2]!;
+    assert.equal(w2.kind === 'window' && w2.windowKind, 'min_elapsed');
+    assert.equal(w2.kind === 'window' && w2.windowYears, 1);
   });
 
   it('parses untyped signature parameters (bare name = entity-store reference)', () => {
@@ -232,6 +243,8 @@ process mixed {
     const dumped = dump(m1);
     assert.ok(dumped.includes('summary "The manufacturer'));
     assert.ok(dumped.includes('roles { applicant }'));
+    assert.ok(dumped.includes('gates {'));
+    assert.ok(dumped.includes('discharge declaration-signed-before-issuance'));
     assert.ok(dumped.includes('window lodging_window {'));
     assert.ok(dumped.includes('window { months 1 }'));
     assert.ok(dumped.includes('out { applications }'));
@@ -305,8 +318,8 @@ describe('C121 abstract-process-references-resolve', () => {
   it('flags a dangling discharged gate', () => {
     const issues = c121Issues(
       (FRAMEWORK + PIPELINE).replace(
-        'discharges_gate declaration-signed-before-issuance',
-        'discharges_gate missing-gate',
+        'discharge declaration-signed-before-issuance',
+        'discharge missing-gate',
       ),
     );
     assert.equal(issues.length, 1);

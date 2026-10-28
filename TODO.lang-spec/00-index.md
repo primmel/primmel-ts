@@ -10,15 +10,16 @@ freeze.
 
 RESOLVED: 01 (landed with 01a) · 02 (the parity audit passes) ·
 03 (rescoped: the acceptance surface is unified; decision_rule is the
-GOVERNANCE register, §20) · 04 (all four phases — the typed step, the
+GOVERNANCE register, §20) · 07 (the gate facet: one kind-discriminated
+`gates { … }` primitive, the five spellings retired, the content
+grammars verbatim) · 04 (all four phases — the typed step, the
 corpus migration, the rung, the refusal) · 05 (rescoped: formula_note
 stays as the shared-note reference form) · 06 (resolved under (b) —
 three planes, stated semantics) · 08 (enum stays; the dimension
 references it) · 11 (the doctrine sentence entered the spec) ·
 18, 19, 22, 23, 24, 26 (landed earlier).
 
-OPEN — real design waves, scoped: **07** the one gating primitive (five
-process gate fields → kinds) · **09** the reference plane (ref is the
+OPEN — real design waves, scoped: **09** the reference plane (ref is the
 primitive; references/links fold or justify) · **10** the registry
 plane (one registry construct, register kinds) · **12** the layout
 facets → the presentation sidecar · **13** realizedBy's convention →

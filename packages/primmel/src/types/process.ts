@@ -1,7 +1,7 @@
 import { Resolvable } from './Resolvable';
 import { Registry } from './data';
 import { Subprocess } from './flow';
-import type { TestInstances, TestPrecondition } from './ConformanceTest';
+import type { TestInstances } from './ConformanceTest';
 import type { QuantityValue } from './Quantity';
 import type { SourceRef } from './Subject';
 import Provision from './Provision';
@@ -18,11 +18,10 @@ import Role from './Role';
 //   - EXECUTABLE — a `does` body of steps + flow edges is present.
 //     Refining an abstract process into an executable one is additive.
 //
-// Precondition semantics: preconditions are OCL Booleans on entry; a
-// violation voids the RUN (its verdicts become `invalid`, never `fail`).
-// Evaluation is the runtime's business — the language only carries the
-// declaration (same shape as conformance-test preconditions, so the type
-// is shared: TestPrecondition).
+// Gate semantics (TODO.lang-spec/07 — the one gating primitive): the
+// entry-condition gates are OCL Booleans on entry; a violation voids the
+// RUN (its verdicts become `invalid`, never `fail`). Evaluation is the
+// runtime's business — the language only carries the declaration.
 // ─────────────────────────────────────────────────────────────────────
 
 /** A typed name — a signature parameter or a register. */
@@ -122,22 +121,76 @@ export interface ProcessDeclaration {
   action: string;
 }
 
+// ── The gate facet (TODO.lang-spec/07 — one gated primitive) ─────────
+//
+// The process's gating surface, unified: `gates { … }` carries
+// kind-discriminated entries, one grammar per kind, each preserved
+// VERBATIM from the facet it migrated (the SPELLING unified, never the
+// content):
+//
+//   entry_condition  ← the precondition (check / description /
+//                      on_violation); an ANONYMOUS entry (no id) is the
+//                      folded legacy `guard "…"` prose criterion — the
+//                      documentary workflow gate criteria never carried
+//                      an id or an outcome, and the fold keeps them
+//                      opaque (a prose check is never evaluated).
+//   window           ← the calendar window (kind / clause / anchor /
+//                      applies_to / window { years|months } / breach /
+//                      description).
+//   discharge        ← the declaration_gate id the process discharges
+//                      (the gate a step of the pipeline discharges; the
+//                      gate itself declares at the framework register —
+//                      the `declaration_gate` construct, the
+//                      declaration kind's gate-side home).
+//   machine_service  ← the engine-run service ids the process binds
+//                      (documentary; resolution is the runtime's
+//                      business).
+//
+// The kind keyword IS the discriminator in the grammar
+// (`gates { entry_condition <id>? { … } | window <id> { … } |
+// discharge <gate-id> | machine_service { <id>+ } }`); the AST
+// discriminates on `kind`.
+
+/** The gate kinds of the process's one gating primitive. */
+export type ProcessGateKind =
+  'entry_condition' | 'window' | 'discharge' | 'machine_service';
+
 /**
- * One calendar window constraining an abstract process (smart
- * TODO.roadmap/40 batch 2 — e.g. PD-01 8.2/8.3: the written appeal
- * reaches the Executive Secretary within ONE MONTH of the appellant
- * being informed). `kind` is max_elapsed (a deadline) or min_elapsed (a
- * cooling-off); `anchor` and `applies_to` name the record date fields
- * opening resp. constrained by the window (field resolution is the
- * consumer's business — the R26 precedent); the duration reuses the
- * scheme_lifecycle window sub-grammar (exactly one of years/months);
- * `breach` names the state-machine action a breach fires ('' = none).
- * Shape and vocabulary are check-time (C121); the codec stays total.
+ * One entry-condition gate entry — the process's may-only-run-when
+ * declaration. Content grammar verbatim from the precondition: an OCL
+ * Boolean check, a description, and the violation outcome (always
+ * `invalid` — a violated entry gate voids the RUN, never fails the
+ * instrument; C41 warns otherwise). `id` is OPTIONAL: an anonymous
+ * entry ('') is the folded legacy `guard "…"` criterion — ordered,
+ * opaque prose, never resolved (the R26 field-resolution precedent).
  */
-export interface ProcessWindow {
+export interface ProcessGateEntryCondition {
+  kind: 'entry_condition';
+  /** '' = anonymous (the folded legacy guard prose). */
+  id: string;
+  check: string;
+  description: string;
+  onViolation: string;
+}
+
+/**
+ * One window gate entry — a calendar window constraining the process's
+ * records (e.g. PD-01 8.2/8.3: the written appeal reaches the Executive
+ * Secretary within ONE MONTH of the appellant being informed). Content
+ * grammar verbatim from the migrated window entry. `windowKind` is
+ * max_elapsed (a deadline) or min_elapsed (a cooling-off); `anchor` and
+ * `applies_to` name the record date fields opening resp. constrained by
+ * the window (field resolution is the consumer's business — the R26
+ * precedent); the duration reuses the scheme_lifecycle window
+ * sub-grammar (exactly one of years/months); `breach` names the
+ * state-machine action a breach fires ('' = none). Shape and vocabulary
+ * are check-time (C121); the codec stays total.
+ */
+export interface ProcessGateWindow {
+  kind: 'window';
   id: string;
   /** 'max_elapsed' | 'min_elapsed' ('' = undeclared). */
-  kind: string;
+  windowKind: string;
   /** The clause stating the window (e.g. "PD-01, 8.2/8.3"). */
   clause: string;
   /** The record date field opening the window. */
@@ -152,6 +205,31 @@ export interface ProcessWindow {
   breach: string;
   description: string;
 }
+
+/** One discharge gate entry — the declaration_gate id the process
+ *  discharges (resolves against the framework's declaration_gate
+ *  register, C121). */
+export interface ProcessGateDischarge {
+  kind: 'discharge';
+  gate: string;
+}
+
+/** One machine-service gate entry — the engine-run service ids the
+ *  process binds (a documentary id list: the ids name services, not
+ *  model elements, so no check leg resolves them — resolution is the
+ *  runtime's business). */
+export interface ProcessGateMachineService {
+  kind: 'machine_service';
+  steps: string[];
+}
+
+/** One kind-discriminated entry of the process's `gates { … }` facet
+ *  (TODO.lang-spec/07). */
+export type ProcessGate =
+  | ProcessGateEntryCondition
+  | ProcessGateWindow
+  | ProcessGateDischarge
+  | ProcessGateMachineService;
 
 /** The eight step kinds of the v3 step vocabulary. */
 export type ProcessStepKind =
@@ -320,20 +398,6 @@ export default interface Process {
    * `note "phase: …"` encoding hack; '' = undeclared.
    */
   phase: string;
-  /**
-   * The workflow gate criteria guarding the process (smart
-   * TODO.roadmap/40 batch 5) — repeatable, ORDERED prose/OCL-ish
-   * predicates (`guard "…"`), emitted in declaration order. Opaque
-   * strings: never resolved (the R26 field-resolution precedent).
-   */
-  guards: string[];
-  /**
-   * The engine-run steps the process binds (smart TODO.roadmap/40 batch
-   * 5 — verdict_computation, evaluation_aggregation, …) — a documentary
-   * id list: the ids name services, not model elements, so no check leg
-   * resolves them (resolution is the runtime's business).
-   */
-  machineSteps: string[];
   actor: Role | null;
   /**
    * The raw `actor` token, exactly as authored. Unlike `actor` (null when
@@ -408,11 +472,16 @@ export default interface Process {
    */
   segregation: SegregationEntry[];
   /**
-   * IS: OCL Boolean guards on entry. A violated precondition voids the
-   * run AS A RUN (verdicts `invalid`, never `fail`); the language carries
-   * the declaration, the runtime evaluates it.
+   * The ONE gating primitive (TODO.lang-spec/07): the process's
+   * kind-discriminated gate entries — entry-condition (may only run
+   * when; the precondition's grammar), window (the calendar windows),
+   * discharge (the declaration gates the process discharges),
+   * machine-service (the engine-run services). A violated entry
+   * condition voids the run AS A RUN (verdicts `invalid`, never
+   * `fail`); the language carries the declaration, the runtime
+   * evaluates it. See ProcessGate.
    */
-  preconditions: TestPrecondition[];
+  gates: ProcessGate[];
   /** IS: default executor — a role id, or the literal `machine`. */
   executor: string;
   /** HAS: typed registers the steps read and write. */
@@ -461,14 +530,10 @@ export default interface Process {
   decision: ProcessDecision | null;
   /** IS: the declaration facet — the Declaration signed/updated. */
   declaration: ProcessDeclaration | null;
-  /** The declaration_gate this process discharges ('' = none; C121). */
-  dischargesGate: string;
   /** The concrete processes realizing this abstract one (documentary). */
   realizedBy: string[];
   /** The approvals authorizing the process's outcome (documentary). */
   approvedBy: string[];
-  /** HAS: the calendar windows constraining the process's records. */
-  windows: ProcessWindow[];
 
   /**
    * Clause-URN provenance (the same facet requirement/provision carry):
