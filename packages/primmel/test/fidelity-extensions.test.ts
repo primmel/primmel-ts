@@ -511,18 +511,12 @@ const INST_SRC = `instrument LoadCell {
   definition "Load cell as a measuring instrument"
   note "Editorial instrument note"
   ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.1"
-  variant digital {
-    name "Digital load cell"
-    definition "Load cell with digital output"
-    note "Variant note"
-    ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.1.3.3"
-  }
   dimension accuracy_class {
     label "Accuracy class"
     scope group
     values {
       A { payload { n_lc_limits { lower: 50000 upper: unlimited } } }
-      B { payload { n_lc_limits: "5000-100000" } }
+      B { payload { n_lc_limits: "5000-100000" } ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.1.1" }
     }
   }
 }
@@ -540,16 +534,12 @@ describe('instrument fidelity extensions', () => {
     });
   });
 
-  it('parses variant name, note, and source', () => {
+  it('parses the dimension value ref (the retired variant fold)', () => {
     const m = load(INST_SRC);
-    const v = m.instruments[0].variants[0];
-    assert.equal(v.id, 'digital');
-    assert.equal(v.name, 'Digital load cell');
-    assert.equal(v.definition, 'Load cell with digital output');
-    assert.equal(v.note, 'Variant note');
+    const v = m.instruments[0].dimensions[0].values[1];
     assert.deepEqual(v.source, {
       doc: 'urn:oiml:pub:r:60-1:2021',
-      clause: '3.1.3.3',
+      clause: '5.1.1',
     });
   });
 
@@ -566,7 +556,11 @@ describe('instrument fidelity extensions', () => {
     const m1 = load(INST_SRC);
     const dumped = dump(m1);
     assert.ok(dumped.includes('measurand_kind force'));
-    assert.ok(dumped.includes('variant digital {'));
+    assert.ok(
+      dumped.includes(
+        'ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.1.1"',
+      ),
+    );
     assert.ok(dumped.includes('n_lc_limits {'));
     const m2 = load(dumped);
     assert.deepEqual(m2.instruments, m1.instruments);

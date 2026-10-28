@@ -155,7 +155,6 @@ import type {
   Subject,
   SubjectCharacteristic,
   SubjectPromise,
-  SubjectVariant,
 } from '../../types/Subject';
 
 // ── shared little readers ────────────────────────────────────────────
@@ -206,7 +205,6 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
     id,
     extends: '',
     definition: '',
-    variants: [],
     dimensions: [],
     perChannel: '',
     familyCriteria: [],
@@ -276,38 +274,9 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
       }
       i = rr.next;
     } else if (cmd === 'variant') {
-      const variantId = stripWrapping(t[i++]);
-      const vblock = i < t.length ? unwrapBlock(t[i++]) : '';
-      const v: SubjectVariant = { id: variantId, definition: '' };
-      const vt = tokenize(vblock);
-      let j = 0;
-      while (j < vt.length) {
-        const vc = vt[j++];
-        if (j >= vt.length) {
-          break;
-        }
-        if (vc === 'name') {
-          v.name = stripWrapping(vt[j++]);
-        } else if (vc === 'definition') {
-          v.definition = stripWrapping(vt[j++]);
-        } else if (vc === 'note') {
-          v.note = stripWrapping(vt[j++]);
-        } else if (vc === 'source') {
-          v.source = readSource(unwrapBlock(vt[j++]));
-        } else if (vc === 'ref') {
-          const predicate = stripWrapping(vt[j++]);
-          const target = stripWrapping(vt[j++]);
-          if (predicate === 'derives-from') {
-            const b = refTargetToSourceRef(target);
-            if (b) {
-              v.source = b;
-            }
-          }
-        } else {
-          unwrapBlock(vt[j++]);
-        }
-      }
-      result.variants.push(v);
+      throw new Error(
+        `Parsing error: instrument. ID ${id}: the variant facet is retired (TODO.lang-gaps/06) — declare the family as a classification dimension; its values carry the label, the description, and the typed ref`,
+      );
     } else if (cmd === 'dimension') {
       result.dimensions.push(
         parseDimension(stripWrapping(t[i++]), unwrapBlock(t[i++])),
@@ -613,6 +582,7 @@ function parseDimensionValues(block: string): DimensionValue[] {
       description: '',
       payload: {},
       implies: [],
+      source: null,
     };
     if (i < t.length && t[i].startsWith('{')) {
       const vblock = unwrapBlock(t[i++]);
@@ -631,6 +601,14 @@ function parseDimensionValues(block: string): DimensionValue[] {
           value.implies = readIdList(vt[j++]);
         } else if (cmd === 'term_ref') {
           value.termRef = stripWrapping(vt[j++]);
+        } else if (cmd === 'ref') {
+          // The value's typed reference (TODO.lang-gaps/06): derives-from
+          // folds onto the value's provenance slot, other predicates stay.
+          const rr = parseRef(vt, j, stripWrapping, unwrapBlock);
+          if (!foldRefIntoLegacy(value as never, rr.ref)) {
+            (value.refs ??= []).push(rr.ref);
+          }
+          j = rr.next;
         } else if (cmd === 'payload') {
           const pblock = unwrapBlock(vt[j++]);
           const pt = tokenize(pblock);
@@ -719,6 +697,8 @@ export function dumpDimension(
         v.label ||
         v.description ||
         v.termRef ||
+        v.source ||
+        (v.refs && v.refs.length > 0) ||
         Object.keys(v.payload).length > 0 ||
         v.implies.length > 0;
       if (hasProps) {
@@ -731,6 +711,18 @@ export function dumpDimension(
         }
         if (v.termRef) {
           line += 'term_ref ' + v.termRef + ' ';
+        }
+        if (v.source && (v.source.doc || v.source.clause)) {
+          line +=
+            dumpSourceRefAsRef(v.source, '', escapeString).trimEnd() + ' ';
+        }
+        if (v.refs) {
+          for (const r of v.refs) {
+            line += 'ref ' + r.predicate + ' "' + escapeString(r.target) + '" ';
+            if (r.note) {
+              line += '{ note "' + escapeString(r.note) + '" } ';
+            }
+          }
         }
         if (v.implies.length > 0) {
           line += 'implies { ' + v.implies.join(' ') + ' } ';
@@ -904,20 +896,6 @@ const dumpInstrument = function (inst: Instrument): string {
   }
   if (inst.note) {
     out += '  note "' + escapeString(inst.note) + '"\n';
-  }
-  for (const v of inst.variants) {
-    let line = '  variant ' + v.id + ' { ';
-    if (v.name) {
-      line += 'name "' + escapeString(v.name) + '" ';
-    }
-    line += 'definition "' + escapeString(v.definition) + '" ';
-    if (v.note) {
-      line += 'note "' + escapeString(v.note) + '" ';
-    }
-    if (v.source && (v.source.doc || v.source.clause)) {
-      line += dumpSourceRefAsRef(v.source, '', escapeString).trimEnd() + ' ';
-    }
-    out += line + '}\n';
   }
   for (const d of inst.dimensions) {
     out += dumpDimension(d, '  ');
