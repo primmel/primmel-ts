@@ -1,5 +1,20 @@
 # 15 — Model registers, attribute substitution, mixed-version trees
 
+**Status: RESOLVED (2026-10-28) — the register is declared across
+four landed planes.** (1) The register itself: the workspace locator
+plane (TODO.lang-spec/15, C187/C188, `primmel closure`) — `scheme
+registry` names the register's endpoint; the bare import's unresolved
+state is DECLARED, not ambient. (2) Model paths: the qualified import
+`<locator>::<id>` + `${id}` templates IS the register's addressing.
+(3) Registrable classes / hierarchies: package composition (uses /
+requires / provides / maps_to) + the pairing registries (08).
+(4) Attribute substitution: module-slot overlays — `${{ slot }}`
+substitution per entry (spec#28, landed). Mixed-version trees: the pin
+discipline (C83 version pins, C80 edition-pin-resolves — an instance
+pins against its declaring package's register; INV-8) states what
+composition may mix, explicitly. Version NUMBERS stay the owner's,
+always.**
+
 **LML (model-register).** Registered models with global register,
 model paths, hierarchies, registrable classes, ATTRIBUTE SUBSTITUTION,
 and MIXED-VERSION model trees.
