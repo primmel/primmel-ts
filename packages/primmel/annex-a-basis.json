@@ -406,5 +406,9 @@
  "string_format": {
   "basis": "The grammar-backed string form of one artifact class",
   "mode": "composition"
+ },
+ "locator": {
+  "basis": "The workspace locator register (TODO.lang-spec/15)",
+  "mode": "extension"
  }
 }
