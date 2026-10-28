@@ -374,7 +374,7 @@ function makeSubformRefField(subformId: string, block: string): FormField {
     requiredWhen: '',
     measurementMethod: '',
     calculationId: null,
-    calculationBindings: [],
+    bindings: [],
     derivation: '',
     evaluation: null,
     values: [],

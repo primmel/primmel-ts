@@ -17,9 +17,17 @@ export interface ApplicabilityEntry {
   match: 'any' | 'all' | 'exact' | null;
 }
 
-export interface CalculationBinding {
-  inputName: string;
-  pathExpr: string;
+/**
+ * The field-level dataflow edge (TODO.lang-gaps/01 — the form
+ * projection of spec §11's binding): a named source (a sibling field,
+ * a dot-path into a nested field, a declared parameter) feeds the
+ * field's calculation input.
+ */
+export interface FieldBinding {
+  /** The source path expression. */
+  from: string;
+  /** The calculation input name. */
+  to: string;
 }
 
 export interface EvaluationRule {
@@ -79,7 +87,7 @@ export interface FormField {
   requiredWhen: string;
   measurementMethod: string;
   calculationId: string | null;
-  calculationBindings: CalculationBinding[];
+  bindings: FieldBinding[];
   derivation: string;
   evaluation: EvaluationRule | null;
   /** Allowed values; entries may carry a display label ({ value, label }). */

@@ -219,7 +219,18 @@
         "roundtrip": "ok"
       },
       "summary": "The requirement entity round-trips."
-    }, {"id": "ser-01-pos-typed-procedure", "clause": "SER-01", "polarity": "positive", "kind": "roundtrip", "path": "syntax/typed-procedure.prl", "expect": {"roundtrip": "ok"}, "summary": "The named typed procedure steps round-trip \u2014 the declaration order is the sequence (TODO.lang-spec/04)."},
+    },
+    {
+      "id": "ser-01-pos-typed-procedure",
+      "clause": "SER-01",
+      "polarity": "positive",
+      "kind": "roundtrip",
+      "path": "syntax/typed-procedure.prl",
+      "expect": {
+        "roundtrip": "ok"
+      },
+      "summary": "The named typed procedure steps round-trip — the declaration order is the sequence (TODO.lang-spec/04)."
+    },
     {
       "id": "ser-01-pos-conformance-test",
       "clause": "SER-01",
@@ -3302,6 +3313,18 @@
         ]
       },
       "summary": "A two-edition package with no edition-mapping.json leaves the cross-edition linkage implicit: C170."
+    },
+    {
+      "id": "syn-05-parse-neg-calculation-bindings",
+      "clause": "SYN-05",
+      "polarity": "negative",
+      "kind": "parse",
+      "path": "syntax/retired-calculation-bindings.prl",
+      "expect": {
+        "parse": "error",
+        "errorMatch": "the calculation_bindings facet is retired"
+      },
+      "summary": "The retired form-field calculation_bindings rename map is rejected at parse; each calculation input binds through its own binding { from <source> to <input> } edge."
     }
   ]
 }

@@ -45,7 +45,7 @@ execution). One loop, one primitive per role; MECE. Dispositioned
 
 | # | Gap | Disposition (2026-10-28) |
 |---|---|---|
-| 01 | the computation family: steps with signatures; machine_steps and calculation_bindings dissolve into step + binding | PARTIALLY LANDED — typed steps 1.21.35 (467 corpus steps, 13 bindings); machine_steps retired via `gates { machine_service }` (07); form-plane `calculation_bindings` (36 sites) awaits the form-side binding grammar |
+| 01 | the computation family: steps with signatures; machine_steps and calculation_bindings dissolve into step + binding | RESOLVED (1.21.44) — typed steps 1.21.35 (467 corpus steps, 13 bindings); machine_steps retired via `gates { machine_service }` (07); the form-plane rename maps (36 sites, 93 pairs) retired — each input binds through its own `binding { from … to … }` edge |
 | 02 | THE PROSE QUARANTINE (critical): no prose outside label/description{} | DECLARED, ENFORCEMENT PARTIAL — spec C158 error + kernel datum-description proxy; the global linter lands with the prose-surface migration (~3,800 bare strings) |
 | 03 | the boolean-verdict consolidation: limit / acceptance_criteria / validate_measurement / pass_fail / constraints → check | PRIMITIVE LANDED; SURFACE FOLD QUEUED — `check` + C160/C161 in; ~1,485 corpus sites still spell the verdict five ways; the C161 canonical serializer not implemented |
 | 04 | the datum unification: attribute_definition / identity_slot / parameter / field → datum(origin, scope) | DATUM CONSTRUCT LANDED; CARRIER UNIFICATION QUEUED — origin/scope/renders axes in; four carriers remain; 0 top-level corpus `datum` declarations |

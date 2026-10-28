@@ -1,0 +1,9 @@
+form retired_calculation_bindings {
+  name "The retired rename map refuses"
+  field variation : number {
+    unit "ppm"
+    measurement_method computed
+    calculation indicationVariation
+    calculation_bindings { indication_with: reading_under_vibration indication_without: reading_at_rest }
+  }
+}
