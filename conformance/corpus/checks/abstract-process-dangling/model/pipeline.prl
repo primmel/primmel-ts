@@ -67,10 +67,8 @@ process ia_application {
   }
   decision { rule mc-participation-decision clause "PD-03, 5.3.2" }
   declaration { kind issuing_authority_declaration action sign }
-  discharges_gate declaration-signed-before-issuance
-  realized_by { submit_application }
-  approved_by { ia_accept_application }
-  windows {
+  gates {
+    discharge declaration-signed-before-issuance
     window lodging_window {
       kind max_elapsed
       clause "PD-01, 8.2/8.3"
@@ -88,6 +86,8 @@ process ia_application {
       window { years 1 }
     }
   }
+  realized_by { submit_application }
+  approved_by { ia_accept_application }
   activity_kind { selection }
   ref derives-from "urn:oiml:pub:cs:pd-05:2024#clause-4.1"
 }

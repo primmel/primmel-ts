@@ -11,7 +11,7 @@
 //
 //   process creep_test {
 //     name "Creep test method (R 60-2, 2.7.3)"
-//     # IS — signature, invariants, preconditions, executor
+//     # IS — signature, invariants, gates, executor
 //     signature {
 //       in  { applied_load : mass duration : time }
 //       out { indication_series : mass_series }
@@ -109,10 +109,9 @@
 //
 // The workflow fidelity facets (smart TODO.roadmap/40 batch 5; closes
 // the kernel half of smart's TODO.refactor/16): `phase <token>` (the
-// pipeline phase — retires the note "phase: …" hack), `guard "…"`
-// (repeatable, ordered workflow gate criteria — opaque, never resolved),
-// and `machine_steps { <id>+ }` (the engine-run steps — documentary
-// service names, no resolution leg). Provenance is spelled ONLY
+// pipeline phase — retires the note "phase: …" hack) and the gate
+// facet's machine_service entries (the engine-run services — documentary
+// service names, no resolution leg; TODO.lang-spec/07). Provenance is spelled ONLY
 // `ref derives-from "<doc>#clause-<c>"` (a free citation string rides the
 // target whole); the legacy `source { doc clause }` and `reference {…}`
 // forms are retired parse errors (1.21.21).
@@ -136,10 +135,19 @@
 //     }
 //     decision { rule mc_80_vote clause "PD-03, 5.3.2" }
 //     declaration { kind issuing_authority_declaration action sign }
-//     discharges_gate declaration-signed-before-issuance
 //     realized_by { submit_application }   # documentary
 //     approved_by { ia_accept_application }# documentary
-//     windows {
+//     gates {                              # the ONE gating primitive
+//                                          # (TODO.lang-spec/07) —
+//                                          # kind-discriminated entries
+//       entry_condition { check "Application.status = SUBMITTED"
+//                         on_violation invalid }   # anonymous = the
+//                                                  # folded guard prose
+//       entry_condition warmed-up {
+//         check "ocl{self.state = #ready}"
+//         description "An unwarmed run is invalid, never a fail."
+//         on_violation invalid
+//       }
 //       window lodging_window {
 //         kind max_elapsed                 # max_elapsed | min_elapsed
 //         clause "PD-01, 8.2/8.3"
@@ -150,8 +158,17 @@
 //         breach rule_inadmissible         # optional
 //         description "…"
 //       }
+//       discharge declaration-signed-before-issuance
+//       machine_service { verdict_computation }
 //     }
 //   }
+//
+// The gate facet retires the five per-kind spellings (`guard "…"`,
+// `preconditions { precondition … }`, `windows { window … }`,
+// `discharges_gate <id>`, `machine_steps { … }`) — each maps to its gate
+// entry, content grammar verbatim. The declaration_gate CONSTRUCT (the
+// framework register) stays: it is the declaration kind's gate-side home,
+// the referent of the discharge entries.
 //
 // The cross-references resolve at check time, per-register gated (C121
 // abstract-process-references-resolve, the C58 doctrine); the codec stays
@@ -165,18 +182,17 @@ import Process, {
   ProcessDeclaration,
   ProcessFlow,
   ProcessFlowEdge,
+  ProcessGate,
+  ProcessGateEntryCondition,
+  ProcessGateWindow,
   ProcessParameter,
   ProcessSignature,
   ProcessStep,
   ProcessStepKind,
-  ProcessWindow,
   ResolvableProcess,
   SegregationEntry,
 } from '../../types/process';
-import type {
-  TestInstances,
-  TestPrecondition,
-} from '../../types/ConformanceTest';
+import type { TestInstances } from '../../types/ConformanceTest';
 import { resolveFromContext } from '../resolve';
 import tokenize, {
   escapeString,
@@ -356,53 +372,155 @@ function skipUnknownEntry(t: string[], i: number): number {
   return i;
 }
 
+// ── the gate facet (TODO.lang-spec/07 — one gated primitive) ─────────
+
 /**
- * Preconditions — same shape as conformance-test preconditions (an OCL
- * Boolean check, a description, and the violation outcome). The outcome
- * is always `invalid` (a violated entry guard voids the run, never fails
- * it); the keyword is carried for parallelism with cc.yaml.
+ * The kind-discriminated gate entries of a `gates { … }` block. The
+ * entry keyword IS the kind; each kind keeps its migrated grammar
+ * VERBATIM (the spelling unified, never the content):
+ *
+ *   entry_condition <id>? { check "…" description "…" on_violation … }
+ *   window <id> { kind … clause "…" anchor … applies_to …
+ *                 window { years|months } breach … description "…" }
+ *   discharge <gate-id>
+ *   machine_service { <service-id>+ }
+ *
+ * An anonymous entry_condition (no id) is the folded legacy `guard "…"`
+ * prose criterion — ordered, opaque, never resolved.
  */
-function parseProcessPreconditions(block: string): TestPrecondition[] {
-  const out: TestPrecondition[] = [];
+function parseGateEntries(block: string, pid: string): ProcessGate[] {
+  const out: ProcessGate[] = [];
   const t = tokenize(block);
   let i = 0;
   while (i < t.length) {
-    const cmd = t[i++];
-    if (cmd !== 'precondition') {
-      i = skipUnknownEntry(t, i);
-      continue;
-    }
-    const pid = stripWrapping(t[i++]);
-    const p: TestPrecondition = {
-      id: pid,
-      check: '',
-      description: '',
-      onViolation: 'invalid',
-    };
-    if (i < t.length && t[i].startsWith('{')) {
-      const pt = tokenize(unwrapBlock(t[i++]));
-      let j = 0;
-      while (j < pt.length) {
-        const pc = pt[j++];
-        if (j >= pt.length) {
-          break;
-        }
-        if (pc === 'check') {
-          const read = readValueToken(pt, j);
-          p.check = stripWrapping(read.text);
-          j = read.next;
-        } else if (pc === 'description') {
-          p.description = stripWrapping(pt[j++]);
-        } else if (pc === 'on_violation') {
-          p.onViolation = stripWrapping(pt[j++]);
-        } else {
-          unwrapBlock(pt[j++]);
+    const kind = t[i++];
+    if (kind === 'entry_condition') {
+      // `entry_condition [<id>] { check … description … on_violation … }`
+      // — the id is optional (the anonymous form is the folded guard).
+      let id = '';
+      if (!t[i]!.startsWith('{')) {
+        id = stripWrapping(t[i++]);
+      }
+      const entry: ProcessGateEntryCondition = {
+        kind: 'entry_condition',
+        id,
+        check: '',
+        description: '',
+        onViolation: 'invalid',
+      };
+      if (i < t.length && t[i]!.startsWith('{')) {
+        const pt = tokenize(unwrapBlock(t[i++]));
+        let j = 0;
+        while (j < pt.length) {
+          const pc = pt[j++];
+          if (j >= pt.length) {
+            break;
+          }
+          if (pc === 'check') {
+            const read = readValueToken(pt, j);
+            entry.check = stripWrapping(read.text);
+            j = read.next;
+          } else if (pc === 'description') {
+            entry.description = stripWrapping(pt[j++]);
+          } else if (pc === 'on_violation') {
+            entry.onViolation = stripWrapping(pt[j++]);
+          } else {
+            unwrapBlock(pt[j++]);
+          }
         }
       }
+      out.push(entry);
+    } else if (kind === 'window') {
+      // `window <id> { … }` — the calendar window, content verbatim.
+      const wid = stripWrapping(t[i++]);
+      const entry: ProcessGateWindow = {
+        kind: 'window',
+        id: wid,
+        windowKind: '',
+        clause: '',
+        anchor: '',
+        applies_to: '',
+        windowYears: 0,
+        windowMonths: 0,
+        breach: '',
+        description: '',
+      };
+      if (i < t.length && t[i]!.startsWith('{')) {
+        forEachEntry(
+          unwrapBlock(t[i++]),
+          (keyword, value) => {
+            if (keyword === 'kind') {
+              entry.windowKind = stripWrapping(value());
+            } else if (keyword === 'clause') {
+              entry.clause = stripWrapping(value());
+            } else if (keyword === 'anchor') {
+              entry.anchor = stripWrapping(value());
+            } else if (keyword === 'applies_to') {
+              entry.applies_to = stripWrapping(value());
+            } else if (keyword === 'window') {
+              const wt = tokenizePackage(unwrapBlock(value()));
+              for (let k = 0; k + 1 < wt.length; k += 2) {
+                if (wt[k] === 'years') {
+                  entry.windowYears =
+                    parseInt(stripWrapping(wt[k + 1]!), 10) || 0;
+                } else if (wt[k] === 'months') {
+                  entry.windowMonths =
+                    parseInt(stripWrapping(wt[k + 1]!), 10) || 0;
+                }
+              }
+            } else if (keyword === 'breach') {
+              entry.breach = stripWrapping(value());
+            } else if (keyword === 'description') {
+              entry.description = stripWrapping(value());
+            } else {
+              return false;
+            }
+            return true;
+          },
+          { construct: 'process gate window', id: `${pid}.${wid}` },
+        );
+      }
+      out.push(entry);
+    } else if (kind === 'discharge') {
+      // `discharge <gate-id>` — the declaration_gate the process
+      // discharges (the gate declares at the framework register).
+      out.push({ kind: 'discharge', gate: stripWrapping(t[i++]) });
+    } else if (kind === 'machine_service') {
+      // `machine_service { <id>+ }` — the engine-run services,
+      // documentary (service names, not model elements).
+      out.push({
+        kind: 'machine_service',
+        steps: tokenize(stripWrapping(t[i++]))
+          .map(stripColon)
+          .map(stripWrapping)
+          .filter(s => s.length > 0),
+      });
+    } else {
+      i = skipUnknownEntry(t, i);
     }
-    out.push(p);
   }
   return out;
+}
+
+/**
+ * The retired process gate spellings (TODO.lang-spec/07): the five
+ * fields became ONE kind-discriminated `gates { … }` facet — each
+ * spelling maps to its gate entry, content verbatim.
+ */
+function retiredGateSpelling(keyword: string, pid: string): string {
+  const to: Record<string, string> = {
+    guard: 'an anonymous entry_condition entry carries the criterion',
+    preconditions: 'entry_condition entries carry the preconditions',
+    windows: 'window entries carry the calendar windows',
+    discharges_gate: 'a discharge entry carries the declaration gate id',
+    machine_steps: 'a machine_service entry carries the service ids',
+  };
+  const target = to[keyword];
+  return (
+    `Parsing error: process. ID ${pid}: the ${keyword} facet is retired ` +
+    `(TODO.lang-spec/07) — the process carries one gates { … } facet; ` +
+    target
+  );
 }
 
 /**
@@ -552,76 +670,6 @@ function parseProcessDeclaration(block: string): ProcessDeclaration {
     { construct: 'process declaration', id: '' },
   );
   return declaration;
-}
-
-/**
- * The calendar windows (smart TODO.roadmap/40 batch 2): `window <id>
- * { … }` entries of a `windows { … }` block. The duration reuses the
- * scheme_lifecycle window sub-grammar — `window { years 2 }` /
- * `window { months 1 }` (config/scheme.ts parseTrigger); the shape
- * discipline (kind vocabulary, exactly one of years/months) is
- * check-time (C121).
- */
-function parseProcessWindows(block: string): ProcessWindow[] {
-  const out: ProcessWindow[] = [];
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (cmd !== 'window') {
-      i = skipUnknownEntry(t, i);
-      continue;
-    }
-    const wid = stripWrapping(t[i++]);
-    const entry: ProcessWindow = {
-      id: wid,
-      kind: '',
-      clause: '',
-      anchor: '',
-      applies_to: '',
-      windowYears: 0,
-      windowMonths: 0,
-      breach: '',
-      description: '',
-    };
-    if (i < t.length && t[i].startsWith('{')) {
-      forEachEntry(
-        unwrapBlock(t[i++]),
-        (keyword, value) => {
-          if (keyword === 'kind') {
-            entry.kind = stripWrapping(value());
-          } else if (keyword === 'clause') {
-            entry.clause = stripWrapping(value());
-          } else if (keyword === 'anchor') {
-            entry.anchor = stripWrapping(value());
-          } else if (keyword === 'applies_to') {
-            entry.applies_to = stripWrapping(value());
-          } else if (keyword === 'window') {
-            const wt = tokenizePackage(unwrapBlock(value()));
-            for (let k = 0; k + 1 < wt.length; k += 2) {
-              if (wt[k] === 'years') {
-                entry.windowYears =
-                  parseInt(stripWrapping(wt[k + 1]!), 10) || 0;
-              } else if (wt[k] === 'months') {
-                entry.windowMonths =
-                  parseInt(stripWrapping(wt[k + 1]!), 10) || 0;
-              }
-            }
-          } else if (keyword === 'breach') {
-            entry.breach = stripWrapping(value());
-          } else if (keyword === 'description') {
-            entry.description = stripWrapping(value());
-          } else {
-            return false;
-          }
-          return true;
-        },
-        { construct: 'process window', id: wid },
-      );
-    }
-    out.push(entry);
-  }
-  return out;
 }
 
 /** Per-classification instances: `by <dimension> values { V { k: n } … }`. */ function parseProcessInstances(
@@ -924,8 +972,6 @@ export const parseProcess: Parser = function (id, data) {
     modality: '',
     // The workflow facets (smart TODO.roadmap/40 batch 5)
     phase: '',
-    guards: [],
-    machineSteps: [],
     actor: null,
     output: [],
     input: [],
@@ -939,7 +985,7 @@ export const parseProcess: Parser = function (id, data) {
     invariants: [],
     activityKinds: [],
     segregation: [],
-    preconditions: [],
+    gates: [],
     executor: '',
     registers: [],
     state: '',
@@ -954,10 +1000,8 @@ export const parseProcess: Parser = function (id, data) {
     evidence: [],
     decision: null,
     declaration: null,
-    dischargesGate: '',
     realizedBy: [],
     approvedBy: [],
-    windows: [],
     source: null,
     provisionRefs: [],
     outputRefs: [],
@@ -1014,16 +1058,14 @@ export const parseProcess: Parser = function (id, data) {
         // phase <token> — the workflow pipeline phase (smart
         // TODO.roadmap/40 batch 5); retires the note "phase: …" hack.
         result.phase = stripWrapping(value());
-      } else if (keyword === 'guard') {
-        // guard "…" — repeatable, ordered (the workflow gate criteria).
-        result.guards.push(unwrapped(value));
-      } else if (keyword === 'machine_steps') {
-        // machine_steps { <id>+ } — the engine-run steps; documentary
-        // (service names, not model elements — no resolution leg).
-        result.machineSteps = tokenize(stripWrapping(value()))
-          .map(stripColon)
-          .map(stripWrapping)
-          .filter(s => s.length > 0);
+      } else if (keyword === 'gates') {
+        // gates { … } — the ONE gating primitive (TODO.lang-spec/07):
+        // kind-discriminated entries (entry_condition / window /
+        // discharge / machine_service); repeatable, entries accumulate
+        // in declaration order.
+        result.gates.push(...parseGateEntries(unwrapBlock(value()), id));
+      } else if (keyword === 'guard' || keyword === 'machine_steps') {
+        throw new Error(retiredGateSpelling(keyword, id));
       } else if (keyword === 'name') {
         result.name = unwrapped(value);
       } else if (keyword === 'overlay') {
@@ -1244,7 +1286,7 @@ export const parseProcess: Parser = function (id, data) {
         // declaration { kind <declaration_kind-id> action sign|update }
         result.declaration = parseProcessDeclaration(unwrapBlock(value()));
       } else if (keyword === 'discharges_gate') {
-        result.dischargesGate = stripWrapping(value());
+        throw new Error(retiredGateSpelling('discharges_gate', id));
       } else if (keyword === 'realized_by') {
         result.realizedBy = tokenize(stripWrapping(value()))
           .map(stripColon)
@@ -1256,15 +1298,13 @@ export const parseProcess: Parser = function (id, data) {
           .map(stripWrapping)
           .filter(s => s.length > 0);
       } else if (keyword === 'windows') {
-        // windows { window <id> { … } … } — the calendar windows, reusing
-        // the scheme_lifecycle window duration sub-grammar.
-        result.windows = parseProcessWindows(unwrapBlock(value()));
+        throw new Error(retiredGateSpelling('windows', id));
       } else if (keyword === 'segregation') {
         // segregation { constraint <id> { … } … } — ISO/IEC 17065 role
         // segregation (TODO.roadmap/39b; C59).
         result.segregation = parseSegregation(unwrapBlock(value()));
       } else if (keyword === 'preconditions') {
-        result.preconditions = parseProcessPreconditions(unwrapBlock(value()));
+        throw new Error(retiredGateSpelling('preconditions', id));
       } else if (keyword === 'executor') {
         result.executor = stripWrapping(value());
       } else if (keyword === 'registers') {
@@ -1410,6 +1450,72 @@ export function dumpProcessTree(
 
 // ── v3 block dumpers ─────────────────────────────────────────────────
 
+/**
+ * The gate facet's dumper (TODO.lang-spec/07): ONE `gates { … }` block,
+ * the entries in declaration order, each kind's grammar verbatim. The
+ * entry_condition keeps the precondition's one-line form; the anonymous
+ * entry (the folded `guard "…"`) omits the id.
+ */
+function dumpProcessGates(
+  gates: ProcessGate[],
+  escapeString: (s: string) => string,
+  dumpBareSafe: (s: string) => string,
+): string {
+  let out = '  gates {\n';
+  for (const g of gates) {
+    if (g.kind === 'entry_condition') {
+      let line =
+        '    entry_condition' + (g.id ? ' ' + dumpBareSafe(g.id) : '') + ' { ';
+      if (g.check) {
+        line += 'check "' + escapeString(g.check) + '" ';
+      }
+      if (g.description) {
+        line += 'description "' + escapeString(g.description) + '" ';
+      }
+      line += 'on_violation ' + g.onViolation + ' ';
+      out += line + '}\n';
+    } else if (g.kind === 'window') {
+      out += '    window ' + dumpBareSafe(g.id) + ' {\n';
+      if (g.windowKind) {
+        out += '      kind ' + dumpBareSafe(g.windowKind) + '\n';
+      }
+      if (g.clause) {
+        out += '      clause "' + escapeString(g.clause) + '"\n';
+      }
+      if (g.anchor) {
+        out += '      anchor ' + dumpBareSafe(g.anchor) + '\n';
+      }
+      if (g.applies_to) {
+        out += '      applies_to ' + dumpBareSafe(g.applies_to) + '\n';
+      }
+      if (g.windowYears > 0 || g.windowMonths > 0) {
+        out += '      window {';
+        if (g.windowYears > 0) {
+          out += ' years ' + g.windowYears;
+        }
+        if (g.windowMonths > 0) {
+          out += ' months ' + g.windowMonths;
+        }
+        out += ' }\n';
+      }
+      if (g.breach) {
+        out += '      breach ' + dumpBareSafe(g.breach) + '\n';
+      }
+      if (g.description) {
+        out += '      description "' + escapeString(g.description) + '"\n';
+      }
+      out += '    }\n';
+    } else if (g.kind === 'discharge') {
+      out += '    discharge ' + dumpBareSafe(g.gate) + '\n';
+    } else {
+      out +=
+        '    machine_service { ' + g.steps.map(dumpBareSafe).join(' ') + ' }\n';
+    }
+  }
+  out += '  }\n';
+  return out;
+}
+
 function dumpParamList(params: ProcessParameter[]): string {
   return params
     .map(
@@ -1541,16 +1647,8 @@ export const dumpProcess: (
   if (process.phase) {
     out += '  phase ' + dumpBareSafe(process.phase) + '\n';
   }
-  if (process.guards && process.guards.length > 0) {
-    for (const g of process.guards) {
-      out += '  guard "' + escapeString(g) + '"\n';
-    }
-  }
-  if (process.machineSteps && process.machineSteps.length > 0) {
-    out +=
-      '  machine_steps { ' +
-      process.machineSteps.map(dumpBareSafe).join(' ') +
-      ' }\n';
+  if (process.gates && process.gates.length > 0) {
+    out += dumpProcessGates(process.gates, escapeString, dumpBareSafe);
   }
   // The LML-aligned signature steps + bindings (TODO.lang-gaps 01):
   // pass-1 re-emits the raw blocks (the step plane types them later).
@@ -1697,9 +1795,6 @@ export const dumpProcess: (
     }
     out += ' }\n';
   }
-  if (process.dischargesGate) {
-    out += '  discharges_gate ' + dumpBareSafe(process.dischargesGate) + '\n';
-  }
   if (process.realizedBy && process.realizedBy.length > 0) {
     out +=
       '  realized_by { ' +
@@ -1711,42 +1806,6 @@ export const dumpProcess: (
       '  approved_by { ' +
       process.approvedBy.map(dumpBareSafe).join(' ') +
       ' }\n';
-  }
-  if (process.windows && process.windows.length > 0) {
-    out += '  windows {\n';
-    for (const w of process.windows) {
-      out += '    window ' + dumpBareSafe(w.id) + ' {\n';
-      if (w.kind) {
-        out += '      kind ' + dumpBareSafe(w.kind) + '\n';
-      }
-      if (w.clause) {
-        out += '      clause "' + escapeString(w.clause) + '"\n';
-      }
-      if (w.anchor) {
-        out += '      anchor ' + dumpBareSafe(w.anchor) + '\n';
-      }
-      if (w.applies_to) {
-        out += '      applies_to ' + dumpBareSafe(w.applies_to) + '\n';
-      }
-      if (w.windowYears > 0 || w.windowMonths > 0) {
-        out += '      window {';
-        if (w.windowYears > 0) {
-          out += ' years ' + w.windowYears;
-        }
-        if (w.windowMonths > 0) {
-          out += ' months ' + w.windowMonths;
-        }
-        out += ' }\n';
-      }
-      if (w.breach) {
-        out += '      breach ' + dumpBareSafe(w.breach) + '\n';
-      }
-      if (w.description) {
-        out += '      description "' + escapeString(w.description) + '"\n';
-      }
-      out += '    }\n';
-    }
-    out += '  }\n';
   }
   if (process.segregation && process.segregation.length > 0) {
     out += '  segregation {\n';
@@ -1772,21 +1831,6 @@ export const dumpProcess: (
         out += '      statement "' + escapeString(s.statement) + '"\n';
       }
       out += '    }\n';
-    }
-    out += '  }\n';
-  }
-  if (process.preconditions && process.preconditions.length > 0) {
-    out += '  preconditions {\n';
-    for (const p of process.preconditions) {
-      let line = '    precondition ' + p.id + ' { ';
-      if (p.check) {
-        line += 'check "' + escapeString(p.check) + '" ';
-      }
-      if (p.description) {
-        line += 'description "' + escapeString(p.description) + '" ';
-      }
-      line += 'on_violation ' + p.onViolation + ' ';
-      out += line + '}\n';
     }
     out += '  }\n';
   }

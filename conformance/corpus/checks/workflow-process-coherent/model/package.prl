@@ -1,7 +1,8 @@
-// Conformance corpus: a workflow process carrying the batch-5 facets (phase, the
-// ordered guards, machine_steps, the registry input, the
-// validate_measurement criterion, the source provenance) — every
-// reference resolves, no rule fires.
+// Conformance corpus: a workflow process carrying the batch-5 facets
+// (phase, the gate facet's anonymous entry-condition entries — the
+// ordered guards folded, and its machine_service entry — the registry
+// input, the validate_measurement criterion, the source provenance) —
+// every reference resolves, no rule fires.
 // Clause: WF-01 (positive).
 
 class TestRequest#data {
@@ -16,9 +17,11 @@ process conduct_tests {
   name "Conduct tests"
   modality shall
   phase testing
-  guard "Each TestRequest references >= 1 MeasuringInstrumentSample"
-  guard "TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes"
-  machine_steps { verdict_computation evaluation_aggregation certificate_characteristics_derivation }
+  gates {
+    entry_condition { check "Each TestRequest references >= 1 MeasuringInstrumentSample" on_violation invalid }
+    entry_condition { check "TestRequest.assigned_laboratory_id is accredited for the requested accuracy classes" on_violation invalid }
+    machine_service { verdict_computation evaluation_aggregation certificate_characteristics_derivation }
+  }
   reference_data_registry {
     testRequests
   }

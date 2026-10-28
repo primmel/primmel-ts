@@ -1640,7 +1640,7 @@
       "expect": {
         "parse": "ok"
       },
-      "summary": "The framework-binding facets — summary, the roles/organs/participant_kinds lists, evidence, decision, declaration, discharges_gate, realized_by/approved_by, and both calendar windows — parse."
+      "summary": "The framework-binding facets — summary, the roles/organs/participant_kinds lists, evidence, decision, declaration, the gate facet’s discharge and window entries (the one gating primitive), realized_by/approved_by — parse."
     },
     {
       "id": "fwk-08-neg",
@@ -2658,7 +2658,7 @@
       "expect": {
         "parse": "ok"
       },
-      "summary": "A process carrying phase, the ordered guards, machine_steps, and the source provenance parses."
+      "summary": "A process carrying phase and the gate facet — anonymous entry-condition entries (the folded guards) and the machine_service entry — parses."
     },
     {
       "id": "wf-01-parse-neg",

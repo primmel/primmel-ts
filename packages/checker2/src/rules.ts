@@ -223,6 +223,11 @@ export function check(
       .filter(c => c.keyword === 'governance_organ' && c.ident)
       .map(c => c.ident),
   );
+  const declarationGates = new Set(
+    pkg.constructs
+      .filter(c => c.keyword === 'declaration_gate' && c.ident)
+      .map(c => c.ident),
+  );
   const policies = new Set(
     closureConstructs
       .filter(c => c.keyword === 'policy' && c.ident)
@@ -1705,7 +1710,10 @@ export function check(
     }
 
     // ── C121: an abstract process's organs reference declared
-    //    governance organs.
+    //    governance organs; the gate facet's discharge entries reference
+    //    declared declaration gates, and its window entries carry the
+    //    calendar-window shape (the max_elapsed | min_elapsed kind
+    //    vocabulary; exactly one of years/months).
     if (c.keyword === 'process') {
       for (const entry of tokensOf(c, 'organs')) {
         if (!organs.has(entry)) {
@@ -1713,6 +1721,63 @@ export function check(
             'C121',
             `process ${c.ident}: organs "${entry}" is not a declared governance organ (abstract-process-references-resolve)`,
           );
+        }
+      }
+      for (const gatesBlock of nested(c).filter(n => n.keyword === 'gates')) {
+        // `discharge <gate-id>` is a bare value line inside the gates
+        // block; the entry_condition/window/machine_service entries are
+        // nested constructs (the machine_service entry carries no ident
+        // — its ids ride the raw body).
+        for (const l of lines(gatesBlock)) {
+          if (l.key !== 'discharge') {
+            continue;
+          }
+          for (const gid of l.tokens) {
+            if (declarationGates.size > 0 && !declarationGates.has(gid)) {
+              err(
+                'C121',
+                `process ${c.ident}: gate discharge "${gid}" is not a declared declaration gate (abstract-process-references-resolve)`,
+              );
+            }
+          }
+        }
+        for (const entry of nested(gatesBlock)) {
+          if (entry.keyword === 'window' && entry.ident) {
+            const wk = facetTokens(entry.items, 'kind')[0] ?? '';
+            // The duration rides the `window { years N | months N }`
+            // block — the grammar captures it as a nested id-less
+            // `window` construct (the ENTRY carries the ident); flatten
+            // its lines to a token run.
+            const dur = nested(entry)
+              .filter(n2 => n2.keyword === 'window' && !n2.ident)
+              .flatMap(n2 => lines(n2))
+              .flatMap(l2 => [l2.key ?? '', ...l2.tokens]);
+            let years = 0;
+            let months = 0;
+            for (let k = 0; k + 1 < dur.length; k += 1) {
+              if (dur[k] === 'years') {
+                years = parseInt(dur[k + 1]!, 10) || 0;
+              } else if (dur[k] === 'months') {
+                months = parseInt(dur[k + 1]!, 10) || 0;
+              }
+            }
+            if (wk !== 'max_elapsed' && wk !== 'min_elapsed') {
+              err(
+                'C121',
+                `process ${c.ident} window ${entry.ident}: kind "${wk || '(none)'}" — a calendar window is a deadline or a cooling-off (valid: max_elapsed, min_elapsed) (abstract-process-references-resolve)`,
+              );
+            }
+            if (years > 0 === months > 0) {
+              err(
+                'C121',
+                `process ${c.ident} window ${entry.ident}: the window duration declares ${
+                  years > 0
+                    ? 'both years and months'
+                    : 'neither years nor months'
+                } — exactly one is required (the scheme_lifecycle window sub-grammar) (abstract-process-references-resolve)`,
+              );
+            }
+          }
         }
       }
     }
@@ -4946,12 +5011,20 @@ export function check(
       for (const p2 of pkg.constructs.filter(
         x => x.keyword === 'process' && x.ident,
       )) {
-        const gates: { pc: string; state: string }[] = [];
-        for (const pc of nested(p2).filter(n => n.keyword === 'precondition')) {
+        const stateGateHits: { pc: string; state: string }[] = [];
+        // The gate facet's entry_condition entries (TODO.lang-spec/07) —
+        // `gates { entry_condition <id>? { check … } }` under the
+        // process; the anonymous entry (no ident) never extracts a gate
+        // from prose.
+        for (const pc of nested(p2)
+          .filter(n => n.keyword === 'gates')
+          .flatMap(g => nested(g))
+          .filter(e => e.keyword === 'entry_condition')) {
           for (const st of gatesOf(checkTextOf(pc))) {
-            gates.push({ pc: pc.ident ?? '', state: st });
+            stateGateHits.push({ pc: pc.ident ?? '', state: st });
           }
         }
+        const gates = stateGateHits;
         if (gates.length === 0) {
           continue;
         }
@@ -4960,7 +5033,7 @@ export function check(
         if (!bound) {
           err(
             'C39',
-            `process ${p2.ident}: precondition "${gates[0]!.pc}" gates on self.state but the process binds no state machine — declare state <machineRef> (state-machine-states-referenced)`,
+            `process ${p2.ident}: entry_condition "${gates[0]!.pc}" gates on self.state but the process binds no state machine — declare state <machineRef> (state-machine-states-referenced)`,
           );
         } else if (!m) {
           err(
@@ -4972,7 +5045,7 @@ export function check(
             if (!m.states.has(g.state)) {
               err(
                 'C39',
-                `process ${p2.ident}: precondition "${g.pc}" gates on #${g.state}, which is not a declared state of machine "${bound}" (state-machine-states-referenced)`,
+                `process ${p2.ident}: entry_condition "${g.pc}" gates on #${g.state}, which is not a declared state of machine "${bound}" (state-machine-states-referenced)`,
               );
             }
           }
@@ -6614,9 +6687,20 @@ export function check(
       for (const owner of pkg.constructs.filter(
         x => x.keyword === kw && x.ident,
       )) {
-        for (const pc of nested(owner).filter(
-          n => n.keyword === 'precondition',
-        )) {
+        // The spelling follows the owner: a conformance test's
+        // preconditions stay `preconditions { precondition … }`; a
+        // process's migrated to the gate facet (TODO.lang-spec/07) —
+        // `gates { entry_condition … }`, the anonymous entry (no ident)
+        // being the folded guard prose.
+        const entries: Construct[] =
+          kw === 'process'
+            ? nested(owner)
+                .filter(n => n.keyword === 'gates')
+                .flatMap(g => nested(g))
+                .filter(e => e.keyword === 'entry_condition')
+            : nested(owner).filter(n => n.keyword === 'precondition');
+        const label = kw === 'process' ? 'entry_condition' : 'precondition';
+        for (const pc of entries) {
           const ov = facetTokens(pc.items, 'on_violation')[0];
           if (!ov || ov === 'invalid') {
             continue;
@@ -6643,13 +6727,13 @@ export function check(
             issues.push({
               rule: 'C41',
               severity: 'warning',
-              message: `${kw} ${owner.ident}: precondition "${pc.ident}" declares on_violation fail — a violated run-validity precondition VOIDS the run (invalid); it never fails the instrument (doctrine ch. 04 §4.5) (precondition-on-violation-known)`,
+              message: `${kw} ${owner.ident}: ${label} "${pc.ident}" declares on_violation fail — a violated run-validity precondition VOIDS the run (invalid); it never fails the instrument (doctrine ch. 04 §4.5) (precondition-on-violation-known)`,
             });
           } else {
             issues.push({
               rule: 'C41',
               severity: 'warning',
-              message: `${kw} ${owner.ident}: precondition "${pc.ident}" declares on_violation "${ov}" — the only known outcome is "invalid" (precondition-on-violation-known)`,
+              message: `${kw} ${owner.ident}: ${label} "${pc.ident}" declares on_violation "${ov}" — the only known outcome is "invalid" (precondition-on-violation-known)`,
             });
           }
         }

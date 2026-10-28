@@ -61,8 +61,8 @@ const PROCESS = `
 process warm_up_and_measure {
   name "Gated measurement (R 144-style warm-up)"
   state CGHMOperationalStates
-  preconditions {
-    precondition warmed-up {
+  gates {
+    entry_condition warmed-up {
       check "ocl{self.state = #ready}"
       description "No measurement unless the measuring system is warmed up — a cold run is invalid, never a fail."
       on_violation invalid
@@ -117,8 +117,14 @@ describe('operational state machine — ser-des', () => {
 
     const p = m.processes.find(x => x.id === 'warm_up_and_measure')!;
     assert.equal(p.state, 'CGHMOperationalStates');
-    assert.equal(p.preconditions[0].check, 'ocl{self.state = #ready}');
-    assert.equal(p.preconditions[0].onViolation, 'invalid');
+    const ec = p.gates[0]!;
+    assert.ok(ec.kind === 'entry_condition');
+    if (ec.kind !== 'entry_condition') {
+      throw new Error('unreachable');
+    }
+    assert.equal(ec.id, 'warmed-up');
+    assert.equal(ec.check, 'ocl{self.state = #ready}');
+    assert.equal(ec.onViolation, 'invalid');
     const byId = new Map(p.does!.steps.map(st => [st.id, st]));
     assert.equal(byId.get('warm_up')!.fires, 'warm');
     assert.equal(byId.get('measure_run')!.fires, 'measure');
@@ -221,7 +227,12 @@ describe('state gate extraction', () => {
 describe('evaluateStateGate — the warm-up acceptance', () => {
   const m = load(FIXTURE);
   const machine = m.stateMachines[0];
-  const preconditions = m.processes[0].preconditions;
+  // The process's entry-condition gate entries, read as the shared
+  // precondition shape (structural — same id/check/description/onViolation).
+  const preconditions = m.processes[0].gates.filter(
+    (g): g is Extract<typeof g, { kind: 'entry_condition' }> =>
+      g.kind === 'entry_condition',
+  );
 
   it('starting cold (off) classifies invalid — never fail', () => {
     const r = evaluateStateGate(machine, 'off', preconditions);
@@ -457,8 +468,8 @@ describe('operational-state linter (C37–C41)', () => {
       MACHINE +
         `process p {
   state CGHMOperationalStates
-  preconditions {
-    precondition warmed-up {
+  gates {
+    entry_condition warmed-up {
       check "ocl{self.state = #lukewarm}"
       on_violation invalid
     }
@@ -476,8 +487,8 @@ describe('operational-state linter (C37–C41)', () => {
   it('C39 fires when a gating process binds no machine (or a dangling one)', () => {
     const noBinding = makeStatePackage(
       `process p {
-  preconditions {
-    precondition warmed-up { check "ocl{self.state = #ready}" }
+  gates {
+    entry_condition warmed-up { check "ocl{self.state = #ready}" }
   }
 }
 `,
@@ -489,8 +500,8 @@ describe('operational-state linter (C37–C41)', () => {
     const dangling = makeStatePackage(
       `process p {
   state GhostMachine
-  preconditions {
-    precondition warmed-up { check "ocl{self.state = #ready}" }
+  gates {
+    entry_condition warmed-up { check "ocl{self.state = #ready}" }
   }
 }
 `,
@@ -619,8 +630,8 @@ describe('C41 precondition-on-violation-known', () => {
       MACHINE +
         `process p {
   state CGHMOperationalStates
-  preconditions {
-    precondition warmed-up {
+  gates {
+    entry_condition warmed-up {
       check "ocl{self.state = #ready}"
       on_violation fail
     }
@@ -651,8 +662,8 @@ describe('C41 precondition-on-violation-known', () => {
       MACHINE +
         `process p {
   state CGHMOperationalStates
-  preconditions {
-    precondition count-sufficient {
+  gates {
+    entry_condition count-sufficient {
       check "ocl{measurement_count >= 100}"
       on_violation explode
     }
@@ -672,8 +683,8 @@ describe('C41 precondition-on-violation-known', () => {
       MACHINE +
         `process p {
   state CGHMOperationalStates
-  preconditions {
-    precondition count-sufficient {
+  gates {
+    entry_condition count-sufficient {
       check "ocl{measurement_count >= 100}"
       on_violation fail
     }
