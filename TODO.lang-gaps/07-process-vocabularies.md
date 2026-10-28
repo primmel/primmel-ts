@@ -1,5 +1,11 @@
 # 07 — The process vocabularies
 
+**Status (2026-10-28): RESOLVED BY THE EXISTING SHAPE.** All 8 corpus
+workflow files are `process` declarations; `realized_by` is the edge
+(C121/C186); gateways are process step kinds, and the standalone
+`exclusive_gateway` is the applicability cascade (WF-02). No new
+vocabulary needed.
+
 **Gap.** Process-like constructs grew per plane: `processes.prl`
 (concrete, with actors), `abstract-processes.prl` (pd-03 etc., with
 `realized_by` edges), `entities/workflow.prl` + `evaluation/workflow.prl`

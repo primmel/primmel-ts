@@ -36,23 +36,21 @@ register is closed: the supremacy claim — every LML
 construct has a Primmel counterpart or a recorded refusal — holds
 verifiably at 2026-10-28.
 
-## The consolidation gaps already discovered (files 01–08)
+## The consolidation register (files 01–08 + 20)
 
 The audit of Primmel's OWN primitives: similar constructs that grew out
 differently across the three planes (specification / evaluation /
-execution). One loop, one primitive per role; MECE.
+execution). One loop, one primitive per role; MECE. Dispositioned
+2026-10-28; each file carries the dated status mark with the evidence.
 
-- 01 the computation family: steps with signatures; machine_steps and
-  calculation_bindings dissolve into step + binding
-- 02 THE PROSE QUARANTINE (critical): no prose outside label/description{}
-- 03 the boolean-verdict consolidation: limit / acceptance_criteria /
-  validate_measurement / pass_fail / constraints → check
-- 04 the datum unification: attribute_definition / identity_slot /
-  parameter / field → datum(origin, scope)
-- 05 the actor/executor dissolution: accountability vs implementation vs
-  qualification evidence; digital twins are subjects
-- 06 variants vs dimensions: the same classification declared twice
-- 07 the process vocabularies: abstract vs realized vs workflows; gateways
-  are steps
-- 08 record templates: form/subform/header vs class X#data; registries are
-  pairings, not a data shape
+| # | Gap | Disposition (2026-10-28) |
+|---|---|---|
+| 01 | the computation family: steps with signatures; machine_steps and calculation_bindings dissolve into step + binding | PARTIALLY LANDED — typed steps 1.21.35 (467 corpus steps, 13 bindings); machine_steps retired via `gates { machine_service }` (07); form-plane `calculation_bindings` (36 sites) awaits the form-side binding grammar |
+| 02 | THE PROSE QUARANTINE (critical): no prose outside label/description{} | DECLARED, ENFORCEMENT PARTIAL — spec C158 error + kernel datum-description proxy; the global linter lands with the prose-surface migration (~3,800 bare strings) |
+| 03 | the boolean-verdict consolidation: limit / acceptance_criteria / validate_measurement / pass_fail / constraints → check | PRIMITIVE LANDED; SURFACE FOLD QUEUED — `check` + C160/C161 in; ~1,485 corpus sites still spell the verdict five ways; the C161 canonical serializer not implemented |
+| 04 | the datum unification: attribute_definition / identity_slot / parameter / field → datum(origin, scope) | DATUM CONSTRUCT LANDED; CARRIER UNIFICATION QUEUED — origin/scope/renders axes in; four carriers remain; 0 top-level corpus `datum` declarations |
+| 05 | the actor/executor dissolution: accountability vs implementation vs qualification evidence; digital twins are subjects | RESOLVED (1.21.42) — step-level `executor` is a parse error; the step names its `role`, the RUN binds the executor; process-level `executor` facet remains; 145 actor-less processes are a content gap |
+| 06 | variants vs dimensions: the same classification declared twice | OPEN — r60's 4 `variant` blocks duplicate the `technology` dimension; needs spec §09 retirement + a value-level `ref` facet + corpus dedupe |
+| 07 | the process vocabularies: abstract vs realized vs workflows; gateways are steps | RESOLVED BY THE EXISTING SHAPE — all corpus workflows are `process` declarations; `realized_by` is the edge (C121/C186); `exclusive_gateway` is the applicability cascade (WF-02) |
+| 08 | record templates: form/subform/header vs class X#data; registries are pairings, not a data shape | RESOLVED BY THE EXISTING SHAPE — one shared field grammar (spec §10); `subform_ref`/`header` composition; registries are C157 pairings |
+| 20 | calculations are declared math bound to declared symbols | BLOCKED EXTERNALLY (#201 — plurimath/unitsml); C165/C166 reserved; notation vocabulary + C161 render check in place |

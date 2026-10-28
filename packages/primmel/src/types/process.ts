@@ -261,13 +261,9 @@ export interface ProcessCallBinding {
 /**
  * One step of an executable process.
  *
- * Executor typing (`executor`):
- *   - 'machine' — the engine runs the step (OCL evaluation, gateway
- *     resolution, waits, register writes);
- *   - 'actor' — a role performs the step; actor steps are RECORDED, not
- *     run: `role` binds the performing role and `capture` binds the form
- *     through which the step's outputs land in evidence;
- *   - '' — untyped (events; or the author didn't declare one).
+ * The step-level `executor machine | actor` enum is RETIRED
+ * (TODO.lang-gaps/05): the step names its `role` — the accountable
+ * actor — and the RUN binds an executor that acts AS that role.
  *
  * Step I/O (`reads`/`writes`/`wait`, plus the caller-side names of a
  * call's `with` bindings) names registers and signature parameters — the
@@ -277,10 +273,12 @@ export interface ProcessCallBinding {
 export interface ProcessStep {
   id: string;
   kind: ProcessStepKind;
-  executor: 'machine' | 'actor' | '';
-  /** Actor steps: the bound role id. */
+  /**
+   * The accountable role id the step names. The RUN binds an executor
+   * that acts AS this role (TODO.lang-gaps/05).
+   */
   role: string;
-  /** Actor steps: the capture form id through which outputs are recorded. */
+  /** The capture form id through which the step's outputs are recorded. */
   capture: string;
   /** Register/parameter names the step reads. */
   reads: string[];
@@ -514,10 +512,10 @@ export default interface Process {
   summary: string;
   /**
    * IS: the role ids bound to the process's performance (YAML `roles:`).
-   * Kept DISTINCT from `executor` (the typing token actor|machine):
+   * Kept DISTINCT from `executor` (the process-level default executor):
    * multi-role processes exist, so the binding list never collapses into
-   * the executor token. Resolve against the role register at check time
-   * (C121).
+   * the process-level default. Resolve against the role register at check
+   * time (C121).
    */
   roles: string[];
   /** IS: the governance_organ ids acting in the process (C121). */

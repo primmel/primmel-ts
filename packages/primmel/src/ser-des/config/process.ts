@@ -36,10 +36,10 @@
 //     # DOES — the executable body (absent = abstract form, always valid)
 //     does {
 //       start_event s
-//       action stabilize  { executor actor role lab_technician capture stab_form write { conditions_log } }
-//       action apply_load { executor actor role lab_technician read { applied_load } }
-//       action hold       { executor machine wait duration }
-//       action record     { executor machine read { applied_load } write { indication_series } }
+//       action stabilize  { role lab_technician capture stab_form write { conditions_log } }
+//       action apply_load { role lab_technician read { applied_load } }
+//       action hold       { wait duration }
+//       action record     { read { applied_load } write { indication_series } }
 //       end_event e
 //       flow {
 //         s -> stabilize -> apply_load -> hold -> record -> e
@@ -49,7 +49,7 @@
 //
 // A step may declare `fires <transition>` (TODO.roadmap/07): when the step
 // completes, the process's bound state machine (`state <machineRef>`) takes
-// the named transition — e.g. `action warm_up { executor machine fires warm }`
+// the named transition — e.g. `action warm_up { fires warm }`
 // drives an operational machine off → ready.
 //
 // A step may declare `calls <process>` (TODO.roadmap/38): the step invokes
@@ -759,7 +759,6 @@ function parseStepBody(
     sigInputs: [],
     sigOutputs: [],
     completion: '',
-    executor: '',
     role: '',
     capture: '',
     reads: [],
@@ -781,13 +780,9 @@ function parseStepBody(
       break;
     }
     if (cmd === 'executor') {
-      const ex = stripWrapping(t[i++]);
-      if (ex !== 'machine' && ex !== 'actor') {
-        throw new Error(
-          `Parsing error: process step. ID ${id}: Unknown executor ${ex} (valid: machine, actor)`,
-        );
-      }
-      step.executor = ex;
+      throw new Error(
+        `Parsing error: process step. ID ${id}: the executor facet is retired (TODO.lang-gaps/05) — the step names its role (role <id>); the run binds the executor that acts as the role`,
+      );
     } else if (cmd === 'role') {
       step.role = stripWrapping(t[i++]);
     } else if (cmd === 'capture') {
@@ -1100,7 +1095,6 @@ export const parseProcess: Parser = function (id, data) {
           const st: ProcessStep = {
             id: sid,
             kind: 'action',
-            executor: '',
             role: '',
             capture: '',
             reads: [],
@@ -1195,6 +1189,10 @@ export const parseProcess: Parser = function (id, data) {
               }
             } else if (tc === 'description') {
               st.description = stripWrapping(tt[ti++]);
+            } else if (tc === 'executor') {
+              throw new Error(
+                `Parsing error: process step. ID ${sid}: the executor facet is retired (TODO.lang-gaps/05) — the step names its role (role <id>); the run binds the executor that acts as the role`,
+              );
             } else {
               ti = skipUnknownEntry(tt, ti);
             }
@@ -1261,7 +1259,7 @@ export const parseProcess: Parser = function (id, data) {
         result.summary = unwrapped(value);
       } else if (keyword === 'roles') {
         // roles { applicant … } — the role binding list; kept DISTINCT
-        // from `executor` (the typing token) — never collapsed.
+        // from `executor` (the process-level default) — never collapsed.
         result.roles = tokenize(stripWrapping(value()))
           .map(stripColon)
           .map(stripWrapping)
@@ -1541,9 +1539,6 @@ function dumpSignature(sig: ProcessSignature): string {
 
 function dumpStep(step: ProcessStep): string {
   const inner: string[] = [];
-  if (step.executor) {
-    inner.push('executor ' + step.executor);
-  }
   if (step.role) {
     inner.push('role ' + dumpBareSafe(step.role));
   }

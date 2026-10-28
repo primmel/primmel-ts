@@ -1,5 +1,10 @@
 # 20 — Calculations are declared math bound to declared symbols
 
+**Status (2026-10-28): BLOCKED EXTERNALLY (#201 — plurimath/unitsml).**
+C165/C166 are reserved; the kernel's notation vocabulary and the datum
+render-notation check (C161) are in place awaiting the evaluation
+engine.
+
 **Rule (owner, CRITICAL, 2026-10-12).** Math is NOT IN OCL. A
 calculation's formula is proper math in a declared notation —
 asciimath / latex / unicodemath / mathml / omml — evaluated by a

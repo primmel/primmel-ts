@@ -1,5 +1,10 @@
 # 08 — Record templates; registries are pairings
 
+**Status (2026-10-28): RESOLVED BY THE EXISTING SHAPE.** One shared
+field grammar backs form/subform (spec §10); `subform_ref`/`header`
+are composition; `class X#data` is the model-plane record; registries
+are C157 pairings. The `table` remains its own construct by design.
+
 **Gap.** Structured records have three shapes: `form`/`subform`/
 `header` (execution plane), `class X#data` (r144 value classes), and
 registry/dataclass storage. Subform/header are form fragments —

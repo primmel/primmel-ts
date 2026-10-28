@@ -121,7 +121,7 @@ describe('primmel check — process lint rules (C14 guard, C15, C16)', () => {
     const dir = makeProcessTmpPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     timer_event tick
     end_event e
     flow { s -> a -> tick -> e }
@@ -139,7 +139,7 @@ describe('primmel check — process lint rules (C14 guard, C15, C16)', () => {
     const dir = makeProcessTmpPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     timer_event tick { period "P1M" }
     end_event e
     flow { s -> a -> tick -> e }
@@ -154,7 +154,7 @@ describe('primmel check — process lint rules (C14 guard, C15, C16)', () => {
     const dir = makeProcessTmpPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     timer_event tick
     end_event e
     flow {
@@ -176,7 +176,7 @@ describe('primmel check — process lint rules (C14 guard, C15, C16)', () => {
     const dir = makeProcessTmpPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
+    action a { }
     timer_event tick { period "P1M" }
     end_event e
     flow {
@@ -198,8 +198,8 @@ describe('primmel check — process lint rules (C14 guard, C15, C16)', () => {
     const dir = makeProcessTmpPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
-    action a { executor actor }
+    action a { }
+    action a { }
     end_event e
     flow { s -> a a -> e }
   }
@@ -216,8 +216,8 @@ describe('primmel check — process lint rules (C14 guard, C15, C16)', () => {
     const dir = makeProcessTmpPackage(`process p {
   does {
     start_event s
-    action a { executor machine }
-    action b { executor actor }
+    action a { }
+    action b { }
     end_event e
     flow { s -> a -> b -> e }
   }

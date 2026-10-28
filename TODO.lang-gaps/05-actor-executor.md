@@ -1,5 +1,14 @@
 # 05 — The actor/executor dissolution
 
+**Status (2026-10-28): RESOLVED (1.21.42).** The step-level `executor
+machine | actor` facet is a parse error naming this file; the step
+names its `role` and the RUN binds the executor (spec §11
+executor-dissolution; 13 corpus sites migrated in
+oimlsmart/model-library). The process-level `executor` facet remains
+the default run binding. 145 processes declaring `executor actor`
+with no `actor` facet remain a content-modeling gap, not a language
+gap.
+
 **Gap.** `executor: actor | machine` (and `machine_steps`) conflates
 three axes: ACCOUNTABILITY (who answers — institutional, never
 disappears), IMPLEMENTATION (what performs the step — run-time

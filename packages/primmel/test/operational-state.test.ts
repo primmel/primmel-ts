@@ -70,9 +70,9 @@ process warm_up_and_measure {
   }
   does {
     start_event s
-    action warm_up { executor machine fires warm }
-    action measure_run { executor machine fires measure }
-    action halt_run { executor machine fires halt }
+    action warm_up {fires warm }
+    action measure_run {fires measure }
+    action halt_run {fires halt }
     end_event e
     flow { s -> warm_up -> measure_run -> halt_run -> e }
   }
@@ -415,7 +415,7 @@ describe('operational-state linter (C37–C41)', () => {
   state CGHMOperationalStates
   does {
     start_event s
-    action a { executor machine fires teleport }
+    action a {fires teleport }
     end_event e
     flow { s -> a -> e }
   }
@@ -435,7 +435,7 @@ describe('operational-state linter (C37–C41)', () => {
         `process p {
   does {
     start_event s
-    action a { executor machine fires warm }
+    action a {fires warm }
     end_event e
     flow { s -> a -> e }
   }
@@ -451,7 +451,7 @@ describe('operational-state linter (C37–C41)', () => {
   state GhostMachine
   does {
     start_event s
-    action a { executor machine fires warm }
+    action a {fires warm }
     end_event e
     flow { s -> a -> e }
   }

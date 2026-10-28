@@ -1,5 +1,11 @@
 # 04 — The datum unification
 
+**Status (2026-10-28): DATUM CONSTRUCT LANDED; CARRIER UNIFICATION
+QUEUED.** The kernel parses `datum` (origin/scope/renders axes, spec
+§16); the four carriers remain the corpus reality — the corpus has 0
+top-level `datum` declarations yet. The unification is a corpus
+migration, not a kernel gap.
+
 **Gap.** "A named, typed, unit-ed value" is declared four ways:
 `attribute_definition` (model plane), `identity_slot` (inscription
 plane), capability `has_parameters` (composition plane), form `field`
