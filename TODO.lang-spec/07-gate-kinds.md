@@ -15,8 +15,11 @@ where the legacy `guard "…"` facet folded: the workflow gate criteria
 were ordered opaque prose (never resolved — the R26 precedent), and an
 anonymous entry keeps exactly that shape. The conformance_test
 precondition family is a DIFFERENT, run-plane facet and stays. The
-corpus migrated in the same wave (r144's 14 guards → anonymous entries,
-the oiml-cs windows and discharges, the nine machine_steps lists); the
+corpus migrated in the same wave (52 guards over the four evaluation
+workflow.prl files → anonymous entries, the oiml-cs windows and
+discharges, the nine machine_steps lists — 65 sites, the census grep's
+head-truncated 28 corrected by the migration script's explicit
+enumeration); the
 one top-level `declaration_gate` (oiml-cs/framework/declarations.prl)
 was audited and STAYS — it is the framework register's declaration kind,
 not a process facet. The checker legs keep their rule ids (C121's
