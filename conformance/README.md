@@ -1,6 +1,6 @@
 # The Primmel conformance test suite
 
-**Version 3.10.0 · 2026-09-30.** The public, versioned corpus and runner
+**Version 3.12.0 · 2026-10-30.** The public, versioned corpus and runner
 with which any implementation of the Primmel modelling language proves
 its conformance, clause by clause. The suite pairs with the Primmel
 Language Specification (MN 114, draft for comment, the v3.3 revision):
@@ -8,6 +8,15 @@ when the specification publishes its
 conformance clauses, this suite's clause identifiers re-key to them (see
 `clauses.json`, the `spec` block); the v3.1 clauses (DAT-01 to DAT-04)
 already anchor to MN 114 clause 19.
+
+Version 3.12.0 over 3.11.1: the language program's retirement waves pin
+their refusals — the suite grows 276 → 281 cases (the step-level
+executor, the form-field calculation_bindings, the bare prose spelling,
+pass_fail, and validate_measurement negative cases; the acceptance
+block's refusal rides SYN-04) and the grammar-leg skip register carries
+the scoped-facet retirements with their reopen triggers. The corpus's
+canonical spellings: checks declared beside their owners (the boolean
+verdicts), the prose block form everywhere, bindings as edges.
 
 Version 3.10.0 over 3.9.0: the clauses of the RETIRED constructs leave
 the suite — FWK-09 (the process_model construct), COD-06 (the
