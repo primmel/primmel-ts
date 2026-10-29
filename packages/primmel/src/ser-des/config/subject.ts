@@ -107,6 +107,7 @@ import {
   tokenizePackage,
 } from '../tokenize';
 import { skipUnknownValue, proseBlock } from '../parse-block';
+import { parseDatum } from './lmlAligned';
 import {
   stripColon,
   dumpBareSafe,
@@ -183,6 +184,74 @@ function readIdList(block: string): string[] {
     .map(stripColon)
     .map(stripWrapping)
     .filter(s => s.length > 0);
+}
+
+/** An inline datum entry of a has_parameters list: the member id and the
+ *  raw payload the datum parser consumes (the optional `: <type>` parg
+ *  plus the facet block), exactly as the top-level construct spells it. */
+interface InlineDatum {
+  id: string;
+  raw: string;
+}
+
+function readCapabilityParameters(
+  block: string,
+  inline: InlineDatum[],
+): string[] {
+  // THE DATUM UNIFICATION'S FIRST RUNG (TODO.lang-gaps/04, spec
+  // §[[datum-unification]]): a capability's has_parameters members name
+  // DATUMS — the composition-scoped plane of the one "named, typed,
+  // unit-ed value" substrate. A bare id resolves against the declared
+  // datum register or the legacy attribute_definition alias (the C190
+  // resolution leg); `datum <id> [: <type>] { … }` declares one INLINE,
+  // and its parse delegates to the top-level datum parser. The resolved
+  // list stays string ids — the consumer-facing shape does not move; an
+  // inline declaration normalizes to a top-level datum on dump.
+  const t = tokenize(stripWrapping(block));
+  const ids: string[] = [];
+  let i = 0;
+  while (i < t.length) {
+    const tok = t[i++]!;
+    if (tok !== 'datum') {
+      const id = stripColon(stripWrapping(tok));
+      if (id.length > 0) {
+        ids.push(id);
+      }
+      continue;
+    }
+    // `datum <id> [: <type>] { … }` — the type parg rides between the id
+    // and the block; the parser strips it from the payload head.
+    const idTok = t[i];
+    if (idTok === undefined) {
+      throw new Error(
+        'Parsing error: capability: inline datum in has_parameters expects "datum <id> [: <type>] { … }"',
+      );
+    }
+    let j = i + 1;
+    let raw: string;
+    if (t[j] === ':') {
+      const typeTok = t[j + 1];
+      const blockTok = t[j + 2];
+      if (!typeTok || !blockTok || !blockTok.startsWith('{')) {
+        throw new Error(
+          `Parsing error: capability: inline datum "${idTok}" in has_parameters expects "datum <id> [: <type>] { … }"`,
+        );
+      }
+      raw = `: ${typeTok} ${blockTok}`;
+      j += 3;
+    } else if (t[j] !== undefined && t[j]!.startsWith('{')) {
+      raw = t[j]!;
+      j++;
+    } else {
+      throw new Error(
+        `Parsing error: capability: inline datum "${idTok}" in has_parameters expects "datum <id> [: <type>] { … }"`,
+      );
+    }
+    inline.push({ id: idTok, raw });
+    ids.push(idTok);
+    i = j;
+  }
+  return ids;
 }
 
 function dumpIdList(keyword: string, ids: string[], indent: string): string {
@@ -1303,6 +1372,10 @@ const parseCapability: ConstructDefinition['parse'] = function (id, data) {
     verifiedByTests: [],
     referenceIds: [],
   };
+  // The inline datum declarations ([[datum-unification]]'s in-place
+  // spelling) ride the list read; they register in the datum register
+  // when this capability's parse applies to the context.
+  const inlineDatums: InlineDatum[] = [];
 
   const t = tokenizePackage(data);
   let i = 0;
@@ -1322,7 +1395,7 @@ const parseCapability: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'requires') {
       result.requires = readIdList(t[i++]);
     } else if (cmd === 'has_parameters') {
-      result.hasParameters = readIdList(t[i++]);
+      result.hasParameters = readCapabilityParameters(t[i++], inlineDatums);
     } else if (cmd === 'satisfies_requirements') {
       result.satisfiesRequirements = readReference(t[i++]);
     } else if (cmd === 'verified_by_tests' || cmd === 'verified_by') {
@@ -1347,6 +1420,13 @@ const parseCapability: ConstructDefinition['parse'] = function (id, data) {
   }
 
   return ctx => {
+    // The inline datum declarations register in the datum register — the
+    // same substrate the bare members name (parseDatum's ctx-updater).
+    // The dump normalizes them to top-level `datum` declarations; the
+    // capability's list stays ids, so the fixpoint holds.
+    for (const d of inlineDatums) {
+      parseDatum(d.id, d.raw)(ctx);
+    }
     ctx.capabilities[id] = result;
     return ctx;
   };

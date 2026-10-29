@@ -1499,6 +1499,77 @@ export function check(
       }
     }
 
+    // ── C190 capability-parameters-resolve (TODO.lang-gaps/04, the
+    //    datum unification's first rung): a capability's has_parameters
+    //    members name DATUMS — the composition-scoped plane of the one
+    //    substrate. Every member resolves against the declared datum ∪
+    //    attribute_definition register (the legacy alias the doctrine
+    //    unifies); an inline `datum <id> { … }` entry resolves by
+    //    construction. The open block's shape spellings: bare ids ride
+    //    kwline keys and value runs, the inline datum (first in the
+    //    list) is a nested `datum` construct, and a datum that follows a
+    //    bare id degrades to `id : type { … }` — its keyword eaten by
+    //    the previous kwline's greedy run, its member still the entry
+    //    key, resolved by construction like the construct spelling. ──
+    if (c.keyword === 'capability' && c.ident) {
+      const params = nested(c).find(n => n.keyword === 'has_parameters');
+      if (params) {
+        const declared = new Set(
+          closureConstructs
+            .filter(
+              x =>
+                (x.keyword === 'datum' ||
+                  x.keyword === 'attribute_definition') &&
+                x.ident,
+            )
+            .map(x => x.ident!),
+        );
+        const members: string[] = [];
+        const byConstruction = new Set<string>();
+        for (const item of params.items) {
+          if (item.kind === 'construct') {
+            const k = item.construct?.keyword ?? '';
+            const id = item.construct?.ident ?? '';
+            if (k === 'datum' && id !== '') {
+              members.push(id);
+              byConstruction.add(id);
+            }
+            continue;
+          }
+          if (item.kind !== 'line') {
+            members.push(...item.tokens);
+            continue;
+          }
+          const key = item.key ?? '';
+          if (key !== '' && key !== 'datum') {
+            members.push(key);
+          }
+          if (item.blocks.length > 0) {
+            // The block spellings: the value run before the block is the
+            // degraded inline datum's type parg (`id : type { … }`) —
+            // the key is the member, by construction.
+            byConstruction.add(key);
+          } else {
+            for (const t of item.tokens) {
+              // `datum` in the list position is the inline-declaration
+              // keyword, never a member id.
+              if (t !== 'datum') {
+                members.push(t);
+              }
+            }
+          }
+        }
+        for (const m of members) {
+          if (m !== '' && !declared.has(m) && !byConstruction.has(m)) {
+            err(
+              'C190',
+              `capability ${c.ident}: has_parameters "${m}" is not a declared datum or attribute_definition (capability-parameters-resolve)`,
+            );
+          }
+        }
+      }
+    }
+
     // ── C1 bind-scope: a form field's bind path names a declared
     //    attribute (the path's attribute segment) ───────────────────
     if (c.keyword === 'form') {

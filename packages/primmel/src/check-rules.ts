@@ -555,6 +555,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     "a datum's render hints name their notation in the closed vocabulary (asciimath | latex | unicodemath | mathml | omml) — the re-homed leg of the formerly mislabeled C161 row (TODO.lang-gaps/03)",
   ),
+  // ── C190: capability-parameters-resolve — the datum unification's
+  // first rung (TODO.lang-gaps/04, spec [[datum-unification]]): the
+  // capability's has_parameters list is the composition plane of the one
+  // datum substrate, so its members name datums — declared ones, or the
+  // legacy attribute_definition alias the doctrine unifies. Inline
+  // `datum <id> { … }` entries resolve by construction.
+  R(
+    'C190',
+    'capability-parameters-resolve',
+    'base',
+    'error',
+    'normal',
+    "every capability has_parameters member resolves to a declared datum or attribute_definition — the composition plane of the datum substrate, the alias doctrine's first rung (TODO.lang-gaps/04, spec [[datum-unification]])",
+  ),
   R(
     'C173',
     'step-plane-refs-resolve',

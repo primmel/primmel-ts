@@ -3285,6 +3285,35 @@ export function checkPackage(
     }
   }
 
+  // ── C190: capability-parameters-resolve (TODO.lang-gaps/04, the ────
+  // datum unification's first rung) ───────────────────────────────────
+  // A capability's `has_parameters` members name the composition-scoped
+  // plane of the datum substrate ([[datum-unification]], spec#87): the
+  // four plane carriers are ALIAS spellings of the one "named, typed,
+  // unit-ed value" primitive. Every member resolves to a declared datum
+  // or to a declared attribute_definition — the legacy alias spelling
+  // the unification folds into the datum (the attribute_definition
+  // carrier migrates in wave 04 PR 4). Inline `datum <id> { … }` entries
+  // resolve by construction: the parser registers them in the datum
+  // register. Resolution by full id (the corpus census: every resolving
+  // member is a full-id match); mirror of the C58 resolution shape.
+  {
+    const capabilityDatumIds = new Set((standard.datums ?? []).map(d => d.id));
+    const capabilityAttrIds = new Set(
+      (standard.attributeDefinitions ?? []).map(a => a.id),
+    );
+    for (const c of standard.capabilities ?? []) {
+      for (const p of c.hasParameters ?? []) {
+        if (!capabilityDatumIds.has(p) && !capabilityAttrIds.has(p)) {
+          err(
+            'C190',
+            `capability ${c.id}: has_parameters "${p}" is not a declared datum or attribute_definition (capability-parameters-resolve)`,
+          );
+        }
+      }
+    }
+  }
+
   // ── C120: framework-references-resolve (smart TODO.roadmap/40; the ──
   // packages-as-SSOT epic) ────────────────────────────────────────────
   // The certification-framework registers cross-reference each other:
