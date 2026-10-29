@@ -159,9 +159,7 @@ conformance_test /conf/scope/beta-composite {
   acceptance_criteria {
     type composite
     description "Composite of partial checks"
-    pass_if "ocl{all_passed}"
     criterion partial_check {
-      pass_if "ocl{abs(x) <= mpe}"
       target /req/scope/beta
       criterion I/MPE
       optional true
@@ -172,6 +170,16 @@ conformance_test /conf/scope/beta-composite {
       accepts { verdict beep_level op lte limit "ocl{mpe}" }
     }
   }
+}
+
+check conformance_test:/conf/scope/beta-composite:acceptance_criteria {
+  expression "ocl{all_passed}"
+  ref derives-from "conformance_test:/conf/scope/beta-composite"
+}
+
+check conformance_test:/conf/scope/beta-composite:acceptance_criteria:partial_check {
+  expression "ocl{abs(x) <= mpe}"
+  ref derives-from "conformance_test:/conf/scope/beta-composite"
 }`,
   );
 

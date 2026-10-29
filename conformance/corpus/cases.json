@@ -3337,6 +3337,18 @@
         "errorMatch": "the bare statement string is retired"
       },
       "summary": "THE PROSE QUARANTINE (C158): the bare prose spelling refuses at parse; the five prose carriers (statement, definition, summary, response, criteria) take the block form only."
+    },
+    {
+      "id": "syn-05-parse-neg-retired-pass-fail",
+      "clause": "SYN-05",
+      "polarity": "negative",
+      "kind": "parse",
+      "path": "syntax/retired-pass-fail.prl",
+      "expect": {
+        "parse": "error",
+        "errorMatch": "the pass_fail block is retired"
+      },
+      "summary": "The boolean-verdict fold's first retirement (TODO.lang-gaps/03): the form's pass_fail block (and the acceptance_criteria pass_if facet) refuse at parse — the verdict declares the canonical check (form:<form-id>:pass_fail) with the predicate as its expression, the criteria prose in the quarantined description block, and the owner cited by the derives-from ref."
     }
   ]
 }

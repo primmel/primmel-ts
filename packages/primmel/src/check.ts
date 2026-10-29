@@ -8532,6 +8532,14 @@ export function checkPackage(
       if (f.passFail) {
         return true;
       }
+      // The migrated verdict plane (TODO.lang-gaps/03): a pass_fail
+      // spelling declares the canonical check form:<id>:pass_fail once
+      // migrated — the derived check IS the form's judgment now.
+      if (
+        (standard.checks ?? []).some(c => c.id === `form:${f.id}:pass_fail`)
+      ) {
+        return true;
+      }
       const walk = (fields: ReadonlyArray<FormField>): boolean =>
         fields.some(x => x.evaluation || x.verdict || walk(x.fields ?? []));
       return walk(f.fields ?? []);

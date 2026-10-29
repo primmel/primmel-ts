@@ -197,7 +197,6 @@ variable M2 { type number definition { d } }`;
     reference { REF9 }
   }
   subform_ref load-test-row { parameters { n_runs: 5 } applicability { accuracy_class: [A, C] } }
-  pass_fail { criteria { c } pass_if "ocl{x < 1}" }
 }`;
     const m1 = load(src);
     const dumped = dump(m1);

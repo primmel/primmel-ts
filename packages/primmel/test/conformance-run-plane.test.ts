@@ -52,7 +52,6 @@ conformance_test /conf/x {
   }
   acceptance_criteria {
     type composite
-    pass_if "ocl{true}"
   }
 }
 requirement /req/x {

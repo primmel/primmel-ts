@@ -12,7 +12,12 @@ import {
   tokenizePackage,
   unwrapBlock,
 } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
+import {
+  parseRefFromReaders,
+  refTargetToSourceRef,
+  dumpSourceRefAsRef,
+} from './ref';
 import type { ParseContext } from '../types';
 import type {
   Check,
@@ -322,6 +327,22 @@ export const parseCheck: Parser = function (id, data) {
       } else if (command === 'threshold') {
         const v = value();
         out.threshold = v.startsWith('{') ? unwrapBlock(v) : stripWrapping(v);
+      } else if (command === 'description') {
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only —
+        // the retired spellings' criteria prose lands here on migration.
+        out.description = proseBlock(value(), 'check', id, 'description');
+      } else if (command === 'ref') {
+        // The unified typed reference (docs/primmel/18 §18.4): the
+        // derives-from ref IS the provenance — the anchor (a URN, or the
+        // owner designation the migrated verdicts cite) folds into the
+        // Check's source slot.
+        const r = parseRefFromReaders(value, peek, stripWrapping, unwrapBlock);
+        if (r.predicate === 'derives-from') {
+          const b = refTargetToSourceRef(r.target);
+          if (b) {
+            out.source = b;
+          }
+        }
       } else {
         return false;
       }
@@ -349,6 +370,12 @@ export const dumpCheck: Dumper<Check> = function (x) {
   }
   if (x.threshold) {
     lines.push(`  threshold ${x.threshold}`);
+  }
+  if (x.description) {
+    lines.push(`  description { ${x.description} }`);
+  }
+  if (x.source) {
+    lines.push(dumpSourceRefAsRef(x.source, '  ', escapeString).trimEnd());
   }
   lines.push('}');
   return lines.join('\n');

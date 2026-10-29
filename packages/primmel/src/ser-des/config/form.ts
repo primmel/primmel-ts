@@ -31,9 +31,7 @@ import type {
   FormField,
   FormInstance,
   PassFail,
-  PassFailDerivation,
 } from '../../types/Form';
-import { proseBlock } from '../parse-block';
 
 export const parseForm: Parser = function (id, data) {
   const result: Form = {
@@ -159,7 +157,13 @@ export const parseForm: Parser = function (id, data) {
           const refBlock = i < t.length ? unwrapBlock(t[i++]) : '';
           result.fields.push(makeSubformRefField(subformId, refBlock));
         } else if (command === 'pass_fail') {
-          result.passFail = parsePassFail(unwrapBlock(t[i++]));
+          // The deprecation ladder's rung (TODO.lang-gaps/03): the
+          // spelling refuses at parse — the canonical check is the one
+          // surface (spec §10's check primitive; C161's canonical
+          // emission is the corpus authoring the check construct).
+          throw new Error(
+            `Parsing error: form. ID ${id}: the pass_fail block is retired (TODO.lang-gaps/03) — declare the check form:${id}:pass_fail { expression "ocl{…}" ref derives-from "form:${id}" description { … } }`,
+          );
         } else if (command === 'reference') {
           result.referenceIds = tokenizePackage(t[i++]).map(stripWrapping);
         } else {
@@ -302,69 +306,12 @@ function parseFormConstraints(block: string): FormConstraint[] {
   return out;
 }
 
-function parsePassFail(block: string): PassFail {
-  const pf: PassFail = { criteria: '', passIf: '', derivations: [] };
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (i < t.length) {
-      if (cmd === 'criteria') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
-        pf.criteria = proseBlock(t[i++], 'form', '', 'criteria');
-      } else if (cmd === 'pass_if') {
-        pf.passIf = stripWrapping(t[i++]);
-      } else if (cmd === 'derivation') {
-        pf.derivations = parsePassFailDerivations(unwrapBlock(t[i++]));
-      } else {
-        unwrapBlock(t[i++]);
-      }
-    }
-  }
-  return pf;
-}
-
-function parsePassFailDerivations(block: string): PassFailDerivation[] {
-  const out: PassFailDerivation[] = [];
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (cmd !== 'value') {
-      if (i < t.length) {
-        unwrapBlock(t[i - 1]);
-      }
-      continue;
-    }
-    const d: PassFailDerivation = {
-      name: stripWrapping(t[i++]),
-      calculation: '',
-      forEach: '',
-      unit: '',
-    };
-    if (i < t.length && t[i].startsWith('{')) {
-      const dt = tokenize(unwrapBlock(t[i++]));
-      let j = 0;
-      while (j < dt.length) {
-        const dc = dt[j++];
-        if (j >= dt.length) {
-          break;
-        }
-        if (dc === 'calculation') {
-          d.calculation = stripWrapping(dt[j++]);
-        } else if (dc === 'for_each') {
-          d.forEach = stripWrapping(dt[j++]);
-        } else if (dc === 'unit') {
-          d.unit = stripWrapping(dt[j++]);
-        } else {
-          unwrapBlock(dt[j++]);
-        }
-      }
-    }
-    out.push(d);
-  }
-  return out;
-}
+// The pass_fail spelling's parser retired with the spelling itself
+// (TODO.lang-gaps/03): the block refuses at parse, and the form's
+// verdict migrates onto the canonical check construct. The PassFail
+// TYPE stays — the fold derivation (check-fold.ts formFoldChecks), the
+// C161 completeness walk, and the serializer's owner dump read it for
+// Standards built by hand or by an older parser.
 
 function makeSubformRefField(subformId: string, block: string): FormField {
   const field: FormField = {
