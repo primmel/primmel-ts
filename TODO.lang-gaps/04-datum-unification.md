@@ -1,7 +1,69 @@
 # 04 — The datum unification
 
-**Status (2026-10-28): PR 4 LANDED (1.21.56) — the attribute_definition
-carrier: the MODEL plane of the substrate reads the datum.** The
+**Status (2026-10-30): WAVE COMPLETE — PR 5 LANDED (1.21.57): the form
+field carrier, the RUN plane of the substrate reads the datum. The
+wave's rungs are done: all FOUR plane carriers ALIAS the one "named,
+typed, unit-ed value" primitive.** The field STAYS the carrier (the
+alias doctrine) and its value core reads the datum: an optional inline
+`datum { … }` block (NO id — the field's name names the datum; NO type
+parg — the type rides the `type` facet or the flat head type) carries
+the substrate facets type/unit/quantity_kind/origin/scope over the flat
+head type + `unit` — which already ARE the datum's type/unit (the wave
+04 PR 3 finding, `{name, type, unit}` ≅ `{id, type, unit}`). The field
+exposes its datum view through `fieldDatumView` (the block's facets
+override, the flat facets stand in where the block is silent, origin
+defaults to `declared` — the field has no flat origin; the field's flat
+`scope` facet is the FORM's presentation scope, a different axis, and
+never stands in). The wire shape does not move — the dump re-emits the
+authored `datum { … }` block (facet defaults normalize away,
+`origin declared` omitted), so the fixpoint holds. THE SILENTLY-SKIP
+FINDING: the field body's unknown-cmd fallback (field-parser.ts)
+`unwrapBlock`-skipped any unknown keyword, so a `datum { … }` block was
+SILENTLY DROPPED before this rung — the skip is now the parse+store
+(the fail-closed malformed-spelling error follows the PR 2/PR 4
+precedent, and the closed origin vocabulary is enforced inside the
+block). One new leg: C193 field-datum-coherence (error, normal level,
+following C190/C191/C192) — a type the block RESTATES must AGREE with
+the field's EXPLICITLY DECLARED head type (the untyped head's `string`
+is the parse default, not a spelling — a block type over an untyped
+head is the override the view resolves, never a contradiction); a block
+silent on the type, or the absent block, carries no leg; subform fields
+share the grammar and are judged with the same rule. checker2 mirrors
+C193 over the shape tree — where the field arrives TWO ways (the
+untyped head rides a `field` construct, the typed head
+`field x : T { … }` rides an entry line whose key is the name and whose
+first token is the head type) and the datum block rides a `datum` LINE
+(a head-less `datum` is not a named construct) — the walker takes both,
+nested fields and subforms included. The corpus census: 2,501
+`field` sites in 220 files (262 `form` + 6 `subform` carriers), typed
+heads ×2,491 (string 743, number 680, boolean 389, text 294, array 189
+…), 522 `unit` facets — the quantity-bearing run plane — and ZERO
+inline datum blocks (the keyword is new), so no site is incoherent
+under the new leg (no block ⇒ no restatement ⇒ no leg) and the corpus
+PR is skipped; the extended grammar only adds an optional block and
+every site parses unchanged (the corpus smoke: 68 packages, 0 errors).
+
+**WAVE SUMMARY (04, the register's record).** The datum unification is
+COMPLETE at 1.21.57: PR 1 (1.21.53) the capability `has_parameters`
+composition plane (C190); PR 2 (1.21.54) the identity_slot inscription
+plane (C191); PR 3 (1.21.55, document-only) the table column is the
+substrate's PROJECTION, not a carrier, plus the substrate head-type
+capture fix; PR 4 (1.21.56) the attribute_definition model plane (C192);
+PR 5 (1.21.57) the form field run plane (C193). One substrate, four
+carriers, three coherence legs (C191/C192/C193 — type restatement
+agreement), one resolution leg (C190), one datum view accessor per
+carrier (`identitySlotDatumView` / `attributeDefinitionDatumView` /
+`fieldDatumView`; the projection reads the datum directly per PR 3).
+The corpus authored ZERO inline datum blocks across every carrier
+census (15 slots, 359 attribute sites, 0 table datum references, 2,501
+field sites) — the demand side of the unification is the VALIDATOR and
+the VIEWS, not new authoring: the corpus's flat facets already are datum
+vocabulary. The axis conversation (the closed origin/scope vocabulary
+on the FLAT facets — PR 4's free-form finding) remains the recorded
+follow-up, deliberately not taken in this wave.
+
+**Prior rungs.** PR 4 (1.21.56) — the
+attribute_definition carrier: the MODEL plane of the substrate reads the datum. The
 attribute STAYS the carrier (the alias doctrine) and its value core
 reads the datum: an optional inline `datum { … }` block (NO id — the
 attribute's id names the datum; NO type parg — the type rides the
@@ -39,41 +101,6 @@ FREE-FORM (tightening them is the axis conversation, not this rung);
 the closed origin vocabulary is enforced inside the block (the
 fail-closed precedent PR 2 set), where an author deliberately speaks
 the substrate's language.
-
-**Prior rungs.** PR 3 (1.21.55, DOCUMENT-ONLY) — the
-table-columns rung resolved BY THE DOCTRINE: the column is the
-substrate's PROJECTION, not a carrier (the spec's carrier enumeration
-has FOUR carriers and the table column is not one), plus the substrate
-head-type capture fix the rung exposed. PR 1 (1.21.53): the capability
-`has_parameters` plane reads the datum
-substrate — bare ids resolve against the declared datum register or the
-legacy `attribute_definition` alias (the C190
-capability-parameters-resolve leg, error, normal level), and
-`datum <id> [: <type>] { … }` declares one INLINE. PR 2 (1.21.54): the
-identity_slot is the inscription plane of the substrate — the construct
-STAYS (the alias doctrine), and its value core reads the datum: an
-inline `datum { … }` block (NO id — the slot's id names the datum; NO
-type parg — the type rides the `type` facet, the slot's parse-enforced
-vocabulary) carries the substrate facets
-type/unit/quantity_kind/origin/scope that override/extend the slot's
-flat `type`; the plane extras (presentation channels,
-metamodel_class, optional) are untouched — extras on the substrate.
-The slot exposes its datum view through `identitySlotDatumView` (the
-block's facets override, the flat facets stand in where the block is
-silent, origin defaults to `declared`); the wire shape does not move —
-the dump re-emits the authored `datum { … }` block (facet defaults
-normalize away, the datum-dump convention), so the fixpoint holds. One
-new leg: C191 identity-slot-datum-coherence (error, normal level,
-following C190) — a type the block restates must AGREE with the slot's
-flat `type` (the two spellings name ONE value); the absent block (or a
-block silent on the type) carries no leg. checker2 mirrors C191 over
-the shape tree (the nested `datum` construct, the open block's greedy
-facet runs). PR 2's corpus census (15 slots, 5 files: oiml-r144 6,
-oiml-r60-lml 5, oiml-r91 2, iso-iec-17021-1 1, iso-17011 1): every
-slot types string/designation/serial/year/mark/map — ZERO
-quantity-bearing (marked quantities stay attribute_definitions, INV-3,
-never redeclared in a slot), so no inline datum block is authored and
-the corpus PR was skipped (the corpus smoke: 68 packages, 0 errors).
 
 **PR 3 — the table-columns rung: the column is DOCUMENT-ONLY; the rung
 carries the substrate head-type capture fix.** The task asked for the
@@ -134,9 +161,9 @@ silently — loud-refusal vs capture is a grammar-policy decision for
 the owner; the head stays the canonical spelling. The old `colN`
 dialect's loud refusal (table.ts) is the END-STATE template and stays.
 Remaining carriers at PR 3's close: the form field and
-attribute_definition (PR 4 took the attribute_definition — see the
-status header; the form field, the RUN plane, remains) — the corpus has
-0 top-level `datum` declarations yet.
+attribute_definition (PR 4 took the attribute_definition and PR 5 the
+form field — see the status header; the wave is complete) — the corpus
+has 0 top-level `datum` declarations yet.
 
 **Gap.** "A named, typed, unit-ed value" is declared four ways:
 `attribute_definition` (model plane), `identity_slot` (inscription

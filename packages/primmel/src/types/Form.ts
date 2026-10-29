@@ -51,6 +51,42 @@ export interface RoleReference {
   role: string;
 }
 
+// ── The datum unification's fifth rung (TODO.lang-gaps/04, spec
+// [[datum-unification]]): the form field is the RUN plane of the one
+// "named, typed, unit-ed value" substrate, so its value core READS THE
+// DATUM. The field stays the carrier (the alias doctrine — the
+// construct is not going away); the `datum { … }` block authored inside
+// it carries the substrate facets, and the field exposes the resolved
+// view through the kernel accessor (`fieldDatumView`,
+// ser-des/config/field-parser.ts). The wire shape does not move: the
+// dump emits the AUTHORED spelling, so the fixpoint holds. The field's
+// name/type/unit already ARE the datum's id/type/unit (the wave 04 PR 3
+// finding) — the block restates/extends them beside the flat facets.
+/** The facets of the `datum { … }` block authored inside a form field
+ *  — the substrate view of the field's value. `type` '' = the block
+ *  does not restate the type (the field's head type stands); origin
+ *  defaults to `declared` (the datum's own default — the field has no
+ *  flat origin facet to stand in). */
+export interface FieldDatum {
+  /** The datum's type — restates the field's head type (must agree
+   *  when the head type is explicitly declared; C193). */
+  type: string;
+  /** The unit the field's value carries (unitsdb reference) — extends
+   *  the field's flat `unit` where the block is silent. */
+  unit: string;
+  /** The quantity kind (unitsdb reference). */
+  quantityKind: string;
+  /** declared | design-fixed | observed | computed (the datum's origin
+   *  axis — the value's provenance, never the executor's); defaults to
+   *  `declared` at parse (the datum's own default). */
+  origin: 'declared' | 'design-fixed' | 'observed' | 'computed';
+  /** The scope axis (model | family | sample | run). Deliberately NOT
+   *  defaulted from the field's flat `scope` facet — that facet is the
+   *  FORM's presentation scope (e.g. administrative), a different
+   *  axis; '' = the block is silent. */
+  scope: string;
+}
+
 export interface FormField {
   name: string;
   type: string;
@@ -126,6 +162,11 @@ export interface FormField {
    *  A non-numeric bound (e.g. the template "${{ n_runs }}") is kept verbatim. */
   minItems?: number | string | null;
   maxItems?: number | string | null;
+  /** The inline `datum { … }` block ([[datum-unification]] wave 04
+   *  PR 5) — the substrate facets of the field's value core; null when
+   *  the field declares none (the flat head type + unit alone). The
+   *  RUN plane of the datum substrate, read through `fieldDatumView`. */
+  datum?: FieldDatum | null;
   /** Scalar numeric range bounds (optional; parsed from min/max) — the
    *  entry-validation facet for measured/quantitative fields (R 60 class
    *  limits: emax/emin/vmin, temperature, humidity). A non-numeric bound

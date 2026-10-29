@@ -599,6 +599,22 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     "an attribute_definition's inline datum block agrees with the flat facets it restates (type/value_type, origin, scope) — the model plane of the datum substrate, the alias doctrine's fourth rung (TODO.lang-gaps/04, spec [[datum-unification]])",
   ),
+  // ── C193: field-datum-coherence — the datum unification's fifth and
+  // final rung (TODO.lang-gaps/04, spec [[datum-unification]]): the
+  // form field is the RUN plane of the one datum substrate (and the
+  // subform's fields share its grammar), so a type its inline
+  // `datum { … }` block restates must AGREE with the field's
+  // explicitly declared head type — a contradiction is an error. A
+  // block silent on the type — or the absent block — carries no leg
+  // (the flat head type + unit alone is the whole story).
+  R(
+    'C193',
+    'field-datum-coherence',
+    'base',
+    'error',
+    'normal',
+    "a form field's inline datum block agrees with the field's declared head type — the run plane of the datum substrate, the alias doctrine's fifth rung (TODO.lang-gaps/04, spec [[datum-unification]])",
+  ),
   R(
     'C173',
     'step-plane-refs-resolve',
