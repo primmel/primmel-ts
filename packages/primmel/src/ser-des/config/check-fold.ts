@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────
 // The boolean-verdict fold (TODO.lang-gaps/03; the spec's check
 // primitive, language-v3 §10, and C161, §16): "evaluate an expression
-// and compare" is ONE construct, and the five retired surface spellings
+// and compare" is ONE construct, and the retired surface spellings
 // materialize a `Check` into the checks collection at parse.
 //
 // This module is the fold's single source. The parsers call the
@@ -14,13 +14,20 @@
 // the serializer emits the canonical form only (dump skips checks
 // carrying `folds`), so serialization stays byte-identical for
 // documents that spell the verdict the retired way.
+//
+// Spellings 1 and 2's pass_if retired at parse (wave 03 PR 2) and
+// spelling 5 — the validate_measurement strings — retired with it
+// (wave 03 PR 3): a retired spelling's derivation leaves this module
+// with its refusal (the spelling no longer parses, the fold would be
+// dead code), and the canonical check the verdict declares is an
+// authored construct. The remaining derivations serve Standards built
+// by hand or by an older parser.
 // ─────────────────────────────────────────────────────────────────────
 
 import type { Check } from '../../types/LmlAligned';
 import type Form from '../../types/Form';
 import type { Requirement } from '../../types/Requirement';
 import type ConformanceTest from '../../types/ConformanceTest';
-import type Process from '../../types/process';
 import Standard from '../../types/Standard';
 import { freeIdentifiers, parseExpression } from '../../expressions';
 import { parseYamlBlock } from '../../export/yaml-lite';
@@ -28,8 +35,8 @@ import { parseYamlBlock } from '../../export/yaml-lite';
 /**
  * The fold-id convention: `<owner-kind>:<owner-id>:<facet-slot>` —
  * derived and stable, deterministic given the document. The facet slot
- * enumerates repeated carriers (`limit:2`, `validate_measurement:1`)
- * and names the folded criterion where the spelling carries one
+ * enumerates repeated carriers (`limit:2`) and names the folded
+ * criterion where the spelling carries one
  * (`acceptance_criteria:<criterion-id>`).
  */
 
@@ -209,12 +216,11 @@ export function formFoldChecks(form: Pick<Form, 'id' | 'passFail'>): Check[] {
  *  composite pass_if folds as the bare `acceptance_criteria` slot; each
  *  named criterion folds per criterion (`acceptance_criteria:<c>`, the
  *  1-based position standing in for an unnamed one). The criterion's
- *  target ref rides the inputs after the names its pass_if consumes. */
+ *  target ref rides the inputs after the names its pass_if consumes.
+ *  (The test's validate_measurement facet was the fifth spelling's
+ *  conformance-test carrier — retired at parse, wave 03 PR 3.) */
 export function conformanceTestFoldChecks(
-  ct: Pick<
-    ConformanceTest,
-    'id' | 'acceptancePassIf' | 'acceptanceCriteria' | 'measurements'
-  >,
+  ct: Pick<ConformanceTest, 'id' | 'acceptancePassIf' | 'acceptanceCriteria'>,
 ): Check[] {
   const out: Check[] = [];
   const owner = `conformance_test:${ct.id}`;
@@ -242,15 +248,6 @@ export function conformanceTestFoldChecks(
           ]),
         },
       ),
-    );
-  });
-  // spelling 5's conformance-test carrier
-  ct.measurements.forEach((m, index) => {
-    out.push(
-      makeFoldCheck(owner, `validate_measurement:${index + 1}`, {
-        expression: m,
-        inputs: foldIdentifierInputs(m),
-      }),
     );
   });
   return out;
@@ -341,32 +338,16 @@ export function requirementFoldChecks(r: Requirement): Check[] {
   return out;
 }
 
-// ── spelling 5: the validate_measurement strings ─────────────────────
-
-/** `validate_measurement { "…" }` on a process or a conformance test —
- *  the string folds verbatim; the inputs are the names it consumes. */
-export function validateMeasurementFoldChecks(
-  owner: string,
-  measurements: readonly string[],
-): Check[] {
-  return measurements.map((m, index) =>
-    makeFoldCheck(owner, `validate_measurement:${index + 1}`, {
-      expression: m,
-      inputs: foldIdentifierInputs(m),
-    }),
-  );
-}
-
-export function processFoldChecks(p: Pick<Process, 'id' | 'measure'>): Check[] {
-  return validateMeasurementFoldChecks(`process:${p.id}`, p.measure ?? []);
-}
-
 // ── the C161 completeness expectation ────────────────────────────────
 
 /** The fold ids the Standard's spellings SHOULD carry — the same
  *  per-construct derivations the parsers registered by, re-derived
  *  from the parsed data. The C161 walk compares this against the
- *  `folds` provenance on standard.checks. */
+ *  `folds` provenance on standard.checks. The validate_measurement
+ *  spelling (process + test) retired at parse (wave 03 PR 3): its
+ *  derivations left with the refusal, so a Standard built by an older
+ *  parser carrying the strings expects no folds for them — the
+ *  spelling refuses before any walk could run on a fresh parse. */
 export function expectedFoldIds(standard: Standard): string[] {
   const out: string[] = [];
   for (const f of standard.forms ?? []) {
@@ -377,9 +358,6 @@ export function expectedFoldIds(standard: Standard): string[] {
   }
   for (const ct of standard.conformanceTests ?? []) {
     out.push(...conformanceTestFoldChecks(ct).map(c => c.id));
-  }
-  for (const p of standard.processes ?? []) {
-    out.push(...processFoldChecks(p).map(c => c.id));
   }
   return out;
 }

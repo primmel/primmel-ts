@@ -26,7 +26,10 @@ function makePackage(body: string): string {
 }
 
 // The r60 conduct_tests shape: the facets the old emitter dropped
-// (label vs name is the emitter's; the kernel reads `name`).
+// (label vs name is the emitter's; the kernel reads `name`). The
+// validate_measurement verdict is absent — the spelling retired at
+// parse (TODO.lang-gaps/03); the verdict declares the canonical check,
+// which is the fold tests' subject.
 const PROCESS = `
 data_registry testRequests {
   name "Test requests"
@@ -42,9 +45,6 @@ process conduct_tests {
   }
   reference_data_registry {
     testRequests
-  }
-  validate_measurement {
-    "every([within_mpe]) = true"
   }
   ref derives-from "PD-05 §4.1"
 }
@@ -86,7 +86,6 @@ describe('process workflow facets (smart TODO.roadmap/40 batch 5, step 5a)', () 
       p.input.map(r => r.id),
       ['testRequests'],
     );
-    assert.deepEqual(p.measure, ['every([within_mpe]) = true']);
     assert.equal(p.source?.doc, 'PD-05 §4.1');
   });
 

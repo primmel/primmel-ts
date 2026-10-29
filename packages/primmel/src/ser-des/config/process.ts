@@ -3,8 +3,10 @@
 // (TODO.roadmap/02).
 //
 // The v2 shape is untouched: name/actor/modality, registry I/O
-// (reference_data_registry / output), validate_provision /
-// validate_measurement, canvas page, nested child processes.
+// (reference_data_registry / output), validate_provision, canvas page,
+// nested child processes. (The validate_measurement verdict facet
+// retired at parse — TODO.lang-gaps/03, wave 03 PR 3: the verdict
+// declares the canonical check.)
 //
 // The v3 additions make the process a recursive subject with two
 // definition forms (concept doc §4):
@@ -235,7 +237,6 @@ import type { QuantityValue } from '../../types/Quantity';
 import type Provision from '../../types/Provision';
 import type Role from '../../types/Role';
 import type { Subprocess } from '../../types/flow';
-import { processFoldChecks } from './check-fold';
 
 /** Numeric-looking values parse as numbers, everything else stays a string. */
 function numOrString(s: string): string | number {
@@ -1225,7 +1226,13 @@ export const parseProcess: Parser = function (id, data) {
         const inner = tokenizePackage(unwrapBlock(value()));
         (result.stepRequires ??= []).push(...inner.map(stripWrapping));
       } else if (keyword === 'validate_measurement') {
-        result.measure = tokenizePackage(value()).map(x => unwrapBlock(x));
+        // The deprecation ladder's rung (TODO.lang-gaps/03): the
+        // spelling refuses at parse — the canonical check is the one
+        // surface (spec §10's check primitive; C161's canonical
+        // emission is the corpus authoring the check construct).
+        throw new Error(
+          `Parsing error: process. ID ${id}: the validate_measurement facet is retired (TODO.lang-gaps/03) — declare the check (process:${id}:validate_measurement:1)`,
+        );
       } else if (keyword === 'output') {
         // output { <id>+ } — entity-class store names in OIML SMART
         // content; quoted entries (store labels with spaces) unwrap to
@@ -1369,13 +1376,9 @@ export const parseProcess: Parser = function (id, data) {
 
   return ctx => {
     ctx.processes[id] = result;
-    // C161 (TODO.lang-gaps/03): the retired validate_measurement
-    // spelling folds into the checks collection at parse — the
-    // canonical check is the view, never serialized (dump skips folded
-    // checks).
-    for (const fold of processFoldChecks(result)) {
-      ctx.checks[fold.id] = fold;
-    }
+    // The validate_measurement spelling retired with its refusal
+    // (TODO.lang-gaps/03) — no fold registers here anymore; the check
+    // the verdict declares is an authored construct, never a view.
     for (const mod of childModifiers) {
       ctx = mod(ctx);
     }
@@ -1724,6 +1727,10 @@ export const dumpProcess: (
     out += '  }\n';
   }
   if (process.measure.length > 0) {
+    // The retired spelling's serializer owner-dump (TODO.lang-gaps/03):
+    // the facet refuses at parse, so only a Standard built by hand or
+    // by an older parser carries the field — the dump reads it for
+    // that Standard's round-trip, the canonical verdict is the check.
     out += '  validate_measurement {\n';
     for (const v of process.measure) {
       out += '    "' + v + '"\n';

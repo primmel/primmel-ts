@@ -28,9 +28,10 @@ conformance_test ErrorTest {
     step apply_the_test_load "Apply the test load"
     step record_the_indication "Record the indication"
   }
-  validate_measurement {
-    "[error] <= [mpe]"
-  }
+}
+check conformance_test:ErrorTest:validate_measurement:1 {
+  expression "[error] <= [mpe]"
+  ref derives-from "conformance_test:ErrorTest"
 }
 
 form ErrorForm {

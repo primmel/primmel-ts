@@ -1021,13 +1021,13 @@ export const parseConformanceTest: Parser = function (id, data) {
       } else if (keyword === 'derived_values') {
         result.derivedValues = parseDerivedValues(unwrapBlock(value()));
       } else if (keyword === 'validate_measurement') {
-        const block = value();
-        const tokens = tokenizePackage(block);
-        for (const t of tokens) {
-          if (t.startsWith('"')) {
-            result.measurements.push(unwrapBlock(t));
-          }
-        }
+        // The deprecation ladder's rung (TODO.lang-gaps/03): the
+        // spelling refuses at parse — the canonical check is the one
+        // surface (spec §10's check primitive; C161's canonical
+        // emission is the corpus authoring the check construct).
+        throw new Error(
+          `Parsing error: conformance_test. ID ${id}: the validate_measurement facet is retired (TODO.lang-gaps/03) — declare the check (conformance_test:${id}:validate_measurement:1)`,
+        );
       } else if (keyword === 'source_discrepancy') {
         result.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(value()));
       } else {
@@ -1040,10 +1040,12 @@ export const parseConformanceTest: Parser = function (id, data) {
 
   return ctx => {
     ctx.conformanceTests[id] = result;
-    // C161 (TODO.lang-gaps/03): the retired acceptance_criteria and
-    // validate_measurement spellings fold into the checks collection at
-    // parse — the canonical checks are the view, never serialized (dump
-    // skips folded checks).
+    // C161 (TODO.lang-gaps/03): the retired acceptance_criteria
+    // spellings fold into the checks collection at parse — the
+    // canonical checks are the view, never serialized (dump skips
+    // folded checks). The validate_measurement spelling retired with
+    // its refusal: no fold registers for it anymore, the check the
+    // verdict declares is an authored construct.
     for (const fold of conformanceTestFoldChecks(result)) {
       ctx.checks[fold.id] = fold;
     }
@@ -1137,6 +1139,10 @@ export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
     out += dumpStimulus(ct.stimulus);
   }
   if (ct.measurements.length > 0) {
+    // The retired spelling's serializer owner-dump (TODO.lang-gaps/03):
+    // the facet refuses at parse, so only a Standard built by hand or
+    // by an older parser carries the field — the dump reads it for
+    // that Standard's round-trip, the canonical verdict is the check.
     out += '  validate_measurement {\n';
     for (const m of ct.measurements) {
       out += '    "' + escapeString(m) + '"\n';

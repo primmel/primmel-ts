@@ -2696,6 +2696,18 @@
       "summary": "The retired step-level executor facet is rejected at parse; the step names its role and the run binds the executor."
     },
     {
+      "id": "wf-01-parse-neg-retired-validate-measurement",
+      "clause": "WF-01",
+      "polarity": "negative",
+      "kind": "parse",
+      "path": "syntax/retired-validate-measurement.prl",
+      "expect": {
+        "parse": "error",
+        "errorMatch": "the validate_measurement facet is retired"
+      },
+      "summary": "The boolean-verdict fold's last retirement (TODO.lang-gaps/03): the process validate_measurement facet (and the conformance_test facet of the same name) refuse at parse — the verdict declares the canonical check (process:<process-id>:validate_measurement:<n>) with the string as its expression and the owner cited by the derives-from ref."
+    },
+    {
       "id": "wf-01-check-pos",
       "clause": "WF-01",
       "polarity": "positive",

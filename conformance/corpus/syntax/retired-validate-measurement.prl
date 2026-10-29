@@ -1,0 +1,6 @@
+process retired_validate_measurement {
+  name "The retired measurement verdict spelling refuses"
+  validate_measurement {
+    "every([within_mpe]) = true"
+  }
+}
