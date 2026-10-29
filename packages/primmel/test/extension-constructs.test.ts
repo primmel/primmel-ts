@@ -57,13 +57,14 @@ conformance_test /conf/metrological-tests/measurement-error-repeatability-mdlo {
     step check_test_conditions "Check test conditions"
     step apply_loads_in_ascending_order "Apply loads in ascending order"
   }
-  acceptance_criteria {
-    criterion within_mpe { requirement /req/metrological/mpe }
-  }
   derived_values {
     value e_l { expression "ocl{(avgIndication - referenceIndication) / f}" }
   }
   result_forms { r60-3/table-6.5 r60-3/table-6.6 }
+}
+check conformance_test:CreepTest:acceptance_criteria:within_mpe {
+  description { The error at every applied load lies within the MPE. }
+  ref derives-from "conformance_test:CreepTest"
 }
 
 table mpe_tiers {
@@ -172,13 +173,17 @@ describe('W1b extensions (G2–G7, G10)', () => {
       'temperature',
       'barometric_pressure',
     ]);
-    // the pass_if facet retired (TODO.lang-gaps/03): the verdict
-    // declares the canonical check alongside the test
-    assert.equal(t.acceptanceCriteria[0].passIf, '');
-    assert.equal(
-      t.acceptanceCriteria[0].requirementId,
-      '/req/metrological/mpe',
+    // the acceptance_criteria block retired (TODO.lang-gaps/03): the
+    // criterion declares the canonical check alongside the test
+    assert.deepEqual(t.acceptanceCriteria, []);
+    const c = m.checks.find(
+      c => c.id === 'conformance_test:CreepTest:acceptance_criteria:within_mpe',
     );
+    assert.ok(c, 'the canonical criterion check is present');
+    assert.deepEqual(c.source, {
+      doc: 'conformance_test:CreepTest',
+      clause: '',
+    });
     assert.equal(
       t.derivedValues[0].expression,
       'ocl{(avgIndication - referenceIndication) / f}',

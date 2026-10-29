@@ -20,9 +20,10 @@ const SRC = `conformance_test CreepTest {
       on_violation invalid
     }
   }
-  acceptance_criteria {
-    criterion creep_30min_criterion { requirement /req/metrological/creep }
-  }
+}
+check conformance_test:CreepTest:acceptance_criteria:creep_30min_criterion {
+  description { The 30-minute creep reading lies within the MPE. }
+  ref derives-from "conformance_test:CreepTest"
 }
 `;
 

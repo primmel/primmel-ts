@@ -20,6 +20,10 @@
   {
    "id": "wf-01-parse-neg-retired-validate-measurement",
    "reason": "the boolean-verdict fold's last retirement (TODO.lang-gaps/03) refuses the validate_measurement facet in the kernel's per-construct facet readers of both homes (the workflow process and the conformance test); the PG grammar's open process and conformance_test blocks read the retired spelling as a legal facet block \u2014 the grammar-side enforcement (scoped validate_measurement badness predicates) is the recorded reopen trigger (TODO.lang-gaps/03)"
+  },
+  {
+   "id": "syn-04-parse-neg-retired-acceptance-criteria",
+   "reason": "the retired acceptance_criteria block is refused by the kernel's per-construct facet readers (both carriers); the PG grammar's open block structure reads any block as a legal facet value \u2014 the grammar-side enforcement (per-construct badness predicates) is the recorded reopen trigger (TODO.lang-gaps/03)"
   }
  ]
 }

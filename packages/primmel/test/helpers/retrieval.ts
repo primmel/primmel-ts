@@ -62,48 +62,37 @@ requirement /req/scope/alpha {
     uses { family.parameters.x }
     accepts { verdict beep_level op lte limit "ocl{mpe}" }
   }
-  acceptance_criteria {
-    type: "threshold"
-    description: "The frobnication error shall not exceed the MPE"
-    limit:
-      expression: "|error|"
-      operator: "lte"
-      threshold_expression: "mpe"
-      unit: "v"
-  }
   dependencies { /req/scope/beta }
   verification { method examination description "By inspection." }
   ref derives-from "urn:test:r:9-1:2021#clause-5.2"
   ref derives-from "urn:test:r:9-1:2021#clause-5.2.1"
 }
 
+check requirement:/req/scope/alpha:acceptance_criteria {
+  expression "|error|"
+  operator lte
+  description { The frobnication error shall not exceed the MPE; the threshold reads mpe in v }
+  ref derives-from "requirement:/req/scope/alpha"
+}
+
 requirement /req/scope/epsilon {
   name "Epsilon"
   statement { The widget's frobnication shall tier by load. }
-  acceptance_criteria {
-    type: "tiered"
-    description: "MPE tiers by load range"
-    variable: "load"
-    variable_unit: "v"
-    limit_expression: "factor × p_LC"
-    tiers:
-      - range:
-          min: 0
-        limit:
-          factor: 0.5
-          expression: "0.5 × p_LC"
-      - range:
-          min: 50000
-        limit:
-          factor: 1
-          expression: "1 × p_LC"
-  }
+}
+
+check requirement:/req/scope/epsilon:acceptance_criteria {
+  description { The MPE tiers by load range: from 0 the limit is 0.5 × p_LC; from 50000 it is 1 × p_LC (the variable is load, in v) }
+  ref derives-from "requirement:/req/scope/epsilon"
 }
 
 requirement /req/scope/zeta {
   name "Zeta"
   statement { The widget shall be judged by inspection. }
-  acceptance_criteria { Judged by inspection against the reference checklist }
+}
+
+check requirement:/req/scope/zeta:acceptance_criteria {
+  description { Judged by inspection against the reference checklist }
+  ref derives-from "requirement:/req/scope/zeta"
 }
 
 requirement /req/scope/beta {
@@ -156,29 +145,22 @@ conformance_test /conf/scope/beta-composite {
       on_violation invalid
     }
   }
-  acceptance_criteria {
-    type composite
-    description "Composite of partial checks"
-    criterion partial_check {
-      target /req/scope/beta
-      criterion I/MPE
-      optional true
-      description "Partial check"
-      reference "urn:test:r:9-2:2021#clause-7.2"
-    }
-    criterion verdict_check {
-      accepts { verdict beep_level op lte limit "ocl{mpe}" }
-    }
-  }
 }
 
 check conformance_test:/conf/scope/beta-composite:acceptance_criteria {
   expression "ocl{all_passed}"
+  description { Composite of partial checks }
   ref derives-from "conformance_test:/conf/scope/beta-composite"
 }
 
 check conformance_test:/conf/scope/beta-composite:acceptance_criteria:partial_check {
   expression "ocl{abs(x) <= mpe}"
+  description { Partial check — optional; criterion I/MPE; target /req/scope/beta; reference urn:test:r:9-2:2021#clause-7.2 }
+  ref derives-from "conformance_test:/conf/scope/beta-composite"
+}
+
+check conformance_test:/conf/scope/beta-composite:acceptance_criteria:verdict_check {
+  expression "ocl{beep_level <= mpe}"
   ref derives-from "conformance_test:/conf/scope/beta-composite"
 }`,
   );

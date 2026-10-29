@@ -50,9 +50,6 @@ conformance_test /conf/x {
   variables {
     variable applied_load { type number unit "kg" source declared }
   }
-  acceptance_criteria {
-    type composite
-  }
 }
 requirement /req/x {
   name "X"

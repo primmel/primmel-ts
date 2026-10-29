@@ -80,11 +80,12 @@ requirement /req/metrological/measuring-range-min {
     expression "ocl{sample.test_context.d_min >= model.parameters.e_min}"
     uses { sample.test_context.d_min model.parameters.e_min }
   }
-  acceptance_criteria {
-    type: "threshold"
-    description: "Minimum test load shall be at least E_min"
-  }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+
+check requirement:/req/metrological/measuring-range-min:acceptance_criteria {
+  description { Minimum test load shall be at least E_min }
+  ref derives-from "requirement:/req/metrological/measuring-range-min"
+}
 }
 
 requirement /req/metrological/measuring-range-max {
@@ -95,11 +96,12 @@ requirement /req/metrological/measuring-range-max {
     expression "ocl{sample.test_context.d_max <= model.parameters.e_max}"
     uses { sample.test_context.d_max model.parameters.e_max }
   }
-  acceptance_criteria {
-    type: "threshold"
-    description: "Maximum test load shall not exceed E_max"
-  }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
+
+check requirement:/req/metrological/measuring-range-max:acceptance_criteria {
+  description { Maximum test load shall not exceed E_max }
+  ref derives-from "requirement:/req/metrological/measuring-range-max"
+}
 }
 
 requirement /req/metrological/zero-return {

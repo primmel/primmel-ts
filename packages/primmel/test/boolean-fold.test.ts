@@ -6,19 +6,19 @@
 // the parsers and the C161 completeness walk share.
 //
 //   1. form pass_fail                       → form:<fid>:pass_fail      (REFUSES at parse)
-//   2. conformance_test acceptance_criteria → conformance_test:<tid>:acceptance_criteria[:<criterion-id>]  (the pass_if facets REFUSE)
-//   3. requirement acceptance_criteria (raw)→ requirement:<rid>:acceptance_criteria
+//   2. conformance_test acceptance_criteria → conformance_test:<tid>:acceptance_criteria[:<criterion-id>]  (REFUSES at parse)
+//   3. requirement acceptance_criteria (raw)→ requirement:<rid>:acceptance_criteria  (REFUSES at parse)
 //   4. requirement limit                    → requirement:<rid>:limit:<n>
 //   5. validate_measurement (process + test)→ <kind>:<id>:validate_measurement:<n>  (REFUSES at parse)
 //
-// Spellings 1 and 2's pass_if retired in the wave's second PR and
-// spelling 5 in the third: the surface refuses at parse and the corpus
-// declares the canonical check instead; spellings 3–4 keep parsing
-// until their own migration. Their fold derivations stay total over
-// Standards built by hand or by an older parser (the C161 walk's
-// subject); a retired spelling's derivation leaves the fold module
-// with its refusal — the spelling no longer parses, the fold would be
-// dead code.
+// Spellings 1 and 2's pass_if retired in the wave's second PR, spelling
+// 5 in the third, and the two acceptance_criteria carriers in the
+// fourth: the surface refuses at parse and the corpus declares the
+// canonical check instead; spelling 4 keeps parsing until its own
+// migration. The remaining derivations stay total over Standards built
+// by hand or by an older parser (the C161 walk's subject); a retired
+// spelling's derivation leaves the fold module with its refusal — the
+// spelling no longer parses, the fold would be dead code.
 //
 // The serialization pin: a folded check is the parse-side view of its
 // owner — the serializer emits the canonical form only, so dump(load(x))
@@ -32,11 +32,8 @@ import { load, dump } from '../src/ser-des/index';
 import {
   foldIdentifierInputs,
   formFoldChecks,
-  conformanceTestFoldChecks,
 } from '../src/ser-des/config/check-fold';
 import type Form from '../src/types/Form';
-import type ConformanceTest from '../src/types/ConformanceTest';
-import type { AcceptanceCriterion } from '../src/types/ConformanceTest';
 
 function folded(model: string) {
   const standard = load(model);
@@ -126,78 +123,30 @@ describe('spelling 1 — the form pass_fail refuses at parse', () => {
   });
 });
 
-describe('spelling 2 — the acceptance_criteria pass_if refuses at parse', () => {
-  it('the block-level composite pass_if refuses, naming the bare slot', () => {
-    refused(
+describe('spelling 2 — the conformance test acceptance_criteria refuses at parse', () => {
+  it('the typed block refuses, naming the canonical check and the criterion slots', () => {
+    const err = refused(
       `
       conformance_test /conf/type-evaluation/zero-setting {
         name "Zero-setting test"
         acceptance_criteria {
           type composite
-          pass_if "ocl{zero_accuracy <= 0.25 and zero_range <= 4}"
-        }
-      }
-    `,
-      /the pass_if facet is retired.*conformance_test:\/conf\/type-evaluation\/zero-setting:acceptance_criteria \{/s,
-    );
-  });
-
-  it('the criterion pass_if refuses, naming the criterion slot', () => {
-    refused(
-      `
-      conformance_test /conf/disturbances {
-        name "Disturbance test"
-        acceptance_criteria {
-          criterion no_significant_fault_during {
-            target /req/metrological/disturbances
-            pass_if "ocl{abs(fault) <= fault_limit or fault_detected}"
-            criterion D/NSFd
+          criterion zero_accuracy_criterion {
+            target /req/metrological/zero-setting
+            description "The zero accuracy holds"
           }
         }
       }
     `,
-      /the pass_if facet is retired.*acceptance_criteria:no_significant_fault_during \{/s,
+      /the acceptance_criteria block is retired.*conformance_test:\/conf\/type-evaluation\/zero-setting:acceptance_criteria \{/s,
     );
+    assert.match(err.message, /TODO\.lang-gaps\/03/);
+    assert.match(err.message, /:<criterion> slot/s);
   });
 
-  it('the fold derivation survives for Standards built by hand or by an older parser', () => {
-    const criterion: AcceptanceCriterion = {
-      item: 'no_significant_fault_during',
-      passIf: 'ocl{abs(fault) <= fault_limit or fault_detected}',
-      requirementId: '/req/metrological/disturbances',
-      criterion: '',
-      optional: false,
-      description: '',
-      reference: '',
-      sourceDiscrepancy: null,
-    };
-    const ct: Pick<
-      ConformanceTest,
-      'id' | 'acceptancePassIf' | 'acceptanceCriteria'
-    > = {
-      id: '/conf/disturbances',
-      acceptancePassIf: 'ocl{composite_held}',
-      acceptanceCriteria: [criterion],
-    };
-    const checks = conformanceTestFoldChecks(ct);
-    assert.deepEqual(
-      checks.map(c => c.id),
-      [
-        'conformance_test:/conf/disturbances:acceptance_criteria',
-        'conformance_test:/conf/disturbances:acceptance_criteria:no_significant_fault_during',
-      ],
-    );
-    // the pass_if names first, then the target ref
-    assert.deepEqual(checks[1]!.inputs, [
-      'fault',
-      'fault_limit',
-      'fault_detected',
-      '/req/metrological/disturbances',
-    ]);
-  });
-
-  it('documentary criteria (no pass_if) still parse and fold nothing', () => {
-    const checks = folded(`
+  it('a documentary-only block refuses too (the block itself is the retired surface)', () => {
+    refused(
+      `
       conformance_test /conf/docs {
         name "Documentation test"
         acceptance_criteria {
@@ -207,14 +156,16 @@ describe('spelling 2 — the acceptance_criteria pass_if refuses at parse', () =
           }
         }
       }
-    `);
-    assert.deepEqual(Object.keys(checks), []);
+    `,
+      /the acceptance_criteria block is retired.*conformance_test:\/conf\/docs:acceptance_criteria \{/s,
+    );
   });
 });
 
-describe('spelling 3 — the raw requirement acceptance_criteria folds', () => {
-  it('a threshold block folds the limit triple', () => {
-    const checks = folded(`
+describe('spelling 3 — the raw requirement acceptance_criteria refuses at parse', () => {
+  it('a threshold block refuses, naming the canonical check', () => {
+    const err = refused(
+      `
       requirement /req/severity {
         name "Declared severity"
         acceptance_criteria {
@@ -226,32 +177,15 @@ describe('spelling 3 — the raw requirement acceptance_criteria folds', () => {
             threshold_expression: "true"
         }
       }
-    `);
-    const c = checks['requirement:/req/severity:acceptance_criteria'];
-    assert.ok(c, 'the folded check is present');
-    assert.equal(c.expression, 'L_sev');
-    assert.equal(c.operator, 'eq');
-    assert.equal(c.threshold, 'true');
-    assert.deepEqual(c.inputs, ['L_sev']);
+    `,
+      /the acceptance_criteria block is retired.*requirement:\/req\/severity:acceptance_criteria \{/s,
+    );
+    assert.match(err.message, /TODO\.lang-gaps\/03/);
   });
 
-  it('a raw pass_if folds the predicate', () => {
-    const checks = folded(`
-      requirement /req/watched {
-        name "Watched"
-        acceptance_criteria {
-          pass_if: "ocl{guard_held}"
-        }
-      }
-    `);
-    const c = checks['requirement:/req/watched:acceptance_criteria'];
-    assert.ok(c);
-    assert.equal(c.expression, 'ocl{guard_held}');
-    assert.deepEqual(c.inputs, ['guard_held']);
-  });
-
-  it('a qualitative block (typed prose items) states no verdict and folds nothing', () => {
-    const checks = folded(`
+  it('a judgment block refuses with the description-only guidance', () => {
+    const err = refused(
+      `
       requirement /req/qualitative {
         name "Qualitative"
         acceptance_criteria {
@@ -261,8 +195,13 @@ describe('spelling 3 — the raw requirement acceptance_criteria folds', () => {
             - description: "The dip characteristics are at least as severe"
         }
       }
-    `);
-    assert.deepEqual(Object.keys(checks), []);
+    `,
+      /the acceptance_criteria block is retired.*requirement:\/req\/qualitative:acceptance_criteria \{/s,
+    );
+    assert.match(
+      err.message,
+      /a judgment block declares the prose in the check's description, no expression/s,
+    );
   });
 });
 
@@ -400,33 +339,20 @@ describe('the fold identifiers (foldIdentifierInputs)', () => {
 });
 
 describe('the serialization pin (C161 — the fold never serializes)', () => {
-  // The two still-parsing spellings in one document. The pre-change
-  // dump of this text is the text's canonical form with NO checks
+  // The one still-parsing spelling in a document. The pre-change dump
+  // of this text is the text's canonical form with NO checks
   // collection; the fold is parse-side, so dump(load(x)) must stay
   // byte-identical to that — the folded checks are the view, never the
-  // wire. (The pass_fail, pass_if, and validate_measurement spellings
-  // refuse at parse since their retirements — the refusals pin above.)
+  // wire. (The pass_fail, pass_if, acceptance_criteria, and
+  // validate_measurement spellings refuse at parse since their
+  // retirements — the refusals pin above.)
   const FIXTURE = `
-conformance_test /conf/type-evaluation/zero-setting {
-  name "Zero-setting test"
-  acceptance_criteria {
-    type composite
-  }
-}
-
 requirement /req/metrological/mpe {
   name "MPE"
   limit {
     expression "ocl{abs(e) <= mpe}"
     uses { e mpe }
     accepts { verdict mdlo_normalized op lte limit "ocl{mpe}" }
-  }
-  acceptance_criteria {
-    type: "threshold"
-    limit:
-      expression: "L_sev"
-      operator: "eq"
-      threshold_expression: "true"
   }
 }
 
@@ -435,12 +361,9 @@ process verdict_computation {
 }
 `;
 
-  it('the fixture carries the remaining spellings and folds all of them', () => {
+  it('the fixture carries the remaining spelling and folds it', () => {
     const ids = Object.keys(folded(FIXTURE));
-    assert.deepEqual(ids, [
-      'requirement:/req/metrological/mpe:limit:1',
-      'requirement:/req/metrological/mpe:acceptance_criteria',
-    ]);
+    assert.deepEqual(ids, ['requirement:/req/metrological/mpe:limit:1']);
   });
 
   it('dump(load(x)) is byte-identical to the pre-change dump (no check blocks)', () => {
