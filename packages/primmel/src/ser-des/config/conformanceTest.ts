@@ -44,6 +44,7 @@ import {
   dumpSourceDiscrepancy,
 } from './sourceDiscrepancy';
 import { parseAcceptance, dumpAcceptance } from './acceptance';
+import { conformanceTestFoldChecks } from './check-fold';
 import { parseDesign, dumpDesign } from './design';
 import {
   parseRequiredCompetence,
@@ -1030,6 +1031,13 @@ export const parseConformanceTest: Parser = function (id, data) {
 
   return ctx => {
     ctx.conformanceTests[id] = result;
+    // C161 (TODO.lang-gaps/03): the retired acceptance_criteria and
+    // validate_measurement spellings fold into the checks collection at
+    // parse — the canonical checks are the view, never serialized (dump
+    // skips folded checks).
+    for (const fold of conformanceTestFoldChecks(result)) {
+      ctx.checks[fold.id] = fold;
+    }
     return ctx;
   };
 };

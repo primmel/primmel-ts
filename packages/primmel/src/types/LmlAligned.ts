@@ -85,4 +85,16 @@ export interface Check {
   /** The threshold expression or bound symbol name. */
   threshold: string;
   source: SourceRef | null;
+  /**
+   * The fold provenance (spec §16 C161, TODO.lang-gaps/03): set when
+   * this check materialized from one of the five retired boolean
+   * spellings at parse — `owner` is `<kind>:<id>` of the construct
+   * carrying the spelling, `facet` the slot the verdict folded from
+   * (`pass_fail`, `limit:2`, `acceptance_criteria:criterion-id`,
+   * `validate_measurement:1`, …). A folded check is the parse-side view
+   * of its owner: the serializer emits the canonical form only, so the
+   * fold never serializes (dump skips it) and C160 judges the owner's
+   * spelling, not the view.
+   */
+  folds?: { owner: string; facet: string };
 }

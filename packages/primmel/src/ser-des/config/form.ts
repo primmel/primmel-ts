@@ -24,6 +24,7 @@ import {
   refTargetToSourceRef,
 } from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
+import { formFoldChecks } from './check-fold';
 import type Form from '../../types/Form';
 import type {
   FormConstraint,
@@ -174,6 +175,12 @@ export const parseForm: Parser = function (id, data) {
 
   return ctx => {
     ctx.forms[id] = result;
+    // C161 (TODO.lang-gaps/03): the retired pass_fail spelling folds
+    // into the checks collection at parse — the canonical check is the
+    // view, never serialized (dump skips folded checks).
+    for (const fold of formFoldChecks(result)) {
+      ctx.checks[fold.id] = fold;
+    }
     return ctx;
   };
 };

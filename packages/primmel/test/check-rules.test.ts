@@ -53,18 +53,21 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // contract — language-v3 §16); C168-C172, C176-C179 are the
     // expression plane and its co-rules; C180-C182 are the run plane
     // and the series-record link; C183 is the record-run link and C184
-    // the field's scalar range (C173-C175 reserved).
+    // the field's scalar range (C173-C175 reserved); C189 is the
+    // re-homed datum render-notation leg (the boolean-fold fold,
+    // TODO.lang-gaps/03).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`).filter(
         id => id !== 'C112' && id !== 'C94',
       ),
       ...Array.from({ length: 44 }, (_, i) => `C${i + 130}`),
       ...Array.from({ length: 13 }, (_, i) => `C${i + 176}`),
+      'C189',
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128 except C112 (retired with the reference construct) and C94 (retired with the formulas_used construct), C130-C173 (phase 2 retired C129), C176-C188 (C174-C175 reserved; C186 the realization link TODO.lang-spec/13; C187-C188 the workspace locator plane, TODO.lang-spec/15)',
+      'C1-C128 except C112 (retired with the reference construct) and C94 (retired with the formulas_used construct), C130-C173 (phase 2 retired C129), C176-C188 (C174-C175 reserved; C186 the realization link TODO.lang-spec/13; C187-C188 the workspace locator plane, TODO.lang-spec/15), C189 the datum render-notation leg re-homed from the mislabeled C161 row',
     );
   });
 

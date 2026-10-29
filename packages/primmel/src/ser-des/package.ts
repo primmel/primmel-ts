@@ -39,6 +39,12 @@ import {
   type Workspace,
 } from './locators';
 import { parsePackage } from './config/packageManifest';
+import {
+  conformanceTestFoldChecks,
+  formFoldChecks,
+  processFoldChecks,
+  requirementFoldChecks,
+} from './config/check-fold';
 import type { Position } from './tokenize';
 import type { LoadOptions, LoadResult } from './index';
 import type { PackageManifest } from '../types/Package';
@@ -1000,6 +1006,20 @@ function composePackage(
       for (const [key, value] of Object.entries(
         next[field] as Record<string, unknown>,
       )) {
+        // A folded check is the parse-side view of its owner spelling
+        // (C161, TODO.lang-gaps/03) — derived data, never authored: it
+        // never merges as a declaration of its own. The re-derivation
+        // below the loop recomputes the composed closure's folds from
+        // the MERGED owners, so an overlay-redeclared owner replaces
+        // the view under the owner's own merge semantics and two
+        // packages declaring the same-named owner never collide on the
+        // derived id.
+        if (
+          field === 'checks' &&
+          (value as { folds?: unknown }).folds !== undefined
+        ) {
+          continue;
+        }
         const prior = pm.get(key);
         if (prior !== undefined) {
           // The overlay marker (Extension: explicit redefine). Authors
@@ -1066,6 +1086,42 @@ function composePackage(
       acc.metadata = next.metadata;
     }
     harvestScopes(id, next);
+  }
+
+  // The fold plane re-derives from the MERGED owners (C161,
+  // TODO.lang-gaps/03): folded checks are the parse-side view of the
+  // retired boolean spellings, so the composed closure's views are
+  // recomputed from the merged forms / requirements / conformance tests
+  // / processes — the one derivation (ser-des/config/check-fold.ts)
+  // replayed over the merge's outcome, never merged as data of their
+  // own.
+  {
+    const checks = acc.checks;
+    for (const key of Object.keys(checks)) {
+      if (checks[key].folds !== undefined) {
+        delete checks[key];
+      }
+    }
+    for (const form of Object.values(acc.forms)) {
+      for (const fold of formFoldChecks(form)) {
+        checks[fold.id] = fold;
+      }
+    }
+    for (const requirement of Object.values(acc.requirements)) {
+      for (const fold of requirementFoldChecks(requirement)) {
+        checks[fold.id] = fold;
+      }
+    }
+    for (const ct of Object.values(acc.conformanceTests)) {
+      for (const fold of conformanceTestFoldChecks(ct)) {
+        checks[fold.id] = fold;
+      }
+    }
+    for (const process of Object.values(acc.processes)) {
+      for (const fold of processFoldChecks(process)) {
+        checks[fold.id] = fold;
+      }
+    }
   }
 
   // Post-merge: every requires entry names a composed package id or one

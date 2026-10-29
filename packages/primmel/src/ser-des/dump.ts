@@ -97,6 +97,19 @@ export default function dump(
       }
       return;
     }
+    if (field === 'checks') {
+      // C161 (TODO.lang-gaps/03): a check folded from a retired boolean
+      // spelling is the parse-side view of its owner — the serializer
+      // emits the canonical form only, so a fold never serializes and
+      // dump(load(x)) stays byte-identical for documents spelling the
+      // verdict the retired way.
+      for (const c of model.checks ?? []) {
+        if (!c.folds) {
+          out += dumpersRef.checks(c);
+        }
+      }
+      return;
+    }
     const items = model[field] as unknown[];
     const dumper = dumpers[field] as (item: unknown) => string;
     for (const item of items) {

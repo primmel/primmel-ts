@@ -46,6 +46,7 @@ import {
   dumpSourceDiscrepancy,
 } from './sourceDiscrepancy';
 import { parseAcceptance, dumpAcceptance } from './acceptance';
+import { requirementFoldChecks } from './check-fold';
 import type { ConstructDefinition } from './index';
 import type {
   Requirement,
@@ -451,6 +452,13 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
 
   return ctx => {
     ctx.requirements[id] = result;
+    // C161 (TODO.lang-gaps/03): the retired limit and raw
+    // acceptance_criteria spellings fold into the checks collection at
+    // parse — the canonical checks are the view, never serialized (dump
+    // skips folded checks).
+    for (const fold of requirementFoldChecks(result)) {
+      ctx.checks[fold.id] = fold;
+    }
     return ctx;
   };
 };
