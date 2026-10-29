@@ -583,6 +583,22 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     "an identity_slot's inline datum block agrees with the slot's flat type — the inscription plane of the datum substrate, the alias doctrine's second rung (TODO.lang-gaps/04, spec [[datum-unification]])",
   ),
+  // ── C192: attribute-definition-datum-coherence — the datum
+  // unification's fourth rung (TODO.lang-gaps/04, spec
+  // [[datum-unification]]): the attribute_definition is the MODEL plane
+  // of the one datum substrate, so a facet its inline `datum { … }`
+  // block restates (type against the flat value_type, origin, scope)
+  // must AGREE with the flat spelling — a contradiction is an error.
+  // A facet the block leaves silent carries no leg, and the absent
+  // block carries no leg (the flat spelling alone is the whole story).
+  R(
+    'C192',
+    'attribute-definition-datum-coherence',
+    'base',
+    'error',
+    'normal',
+    "an attribute_definition's inline datum block agrees with the flat facets it restates (type/value_type, origin, scope) — the model plane of the datum substrate, the alias doctrine's fourth rung (TODO.lang-gaps/04, spec [[datum-unification]])",
+  ),
   R(
     'C173',
     'step-plane-refs-resolve',
