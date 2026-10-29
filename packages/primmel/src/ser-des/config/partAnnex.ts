@@ -45,7 +45,13 @@ export const parsePartAnnex: Parser = (id: string, data: string) => {
         }
         annex.obligation = obligation;
       } else if (keyword === 'summary') {
-        annex.summary = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
+        // bare legacy, `summary { … }` canonical; the dump emits the
+        // block. The body is trimmed so the fixpoint holds.
+        const v = value();
+        annex.summary = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (keyword === 'realization') {
         annex.realization = stripWrapping(value());
       } else if (keyword === 'source') {
@@ -89,7 +95,7 @@ export const dumpPartAnnex: Dumper<PartAnnex> = function (a) {
     out += '  obligation ' + dumpBareSafe(a.obligation) + '\n';
   }
   if (a.summary) {
-    out += '  summary "' + escapeString(a.summary) + '"\n';
+    out += '  summary { ' + a.summary + ' }\n';
   }
   if (a.realization) {
     out += '  realization "' + escapeString(a.realization) + '"\n';

@@ -39,7 +39,10 @@ export function parseSourceDiscrepancy(block: string): SourceDiscrepancy {
       break;
     }
     if (cmd === 'summary') {
-      sd.summary = stripWrapping(t[i++]);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form — bare
+      // legacy, `summary { … }` canonical; the dump emits the block.
+      const v = t[i++];
+      sd.summary = v.startsWith('{') ? unwrapBlock(v).trim() : stripWrapping(v);
     } else if (cmd === 'sources') {
       sd.sources = tokenize(stripWrapping(t[i++]))
         .map(stripWrapping)

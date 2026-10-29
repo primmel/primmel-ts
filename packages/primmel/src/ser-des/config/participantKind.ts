@@ -120,7 +120,17 @@ function parseSubkind(id: string, block: string): ParticipantSubkind {
       } else if (keyword === 'term') {
         subkind.term = stripWrapping(value());
       } else if (keyword === 'definition') {
-        subkind.definition = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+        // `definition { … }` canonical; the dump emits the block. The body is
+
+        // trimmed so the fixpoint holds.
+
+        const dv = value();
+
+        subkind.definition = dv.startsWith('{')
+          ? unwrapBlock(dv).trim()
+          : stripWrapping(dv);
       } else if (keyword === 'data_flag') {
         subkind.data_flag = stripWrapping(value());
       } else if (keyword === 'acceptance') {
@@ -170,7 +180,17 @@ export const parseParticipantKind: Parser = (id: string, data: string) => {
       } else if (keyword === 'clause') {
         kind.clause = stripWrapping(value());
       } else if (keyword === 'definition') {
-        kind.definition = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+        // `definition { … }` canonical; the dump emits the block. The body is
+
+        // trimmed so the fixpoint holds.
+
+        const dv = value();
+
+        kind.definition = dv.startsWith('{')
+          ? unwrapBlock(dv).trim()
+          : stripWrapping(dv);
       } else if (keyword === 'member') {
         kind.member = stripWrapping(value());
       } else if (keyword === 'competence') {
@@ -266,7 +286,7 @@ function dumpSubkind(s: ParticipantSubkind): string {
     out += '    term "' + escapeString(s.term) + '"\n';
   }
   if (s.definition) {
-    out += '    definition "' + escapeString(s.definition) + '"\n';
+    out += '    definition { ' + s.definition + ' }\n';
   }
   if (s.data_flag) {
     out += '    data_flag "' + escapeString(s.data_flag) + '"\n';
@@ -293,7 +313,7 @@ export const dumpParticipantKind: Dumper<ParticipantKind> = function (k) {
     out += '  clause "' + escapeString(k.clause) + '"\n';
   }
   if (k.definition) {
-    out += '  definition "' + escapeString(k.definition) + '"\n';
+    out += '  definition { ' + k.definition + ' }\n';
   }
   if (k.member) {
     out += '  member ' + dumpBareSafe(k.member) + '\n';

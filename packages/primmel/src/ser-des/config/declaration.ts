@@ -104,7 +104,17 @@ export const parseDeclarationKind: Parser = (id: string, data: string) => {
       } else if (keyword === 'procedure') {
         kind.procedure = stripWrapping(value());
       } else if (keyword === 'definition') {
-        kind.definition = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+        // `definition { … }` canonical; the dump emits the block. The body is
+
+        // trimmed so the fixpoint holds.
+
+        const dv = value();
+
+        kind.definition = dv.startsWith('{')
+          ? unwrapBlock(dv).trim()
+          : stripWrapping(dv);
       } else if (keyword === 'scope_model') {
         kind.scope_model = stripWrapping(value());
       } else if (keyword === 'scheme_a_obligation') {
@@ -174,7 +184,7 @@ export const dumpDeclarationKind: Dumper<DeclarationKind> = function (k) {
     out += '  procedure "' + escapeString(k.procedure) + '"\n';
   }
   if (k.definition) {
-    out += '  definition "' + escapeString(k.definition) + '"\n';
+    out += '  definition { ' + k.definition + ' }\n';
   }
   if (k.scope_model) {
     out += '  scope_model ' + dumpBareSafe(k.scope_model) + '\n';
@@ -211,7 +221,11 @@ export const parseDeclarationGate: Parser = (id: string, data: string) => {
       if (keyword === 'clause') {
         gate.clause = stripWrapping(value());
       } else if (keyword === 'statement') {
-        gate.statement = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
+        const v = value();
+        gate.statement = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (keyword === 'holder') {
         gate.holder = stripWrapping(value());
       } else if (keyword === 'declaration') {
@@ -256,7 +270,7 @@ export const dumpDeclarationGate: Dumper<DeclarationGate> = function (g) {
     out += '  clause "' + escapeString(g.clause) + '"\n';
   }
   if (g.statement) {
-    out += '  statement "' + escapeString(g.statement) + '"\n';
+    out += '  statement { ' + g.statement + ' }\n';
   }
   if (g.holder) {
     out += '  holder ' + dumpBareSafe(g.holder) + '\n';

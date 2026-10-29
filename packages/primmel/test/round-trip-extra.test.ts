@@ -14,7 +14,7 @@ describe('round-trip: additional constructs', () => {
         data_class dc1
       }
       class dc1 {
-        attr1: string { definition "An attr" }
+        attr1: string { definition { An attr } }
       }
     `;
     const out = roundTrip(src);
@@ -48,8 +48,8 @@ describe('round-trip: additional constructs', () => {
       }
     `;
     const out = roundTrip(src);
-    assert.match(out, /active \{[\s\S]*definition "Active status"/);
-    assert.match(out, /archived \{[\s\S]*definition "Archived"/);
+    assert.match(out, /active \{[\s\S]*definition \{ Active status \}/);
+    assert.match(out, /archived \{[\s\S]*definition \{ Archived \}/);
   });
 
   it('preserves an approval with actor, approver, records, and references', () => {

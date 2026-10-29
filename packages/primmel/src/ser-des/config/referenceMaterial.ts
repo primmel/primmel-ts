@@ -253,7 +253,7 @@ export const dumpReferenceMaterial: Dumper<ReferenceMaterial> = function (m) {
     out += '  name "' + escapeString(m.name) + '"\n';
   }
   if (m.definition) {
-    out += '  definition "' + escapeString(m.definition) + '"\n';
+    out += '  definition { ' + m.definition + ' }\n';
   }
   const rmSources =
     m.sourceRefs && m.sourceRefs.length > 0

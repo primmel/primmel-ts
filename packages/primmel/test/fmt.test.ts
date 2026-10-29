@@ -32,7 +32,7 @@ function makePkg(files: Record<string, string>): string {
 const LEGACY = `requirement /req/r {
  name "R"
 
- statement "S"
+ statement { S }
 
 
  limit {
@@ -43,7 +43,7 @@ const LEGACY = `requirement /req/r {
 
 const CANONICAL = `requirement /req/r {
   name "R"
-  statement "S"
+  statement { S }
   limit {
     expression "ocl{1 <= 2}"
   }
@@ -97,7 +97,7 @@ describe('fmt', () => {
   it('handles the args-bound carrier form to a fixpoint', () => {
     const inline = `requirement /req/m {
   name "M"
-  statement "S"
+  statement { S }
   limit {
     args {
       e <- observable:e

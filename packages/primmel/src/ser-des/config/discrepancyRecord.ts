@@ -22,7 +22,12 @@
 
 import type DiscrepancyRecord from '../../types/DiscrepancyRecord';
 import tokenize from '../tokenize';
-import { escapeString, stripWrapping, tokenizePackage } from '../tokenize';
+import {
+  escapeString,
+  stripWrapping,
+  tokenizePackage,
+  unwrapBlock,
+} from '../tokenize';
 import type { Dumper, Parser } from '../types';
 import { VALID_RESOLUTIONS } from './sourceDiscrepancy';
 
@@ -59,7 +64,12 @@ export const parseDiscrepancyRecord: Parser = function (id, data) {
       }
       result.status = s;
     } else if (keyword === 'summary') {
-      result.summary = stripWrapping(t[i++]);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form — bare
+      // legacy, `summary { … }` canonical; the dump emits the block.
+      const v = t[i++];
+      result.summary = v.startsWith('{')
+        ? unwrapBlock(v).trim()
+        : stripWrapping(v);
     } else if (keyword === 'sources') {
       result.sources = tokenize(stripWrapping(t[i++]))
         .map(stripWrapping)

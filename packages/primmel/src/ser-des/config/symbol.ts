@@ -186,7 +186,7 @@ export const dumpSymbol: Dumper<Symbol> = function (s) {
   let out = 'symbol ' + s.id + ' {\n';
   out += '  name "' + escapeString(s.name) + '"\n';
   if (s.definition) {
-    out += '  definition "' + escapeString(s.definition) + '"\n';
+    out += '  definition { ' + s.definition + ' }\n';
   }
   out += '  type ' + s.type + '\n';
   if (s.unit && s.unit !== '1') {

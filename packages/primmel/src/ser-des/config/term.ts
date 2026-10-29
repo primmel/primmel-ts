@@ -175,7 +175,7 @@ export const dumpTerm: Dumper<Term> = function (term) {
     out += '  label "' + escapeString(term.label) + '"\n';
   }
   if (term.definition) {
-    out += '  definition "' + escapeString(term.definition) + '"\n';
+    out += '  definition { ' + term.definition + ' }\n';
   }
   if (term.symbolId) {
     out += '  symbol ' + term.symbolId + '\n';

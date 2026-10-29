@@ -208,7 +208,9 @@ function readValue(raw: string): string {
   ) {
     return unescapeString(raw.substr(1, raw.length - 2));
   }
-  return unwrapBlock(raw);
+  // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form's padding
+  // trims so the fixpoint holds.
+  return unwrapBlock(raw).trim();
 }
 
 export const parseCompetenceKind: Parser = function (id, data) {
@@ -265,7 +267,7 @@ export const dumpCompetenceKind: Dumper<CompetenceKind> = function (k) {
     out += '  label "' + escapeString(k.label) + '"\n';
   }
   if (k.definition) {
-    out += '  definition "' + escapeString(k.definition) + '"\n';
+    out += '  definition { ' + k.definition + ' }\n';
   }
   if (k.source && (k.source.doc || k.source.clause)) {
     out += dumpSourceRefAsRef(k.source, '  ', escapeString);
