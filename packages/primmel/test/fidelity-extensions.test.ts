@@ -121,9 +121,7 @@ const CT_SRC = `conformance_test ErrorTest {
   acceptance_criteria {
     type composite
     description "Composite of partial tests"
-    pass_if "ocl{all_passed}"
     criterion partial_mpe {
-      pass_if "ocl{abs(e_l) <= mpe}"
       target /req/metrological/mpe
       criterion I/MPE
       optional true
@@ -173,10 +171,12 @@ describe('conformance_test fidelity extensions', () => {
       ct.acceptanceCriteriaDescription,
       'Composite of partial tests',
     );
-    assert.equal(ct.acceptancePassIf, 'ocl{all_passed}');
+    // the pass_if facets retired (TODO.lang-gaps/03): the verdicts
+    // declare the canonical checks alongside the test
+    assert.equal(ct.acceptancePassIf, '');
     assert.deepEqual(ct.acceptanceCriteria[0], {
       item: 'partial_mpe',
-      passIf: 'ocl{abs(e_l) <= mpe}',
+      passIf: '',
       requirementId: '/req/metrological/mpe',
       criterion: 'I/MPE',
       optional: true,
@@ -648,13 +648,11 @@ const FORM_SRC = `form F1 {
       condition "when the drift test applies"
     }
   }
-  pass_fail {
-    criteria { All errors within MPE }
-    pass_if "ocl{max_error <= mpe}"
-    derivation {
-      value max_error { calculation "ocl{max(abs(errors))}" for_each measurements unit "ppm" }
-    }
-  }
+}
+check form:F1:pass_fail {
+  expression "ocl{max_error <= mpe}"
+  description { All errors within MPE }
+  ref derives-from "form:F1"
 }
 `;
 
@@ -738,32 +736,44 @@ describe('form fidelity extensions', () => {
     assert.equal(ev.condition, 'when the drift test applies');
   });
 
-  it('parses pass_fail derivation rules', () => {
-    const m = load(FORM_SRC);
-    const pf = m.forms[0].passFail!;
-    assert.equal(pf.criteria, 'All errors within MPE');
-    assert.equal(pf.passIf, 'ocl{max_error <= mpe}');
-    assert.deepEqual(pf.derivations, [
-      {
-        name: 'max_error',
-        calculation: 'ocl{max(abs(errors))}',
-        forEach: 'measurements',
-        unit: 'ppm',
-      },
-    ]);
+  it('the retired pass_fail block refuses, naming the canonical check', () => {
+    assert.throws(
+      () =>
+        load(
+          'form F2 {\n  name "Plain"\n  pass_fail { criteria { c } pass_if "ocl{ok}" }\n}',
+        ),
+      /the pass_fail block is retired.*form:F2:pass_fail/s,
+    );
   });
 
-  it('keeps the single-line pass_fail dump when no derivations exist', () => {
-    const m1 = load(`form F2 {
-      name "Plain"
-      pass_fail { criteria { c } pass_if "ocl{ok}" }
-    }`);
+  it('the migrated verdict declares the canonical check (round-trips)', () => {
+    const m1 = load(FORM_SRC);
+    const c = m1.checks.find(x => x.id === 'form:F1:pass_fail');
+    assert.ok(c, 'the migrated check is present');
+    assert.equal(c.expression, 'ocl{max_error <= mpe}');
+    assert.deepEqual(c.source, { doc: 'form:F1', clause: '' });
+    assert.equal(c.description, 'All errors within MPE');
     const dumped = dump(m1);
-    assert.ok(
-      dumped.includes('pass_fail { criteria { c } pass_if "ocl{ok}" }'),
-    );
+    assert.ok(dumped.includes('check form:F1:pass_fail {'));
+    assert.ok(dumped.includes('ref derives-from "form:F1"'));
     const m2 = load(dumped);
-    assert.deepEqual(m2.forms, m1.forms);
+    assert.deepEqual(m2.checks, m1.checks);
+    assert.equal(dump(m2), dumped);
+  });
+
+  it('the owner dump keeps the pass_fail plane for hand-built Standards', () => {
+    // The spelling refuses at parse, but the Form type keeps the facet:
+    // the serializer's owner dump reads it for Standards built by hand
+    // or by an older parser (the dump side is unchanged this wave).
+    const m = load('form F2 {\n  name "Plain"\n}');
+    m.forms[0]!.passFail = {
+      criteria: 'c',
+      passIf: 'ocl{ok}',
+      derivations: [],
+    };
+    const dumped = dump(m);
+    assert.ok(dumped.includes('pass_fail {'));
+    assert.ok(dumped.includes('pass_if "ocl{ok}"'));
   });
 
   it('round-trips through dump (parse → dump → parse, identical AST)', () => {
@@ -781,7 +791,9 @@ describe('form fidelity extensions', () => {
       ),
     );
     assert.ok(dumped.includes('calculation_context {'));
-    assert.ok(dumped.includes('derivation {'));
+    // the migrated verdict plane: the form's pass_fail declares the
+    // canonical check (TODO.lang-gaps/03)
+    assert.ok(dumped.includes('check form:F1:pass_fail {'));
     assert.ok(dumped.includes('verdict drift_error op lte'));
     const m2 = load(dumped);
     assert.deepEqual(m2.forms, m1.forms);

@@ -246,8 +246,12 @@ function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
       continue;
     }
     if (cmd === 'pass_if') {
-      result.acceptancePassIf = stripWrapping(t[i++]);
-      continue;
+      // The deprecation ladder's rung (TODO.lang-gaps/03): the pass_if
+      // facet refuses at parse — the verdict declares the canonical
+      // check (the criterion-less composite slot's derived id).
+      throw new Error(
+        `Parsing error: conformance_test. ID ${result.id}: the pass_if facet is retired (TODO.lang-gaps/03) — declare the check conformance_test:${result.id}:acceptance_criteria { expression "…" ref derives-from "conformance_test:${result.id}" }`,
+      );
     }
     if (cmd !== 'criterion' && cmd !== 'item') {
       if (i < t.length) {
@@ -281,7 +285,12 @@ function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
           break;
         }
         if (cc === 'pass_if') {
-          c.passIf = stripWrapping(ct[j++]);
+          // The deprecation ladder's rung (TODO.lang-gaps/03): the
+          // criterion's pass_if refuses at parse — the verdict declares
+          // the canonical check under the criterion's derived slot.
+          throw new Error(
+            `Parsing error: conformance_test. ID ${result.id}: the pass_if facet is retired (TODO.lang-gaps/03) — declare the check conformance_test:${result.id}:acceptance_criteria:${c.item || '<criterion>'} { expression "…" ref derives-from "conformance_test:${result.id}" }`,
+          );
         } else if (cc === 'requirement' || cc === 'target') {
           // `target /req/x` is the cc.yaml alias of `requirement /req/x`.
           c.requirementId = stripWrapping(ct[j++]);

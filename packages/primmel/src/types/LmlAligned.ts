@@ -86,6 +86,13 @@ export interface Check {
   threshold: string;
   source: SourceRef | null;
   /**
+   * The quarantined prose (TODO.lang-gaps/02, the block form only): the
+   * retired spellings' criteria prose lands here when an author migrates
+   * a pass_fail onto the canonical check. Free text only — a citation
+   * belongs in a urn reference, never in the description body.
+   */
+  description?: string;
+  /**
    * The fold provenance (spec §16 C161, TODO.lang-gaps/03): set when
    * this check materialized from one of the five retired boolean
    * spellings at parse — `owner` is `<kind>:<id>` of the construct

@@ -1238,7 +1238,14 @@ export function check(
 
     // C52 coverage-form-judgment: a form binding a conformance process
     // with no pass_fail judgment and no evaluated field (warning; the
-    // evidence gathered and never weighed).
+    // evidence gathered and never weighed). The migrated verdict plane
+    // counts too: the spelling's canonical check (form:<id>:pass_fail)
+    // IS the form's judgment once migrated (TODO.lang-gaps/03).
+    const declaredCheckIds = new Set(
+      closureConstructs
+        .filter(x => x.keyword === 'check' && x.ident)
+        .map(x => x.ident!),
+    );
     for (const c of pkg.constructs.filter(
       x => x.keyword === 'form' && x.ident,
     )) {
@@ -1249,6 +1256,7 @@ export function check(
       const judged =
         tokensOf(c, 'pass_fail').length > 0 ||
         nested(c).some(n => n.keyword === 'pass_fail') ||
+        declaredCheckIds.has(`form:${c.ident}:pass_fail`) ||
         facetTokens(c.items, 'measurement_method').includes('evaluated') ||
         // a form binding requirements weighs them — the kernel's
         // (f.requirements ?? []).length === 0 gate

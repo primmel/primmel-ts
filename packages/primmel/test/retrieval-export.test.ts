@@ -785,10 +785,11 @@ describe('retrieval export — the structured acceptance (ask 8, #84)', () => {
       units.get('/req/scope/alpha')!.passport.acceptance,
       'beep_level lte ocl{mpe}',
     );
-    // criteria pass_if (test) — the /1 string form.
+    // criteria description (test) — the pass_if facet retired
+    // (TODO.lang-gaps/03); the summary falls back to the block's prose.
     assert.equal(
       units.get('/conf/scope/beta-composite')!.passport.acceptance,
-      'ocl{all_passed}',
+      'Composite of partial checks',
     );
     // decision rule (characteristic) — the /1 string form.
     assert.equal(
@@ -803,13 +804,11 @@ describe('retrieval export — the structured acceptance (ask 8, #84)', () => {
     assert.deepEqual(test.acceptance_criteria, {
       type: 'composite',
       description: 'Composite of partial checks',
-      pass_if: 'ocl{all_passed}',
       items: [
         {
           name: 'partial_check',
           target: '/req/scope/beta',
           criterion: 'I/MPE',
-          pass_if: 'ocl{abs(x) <= mpe}',
           optional: true,
           description: 'Partial check',
           reference: 'urn:test:r:9-2:2021#clause-7.2',

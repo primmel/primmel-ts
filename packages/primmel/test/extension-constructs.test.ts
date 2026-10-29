@@ -58,7 +58,7 @@ conformance_test /conf/metrological-tests/measurement-error-repeatability-mdlo {
     step apply_loads_in_ascending_order "Apply loads in ascending order"
   }
   acceptance_criteria {
-    criterion within_mpe { pass_if "ocl{abs(e_l) <= mpe}" requirement /req/metrological/mpe }
+    criterion within_mpe { requirement /req/metrological/mpe }
   }
   derived_values {
     value e_l { expression "ocl{(avgIndication - referenceIndication) / f}" }
@@ -172,7 +172,9 @@ describe('W1b extensions (G2–G7, G10)', () => {
       'temperature',
       'barometric_pressure',
     ]);
-    assert.equal(t.acceptanceCriteria[0].passIf, 'ocl{abs(e_l) <= mpe}');
+    // the pass_if facet retired (TODO.lang-gaps/03): the verdict
+    // declares the canonical check alongside the test
+    assert.equal(t.acceptanceCriteria[0].passIf, '');
     assert.equal(
       t.acceptanceCriteria[0].requirementId,
       '/req/metrological/mpe',

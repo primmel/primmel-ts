@@ -29,6 +29,7 @@ import { join } from 'node:path';
 import { load } from '../src/ser-des/index';
 import { checkLmlAligned, checkPackage, type CheckIssue } from '../src/check';
 import { checkRule } from '../src/check-rules';
+import { formFoldChecks } from '../src/ser-des/config/check-fold';
 
 /** Load a model and run the LML-aligned rules over it. */
 function check(model: string): CheckIssue[] {
@@ -168,18 +169,21 @@ describe('C160 signature-closure', () => {
 
 describe('C161 check-surface (the fold completeness walk)', () => {
   it('a spelling whose folded check never materialized is an error', () => {
-    // The parser folds at parse (ser-des/config/check-fold.ts); this leg
+    // The parsers fold at parse (ser-des/config/check-fold.ts); this leg
     // guards Standards built by hand or by an older parser — the walks'
-    // expectation is the same derivation the parsers registered by.
+    // expectation is the same derivation the parsers registered by. The
+    // pass_fail surface refuses at parse now, so the owner rides in on
+    // the type (the hand-built/older-parser shape the walk exists for).
     const standard = load(`
       form temperature_test {
         name "Temperature test"
-        pass_fail {
-          criteria { The reading stays within the MPE. }
-          pass_if "ocl{within_mpe}"
-        }
       }
     `);
+    standard.forms[0]!.passFail = {
+      criteria: 'The reading stays within the MPE.',
+      passIf: 'ocl{within_mpe}',
+      derivations: [],
+    };
     standard.checks = standard.checks.filter(c => !c.folds);
     const got = checkLmlAligned(standard);
     assert.equal(got.length, 1);
@@ -188,24 +192,31 @@ describe('C161 check-surface (the fold completeness walk)', () => {
     assert.match(got[0]!.message, /form:temperature_test:pass_fail/);
   });
 
-  it('a parsed model folds every spelling — the walk stays silent', () => {
+  it('a hand-built owner whose fold materialized — the walk stays silent', () => {
+    const standard = load(`
+      form temperature_test {
+        name "Temperature test"
+      }
+      requirement /req/mpe {
+        name "MPE"
+        limit {
+          expression "ocl{abs(e) <= mpe}"
+          uses { e mpe }
+        }
+      }
+    `);
+    standard.forms[0]!.passFail = {
+      criteria: 'The reading stays within the MPE.',
+      passIf: 'ocl{within_mpe}',
+      derivations: [],
+    };
+    // the parse of an older kernel (or the hand-builder) registered the
+    // fold — materialize it the same way the parsers do
+    for (const fold of formFoldChecks(standard.forms[0]!)) {
+      standard.checks.push(fold);
+    }
     assert.deepEqual(
-      fired(`
-        form temperature_test {
-          name "Temperature test"
-          pass_fail {
-            criteria { The reading stays within the MPE. }
-            pass_if "ocl{within_mpe}"
-          }
-        }
-        requirement /req/mpe {
-          name "MPE"
-          limit {
-            expression "ocl{abs(e) <= mpe}"
-            uses { e mpe }
-          }
-        }
-      `),
+      checkLmlAligned(standard).filter(i => i.check === 'C161'),
       [],
     );
   });

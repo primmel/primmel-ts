@@ -12,6 +12,10 @@
   {
    "id": "syn-03-parse-neg-bare-statement",
    "reason": "THE PROSE QUARANTINE (C158) refuses the bare quoted-string spelling of the five prose facets in the kernel's per-construct facet readers; the PG grammar's open block structure reads any quoted token as a legal facet value \u2014 the grammar-side enforcement (per-construct badness predicates over the five facets) is the recorded reopen trigger (TODO.lang-gaps/02)"
+  },
+  {
+   "id": "syn-05-parse-neg-retired-pass-fail",
+   "reason": "the boolean-verdict fold's first retirement (TODO.lang-gaps/03) refuses the form's pass_fail block and the acceptance_criteria pass_if facet in the kernel's per-construct facet readers; the PG grammar's open form and acceptance_criteria blocks read the retired spellings as legal facet items \u2014 the grammar-side enforcement (scoped pass_fail/pass_if badness predicates) is the recorded reopen trigger (TODO.lang-gaps/03)"
   }
  ]
 }

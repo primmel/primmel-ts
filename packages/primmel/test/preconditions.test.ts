@@ -21,7 +21,7 @@ const SRC = `conformance_test CreepTest {
     }
   }
   acceptance_criteria {
-    criterion creep_30min_criterion { pass_if "ocl{abs(c_c) <= 0.7 * abs(mpe_at_dmax)}" }
+    criterion creep_30min_criterion { requirement /req/metrological/creep }
   }
 }
 `;

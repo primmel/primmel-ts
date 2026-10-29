@@ -85,7 +85,11 @@ conformance_test /conf/t {
 form F {
   name "F"
   conformance_process /conf/t
-  pass_fail { criteria { within MPE } pass_if "ocl{within_mpe}" }
+}
+check form:F:pass_fail {
+  expression "ocl{within_mpe}"
+  description { within MPE }
+  ref derives-from "form:F"
 }
 `;
 
@@ -250,7 +254,10 @@ form F {
     assert.ok(c52[0].message.includes('form F'));
   });
 
-  it('silent when the binding form has pass_fail', () => {
+  it('silent when the binding form judges through its migrated check', () => {
+    // The retired pass_fail spelling declares the canonical check
+    // (form:<id>:pass_fail) on migration — the derived check IS the
+    // form's judgment (TODO.lang-gaps/03).
     const c52 = checked(
       { 'model/a.prl': DEFS, 'specification/r.prl': REQ_TEST },
       { strictness: 'audit' },

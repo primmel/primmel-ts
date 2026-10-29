@@ -1,0 +1,8 @@
+form retired_pass_fail {
+  name "The retired verdict spelling refuses"
+  field within_limit : boolean { label { Within limit } }
+  pass_fail {
+    criteria { Every measurement stays within the limit. }
+    pass_if "ocl{within_limit}"
+  }
+}
