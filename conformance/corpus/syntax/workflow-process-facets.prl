@@ -2,7 +2,9 @@
 # pipeline phase), the gate facet's anonymous entry-condition entries
 # (the ordered guard criteria, folded — TODO.lang-spec/07) and its
 # machine_service documentary engine-run entry, and the clause-URN
-# provenance (free citation strings land in doc).
+# provenance (free citation strings land in doc). The retired
+# validate_measurement verdict declares the canonical check
+# (process-adjacent; TODO.lang-gaps/03).
 # Clause: WF-01 (positive).
 data_registry testRequests {
   name "Test requests"
@@ -19,8 +21,9 @@ process conduct_tests {
   reference_data_registry {
     testRequests
   }
-  validate_measurement {
-    "every([within_mpe]) = true"
-  }
   ref derives-from "PD-05 §4.1"
+}
+check process:conduct_tests:validate_measurement:1 {
+  expression "every([within_mpe]) = true"
+  ref derives-from "process:conduct_tests"
 }

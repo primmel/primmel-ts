@@ -33,9 +33,6 @@ conformance_test MeasurementError {
     step insert_load_cell "Insert load cell"
     step record_indications "Record indications"
   }
-  validate_measurement {
-    "[error] <= [mpe_limit]"
-  }
 }
 
 canvas Root {
@@ -60,7 +57,8 @@ canvas Root {
     assert.equal(ct.procedure[0].action, 'Check test conditions');
     assert.equal(ct.procedure[2].order, 3);
     assert.equal(ct.procedure[2].action, 'Record indications');
-    assert.deepEqual(ct.measurements, ['[error] <= [mpe_limit]']);
+    // the validate_measurement verdict retired at parse (TODO.lang-gaps/03)
+    assert.deepEqual(ct.measurements, []);
   });
 
   it('round-trips through dump', () => {

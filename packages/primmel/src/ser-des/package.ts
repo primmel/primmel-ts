@@ -42,7 +42,6 @@ import { parsePackage } from './config/packageManifest';
 import {
   conformanceTestFoldChecks,
   formFoldChecks,
-  processFoldChecks,
   requirementFoldChecks,
 } from './config/check-fold';
 import type { Position } from './tokenize';
@@ -1092,9 +1091,10 @@ function composePackage(
   // TODO.lang-gaps/03): folded checks are the parse-side view of the
   // retired boolean spellings, so the composed closure's views are
   // recomputed from the merged forms / requirements / conformance tests
-  // / processes — the one derivation (ser-des/config/check-fold.ts)
-  // replayed over the merge's outcome, never merged as data of their
-  // own.
+  // — the one derivation (ser-des/config/check-fold.ts) replayed over
+  // the merge's outcome, never merged as data of their own. (The
+  // validate_measurement leg retired with its spelling's parse refusal
+  // — wave 03 PR 3.)
   {
     const checks = acc.checks;
     for (const key of Object.keys(checks)) {
@@ -1114,11 +1114,6 @@ function composePackage(
     }
     for (const ct of Object.values(acc.conformanceTests)) {
       for (const fold of conformanceTestFoldChecks(ct)) {
-        checks[fold.id] = fold;
-      }
-    }
-    for (const process of Object.values(acc.processes)) {
-      for (const fold of processFoldChecks(process)) {
         checks[fold.id] = fold;
       }
     }

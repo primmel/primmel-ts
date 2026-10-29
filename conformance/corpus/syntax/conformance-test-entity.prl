@@ -1,4 +1,6 @@
-# Conformance corpus: the conformance test entity.
+# Conformance corpus: the conformance test entity. The retired
+# validate_measurement verdict declares the canonical check
+# (test-adjacent; TODO.lang-gaps/03).
 # Clauses: SYN-04 (positive), SER-01 (positive).
 provision ProvMPE {
   condition "The error shall not exceed the maximum permissible error"
@@ -16,7 +18,8 @@ conformance_test ErrorTest {
     step apply_the_test_load "Apply the test load"
     step record_the_indication "Record the indication"
   }
-  validate_measurement {
-    "[error] <= [mpe]"
-  }
+}
+check conformance_test:ErrorTest:validate_measurement:1 {
+  expression "[error] <= [mpe]"
+  ref derives-from "conformance_test:ErrorTest"
 }

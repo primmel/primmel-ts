@@ -9,13 +9,16 @@
 //   2. conformance_test acceptance_criteria → conformance_test:<tid>:acceptance_criteria[:<criterion-id>]  (the pass_if facets REFUSE)
 //   3. requirement acceptance_criteria (raw)→ requirement:<rid>:acceptance_criteria
 //   4. requirement limit                    → requirement:<rid>:limit:<n>
-//   5. validate_measurement (process + test)→ <kind>:<id>:validate_measurement:<n>
+//   5. validate_measurement (process + test)→ <kind>:<id>:validate_measurement:<n>  (REFUSES at parse)
 //
-// Spellings 1 and 2's pass_if retired in the wave's second PR: the
-// surface refuses at parse and the corpus declares the canonical check
-// (form:<fid>:pass_fail) instead; spellings 3–5 keep parsing until
-// their own migration. The fold derivation stays total over Standards
-// built by hand or by an older parser (the C161 walk's subject).
+// Spellings 1 and 2's pass_if retired in the wave's second PR and
+// spelling 5 in the third: the surface refuses at parse and the corpus
+// declares the canonical check instead; spellings 3–4 keep parsing
+// until their own migration. Their fold derivations stay total over
+// Standards built by hand or by an older parser (the C161 walk's
+// subject); a retired spelling's derivation leaves the fold module
+// with its refusal — the spelling no longer parses, the fold would be
+// dead code.
 //
 // The serialization pin: a folded check is the parse-side view of its
 // owner — the serializer emits the canonical form only, so dump(load(x))
@@ -170,12 +173,11 @@ describe('spelling 2 — the acceptance_criteria pass_if refuses at parse', () =
     };
     const ct: Pick<
       ConformanceTest,
-      'id' | 'acceptancePassIf' | 'acceptanceCriteria' | 'measurements'
+      'id' | 'acceptancePassIf' | 'acceptanceCriteria'
     > = {
       id: '/conf/disturbances',
       acceptancePassIf: 'ocl{composite_held}',
       acceptanceCriteria: [criterion],
-      measurements: [],
     };
     const checks = conformanceTestFoldChecks(ct);
     assert.deepEqual(
@@ -330,39 +332,35 @@ describe('spelling 4 — the requirement limits fold', () => {
   });
 });
 
-describe('spelling 5 — the validate_measurement strings fold', () => {
-  it('a process measurement folds verbatim with its bracket-list names', () => {
-    const checks = folded(`
+describe('spelling 5 — the validate_measurement strings refuse at parse', () => {
+  it('the process facet refuses, naming the canonical check', () => {
+    const err = refused(
+      `
       process verdict_computation {
         name "Verdict computation"
         validate_measurement { "every([within_mpe]) = true" }
       }
-    `);
-    const c = checks['process:verdict_computation:validate_measurement:1'];
-    assert.ok(c, 'the folded check is present');
-    assert.equal(c.expression, 'every([within_mpe]) = true');
-    assert.deepEqual(c.inputs, ['within_mpe']);
-    assert.deepEqual(c.folds, {
-      owner: 'process:verdict_computation',
-      facet: 'validate_measurement:1',
-    });
+    `,
+      /the validate_measurement facet is retired.*process:verdict_computation:validate_measurement:1/s,
+    );
+    assert.match(err.message, /TODO\.lang-gaps\/03/);
   });
 
-  it('a conformance-test measurement folds under the conformance_test owner', () => {
-    const checks = folded(`
+  it('the conformance-test facet refuses under the conformance_test owner', () => {
+    refused(
+      `
       conformance_test /conf/coverage {
         name "Coverage"
         validate_measurement { "[test_report_checklist_coverage] >= 1.0" }
       }
-    `);
-    const c = checks['conformance_test:/conf/coverage:validate_measurement:1'];
-    assert.ok(c, 'the folded check is present');
-    assert.equal(c.expression, '[test_report_checklist_coverage] >= 1.0');
-    assert.deepEqual(c.inputs, ['test_report_checklist_coverage']);
+    `,
+      /the validate_measurement facet is retired.*conformance_test:\/conf\/coverage:validate_measurement:1/s,
+    );
   });
 
-  it('repeated measurements enumerate', () => {
-    const checks = folded(`
+  it('a multi-string block refuses at the facet, naming slot 1', () => {
+    refused(
+      `
       process audit {
         name "Audit"
         validate_measurement {
@@ -370,15 +368,8 @@ describe('spelling 5 — the validate_measurement strings fold', () => {
           "[completed_forms].count = [required_forms].count"
         }
       }
-    `);
-    assert.deepEqual(Object.keys(checks), [
-      'process:audit:validate_measurement:1',
-      'process:audit:validate_measurement:2',
-    ]);
-    assert.deepEqual(
-      checks['process:audit:validate_measurement:2'].inputs,
-      // `count` is the built-in, filtered — the two store names remain
-      ['completed_forms', 'required_forms'],
+    `,
+      /process:audit:validate_measurement:1/s,
     );
   });
 });
@@ -409,19 +400,18 @@ describe('the fold identifiers (foldIdentifierInputs)', () => {
 });
 
 describe('the serialization pin (C161 — the fold never serializes)', () => {
-  // The three still-parsing spellings in one document. The pre-change
+  // The two still-parsing spellings in one document. The pre-change
   // dump of this text is the text's canonical form with NO checks
   // collection; the fold is parse-side, so dump(load(x)) must stay
   // byte-identical to that — the folded checks are the view, never the
-  // wire. (The pass_fail and pass_if spellings refuse at parse since
-  // their retirement — the refusals pin above.)
+  // wire. (The pass_fail, pass_if, and validate_measurement spellings
+  // refuse at parse since their retirements — the refusals pin above.)
   const FIXTURE = `
 conformance_test /conf/type-evaluation/zero-setting {
   name "Zero-setting test"
   acceptance_criteria {
     type composite
   }
-  validate_measurement { "[checklist_coverage] >= 1.0" }
 }
 
 requirement /req/metrological/mpe {
@@ -442,17 +432,14 @@ requirement /req/metrological/mpe {
 
 process verdict_computation {
   name "Verdict computation"
-  validate_measurement { "every([within_mpe]) = true" }
 }
 `;
 
   it('the fixture carries the remaining spellings and folds all of them', () => {
     const ids = Object.keys(folded(FIXTURE));
     assert.deepEqual(ids, [
-      'conformance_test:/conf/type-evaluation/zero-setting:validate_measurement:1',
       'requirement:/req/metrological/mpe:limit:1',
       'requirement:/req/metrological/mpe:acceptance_criteria',
-      'process:verdict_computation:validate_measurement:1',
     ]);
   });
 
