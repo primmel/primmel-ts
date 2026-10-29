@@ -308,7 +308,13 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
         if (fc === 'metamodel_class') {
           result.familyMetamodelClass = stripWrapping(ft[j++]);
         } else if (fc === 'definition') {
-          result.familyDefinition = stripWrapping(ft[j++]);
+          // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
+          // bare legacy, `definition { … }` canonical; the dump emits
+          // the block. The body trims so the fixpoint holds.
+          const fv = ft[j++];
+          result.familyDefinition = fv.startsWith('{')
+            ? unwrapBlock(fv).trim()
+            : stripWrapping(fv);
         } else if (fc === 'note') {
           result.familyNote = stripWrapping(ft[j++]);
         } else if (fc === 'source') {
