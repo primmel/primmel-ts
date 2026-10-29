@@ -83,7 +83,11 @@ function parseAnnexHighlight(id: string, block: string): AnnexHighlight {
       } else if (keyword === 'title') {
         highlight.title = stripWrapping(value());
       } else if (keyword === 'statement') {
-        highlight.statement = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
+        const v = value();
+        highlight.statement = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (keyword === 'discharged_by') {
         highlight.dischargedBy = stripWrapping(value());
       } else {
@@ -186,7 +190,7 @@ export const dumpInformativeAnnex: Dumper<InformativeAnnex> = function (a) {
       out += '    title "' + escapeString(h.title) + '"\n';
     }
     if (h.statement) {
-      out += '    statement "' + escapeString(h.statement) + '"\n';
+      out += '    statement { ' + h.statement + ' }\n';
     }
     if (h.dischargedBy) {
       out += '    discharged_by "' + escapeString(h.dischargedBy) + '"\n';

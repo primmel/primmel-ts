@@ -14,7 +14,7 @@ import { load, dump } from '../src/ser-des/index';
 describe('the LutaML class surface', () => {
   const src = [
     'class LoadCellSample {',
-    '  attribute serial_number, String { definition "The serial number" modality SHALL }',
+    '  attribute serial_number, String { definition { The serial number } modality SHALL }',
     '  attribute e_max, Mass { cardinality 1..1 }',
     '  attribute accuracy_class, AccuracyClass { values A B C D }',
     '}',
@@ -36,7 +36,7 @@ describe('the LutaML class surface', () => {
     const out = dump(load(src));
     assert.ok(
       out.includes(
-        'attribute serial_number, String { definition "The serial number" modality SHALL }',
+        'attribute serial_number, String { definition { The serial number } modality SHALL }',
       ),
     );
     assert.ok(out.includes('attribute e_max, Mass { cardinality 1..1 }'));
@@ -58,7 +58,7 @@ describe('the LutaML instance surface (the assignment form)', () => {
     const inst = load(
       [
         'class C {',
-        '  attribute serial_number, String { definition "sn" }',
+        '  attribute serial_number, String { definition { sn } }',
         '  attribute e_max, Mass { cardinality 1..1 }',
         '}',
         'instance smp-001 {',

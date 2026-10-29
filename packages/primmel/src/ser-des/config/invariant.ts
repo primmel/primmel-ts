@@ -43,7 +43,7 @@
 // test/invariant.test.ts.
 // ─────────────────────────────────────────────────────────────────────
 
-import { escapeString, stripWrapping } from '../tokenize';
+import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe, readEntryTokens } from './field-parser';
 import type { ConstructDefinition } from './index';
@@ -66,7 +66,11 @@ const parseInvariant: ConstructDefinition['parse'] = function (id, data) {
       if (command === 'name') {
         invariant.name = stripWrapping(value());
       } else if (command === 'statement') {
-        invariant.statement = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
+        const v = value();
+        invariant.statement = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (command === 'severity') {
         invariant.severity = stripWrapping(value());
       } else if (command === 'applies_to') {
@@ -109,7 +113,7 @@ const dumpInvariant = function (inv: Invariant): string {
     out += '  name "' + escapeString(inv.name) + '"\n';
   }
   if (inv.statement !== '') {
-    out += '  statement "' + escapeString(inv.statement) + '"\n';
+    out += '  statement { ' + inv.statement + ' }\n';
   }
   if (inv.severity !== '') {
     out += '  severity ' + dumpBareSafe(inv.severity) + '\n';

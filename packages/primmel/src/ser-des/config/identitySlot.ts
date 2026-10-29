@@ -78,7 +78,17 @@ export const parseIdentitySlot: Parser = (id: string, data: string) => {
       } else if (keyword === 'optional') {
         slot.optional = value() === 'true';
       } else if (keyword === 'definition') {
-        slot.definition = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+        // `definition { … }` canonical; the dump emits the block. The body is
+
+        // trimmed so the fixpoint holds.
+
+        const dv = value();
+
+        slot.definition = dv.startsWith('{')
+          ? unwrapBlock(dv).trim()
+          : stripWrapping(dv);
       } else if (keyword === 'metamodel_class') {
         slot.metamodelClass = stripWrapping(value());
       } else if (keyword === 'source') {
@@ -122,7 +132,7 @@ export const dumpIdentitySlot: Dumper<IdentitySlot> = function (s) {
     out += '  optional true\n';
   }
   if (s.definition) {
-    out += '  definition "' + escapeString(s.definition) + '"\n';
+    out += '  definition { ' + s.definition + ' }\n';
   }
   if (s.metamodelClass) {
     out += '  metamodel_class ' + dumpBareSafe(s.metamodelClass) + '\n';

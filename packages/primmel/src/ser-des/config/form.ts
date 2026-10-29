@@ -302,7 +302,13 @@ function parsePassFail(block: string): PassFail {
     const cmd = t[i++];
     if (i < t.length) {
       if (cmd === 'criteria') {
-        pf.criteria = stripWrapping(t[i++]);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
+        // bare legacy, `criteria { … }` canonical; the dump emits the
+        // block. The body is trimmed so the fixpoint holds.
+        const v = t[i++];
+        pf.criteria = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (cmd === 'pass_if') {
         pf.passIf = stripWrapping(t[i++]);
       } else if (cmd === 'derivation') {
@@ -533,15 +539,15 @@ export const dumpForm: Dumper<Form> = function (f) {
 function dumpPassFail(pf: PassFail): string {
   if (pf.derivations.length === 0) {
     return (
-      '  pass_fail { criteria "' +
-      escapeString(pf.criteria) +
-      '" pass_if "' +
+      '  pass_fail { criteria { ' +
+      pf.criteria +
+      ' } pass_if "' +
       escapeString(pf.passIf) +
       '" }\n'
     );
   }
   let out = '  pass_fail {\n';
-  out += '    criteria "' + escapeString(pf.criteria) + '"\n';
+  out += '    criteria { ' + pf.criteria + ' }\n';
   out += '    pass_if "' + escapeString(pf.passIf) + '"\n';
   out += '    derivation {\n';
   for (const d of pf.derivations) {

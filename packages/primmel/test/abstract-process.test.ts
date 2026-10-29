@@ -241,7 +241,7 @@ process mixed {
   it('round-trips the full pipeline losslessly (fixpoint)', () => {
     const m1 = load(FRAMEWORK + PIPELINE);
     const dumped = dump(m1);
-    assert.ok(dumped.includes('summary "The manufacturer'));
+    assert.ok(dumped.includes('summary { The manufacturer'));
     assert.ok(dumped.includes('roles { applicant }'));
     assert.ok(dumped.includes('gates {'));
     assert.ok(dumped.includes('discharge declaration-signed-before-issuance'));

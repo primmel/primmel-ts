@@ -44,7 +44,11 @@ export const parseAttestation: Parser = (id: string, data: string) => {
         const name = stripWrapping(value());
         a.authority = { role, name };
       } else if (keyword === 'statement') {
-        a.statement = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
+        const v = value();
+        a.statement = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (keyword === 'limits') {
         forEachEntry(
           unwrapBlock(value()),
@@ -125,7 +129,7 @@ export const dumpAttestation: Dumper<Attestation> = function (a) {
       '"\n';
   }
   if (a.statement) {
-    out += '  statement "' + a.statement.replace(/"/g, '\\"') + '"\n';
+    out += '  statement { ' + a.statement + ' }\n';
   }
   if (a.limits.length > 0) {
     out += '  limits {\n';

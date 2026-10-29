@@ -366,7 +366,11 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     if (cmd === 'name') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'statement') {
-      result.statement = stripWrapping(t[i++]);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
+      const v = t[i++];
+      result.statement = v.startsWith('{')
+        ? unwrapBlock(v).trim()
+        : stripWrapping(v);
     } else if (cmd === 'guidance') {
       result.guidance = stripWrapping(t[i++]);
     } else if (cmd === 'binds_to') {
@@ -571,7 +575,7 @@ const dumpRequirement = function (r: Requirement): string {
     out += '  name "' + escapeString(r.name) + '"\n';
   }
   if (r.statement) {
-    out += '  statement "' + escapeString(r.statement) + '"\n';
+    out += '  statement { ' + r.statement + ' }\n';
   }
   if (r.guidance) {
     out += '  guidance "' + escapeString(r.guidance) + '"\n';

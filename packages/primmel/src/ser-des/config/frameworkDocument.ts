@@ -138,7 +138,11 @@ export const parseDocumentPrecedence: Parser = (id: string, data: string) => {
       if (keyword === 'clause') {
         rule.clause = stripWrapping(value());
       } else if (keyword === 'statement') {
-        rule.statement = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
+        const v = value();
+        rule.statement = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (keyword === 'source') {
         rule.source = readSource(unwrapBlock(value()));
       } else if (keyword === 'ref') {
@@ -169,7 +173,7 @@ export const dumpDocumentPrecedence: Dumper<DocumentPrecedence> = function (p) {
     out += '  clause "' + escapeString(p.clause) + '"\n';
   }
   if (p.statement) {
-    out += '  statement "' + escapeString(p.statement) + '"\n';
+    out += '  statement { ' + p.statement + ' }\n';
   }
   if (p.source.doc || p.source.clause) {
     out += dumpSourceBlock(p.source);

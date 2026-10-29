@@ -260,5 +260,7 @@ export function unwrapped(value: () => string): string {
   if (x.length >= 2 && x.charAt(0) === '"' && x.charAt(x.length - 1) === '"') {
     return unescapeString(x.substr(1, x.length - 2));
   }
-  return unwrapBlock(x);
+  // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form's padding
+  // trims so `facet { X }` parses back to X — the fixpoint holds.
+  return unwrapBlock(x).trim();
 }

@@ -113,7 +113,17 @@ function parseUnit(id: string, block: string): UnitDef {
     } else if (cmd === 'offset') {
       out.offsetToSI = readNumber(t[i++], 0);
     } else if (cmd === 'definition') {
-      out.definition = stripWrapping(t[i++]);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+      // `definition { … }` canonical; the dump emits the block. The body is
+
+      // trimmed so the fixpoint holds.
+
+      const dv = t[i++];
+
+      out.definition = dv.startsWith('{')
+        ? unwrapBlock(dv).trim()
+        : stripWrapping(dv);
     } else if (cmd === 'corresponds') {
       const { corr, next } = parseCorresponds(t, i, stripWrapping);
       (out.correspondences ??= []).push(corr);
@@ -260,7 +270,7 @@ const dumpQuantityRegister = function (reg: QuantityRegister): string {
       line += ' offset ' + u.offsetToSI;
     }
     if (u.definition) {
-      line += ' definition "' + escapeString(u.definition) + '"';
+      line += ' definition { ' + u.definition + ' }';
     }
     if (u.unitsdb && (u.unitsdb.nist || u.unitsdb.unitsml)) {
       line += ' unitsdb {';

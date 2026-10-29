@@ -578,7 +578,11 @@ function parseSegregation(block: string): SegregationEntry[] {
               .filter(s => s.length > 0),
           );
         } else if (ec === 'statement') {
-          entry.statement = stripWrapping(et[j++]);
+          // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
+          const v = et[j++];
+          entry.statement = v.startsWith('{')
+            ? unwrapBlock(v).trim()
+            : stripWrapping(v);
         } else {
           unwrapBlock(et[j++]);
         }
@@ -1256,7 +1260,13 @@ export const parseProcess: Parser = function (id, data) {
           .filter(s => s.length > 0);
       } else if (keyword === 'summary') {
         // The abstract-process model (smart TODO.roadmap/40 batch 2).
-        result.summary = unwrapped(value);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
+        // bare legacy, `summary { … }` canonical; the dump emits the
+        // block. The body is trimmed so the fixpoint holds.
+        const v = value();
+        result.summary = v.startsWith('{')
+          ? unwrapBlock(v).trim()
+          : stripWrapping(v);
       } else if (keyword === 'roles') {
         // roles { applicant … } — the role binding list; kept DISTINCT
         // from `executor` (the process-level default) — never collapsed.
@@ -1625,7 +1635,7 @@ export const dumpProcess: (
     out += '  overlay true\n';
   }
   if (process.summary) {
-    out += '  summary "' + escapeString(process.summary) + '"\n';
+    out += '  summary { ' + process.summary + ' }\n';
   }
   // The actor line dumps from the RAW token (actorRef): documentary actor
   // spellings that resolve to no declared role must round-trip verbatim
@@ -1823,7 +1833,7 @@ export const dumpProcess: (
           '      barred { ' + s.barred.map(dumpBareSafe).join(' ') + ' }\n';
       }
       if (s.statement) {
-        out += '      statement "' + escapeString(s.statement) + '"\n';
+        out += '      statement { ' + s.statement + ' }\n';
       }
       out += '    }\n';
     }

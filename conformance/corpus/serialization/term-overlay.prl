@@ -9,6 +9,6 @@ metadata {
 
 term impartiality {
   label "impartiality"
-  definition "presence of objectivity"
+  definition { presence of objectivity }
   overlay true
 }

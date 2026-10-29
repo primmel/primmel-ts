@@ -19,7 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import type { Dumper, Parser } from '../types';
-import { escapeString, stripWrapping } from '../tokenize';
+import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
 import { forEachEntry } from '../parse-block';
 import { dumpBareSafe } from './field-parser';
 import ActivityArchetype from '../../types/ActivityArchetype';
@@ -43,7 +43,17 @@ export const parseActivityArchetype: Parser = (id: string, data: string) => {
       } else if (keyword === 'clause') {
         archetype.clause = stripWrapping(value());
       } else if (keyword === 'definition') {
-        archetype.definition = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+        // `definition { … }` canonical; the dump emits the block. The body is
+
+        // trimmed so the fixpoint holds.
+
+        const dv = value();
+
+        archetype.definition = dv.startsWith('{')
+          ? unwrapBlock(dv).trim()
+          : stripWrapping(dv);
       } else if (keyword === 'parent') {
         archetype.parent = stripWrapping(value());
       } else {
@@ -69,7 +79,7 @@ export const dumpActivityArchetype: Dumper<ActivityArchetype> = function (a) {
     out += '  clause "' + escapeString(a.clause) + '"\n';
   }
   if (a.definition) {
-    out += '  definition "' + escapeString(a.definition) + '"\n';
+    out += '  definition { ' + a.definition + ' }\n';
   }
   if (a.parent) {
     out += '  parent ' + dumpBareSafe(a.parent) + '\n';

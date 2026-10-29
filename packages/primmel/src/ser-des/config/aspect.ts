@@ -61,7 +61,17 @@ export const parseAspect: Parser = (id: string, data: string) => {
         }
         aspect.kind = kind;
       } else if (keyword === 'definition') {
-        aspect.definition = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+        // `definition { … }` canonical; the dump emits the block. The body is
+
+        // trimmed so the fixpoint holds.
+
+        const dv = value();
+
+        aspect.definition = dv.startsWith('{')
+          ? unwrapBlock(dv).trim()
+          : stripWrapping(dv);
       } else if (keyword === 'metamodel_class') {
         aspect.metamodelClass = stripWrapping(value());
       } else if (keyword === 'term_ref') {
@@ -109,7 +119,7 @@ export const dumpAspect: Dumper<Aspect> = function (a) {
     out += '  kind ' + dumpBareSafe(a.kind) + '\n';
   }
   if (a.definition) {
-    out += '  definition "' + escapeString(a.definition) + '"\n';
+    out += '  definition { ' + a.definition + ' }\n';
   }
   if (a.metamodelClass) {
     out += '  metamodel_class ' + dumpBareSafe(a.metamodelClass) + '\n';

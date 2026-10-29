@@ -292,7 +292,17 @@ export function parseFormField(
     if (cmd === 'label') {
       field.label = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
-      field.definition = stripWrapping(t[i++]);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+      // `definition { … }` canonical; the dump emits the block. The body is
+
+      // trimmed so the fixpoint holds.
+
+      const dv = t[i++];
+
+      field.definition = dv.startsWith('{')
+        ? unwrapBlock(dv).trim()
+        : stripWrapping(dv);
     } else if (cmd === 'description') {
       field.description = stripWrapping(t[i++]);
     } else if (cmd === 'type') {
@@ -677,7 +687,7 @@ export function dumpFormField(field: FormField, indent: string): string {
     inner.push('label "' + escapeString(field.label) + '"');
   }
   if (field.definition) {
-    inner.push('definition "' + escapeString(field.definition) + '"');
+    inner.push('definition { ' + field.definition + ' }');
   }
   if (field.description) {
     inner.push('description "' + escapeString(field.description) + '"');

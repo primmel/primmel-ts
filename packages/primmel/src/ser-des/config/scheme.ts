@@ -123,7 +123,17 @@ export const parseSchemeDefinition: Parser = (id: string, data: string) => {
       } else if (keyword === 'clause') {
         scheme.clause = stripWrapping(value());
       } else if (keyword === 'definition') {
-        scheme.definition = stripWrapping(value());
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
+
+        // `definition { … }` canonical; the dump emits the block. The body is
+
+        // trimmed so the fixpoint holds.
+
+        const dv = value();
+
+        scheme.definition = dv.startsWith('{')
+          ? unwrapBlock(dv).trim()
+          : stripWrapping(dv);
       } else if (keyword === 'demonstration') {
         scheme.demonstration = parseDemonstration(unwrapBlock(value()));
       } else if (keyword === 'source') {
@@ -166,7 +176,7 @@ export const dumpSchemeDefinition: Dumper<SchemeDefinition> = function (s) {
     out += '  clause "' + escapeString(s.clause) + '"\n';
   }
   if (s.definition) {
-    out += '  definition "' + escapeString(s.definition) + '"\n';
+    out += '  definition { ' + s.definition + ' }\n';
   }
   if (s.demonstration) {
     const d = s.demonstration;

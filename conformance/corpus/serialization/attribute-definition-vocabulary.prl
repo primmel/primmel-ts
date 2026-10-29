@@ -9,7 +9,7 @@ metadata {
 
 attribute_definition state {
   name "Lifecycle state"
-  definition "The workflow state of the entity"
+  definition { The workflow state of the entity }
   ref cites "urn:oiml:pub:b:18:2025"
   value_type enum
   origin declared

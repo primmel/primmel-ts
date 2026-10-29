@@ -380,7 +380,7 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
     const lutaml = '  attribute ' + attribute.id + ', ' + attribute.type + ' {';
     const facets: string[] = [];
     if (attribute.definition !== '') {
-      facets.push('definition "' + escapeString(attribute.definition) + '"');
+      facets.push('definition { ' + attribute.definition + ' }');
     }
     if (attribute.cardinality !== '') {
       facets.push('cardinality ' + attribute.cardinality);
@@ -404,7 +404,7 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
     out += '[' + attribute.cardinality + ']';
   }
   out += ' {\n';
-  out += '    definition "' + escapeString(attribute.definition) + '"\n';
+  out += '    definition { ' + attribute.definition + ' }\n';
   if (attribute.modality !== '') {
     out += '    modality ' + attribute.modality + '\n';
   }
@@ -446,7 +446,7 @@ const toDataAttributeModel = (attribute: DataAttribute) => {
 
 const dumpEnumValue = (ev: EnumValue) => {
   let out: string = '  ' + ev.id + ' {\n';
-  out += '    definition "' + escapeString(ev.value) + '"\n';
+  out += '    definition { ' + ev.value + ' }\n';
   out += '  }\n';
   return out;
 };
@@ -505,7 +505,7 @@ export const dumpVariable: Dumper<Variable> = function (v) {
     out += '  type ' + v.type + '\n';
   }
   if (v.definition !== '') {
-    out += '  definition "' + escapeString(v.definition) + '"\n';
+    out += '  definition { ' + v.definition + ' }\n';
   }
   if (v.description !== '') {
     out += '  description "' + escapeString(v.description) + '"\n';

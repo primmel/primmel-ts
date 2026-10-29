@@ -758,7 +758,9 @@ describe('form fidelity extensions', () => {
       pass_fail { criteria "c" pass_if "ocl{ok}" }
     }`);
     const dumped = dump(m1);
-    assert.ok(dumped.includes('pass_fail { criteria "c" pass_if "ocl{ok}" }'));
+    assert.ok(
+      dumped.includes('pass_fail { criteria { c } pass_if "ocl{ok}" }'),
+    );
     const m2 = load(dumped);
     assert.deepEqual(m2.forms, m1.forms);
   });
