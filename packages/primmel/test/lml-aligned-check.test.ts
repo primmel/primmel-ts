@@ -6,7 +6,8 @@
 //   C158 prose-quarantine
 //   C159 urn-only-refs
 //   C160 signature-closure
-//   C161 check-surface
+//   C161 check-surface          (the boolean-spelling fold — see
+//                               boolean-fold.test.ts for the parse side)
 //   C162 namespace-coherence
 //   C163 change-levels         (catalog only — runs over `primmel diff
 //                               --exit-code`, the existing diff classifier)
@@ -16,6 +17,8 @@
 //   C166 math-parses           (catalog only — RESERVED, the calculation
 //                               math plane)
 //   C167 qualified-unit-reference
+//   C189 datum-render-notation (the render-notation leg re-homed from
+//                               the formerly mislabeled C161 row)
 // ─────────────────────────────────────────────────────────────────────
 
 import { describe, it } from 'node:test';
@@ -163,11 +166,58 @@ describe('C160 signature-closure', () => {
   });
 });
 
-describe('C161 check-surface', () => {
+describe('C161 check-surface (the fold completeness walk)', () => {
+  it('a spelling whose folded check never materialized is an error', () => {
+    // The parser folds at parse (ser-des/config/check-fold.ts); this leg
+    // guards Standards built by hand or by an older parser — the walks'
+    // expectation is the same derivation the parsers registered by.
+    const standard = load(`
+      form temperature_test {
+        name "Temperature test"
+        pass_fail {
+          criteria { The reading stays within the MPE. }
+          pass_if "ocl{within_mpe}"
+        }
+      }
+    `);
+    standard.checks = standard.checks.filter(c => !c.folds);
+    const got = checkLmlAligned(standard);
+    assert.equal(got.length, 1);
+    assert.equal(got[0]!.check, 'C161');
+    assert.equal(got[0]!.severity, 'error');
+    assert.match(got[0]!.message, /form:temperature_test:pass_fail/);
+  });
+
+  it('a parsed model folds every spelling — the walk stays silent', () => {
+    assert.deepEqual(
+      fired(`
+        form temperature_test {
+          name "Temperature test"
+          pass_fail {
+            criteria { The reading stays within the MPE. }
+            pass_if "ocl{within_mpe}"
+          }
+        }
+        requirement /req/mpe {
+          name "MPE"
+          limit {
+            expression "ocl{abs(e) <= mpe}"
+            uses { e mpe }
+          }
+        }
+      `),
+      [],
+    );
+  });
+});
+
+describe('C189 datum-render-notation', () => {
   it('a render hint with an unknown notation is an error', () => {
     // The parser silently DROPS an unknown notation token, so a parsed
     // model never carries one — this leg guards programmatically built
     // Standards and pins the closed vocabulary against renderer growth.
+    // (Re-homed from the C161 id: the row predates the spec's C161
+    // check-surface rule — the boolean fold owns that id now.)
     const standard = load(`
       datum d1 : number {
         render latex "T"
@@ -179,7 +229,7 @@ describe('C161 check-surface', () => {
     });
     const got = checkLmlAligned(standard);
     assert.equal(got.length, 1);
-    assert.equal(got[0]!.check, 'C161');
+    assert.equal(got[0]!.check, 'C189');
     assert.equal(got[0]!.severity, 'error');
     assert.match(got[0]!.message, /"mathjax"/);
   });
@@ -344,7 +394,7 @@ describe('C167 qualified-unit-reference', () => {
   });
 });
 
-describe('the catalog entries (C158–C167)', () => {
+describe('the catalog entries (C158–C167, C189)', () => {
   it('every rule resolves with its name, family, severity, and level', () => {
     const expected: Array<
       [string, string, string, 'error' | 'warning', 'normal' | 'audit']
@@ -359,6 +409,7 @@ describe('the catalog entries (C158–C167)', () => {
       ['C165', 'math-symbols-declared', 'quantities', 'warning', 'normal'],
       ['C166', 'math-parses', 'quantities', 'warning', 'normal'],
       ['C167', 'qualified-unit-reference', 'quantities', 'error', 'normal'],
+      ['C189', 'datum-render-notation', 'base', 'error', 'normal'],
     ];
     for (const [id, name, family, severity, level] of expected) {
       const r = checkRule(id);

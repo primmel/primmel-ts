@@ -542,6 +542,19 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     'a locator auth carries a credential REFERENCE (env:VAR, vault:path) — an inline secret in a locator is an error (TODO.lang-spec/15)',
   ),
+  // ── C189: datum-render-notation — the datum render hints' closed
+  // notation vocabulary. Formerly carried under the C161 id, a row that
+  // predates the spec's C161 check-surface rule; C161 now owns the
+  // boolean-spelling fold (TODO.lang-gaps/03) and the render walk
+  // stands here under its own id.
+  R(
+    'C189',
+    'datum-render-notation',
+    'base',
+    'error',
+    'normal',
+    "a datum's render hints name their notation in the closed vocabulary (asciimath | latex | unicodemath | mathml | omml) — the re-homed leg of the formerly mislabeled C161 row (TODO.lang-gaps/03)",
+  ),
   R(
     'C173',
     'step-plane-refs-resolve',

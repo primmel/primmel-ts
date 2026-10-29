@@ -235,6 +235,7 @@ import type { QuantityValue } from '../../types/Quantity';
 import type Provision from '../../types/Provision';
 import type Role from '../../types/Role';
 import type { Subprocess } from '../../types/flow';
+import { processFoldChecks } from './check-fold';
 
 /** Numeric-looking values parse as numbers, everything else stays a string. */
 function numOrString(s: string): string | number {
@@ -1368,6 +1369,13 @@ export const parseProcess: Parser = function (id, data) {
 
   return ctx => {
     ctx.processes[id] = result;
+    // C161 (TODO.lang-gaps/03): the retired validate_measurement
+    // spelling folds into the checks collection at parse — the
+    // canonical check is the view, never serialized (dump skips folded
+    // checks).
+    for (const fold of processFoldChecks(result)) {
+      ctx.checks[fold.id] = fold;
+    }
     for (const mod of childModifiers) {
       ctx = mod(ctx);
     }

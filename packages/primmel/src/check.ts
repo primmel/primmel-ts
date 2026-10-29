@@ -462,6 +462,7 @@ import {
 } from './types/Passport';
 import { TEST_SEQUENCE_STEP_ROLES } from './types/TestSequence';
 import { MAPPING_FORMATS, MATH_NOTATIONS } from './ser-des/config/lmlAligned';
+import { expectedFoldIds } from './ser-des/config/check-fold';
 import { extractStateGates } from './operational-state';
 
 /**
@@ -10261,10 +10262,11 @@ export function checkVerdictChains(standard: Standard): CheckIssue[] {
 }
 
 /**
- * C158–C162 + C164 + C167 — the LML-aligned substrate (TODO.lang-gaps;
- * the spec's validation contract, language-v3 §16). The five constructs
- * (wireMappings / stringFormats / namespaces / datums / checks) carry
- * their declared data; the checker does the discipline:
+ * C158–C162 + C164 + C167 + C189 — the LML-aligned substrate
+ * (TODO.lang-gaps; the spec's validation contract, language-v3 §16).
+ * The five constructs (wireMappings / stringFormats / namespaces /
+ * datums / checks) carry their declared data; the checker does the
+ * discipline:
  *
  *   C158 prose-quarantine: free text stays in the description block — a
  *      clause citation inside a datum's description is a reference in
@@ -10274,14 +10276,20 @@ export function checkVerdictChains(standard: Standard): CheckIssue[] {
  *      marker warns.
  *   C159 urn-only-refs: a wire mapping's namespace names a declared
  *      namespace block (the serializer emits the prefix/uri pair).
- *   C160 signature-closure: every name a check consumes (its inputs) is
- *      a declared datum or symbol — a check over an undeclared input is
- *      uncomputable.
- *   C161 check-surface: a datum's render hints name their notation, and
- *      the notation vocabulary is closed. (The parser silently drops an
- *      unknown notation token, so parsed models never carry one — this
- *      leg guards programmatically built Standards and pins the closed
- *      vocabulary against renderer growth.)
+ *   C160 signature-closure: every name a CANONICAL check consumes (its
+ *      inputs) is a declared datum or symbol — a check over an
+ *      undeclared input is uncomputable. A check FOLDED from a retired
+ *      spelling (it carries `folds`) is exempt: the fold is the
+ *      parse-side view of its owner, and the spelling's names are
+ *      judged at the construct that carries them.
+ *   C161 check-surface: the retired boolean spellings fold into the
+ *      checks collection (spec §16 C161, TODO.lang-gaps/03) — the
+ *      completeness walk re-derives the expected folds from the
+ *      Standard's forms / requirements / conformance tests / processes
+ *      (the same per-construct derivations the parsers registered by,
+ *      ser-des/config/check-fold.ts) and errors on a spelling whose
+ *      folded check never materialized (a Standard built by hand or by
+ *      an older parser).
  *   C162 namespace-coherence: the metadata namespace string names a
  *      declared namespace block when one is declared at all.
  *   C164 wire-mapping-coverage: a mapping's format is in the wire
@@ -10291,6 +10299,14 @@ export function checkVerdictChains(standard: Standard): CheckIssue[] {
  *      the closed qualified `<namespace>:<id>` form (si:…, unitsdb:…) —
  *      a bare unit token is exactly the ambiguity the registries exist
  *      to close.
+ *   C189 datum-render-notation: a datum's render hints name their
+ *      notation, and the notation vocabulary is closed. (The parser
+ *      silently drops an unknown notation token, so parsed models never
+ *      carry one — this leg guards programmatically built Standards and
+ *      pins the closed vocabulary against renderer growth. Formerly
+ *      carried under the C161 id, which predates the spec's C161
+ *      check-surface rule; the render walk stands here under its own
+ *      id.)
  *
  * C163 change-levels runs over `primmel diff --exit-code` (the existing
  * diff classifier — model-diff.ts); C165/C166 await the calculation
@@ -10349,7 +10365,14 @@ export function checkLmlAligned(standard: Standard): CheckIssue[] {
   }
 
   // ── C160 signature-closure ─────────────────────────────────────────
+  // A folded check is the parse-side view of its owner spelling: the
+  // names it carries were never the canonical signature contract, and
+  // the owner construct is where their discipline lives. C160 judges
+  // canonical checks only.
   for (const c of standard.checks ?? []) {
+    if (c.folds) {
+      continue;
+    }
     for (const inp of c.inputs ?? []) {
       if (!(datumIds.has(inp) || symbolIds.has(inp))) {
         err(
@@ -10361,14 +10384,20 @@ export function checkLmlAligned(standard: Standard): CheckIssue[] {
   }
 
   // ── C161 check-surface ─────────────────────────────────────────────
-  for (const d of standard.datums ?? []) {
-    for (const r of d.renders ?? []) {
-      if (!MATH_NOTATIONS.includes(r.notation)) {
-        err(
-          'C161',
-          `datum ${d.id}: render notation "${r.notation}" is outside the closed vocabulary (${MATH_NOTATIONS.join('|')}) (check-surface)`,
-        );
-      }
+  // The retired boolean spellings fold into the checks collection at
+  // parse (ser-des/config/check-fold.ts — the one derivation the
+  // parsers and this walk share). Every spelling a Standard carries
+  // must have materialized its folded check(s); a miss means the
+  // Standard was built by hand or by an older parser.
+  const foldedIds = new Set(
+    (standard.checks ?? []).filter(c => c.folds).map(c => c.id),
+  );
+  for (const id of expectedFoldIds(standard)) {
+    if (!foldedIds.has(id)) {
+      err(
+        'C161',
+        `check ${id}: the retired boolean spelling it folds from is present, but no folded check carries its id — every boolean spelling materializes its check (check-surface)`,
+      );
     }
   }
 
@@ -10415,6 +10444,21 @@ export function checkLmlAligned(standard: Standard): CheckIssue[] {
         'C167',
         `datum ${d.id}: quantity_kind "${d.quantityKind}" is bare — a quantity-kind reference uses the qualified <namespace>:<id> form (si:…, unitsdb:…) (qualified-unit-reference)`,
       );
+    }
+  }
+
+  // ── C189 datum-render-notation ─────────────────────────────────────
+  // Formerly carried under the C161 id — a row that predates the spec's
+  // C161 check-surface rule; the render walk stands here under its own
+  // id (the re-homing rode the boolean-fold fold, TODO.lang-gaps/03).
+  for (const d of standard.datums ?? []) {
+    for (const r of d.renders ?? []) {
+      if (!MATH_NOTATIONS.includes(r.notation)) {
+        err(
+          'C189',
+          `datum ${d.id}: render notation "${r.notation}" is outside the closed vocabulary (${MATH_NOTATIONS.join('|')}) (datum-render-notation)`,
+        );
+      }
     }
   }
 
