@@ -323,12 +323,12 @@ describe('RDF/OWL export (TODO.roadmap/27)', () => {
     writeFileSync(
       join(dir, 'specification', 'r.prl'),
       `requirement /req/cited {
-  statement "The widget shall be cited."
+  statement { The widget shall be cited. }
   ref derives-from "ISO/IEC 17065:2012#clause-7.9.1, 7.9.2"
 }
 
 requirement /req/cited-bare {
-  statement "The widget shall be cited bare."
+  statement { The widget shall be cited bare. }
   ref derives-from "ISO/IEC 17065:2012, 4.1.1"
 }`,
     );
@@ -363,7 +363,7 @@ requirement /req/cited-bare {
     mkdirSync(join(dir, 'specification'));
     writeFileSync(
       join(dir, 'specification', 'r.prl'),
-      'requirement /req/one {\n  statement "S."\n}',
+      'requirement /req/one {\n  statement { S. }\n}',
     );
     assert.throws(
       () => exportPackageRdf(dir),
@@ -534,7 +534,7 @@ multi-line package"
     mkdirSync(join(dir, 'specification'));
     writeFileSync(
       join(dir, 'specification', 'r.prl'),
-      'requirement /req/one {\n  statement "S."\n}',
+      'requirement /req/one {\n  statement { S. }\n}',
     );
     const result = exportPackageRdf(dir);
     // Every comment line of the header note starts with '#' …

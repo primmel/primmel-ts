@@ -7,7 +7,7 @@ describe('term keyword', () => {
     const src = `
       term maximum-capacity {
         label "Maximum capacity"
-        definition "The maximum load that a load cell is designed to measure"
+        definition { The maximum load that a load cell is designed to measure }
       }
     `;
     const s = load(src);
@@ -26,7 +26,7 @@ describe('term keyword', () => {
     const src = `
       term maximum-capacity {
         label "Maximum capacity"
-        definition "..."
+        definition { ... }
         symbol Emax
         reference { R60-1-3-3 }
       }
@@ -40,7 +40,7 @@ describe('term keyword', () => {
     const src = `
       term dr {
         label "Minimum dead load output return"
-        definition "DR concept"
+        definition { DR concept }
         symbol DR
         reference { R60-1-3-5-10 }
       }
@@ -86,7 +86,7 @@ describe('term keyword', () => {
     const src = `
       term impartiality {
         label "impartiality"
-        definition "presence of objectivity"
+        definition { presence of objectivity }
         overlay true
       }
     `;
@@ -104,7 +104,7 @@ describe('term keyword', () => {
     const src = `
       term x {
         label "X"
-        definition "..."
+        definition { ... }
       }
     `;
     const out = dump(load(src));

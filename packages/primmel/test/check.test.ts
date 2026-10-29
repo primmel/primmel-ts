@@ -410,7 +410,7 @@ describe('C103 declared-predicate (docs/primmel/18 §18.6)', () => {
 }`,
       `requirement /req/demo {
   name "Demo"
-  statement "S"
+  statement { S }
   ref equvialent "/req/other"
 }`,
     );
@@ -429,7 +429,7 @@ describe('C103 declared-predicate (docs/primmel/18 §18.6)', () => {
 }`,
       `requirement /req/demo {
   name "Demo"
-  statement "S"
+  statement { S }
   ref equivalent "/req/other"
 }`,
     );
@@ -442,7 +442,7 @@ describe('C103 declared-predicate (docs/primmel/18 §18.6)', () => {
       '',
       `requirement /req/demo {
   name "Demo"
-  statement "S"
+  statement { S }
   ref anything-goes "/req/other"
 }`,
     );

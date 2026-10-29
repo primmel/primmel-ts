@@ -23,7 +23,7 @@ framework_document cid-01 {
 
 document_precedence higher_position_prevails {
   clause "6"
-  statement "In the event of a conflict, contradiction or inconsistency between the provisions of one of the governing documents and the provisions of another, the provisions of the document listed in a higher position take precedence over the provisions of the document listed in a lower position (clause 6)."
+  statement { In the event of a conflict, contradiction or inconsistency between the provisions of one of the governing documents and the provisions of another, the provisions of the document listed in a higher position take precedence over the provisions of the document listed in a lower position (clause 6). }
   ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
 }
 

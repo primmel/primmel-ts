@@ -106,7 +106,7 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { skipUnknownValue } from '../parse-block';
+import { skipUnknownValue, proseBlock } from '../parse-block';
 import {
   stripColon,
   dumpBareSafe,
@@ -255,17 +255,8 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
         parseStructure(stripWrapping(t[i++]), unwrapBlock(t[i++])),
       );
     } else if (cmd === 'definition') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-      // `definition { … }` canonical; the dump emits the block. The body is
-
-      // trimmed so the fixpoint holds.
-
-      const dv = t[i++];
-
-      result.definition = dv.startsWith('{')
-        ? unwrapBlock(dv).trim()
-        : stripWrapping(dv);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      result.definition = proseBlock(t[i++], 'instrument', id, 'definition');
     } else if (cmd === 'note') {
       result.note = stripWrapping(t[i++]);
     } else if (cmd === 'source') {
@@ -308,13 +299,13 @@ const parseInstrument: ConstructDefinition['parse'] = function (id, data) {
         if (fc === 'metamodel_class') {
           result.familyMetamodelClass = stripWrapping(ft[j++]);
         } else if (fc === 'definition') {
-          // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
-          // bare legacy, `definition { … }` canonical; the dump emits
-          // the block. The body trims so the fixpoint holds.
-          const fv = ft[j++];
-          result.familyDefinition = fv.startsWith('{')
-            ? unwrapBlock(fv).trim()
-            : stripWrapping(fv);
+          // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+          result.familyDefinition = proseBlock(
+            ft[j++],
+            'instrument family',
+            id,
+            'definition',
+          );
         } else if (fc === 'note') {
           result.familyNote = stripWrapping(ft[j++]);
         } else if (fc === 'source') {
@@ -444,17 +435,13 @@ function parseComponent(id: string, block: string): InstrumentComponent {
     if (cmd === 'class') {
       c.classId = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-      // `definition { … }` canonical; the dump emits the block. The body is
-
-      // trimmed so the fixpoint holds.
-
-      const dv = t[i++];
-
-      c.definition = dv.startsWith('{')
-        ? unwrapBlock(dv).trim()
-        : stripWrapping(dv);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      c.definition = proseBlock(
+        t[i++],
+        'instrument component',
+        id,
+        'definition',
+      );
     } else if (cmd === 'source') {
       c.source = readSource(unwrapBlock(t[i++]));
     } else if (cmd === 'ref') {
@@ -795,17 +782,8 @@ function parseModelGroup(block: string): ModelGroupDef {
       break;
     }
     if (cmd === 'definition') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-      // `definition { … }` canonical; the dump emits the block. The body is
-
-      // trimmed so the fixpoint holds.
-
-      const dv = t[i++];
-
-      mg.definition = dv.startsWith('{')
-        ? unwrapBlock(dv).trim()
-        : stripWrapping(dv);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      mg.definition = proseBlock(t[i++], 'model_group', '', 'definition');
     } else if (cmd === 'identical_characteristics') {
       mg.identicalCharacteristics = readIdList(t[i++]);
     } else if (cmd === 'identical_attributes') {
@@ -1152,17 +1130,13 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
     } else if (cmd === 'name') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-      // `definition { … }` canonical; the dump emits the block. The body is
-
-      // trimmed so the fixpoint holds.
-
-      const dv = t[i++];
-
-      result.definition = dv.startsWith('{')
-        ? unwrapBlock(dv).trim()
-        : stripWrapping(dv);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      result.definition = proseBlock(
+        t[i++],
+        'attribute_definition',
+        id,
+        'definition',
+      );
     } else if (cmd === 'source' || cmd === 'reference') {
       // Repeated provenance blocks accumulate; `source` stays the first
       // entry (the requirement family's idiom, TODO.roadmap/24).
@@ -1431,15 +1405,8 @@ const parseBehavior: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'stimulus') {
       result.stimulus = stripWrapping(t[i++]);
     } else if (cmd === 'response') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form — the
-      // bare string is the legacy spelling, the block is the canonical
-      // `response { … }`; the dump emits the block. The block body is
-      // trimmed so `response { X }` parses back to X (the fixpoint
-      // holds from the first dump).
-      const v = t[i++];
-      result.response = v.startsWith('{')
-        ? unwrapBlock(v).trim()
-        : stripWrapping(v);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      result.response = proseBlock(t[i++], 'behavior', id, 'response');
     } else if (cmd === 'realized_by') {
       result.realizedBy = readReference(t[i++]);
     } else if (cmd === 'source' || cmd === 'reference') {
@@ -1930,11 +1897,8 @@ export function readPromiseEntry(id: string, block: string): SubjectPromise {
       p.conditions = stripWrapping(read.text);
       j = read.next;
     } else if (cmd === 'statement') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
-      const v = inner[j++];
-      p.statement = v.startsWith('{')
-        ? unwrapBlock(v).trim()
-        : stripWrapping(v);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      p.statement = proseBlock(inner[j++], 'promise', id, 'statement');
     } else if (cmd === 'verified_by') {
       p.verifiedBy = readIdList(inner[j++]);
     } else if (cmd === 'source') {

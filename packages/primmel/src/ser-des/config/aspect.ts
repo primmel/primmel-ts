@@ -14,7 +14,7 @@ import tokenize, {
   stripWrapping,
   unwrapBlock,
 } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, readSource, stripColon } from './field-parser';
 import Aspect from '../../types/Aspect';
 import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
@@ -61,17 +61,8 @@ export const parseAspect: Parser = (id: string, data: string) => {
         }
         aspect.kind = kind;
       } else if (keyword === 'definition') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-        // `definition { … }` canonical; the dump emits the block. The body is
-
-        // trimmed so the fixpoint holds.
-
-        const dv = value();
-
-        aspect.definition = dv.startsWith('{')
-          ? unwrapBlock(dv).trim()
-          : stripWrapping(dv);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        aspect.definition = proseBlock(value(), 'family', id, 'definition');
       } else if (keyword === 'metamodel_class') {
         aspect.metamodelClass = stripWrapping(value());
       } else if (keyword === 'term_ref') {

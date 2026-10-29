@@ -19,7 +19,7 @@ subject LC-Family {
 }
 
 class LoadCellSample {
-  attribute serial_number, String { definition "the marking" modality SHALL }
+  attribute serial_number, String { definition { the marking } modality SHALL }
   attribute e_max, Number { cardinality 1..1 }
 }
 

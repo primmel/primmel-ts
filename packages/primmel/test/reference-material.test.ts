@@ -9,7 +9,7 @@ import { load, dump } from '../src/ser-des/index.js';
 const SRC = `reference_material cgm {
   kind certified_gas_mixture
   name "Certified gas mixture (CGM)"
-  definition "Gas mixture with certified composition used as the measurement reference."
+  definition { Gas mixture with certified composition used as the measurement reference. }
   ref derives-from "urn:oiml:pub:r:144-1:2013#clause-annex-a"
   identity_fields {
     field composition { description "Component(s) and nominal concentrations" }

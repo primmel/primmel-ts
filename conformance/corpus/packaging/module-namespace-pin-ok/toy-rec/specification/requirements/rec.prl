@@ -6,6 +6,6 @@ requirement_class /req/rec {
 
 requirement /req/rec/local {
   name "Rec-local provision"
-  statement "The instrument shall comply."
+  statement { The instrument shall comply. }
   verification { method testing }
 }

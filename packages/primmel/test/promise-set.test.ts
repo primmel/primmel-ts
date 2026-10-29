@@ -20,19 +20,19 @@ const SUBJECT_AND_REGISTERS = `
 attribute_definition e_max {
   symbol "E_max"
   name "Maximum capacity"
-  definition "The maximum load the cell measures."
+  definition { The maximum load the cell measures. }
   value_type quantity
 }
 attribute_definition accuracy_class {
   symbol "Acc"
   name "Accuracy class"
-  definition "The accuracy class."
+  definition { The accuracy class. }
   value_type string
 }
 behavior creep {
   kind temporal
   stimulus force
-  response "Change in load cell output with time under constant load."
+  response { Change in load cell output with time under constant load. }
 }
 subject LoadCell {
   is {
@@ -53,7 +53,7 @@ const SET = `
 promise_set LoadCell {
   promise e_max_values {
     target e_max
-    statement "Maximum capacity E_max per model."
+    statement { Maximum capacity E_max per model. }
     certificate {
       attribute e_max
       type string
@@ -66,7 +66,7 @@ promise_set LoadCell {
     target accuracy_class
     level symbolic C6
     conditions ocl{self.temperature >= rated.t_min and self.temperature <= rated.t_max}
-    statement "Holds class C6 across the rated range."
+    statement { Holds class C6 across the rated range. }
     certificate {
       type statement
       label "Accuracy envelope"
@@ -119,15 +119,15 @@ describe('promise_set construct (smart TODO.roadmap/40 batch 3)', () => {
 promise_set LoadCell {
   promise ghost_target {
     target ghost_characteristic
-    statement "A claim on nothing."
+    statement { A claim on nothing. }
   }
   promise bare_value {
     target e_max
     level { value 500 unit kg }
-    statement "A bare restatement."
+    statement { A bare restatement. }
   }
   promise orphan {
-    statement "No target, no verification."
+    statement { No target, no verification. }
   }
 }
 `;
@@ -154,7 +154,7 @@ promise_set LoadCell {
 promise_set LoadCell {
   promise ghost_target {
     target ghost_characteristic
-    statement "A claim on nothing."
+    statement { A claim on nothing. }
   }
 }
 `),
@@ -180,15 +180,15 @@ symbol v { name "Speed" }
 promise_set LoadCell {
   promise mode_row {
     target mode_of_use
-    statement "The type holds its declared mode of use."
+    statement { The type holds its declared mode of use. }
   }
   promise speed_interval {
     target v
-    statement "The measuring speed interval."
+    statement { The measuring speed interval. }
   }
   promise ghost_target {
     target ghost_characteristic
-    statement "A claim on nothing."
+    statement { A claim on nothing. }
   }
 }
 `,

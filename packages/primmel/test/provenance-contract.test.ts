@@ -21,7 +21,7 @@ function makePackage(body: string): string {
 
 const INSTANCE = `
 instrument LoadCell {
-  definition "Load cell."
+  definition { Load cell. }
 }
 
 instance ssm-ssb7 {
@@ -75,7 +75,7 @@ const CONTRACT = `
 promise_set LoadCell {
   promise e_max {
     target e_max
-    statement "Maximum capacity per model."
+    statement { Maximum capacity per model. }
     certificate { attribute e_max type string label "E_max values" obligation mandatory }
   }
 }

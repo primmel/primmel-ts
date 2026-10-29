@@ -38,7 +38,7 @@ describe('the overlay escape beyond terms', () => {
       'core',
       `process application {
   name "Application"
-  summary "The abstract one."
+  summary { The abstract one. }
   phase intake
 }`,
     );
@@ -48,7 +48,7 @@ describe('the overlay escape beyond terms', () => {
       `process application {
   overlay true
   name "Application"
-  summary "The rec's concrete one."
+  summary { The rec's concrete one. }
   phase intake
 }`,
       ['core'],
@@ -64,7 +64,7 @@ describe('the overlay escape beyond terms', () => {
       'rec2',
       `process application {
   name "Application"
-  summary "Another one."
+  summary { Another one. }
 }`,
       ['core'],
     );

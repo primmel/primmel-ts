@@ -34,9 +34,9 @@ const available =
 
 const SAMPLES = [
   'role verifier {\n  name "Verifier"\n}\n',
-  'class LoadCellSample {\n  attribute serial_number, String { definition "sn" modality SHALL }\n  attribute e_max, Mass { cardinality 1..1 }\n}\n',
+  'class LoadCellSample {\n  attribute serial_number, String { definition { sn } modality SHALL }\n  attribute e_max, Mass { cardinality 1..1 }\n}\n',
   'instance smp-001 {\n  of LoadCellSample\n  serial_number = "HBK-001"\n  e_max = 2.2 t\n}\n',
-  'provision /req/mpe {\n  statement "The error shall not exceed the MPE."\n  modality SHALL\n}\n',
+  'provision /req/mpe {\n  statement { The error shall not exceed the MPE. }\n  modality SHALL\n}\n',
   'process review {\n  does {\n    start_event begin\n    end_event done\n    flow { begin -> done }\n  }\n}\n',
   'conformance_test /conf/error {\n  name "Error determination"\n  targets { /req/mpe }\n}\n',
   'verdict mpe_error {\n  quantity { kind mass unit kg }\n  derive "ocl{abs(self.e - self.ref)}"\n}\n',

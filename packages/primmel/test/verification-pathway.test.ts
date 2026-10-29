@@ -59,11 +59,11 @@ verification_pathway initial-verification {
 const REGISTERS = `
 requirement /req/metrological/mpe-stationary {
   name "MPE stationary"
-  statement "The error shall not exceed the MPE."
+  statement { The error shall not exceed the MPE. }
 }
 requirement /req/technical/sealing-inscriptions {
   name "Sealing"
-  statement "Sealing shall be provided."
+  statement { Sealing shall be provided. }
 }
 conformance_test /conf/field/stationary-field-test {
   name "Stationary field test"

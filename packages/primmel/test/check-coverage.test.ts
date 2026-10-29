@@ -85,7 +85,7 @@ conformance_test /conf/t {
 form F {
   name "F"
   conformance_process /conf/t
-  pass_fail { criteria "within MPE" pass_if "ocl{within_mpe}" }
+  pass_fail { criteria { within MPE } pass_if "ocl{within_mpe}" }
 }
 `;
 
@@ -127,7 +127,7 @@ describe('C5 req-test-coverage — refined deliberate exclusions', () => {
     const c5 = checked({
       'model/a.prl': DEFS,
       'specification/r.prl': `requirement /req/cs/fee {
-  statement "The fee estimate is reviewed."
+  statement { The fee estimate is reviewed. }
   verification { method inspection description "IA review" }
 }
 process review_application {

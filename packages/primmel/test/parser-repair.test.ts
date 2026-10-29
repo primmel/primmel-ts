@@ -138,8 +138,8 @@ state_machine Application {
   });
 
   it('5. `measurement` keyword is parsed (canonical), `variable` still works (alias)', () => {
-    const src = `measurement M1 { type number definition "d" }
-variable M2 { type number definition "d" }`;
+    const src = `measurement M1 { type number definition { d } }
+variable M2 { type number definition { d } }`;
     const m = load(src);
     assert.ok(
       m.variables.some((v: any) => v.id === 'M1'),
@@ -197,7 +197,7 @@ variable M2 { type number definition "d" }`;
     reference { REF9 }
   }
   subform_ref load-test-row { parameters { n_runs: 5 } applicability { accuracy_class: [A, C] } }
-  pass_fail { criteria "c" pass_if "ocl{x < 1}" }
+  pass_fail { criteria { c } pass_if "ocl{x < 1}" }
 }`;
     const m1 = load(src);
     const dumped = dump(m1);

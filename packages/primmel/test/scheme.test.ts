@@ -20,7 +20,7 @@ scheme_definition scheme_b {
   label "Scheme B"
   term "3.38"
   clause "5.4.2"
-  definition "Introductory level of the OIML-CS where a self-declaration is used as the basis for demonstrating compliance."
+  definition { Introductory level of the OIML-CS where a self-declaration is used as the basis for demonstrating compliance. }
   demonstration {
     method self_declaration
     clause "5.4.2.1"
@@ -32,7 +32,7 @@ scheme_definition scheme_a {
   label "Scheme A"
   term "3.37"
   clause "5.4.3"
-  definition "Advanced level of the OIML-CS where accreditation or peer assessment is used as the basis for demonstrating compliance."
+  definition { Advanced level of the OIML-CS where accreditation or peer assessment is used as the basis for demonstrating compliance. }
   demonstration {
     method peer_evaluation
     clause "5.4.3.1"

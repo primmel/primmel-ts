@@ -538,7 +538,7 @@ describe('C80 under composition: the register is the union the closure declares'
     mkdirSync(join(providerDir, 'model'), { recursive: true });
     writeFileSync(
       join(providerDir, 'model', 'classes.prl'),
-      'class ClimaticClass {\n  attribute kind, string {\n    modality SHALL\n    definition "The climatic class the procedure assigns."\n  }\n}\n',
+      'class ClimaticClass {\n  attribute kind, string {\n    modality SHALL\n    definition { The climatic class the procedure assigns. }\n  }\n}\n',
     );
     writeFileSync(join(consumerDir, 'package.primmel'), CONSUMER);
     mkdirSync(join(consumerDir, 'model'), { recursive: true });

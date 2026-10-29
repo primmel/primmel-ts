@@ -32,6 +32,7 @@ import type {
   PassFail,
   PassFailDerivation,
 } from '../../types/Form';
+import { proseBlock } from '../parse-block';
 
 export const parseForm: Parser = function (id, data) {
   const result: Form = {
@@ -302,13 +303,8 @@ function parsePassFail(block: string): PassFail {
     const cmd = t[i++];
     if (i < t.length) {
       if (cmd === 'criteria') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
-        // bare legacy, `criteria { … }` canonical; the dump emits the
-        // block. The body is trimmed so the fixpoint holds.
-        const v = t[i++];
-        pf.criteria = v.startsWith('{')
-          ? unwrapBlock(v).trim()
-          : stripWrapping(v);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        pf.criteria = proseBlock(t[i++], 'form', '', 'criteria');
       } else if (cmd === 'pass_if') {
         pf.passIf = stripWrapping(t[i++]);
       } else if (cmd === 'derivation') {

@@ -130,7 +130,7 @@ const SEEDED_MANIFEST = manifest([
 
 const REQ_MPE = `requirement /req/mpe {
   binds_to { model.parameters.e_max }
-  statement "The error of any load cell shall not exceed the maximum permissible error on type evaluation"
+  statement { The error of any load cell shall not exceed the maximum permissible error on type evaluation }
   ref derives-from "${URN}#clause-5.3.2"
 }
 instrument T {
@@ -253,7 +253,7 @@ describe('text coverage in primmel check (TODO.roadmap/26)', () => {
   it('a sentence-level binding covers exactly the bound sentence (source … fragment "s1")', () => {
     const req = `requirement /req/envelope {
   binds_to { model.parameters.e_max }
-  statement "The error envelope considers several measurement errors together"
+  statement { The error envelope considers several measurement errors together }
   ref derives-from "${URN}#clause-2.2/s1"
   ref derives-from "${URN}#clause-5.3.2"
 }
@@ -416,12 +416,12 @@ attribute_definition e_max {
   it('duplicate pairs are flagged, adjudicated, and go STALE when unflagged — never auto-failed', () => {
     const dup = `requirement /req/mpe {
   binds_to { model.parameters.e_max }
-  statement "The error of any load cell shall not exceed the maximum permissible error on type evaluation"
+  statement { The error of any load cell shall not exceed the maximum permissible error on type evaluation }
   ref derives-from "${URN}#clause-5.3.2"
 }
 requirement /req/mpe-copy {
   binds_to { model.parameters.e_max }
-  statement "The error of any load cell shall not exceed the maximum permissible error on type evaluation"
+  statement { The error of any load cell shall not exceed the maximum permissible error on type evaluation }
   ref derives-from "${URN}#clause-5.3.2"
 }
 instrument T {

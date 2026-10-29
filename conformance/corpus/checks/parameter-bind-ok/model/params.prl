@@ -6,7 +6,7 @@ attribute_definition e_max {
 
 requirement /req/capacity {
   name "Maximum capacity"
-  statement "The instrument shall indicate up to its maximum capacity."
+  statement { The instrument shall indicate up to its maximum capacity. }
   parameters {
     param e_max: number { description "Maximum capacity." bind "model.parameters.e_max" range { min 0 } }
   }

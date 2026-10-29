@@ -18,7 +18,7 @@ identity_slot manufacturer {
   label "Manufacturer's name or trade mark"
   type string
   presentation { marked-on-instrument accompanying-document }
-  definition "Name or trade mark of the manufacturer (R 60-1, 6.2.1 item 1)."
+  definition { Name or trade mark of the manufacturer (R 60-1, 6.2.1 item 1). }
   metamodel_class identity-provenance.Manufacturer
   ref derives-from "urn:oiml:pub:r:60-1:2021#clause-6.2.1"
 }
@@ -103,7 +103,7 @@ describe('identity_slot construct (smart TODO.roadmap/40 batch 3)', () => {
     const body = `
 ${SLOTS}
 requirement /req/technical/inscriptions {
-  statement "The markings shall be indelible."
+  statement { The markings shall be indelible. }
   binds_to { model.identity.manufacturer model.identity.ghost_slot }
 }
 `;
@@ -117,7 +117,7 @@ requirement /req/technical/inscriptions {
   it('C130 gates on the slot register — no slots, no bind leg', () => {
     const body = `
 requirement /req/technical/inscriptions {
-  statement "The markings shall be indelible."
+  statement { The markings shall be indelible. }
   binds_to { model.identity.manufacturer }
 }
 `;

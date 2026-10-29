@@ -1,6 +1,6 @@
 requirement /req/carriers {
   name "Carriers"
-  statement "The error shall not exceed the mpe."
+  statement { The error shall not exceed the mpe. }
   limit {
     args {
       e <- symbol:e_vehicle

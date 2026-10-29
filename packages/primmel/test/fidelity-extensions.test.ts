@@ -10,7 +10,7 @@ import { load, dump } from '../src/ser-des/index.js';
 
 const REQ_SRC = `requirement /req/metrological/mdlo {
   name "Minimum dead load output"
-  statement "The MDLO output shall be normalized."
+  statement { The MDLO output shall be normalized. }
   guidance "Applies to digital load cells only."
   binds_to { model.parameters.mdlo }
   subjects {
@@ -385,7 +385,7 @@ describe('table fidelity extensions', () => {
 
 const SYMBOL_SRC = `symbol e_l {
   name "Load cell error"
-  definition "Error of indication"
+  definition { Error of indication }
   type number
   unit "v"
   kind observable
@@ -508,7 +508,7 @@ describe('calculation fidelity extensions', () => {
 const INST_SRC = `instrument LoadCell {
   extends MeasuringInstrumentModel
   measurand_kind force
-  definition "Load cell as a measuring instrument"
+  definition { Load cell as a measuring instrument }
   note "Editorial instrument note"
   ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.1"
   dimension accuracy_class {
@@ -569,7 +569,7 @@ describe('instrument fidelity extensions', () => {
 
   const ORG_SRC = `instrument InspectionBody {
   kind organization
-  definition "The inspection body operating under ISO/IEC 17020:2012."
+  definition { The inspection body operating under ISO/IEC 17020:2012. }
 }
 `;
 
@@ -587,7 +587,7 @@ describe('instrument fidelity extensions', () => {
 
   it('parses the default product kind but omits it from the dump', () => {
     const m = load(
-      'instrument LoadCell {\n  kind product\n  definition "A load cell."\n}\n',
+      'instrument LoadCell {\n  kind product\n  definition { A load cell. }\n}\n',
     );
     assert.equal(m.instruments[0].kind, 'product');
     const dumped = dump(m);
@@ -597,7 +597,8 @@ describe('instrument fidelity extensions', () => {
 
   it('rejects unknown kinds (closed vocabulary)', () => {
     assert.throws(
-      () => load('instrument X {\n  kind legal_entity\n  definition "X."\n}\n'),
+      () =>
+        load('instrument X {\n  kind legal_entity\n  definition { X. }\n}\n'),
       /instrument kind must be 'product' or 'organization'/,
     );
   });
@@ -648,7 +649,7 @@ const FORM_SRC = `form F1 {
     }
   }
   pass_fail {
-    criteria "All errors within MPE"
+    criteria { All errors within MPE }
     pass_if "ocl{max_error <= mpe}"
     derivation {
       value max_error { calculation "ocl{max(abs(errors))}" for_each measurements unit "ppm" }
@@ -755,7 +756,7 @@ describe('form fidelity extensions', () => {
   it('keeps the single-line pass_fail dump when no derivations exist', () => {
     const m1 = load(`form F2 {
       name "Plain"
-      pass_fail { criteria "c" pass_if "ocl{ok}" }
+      pass_fail { criteria { c } pass_if "ocl{ok}" }
     }`);
     const dumped = dump(m1);
     assert.ok(

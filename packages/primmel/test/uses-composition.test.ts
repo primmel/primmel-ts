@@ -67,7 +67,7 @@ function makeHappyComposition(): string {
 }`,
       'terminology.prl': `term base-term {
   label "base"
-  definition "base term"
+  definition { base term }
 }`,
       'model/subjects.prl': `subject ToyBase {
   is { metadata { name "Toy base" } }
@@ -100,7 +100,7 @@ function makeHappyComposition(): string {
 }`,
       'terminology.prl': `term rec-term {
   label "rec"
-  definition "rec term"
+  definition { rec term }
 }`,
     },
   );
@@ -624,7 +624,7 @@ describe('uses composition — C119 namespace-pin-violation', () => {
 
 requirement /req/owned/application-completeness {
   name "Application completeness"
-  statement "The authority shall review the application for completeness."
+  statement { The authority shall review the application for completeness. }
   verification { method examination }
 }`,
   };
@@ -667,7 +667,7 @@ requirement /req/owned/application-completeness {
     const recDir = makePinComposition({
       'specification/requirements/overlay.prl': `requirement /req/owned/sneaky {
   name "A rec-authored provision in the layer's namespace"
-  statement "The instrument shall be nice."
+  statement { The instrument shall be nice. }
   verification { method examination }
 }`,
     });
@@ -688,7 +688,7 @@ requirement /req/owned/application-completeness {
 
 requirement /req/mine/local {
   name "Rec-local provision"
-  statement "The instrument shall comply."
+  statement { The instrument shall comply. }
   verification { method testing }
 }
 
@@ -802,7 +802,7 @@ requirement_class /req/owned2 {
 
 requirement /req/mine/local {
   name "Rec-local provision"
-  statement "The instrument shall comply."
+  statement { The instrument shall comply. }
   verification { method testing }
 }`,
     });

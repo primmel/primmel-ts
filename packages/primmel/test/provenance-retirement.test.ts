@@ -16,7 +16,7 @@ describe('the retired provenance spellings', () => {
     assert.throws(
       () =>
         load(
-          'requirement r { statement "S" source { doc "urn:x" clause "1" } }',
+          'requirement r { statement { S } source { doc "urn:x" clause "1" } }',
         ),
       /source \{ doc clause \} provenance spelling is retired/,
     );
@@ -46,7 +46,7 @@ describe('the retired provenance spellings', () => {
 describe('the canonical citation channels', () => {
   it('parses ref derives-from on a construct and folds it onto provenance', () => {
     const m = load(
-      'requirement r { statement "S" ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.1" }',
+      'requirement r { statement { S } ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.3.1" }',
     );
     const r = m.requirements[0]!;
     assert.equal(r.source?.doc, 'urn:oiml:pub:r:60-1:2021');

@@ -9,7 +9,7 @@
 
 import type { Dumper, Parser } from '../types';
 import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
 import PartAnnex from '../../types/PartAnnex';
@@ -45,13 +45,8 @@ export const parsePartAnnex: Parser = (id: string, data: string) => {
         }
         annex.obligation = obligation;
       } else if (keyword === 'summary') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
-        // bare legacy, `summary { … }` canonical; the dump emits the
-        // block. The body is trimmed so the fixpoint holds.
-        const v = value();
-        annex.summary = v.startsWith('{')
-          ? unwrapBlock(v).trim()
-          : stripWrapping(v);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        annex.summary = proseBlock(value(), 'part_annex', id, 'summary');
       } else if (keyword === 'realization') {
         annex.realization = stripWrapping(value());
       } else if (keyword === 'source') {

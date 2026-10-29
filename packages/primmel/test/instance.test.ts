@@ -36,7 +36,7 @@ subject LoadCellSample {
 }
 
 instrument LoadCell {
-  definition "Measuring transducer."
+  definition { Measuring transducer. }
   dimension technology { scope family values { analogue-passive analogue-active digital } }
   dimension accuracy_class { scope group values { A B C D } }
 }

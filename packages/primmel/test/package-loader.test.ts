@@ -38,7 +38,7 @@ before(() => {
     join(dir, 'model', 'instrument.prl'),
     `instrument LoadCell {
   extends MeasuringInstrumentModel
-  definition "Measuring transducer for load."
+  definition { Measuring transducer for load. }
 }`,
   );
   writeFileSync(
@@ -89,7 +89,7 @@ before(() => {
     `participant_kind issuing_authority {
   label "OIML Issuing Authority"
   clause "5.2"
-  definition "Certification body approved by the Management Committee."
+  definition { Certification body approved by the Management Committee. }
 }`,
   );
 
@@ -97,7 +97,7 @@ before(() => {
     join(dir, 'terminology.prl'),
     `term load-cell {
   label "load cell"
-  definition "measuring transducer for load"
+  definition { measuring transducer for load }
   vocab_ref { register viml-2022 clause "4.06" }
 }`,
   );

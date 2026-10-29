@@ -1,6 +1,6 @@
 attribute_definition p_lc {
   name "Apportioning factor"
-  definition "The ratio p_LC = E_max / (n_LC · v_min)."
+  definition { The ratio p_LC = E_max / (n_LC · v_min). }
   value_type number
   origin design-fixed
   scope family

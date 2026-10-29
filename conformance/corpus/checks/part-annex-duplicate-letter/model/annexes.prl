@@ -7,7 +7,7 @@ part_annex annex_a {
   letter "A"
   title "Definitions from other applicable international publications"
   obligation normative
-  summary "Definitions from other publications applicable to this Recommendation."
+  summary { Definitions from other publications applicable to this Recommendation. }
   realization "The definitions are reproduced with their source citations."
   ref derives-from "urn:oiml:pub:r:60-4:2021#clause-A"
 }
@@ -15,7 +15,7 @@ part_annex annex_b {
   letter "B"
   title "Additional notes"
   obligation informative
-  summary "Informative notes on the application of the requirements."
+  summary { Informative notes on the application of the requirements. }
   realization "The notes accompany the test report format."
   ref derives-from "urn:oiml:pub:r:60-4:2021#clause-B"
 }
@@ -23,7 +23,7 @@ part_annex annex_a_duplicate {
   letter "A"
   title "A second annex keyed on A"
   obligation informative
-  summary "A duplicate-letter entry seeded for the conformance corpus."
+  summary { A duplicate-letter entry seeded for the conformance corpus. }
   realization "The index cannot key two entries on one printed letter."
   ref derives-from "urn:oiml:pub:r:60-4:2021#clause-A"
 }

@@ -8,7 +8,7 @@ import { load, dump } from '../src/ser-des/index.js';
 // fields, field evaluation rules, tables, table profiles, and notes.
 
 const SD = `source_discrepancy {
-    summary "R 60-3 form criterion contradicts the R 60-1 requirement text"
+    summary { R 60-3 form criterion contradicts the R 60-1 requirement text }
     sources { "urn:oiml:pub:r:60-1:2021#clause-5.6.3.1" "urn:oiml:pub:r:60-3:2021#clause-2.1.7" }
     resolution follows_clause_x
     rationale "The model follows R 60-1, 5.6.3.1 because the form criterion was copied from the 2000 edition."
@@ -30,7 +30,7 @@ function assertSd(sd: any) {
 
 const SRC = `requirement /req/metrological/mpe {
   name "Maximum permissible error"
-  statement "The error shall not exceed the MPE."
+  statement { The error shall not exceed the MPE. }
   limit {
     expression "ocl{abs(e_l) <= mpe}"
     uses { e_l mpe }
@@ -131,7 +131,7 @@ describe('source_discrepancy block', () => {
           type NOTE
           message "x"
           source_discrepancy {
-            summary "s"
+            summary { s }
             sources { "urn:oiml:pub:r:60-1:2021#clause-1" }
             resolution arbitrary_choice
             rationale "r"

@@ -40,7 +40,7 @@
 
 import type { Dumper, Parser } from '../types';
 import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import ParticipantKind, {
   ParticipantApproval,
@@ -120,17 +120,13 @@ function parseSubkind(id: string, block: string): ParticipantSubkind {
       } else if (keyword === 'term') {
         subkind.term = stripWrapping(value());
       } else if (keyword === 'definition') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-        // `definition { … }` canonical; the dump emits the block. The body is
-
-        // trimmed so the fixpoint holds.
-
-        const dv = value();
-
-        subkind.definition = dv.startsWith('{')
-          ? unwrapBlock(dv).trim()
-          : stripWrapping(dv);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        subkind.definition = proseBlock(
+          value(),
+          'participant_kind subkind',
+          id,
+          'definition',
+        );
       } else if (keyword === 'data_flag') {
         subkind.data_flag = stripWrapping(value());
       } else if (keyword === 'acceptance') {
@@ -180,17 +176,13 @@ export const parseParticipantKind: Parser = (id: string, data: string) => {
       } else if (keyword === 'clause') {
         kind.clause = stripWrapping(value());
       } else if (keyword === 'definition') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-        // `definition { … }` canonical; the dump emits the block. The body is
-
-        // trimmed so the fixpoint holds.
-
-        const dv = value();
-
-        kind.definition = dv.startsWith('{')
-          ? unwrapBlock(dv).trim()
-          : stripWrapping(dv);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        kind.definition = proseBlock(
+          value(),
+          'participant_kind',
+          id,
+          'definition',
+        );
       } else if (keyword === 'member') {
         kind.member = stripWrapping(value());
       } else if (keyword === 'competence') {

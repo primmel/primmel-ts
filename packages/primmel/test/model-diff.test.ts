@@ -41,7 +41,7 @@ if (!CORPUS_AVAILABLE) {
 const BASE = `
 requirement /req/metrological/mpe {
   name "Maximum permissible error"
-  statement "The error shall not exceed the MPE."
+  statement { The error shall not exceed the MPE. }
   binds_to { model.parameters.mpe }
   limit { expression "ocl{abs(e_l) <= mpe}" uses { mpe } }
   ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.2.1"
@@ -703,7 +703,7 @@ passport lc500_passport {
     const INVARIANT = `
 invariant INV-1 {
   name "No bare numbers"
-  statement "every physical quantity is a QuantityValue (value + unit [+ uncertainty])."
+  statement { every physical quantity is a QuantityValue (value + unit [+ uncertainty]). }
   severity error
   applies_to { QuantityValue }
   source "docs/oiml-core/09-invariants.md#9.2"

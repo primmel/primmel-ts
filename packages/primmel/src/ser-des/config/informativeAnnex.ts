@@ -12,7 +12,7 @@
 
 import type { Dumper, Parser } from '../types';
 import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe } from './field-parser';
 import InformativeAnnex, {
   AnnexDocument,
@@ -83,11 +83,13 @@ function parseAnnexHighlight(id: string, block: string): AnnexHighlight {
       } else if (keyword === 'title') {
         highlight.title = stripWrapping(value());
       } else if (keyword === 'statement') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
-        const v = value();
-        highlight.statement = v.startsWith('{')
-          ? unwrapBlock(v).trim()
-          : stripWrapping(v);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        highlight.statement = proseBlock(
+          value(),
+          'informative_annex',
+          id,
+          'statement',
+        );
       } else if (keyword === 'discharged_by') {
         highlight.dischargedBy = stripWrapping(value());
       } else {

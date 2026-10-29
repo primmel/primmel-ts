@@ -6,6 +6,6 @@ requirement_class /req/scheme {
 
 requirement /req/scheme/application-completeness {
   name "Application completeness"
-  statement "The authority shall review the application for completeness."
+  statement { The authority shall review the application for completeness. }
   verification { method examination }
 }

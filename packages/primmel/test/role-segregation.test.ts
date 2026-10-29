@@ -49,13 +49,13 @@ process review {
       kind case_personnel_disjoint
       clause "7.5.1"
       pair { review evaluation }
-      statement "The review shall be carried out by person(s) who have not been involved in the evaluation process."
+      statement { The review shall be carried out by person(s) who have not been involved in the evaluation process. }
     }
     constraint review_consultancy_bar {
       kind consultancy_bar
       clause "4.2.10"
       barred { consultancy }
-      statement "Within a period specified by the certification body, personnel shall not be used to review a product for which they have provided consultancy."
+      statement { Within a period specified by the certification body, personnel shall not be used to review a product for which they have provided consultancy. }
     }
   }
 }
@@ -67,14 +67,14 @@ process complaints {
       kind case_personnel_disjoint
       clause "7.13.5"
       pair { complaints case_personnel }
-      statement "The decision resolving the complaint or appeal shall be made by, or reviewed and approved by, person(s) not involved in the certification activities related to the complaint or appeal."
+      statement { The decision resolving the complaint or appeal shall be made by, or reviewed and approved by, person(s) not involved in the certification activities related to the complaint or appeal. }
     }
     constraint complaint_two_year_bar {
       kind consultancy_bar
       clause "7.13.6"
       period P2Y
       barred { consultancy employment }
-      statement "Personnel who have provided consultancy for a client, or been employed by a client, shall not be used to review or approve the resolution of a complaint or appeal for that client within two years following the end of the consultancy or employment."
+      statement { Personnel who have provided consultancy for a client, or been employed by a client, shall not be used to review or approve the resolution of a complaint or appeal for that client within two years following the end of the consultancy or employment. }
     }
   }
 }
@@ -88,7 +88,7 @@ process review {
       kind case_personnel_disjoint
       clause "7.5.1"
       pair { review divination }
-      statement "Seeded violation."
+      statement { Seeded violation. }
     }
   }
 }
@@ -102,7 +102,7 @@ process review {
       kind case_personnel_disjoint
       clause "7.5.1"
       pair { review review }
-      statement "Seeded violation."
+      statement { Seeded violation. }
     }
   }
 }
@@ -122,7 +122,7 @@ process review {
       kind case_personnel_disjoint
       clause "7.6.2"
       pair { decision evaluation }
-      statement "Seeded violation — declared on review, constrains decision."
+      statement { Seeded violation — declared on review, constrains decision. }
     }
   }
 }
@@ -136,7 +136,7 @@ process review {
       kind case_personnel_disjoint
       clause "7.5.1"
       pair { review }
-      statement "Seeded violation."
+      statement { Seeded violation. }
     }
   }
 }
@@ -150,7 +150,7 @@ process review {
       kind role_disjoint
       clause "7.5.1"
       pair { review evaluation }
-      statement "Seeded violation."
+      statement { Seeded violation. }
     }
   }
 }
@@ -168,7 +168,7 @@ process review {
       clause "7.5.1"
       pair { review evaluation }
       period P2Y
-      statement "Seeded violation — a disjoint constraint carries no period."
+      statement { Seeded violation — a disjoint constraint carries no period. }
     }
   }
 }
@@ -182,7 +182,7 @@ process review {
       kind consultancy_bar
       clause "4.2.10"
       period P2Y
-      statement "Seeded violation — a bar that bars nothing."
+      statement { Seeded violation — a bar that bars nothing. }
     }
   }
 }
@@ -200,7 +200,7 @@ process review {
       clause "7.13.6"
       pair { review evaluation }
       barred { consultancy }
-      statement "Seeded violation — a bar carries no pair."
+      statement { Seeded violation — a bar carries no pair. }
     }
   }
 }

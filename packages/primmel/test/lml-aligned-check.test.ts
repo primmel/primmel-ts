@@ -263,7 +263,7 @@ describe('C164 wire-mapping-coverage', () => {
   it('a mapping whose class is no declared dataclass is an error', () => {
     const got = check(`
       class Order#data {
-        attribute a, string { definition "A" }
+        attribute a, string { definition { A } }
       }
       mapping yaml Ghost {
         map "id" a
@@ -279,10 +279,10 @@ describe('C164 wire-mapping-coverage', () => {
     assert.deepEqual(
       fired(`
         class Ceramic {
-          field location, string { definition "loc" }
+          field location, string { definition { loc } }
         }
         class Order#data {
-          attribute a, string { definition "A" }
+          attribute a, string { definition { A } }
         }
         mapping xml Ceramic {
           element "ceramic"
@@ -380,7 +380,7 @@ describe('the catalog entries (C158–C167)', () => {
         prefix "ord"
       }
       class Order#data {
-        attribute a, string { definition "A" }
+        attribute a, string { definition { A } }
       }
       mapping xml Order {
         element "order"
@@ -441,7 +441,7 @@ describe('the LML-aligned rules through checkPackage', () => {
         prefix "ord"
       }
       class Order#data {
-        attribute a, string { definition "A" }
+        attribute a, string { definition { A } }
       }
       mapping xml Order {
         element "order"

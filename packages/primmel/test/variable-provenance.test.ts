@@ -74,7 +74,7 @@ requirement_class /req/probe {
 
 requirement /req/probe/fidelity {
   name "Served equals reference"
-  statement "The served value matches the reference reading at every probe point."
+  statement { The served value matches the reference reading at every probe point. }
   obligation shall
 }
 `,

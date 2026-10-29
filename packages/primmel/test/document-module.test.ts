@@ -68,7 +68,7 @@ informative_annex d032 {
   highlight design_evaluation_checklist {
     clause "G.7.1.1-3"
     title "Type evaluation includes design evaluation"
-    statement "The design evaluation shall cover the software documentation."
+    statement { The design evaluation shall cover the software documentation. }
     discharged_by "The IA review checklist covers the software documentation review."
   }
 }

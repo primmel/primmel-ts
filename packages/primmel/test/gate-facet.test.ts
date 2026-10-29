@@ -36,12 +36,12 @@ declaration_kind issuing_authority_declaration {
   holder issuing_authority
   clause "5.5.1"
   procedure "PD-08"
-  definition "Declaration indicating the IA's scope for issuing OIML certificates."
+  definition { Declaration indicating the IA's scope for issuing OIML certificates. }
   scope_model categories_x_schemes
 }
 declaration_gate declaration-signed-before-issuance {
   clause "PD-08 cl. 5"
-  statement "An IA shall not issue any OIML certificate before its Declaration is signed."
+  statement { An IA shall not issue any OIML certificate before its Declaration is signed. }
   holder issuing_authority
   declaration issuing_authority_declaration
   blocks { issue_certificate }

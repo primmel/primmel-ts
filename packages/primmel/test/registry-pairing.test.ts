@@ -26,7 +26,7 @@ function fixture(dataClassLine: string): string {
       `  ${dataClassLine}`,
       '}',
       'class RealClass#data {',
-      '  attribute a, string { definition "A" }',
+      '  attribute a, string { definition { A } }',
       '}',
       'start_event s { }',
       'process p1 { name "P1" }',

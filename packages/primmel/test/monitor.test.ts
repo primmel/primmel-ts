@@ -76,7 +76,7 @@ subject LoadCellModel {
     promises {
       eer_within {
         target indication_hold
-        statement "The indication holds within MPE across the rated range."
+        statement { The indication holds within MPE across the rated range. }
       }
     }
   }
@@ -94,7 +94,7 @@ subject LoadCellModel {
 
 requirement /req/metrological/measuring-range-min {
   name "measuring-range-min"
-  statement "The measuring range minimum holds."
+  statement { The measuring range minimum holds. }
 }
 `;
 

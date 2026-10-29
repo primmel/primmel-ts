@@ -96,7 +96,7 @@ describe('the args-bound limit form', () => {
 
   const LIMIT = `requirement /req/mpe {
  name "MPE"
- statement "S"
+ statement { S }
  limit {
   args {
    e <- symbol:e_vehicle
@@ -136,7 +136,7 @@ attribute_definition scale_interval { name "d" }
 
   it('errors at load on a malformed body', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args { e <- symbol:e }\n  expression {\n   abs(e) <=\n  }\n }\n}\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { e <- symbol:e }\n  expression {\n   abs(e) <=\n  }\n }\n}\n',
     );
     assert.throws(() => loadPackage(dir), /expression: unexpected end/);
     rmSync(dir, { recursive: true, force: true });
@@ -144,7 +144,7 @@ attribute_definition scale_interval { name "d" }
 
   it('errors at load on a binding without <-', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args { e symbol:e }\n  expression {\n   e >= 0\n  }\n }\n}\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { e symbol:e }\n  expression {\n   e >= 0\n  }\n }\n}\n',
     );
     assert.throws(() => loadPackage(dir), /expected "<-" after "e"/);
     rmSync(dir, { recursive: true, force: true });
@@ -166,7 +166,7 @@ describe('C171/C172 on the AST', () => {
 
   it('names the air an unbound identifier is', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args { e <- symbol:e }\n  expression {\n   e <= ghost_limit\n  }\n }\n}\nsymbol e { label "e" }\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { e <- symbol:e }\n  expression {\n   e <= ghost_limit\n  }\n }\n}\nsymbol e { label "e" }\n',
     );
     const msgs = ids(dir, 'C171');
     assert.ok(
@@ -181,12 +181,12 @@ describe('C171/C172 on the AST', () => {
     // a body over pure literals and dispatch-context paths binds
     // nothing and is legal; a bare identifier is ambient air
     const pure = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  expression {\n   1 <= 2\n  }\n }\n}\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  expression {\n   1 <= 2\n  }\n }\n}\n',
     );
     assert.equal(ids(pure, 'C171').length, 0);
     rmSync(pure, { recursive: true, force: true });
     const air = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  expression {\n   ghost_limit <= 2\n  }\n }\n}\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  expression {\n   ghost_limit <= 2\n  }\n }\n}\n',
     );
     const msgs = ids(air, 'C171');
     assert.ok(msgs.some(m => m.includes('declares no arguments')));
@@ -196,7 +196,7 @@ describe('C171/C172 on the AST', () => {
 
   it('holds the calls to the function vocabulary', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args { e <- symbol:e }\n  expression {\n   median(e, e) >= 0\n  }\n }\n}\nsymbol e { label "e" }\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { e <- symbol:e }\n  expression {\n   median(e, e) >= 0\n  }\n }\n}\nsymbol e { label "e" }\n',
     );
     const msgs = ids(dir, 'C171');
     assert.ok(msgs.some(m => m.includes('"median(…)"')));
@@ -205,7 +205,7 @@ describe('C171/C172 on the AST', () => {
 
   it('rejects an arg bound to an undeclared table', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args { e <- table:no_such_table.mpe }\n  expression {\n   e >= 0\n  }\n }\n}\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { e <- table:no_such_table.mpe }\n  expression {\n   e >= 0\n  }\n }\n}\n',
     );
     const msgs = ids(dir, 'C171');
     assert.ok(
@@ -218,13 +218,13 @@ describe('C171/C172 on the AST', () => {
 
   it('scopes the class law to the containment', () => {
     const ok = make(
-      'requirement_class /req/c {\n name "C"\n limit {\n  expression {\n   mpe_mass or d_floor\n  }\n }\n requirement mpe_mass {\n  name "M"\n  statement "S"\n }\n requirement d_floor {\n  name "D"\n  statement "S"\n }\n}\n',
+      'requirement_class /req/c {\n name "C"\n limit {\n  expression {\n   mpe_mass or d_floor\n  }\n }\n requirement mpe_mass {\n  name "M"\n  statement { S }\n }\n requirement d_floor {\n  name "D"\n  statement { S }\n }\n}\n',
     );
     assert.deepEqual(ids(ok, 'C172'), []);
     rmSync(ok, { recursive: true, force: true });
 
     const air = make(
-      'requirement_class /req/c {\n name "C"\n limit {\n  expression {\n   mpe_mass or d_floor or ghost_regime\n  }\n }\n requirement mpe_mass {\n  name "M"\n  statement "S"\n }\n requirement d_floor {\n  name "D"\n  statement "S"\n }\n}\n',
+      'requirement_class /req/c {\n name "C"\n limit {\n  expression {\n   mpe_mass or d_floor or ghost_regime\n  }\n }\n requirement mpe_mass {\n  name "M"\n  statement { S }\n }\n requirement d_floor {\n  name "D"\n  statement { S }\n }\n}\n',
     );
     const msgs = ids(air, 'C172');
     assert.ok(
@@ -328,7 +328,7 @@ describe('C177 kind coherence', () => {
 
   it('errors when a comparison mixes declared kinds', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   l <- symbol:the_length\n  }\n  expression {\n   m <= l\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nsymbol the_length { label "l" quantity_kind length }\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args {\n   m <- symbol:the_mass\n   l <- symbol:the_length\n  }\n  expression {\n   m <= l\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nsymbol the_length { label "l" quantity_kind length }\n',
     );
     const msgs = kinds(dir);
     assert.ok(msgs.some(m => m.includes('"mass"') && m.includes('"length"')));
@@ -337,7 +337,7 @@ describe('C177 kind coherence', () => {
 
   it('never conflicts on kindless or unknown operands', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   n <- observable:n\n  }\n  expression {\n   m <= n and m <= 5\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args {\n   m <- symbol:the_mass\n   n <- observable:n\n  }\n  expression {\n   m <= n and m <= 5\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\n',
     );
     assert.deepEqual(kinds(dir), []);
     rmSync(dir, { recursive: true, force: true });
@@ -345,7 +345,7 @@ describe('C177 kind coherence', () => {
 
   it('keeps the kind through arithmetic and picks it up from attributes', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args {\n   m <- symbol:the_mass\n   cap <- attribute:the_capacity\n  }\n  expression {\n   m <= 0.5 * cap\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nattribute_definition the_capacity { name "cap" quantity_kind mass }\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args {\n   m <- symbol:the_mass\n   cap <- attribute:the_capacity\n  }\n  expression {\n   m <= 0.5 * cap\n  }\n }\n}\nsymbol the_mass { label "m" quantity_kind mass }\nattribute_definition the_capacity { name "cap" quantity_kind mass }\n',
     );
     assert.deepEqual(kinds(dir), []);
     rmSync(dir, { recursive: true, force: true });
@@ -364,7 +364,7 @@ describe('the series aggregations (W4)', () => {
   it('resolves the aggregation vocabulary and the series index access', () => {
     const body = `requirement /req/x {
  name "X"
- statement "S"
+ statement { S }
  limit {
   args {
    readings <- observable:dwell_samples
@@ -385,7 +385,7 @@ describe('the series aggregations (W4)', () => {
 
   it('keeps unknown aggregations as air', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement "S"\n limit {\n  args { r <- observable:readings }\n  expression {\n   median_of(r) >= 0\n  }\n }\n}\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { r <- observable:readings }\n  expression {\n   median_of(r) >= 0\n  }\n }\n}\n',
     );
     const msgs = checkPackage(dir)
       .filter(i => i.check === 'C171')
@@ -404,7 +404,7 @@ describe('C178 legacy-carrier-deprecated (W6)', () => {
     return dir;
   };
   const LEGACY =
-    'requirement /req/r {\n name "R"\n statement "S"\n limit {\n  expression "ocl{1 <= 2}"\n }\n}\n';
+    'requirement /req/r {\n name "R"\n statement { S }\n limit {\n  expression "ocl{1 <= 2}"\n }\n}\n';
   const ids = (dir: string): string[] =>
     checkPackage(dir)
       .filter(i => i.check === 'C178')
@@ -427,7 +427,7 @@ describe('C178 legacy-carrier-deprecated (W6)', () => {
   it('does not count the inline carriers', () => {
     const dir = make(
       'package {\n id test\n language v3.4\n}',
-      'requirement /req/r {\n name "R"\n statement "S"\n limit {\n  expression {\n   1 <= 2\n  }\n }\n}\n',
+      'requirement /req/r {\n name "R"\n statement { S }\n limit {\n  expression {\n   1 <= 2\n  }\n }\n}\n',
     );
     assert.deepEqual(ids(dir), []);
     rmSync(dir, { recursive: true, force: true });

@@ -151,7 +151,7 @@ instance i {
     promises {
       bogus-claim {
         target no_such_characteristic
-        statement "holds nothing"
+        statement { holds nothing }
       }
     }
   }

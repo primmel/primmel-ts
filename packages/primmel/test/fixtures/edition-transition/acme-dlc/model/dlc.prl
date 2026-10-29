@@ -43,7 +43,7 @@ subject ACME_DLC {
     design_parameters { e_min : mass e_max : mass warm_up_minutes : time }
     promises {
       zero_within {
-        statement "The exhibited zero return stays within the product's declared interval budget."
+        statement { The exhibited zero return stays within the product's declared interval budget. }
         verified_by { oiml-r60-demo-2021#/req/metrological/zero-return oiml-r60-demo-2027#/req/metrological/zero-return }
       }
     }

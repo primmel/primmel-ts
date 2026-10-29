@@ -27,7 +27,7 @@ const BODY = [
   '}',
   'requirement /req/addresses {',
   '  name "A"',
-  '  statement "S"',
+  '  statement { S }',
   '  limit {',
   '    args {',
   '      ind <- process:scale.scale.indication',

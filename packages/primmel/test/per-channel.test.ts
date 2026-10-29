@@ -23,7 +23,7 @@ const SRC = `instrument GasAnalysisSystem {
 
 requirement /req/metrological/error-by-component {
   name "Error per measurand component"
-  statement "The error of indication shall not exceed the MPE for each measurand component."
+  statement { The error of indication shall not exceed the MPE for each measurand component. }
   channel measurand_components
   limit {
     expression "ocl{abs(error) <= mpe}"

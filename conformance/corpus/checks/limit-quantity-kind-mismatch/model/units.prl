@@ -19,7 +19,7 @@ verdict mpe_error {
 # must fire.
 requirement /req/mpe {
   name "MPE"
-  statement "The error shall not exceed the maximum permissible error."
+  statement { The error shall not exceed the maximum permissible error. }
   limit {
     expression "ocl{...}"
     quantity { kind count unit kg }

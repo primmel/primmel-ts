@@ -16,25 +16,25 @@ import { checkPackage } from '../src/check';
 const REGISTERS = `
 term marking {
   label "Marking"
-  definition "An inscription on the load cell."
+  definition { An inscription on the load cell. }
 }
 attribute_definition e_max {
   symbol "E_max"
   name "Maximum capacity"
-  definition "The maximum load the cell measures."
+  definition { The maximum load the cell measures. }
   value_type quantity
 }
 attribute_definition software_identification {
   symbol "SW_id"
   name "Software identification"
-  definition "The software version identifier."
+  definition { The software version identifier. }
   value_type string
 }
 instrument LoadCell {
   extends MeasuringInstrumentModel
   component detection_field {
     class DetectionField
-    definition "The detection field."
+    definition { The detection field. }
   }
 }
 `;
@@ -43,7 +43,7 @@ const ASPECTS = `
 aspect markings {
   label "Markings on the load cell"
   kind marking
-  definition "The inscriptions marked clearly and indelibly on the load cell."
+  definition { The inscriptions marked clearly and indelibly on the load cell. }
   metamodel_class identity-provenance.Marking
   term_ref marking
   contains { model.identity.manufacturer e_max }

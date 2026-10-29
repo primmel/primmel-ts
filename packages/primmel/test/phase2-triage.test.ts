@@ -63,7 +63,7 @@ describe('phase 2 triage dispositions', () => {
     assert.equal(profile.length, 1);
     assert.ok(profile[0]!.message.includes('presentation sidecar'));
     const clean = checkPackage(
-      makePackage('instrument X { definition "X." }'),
+      makePackage('instrument X { definition { X. } }'),
     ).filter(i => i.check === 'C154');
     assert.deepEqual(clean, []);
   });

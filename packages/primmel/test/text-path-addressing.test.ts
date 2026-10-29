@@ -120,7 +120,7 @@ form r144-3/sec-3.4 {
 const REQUIREMENTS = `
 requirement /req/metrological/mpe-tier {
   name "MPE tiers"
-  statement "The maximum permissible error is expressed as factor × p_LC × v."
+  statement { The maximum permissible error is expressed as factor × p_LC × v. }
   parameters {
     param accuracy_class: enum { description "Determines the load breakpoints (in v units) for the three MPE tiers." enum_values { A B C D } }
   }
@@ -131,7 +131,7 @@ requirement /req/metrological/mpe-tier {
 
 requirement /req/electronic/disturbances {
   name "Disturbances"
-  statement "The fault shall satisfy the conditions in section 5.7.1.1."
+  statement { The fault shall satisfy the conditions in section 5.7.1.1. }
   limit {
     expression "ocl{abs(fault) <= 1}"
     notes "Significant-fault limit is one verification interval (1 v, R 60-1, 5.7.1.1 NOTE)."

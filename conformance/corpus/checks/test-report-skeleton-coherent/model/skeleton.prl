@@ -10,7 +10,7 @@ form r60-3/table-6.5 {
 }
 requirement /req/metrological/mpe {
   name "Maximum permissible errors"
-  statement "The error shall not exceed the MPE."
+  statement { The error shall not exceed the MPE. }
 }
 conformance_test /conf/metrological-tests/measurement-error-repeatability-mdlo {
   name "Measurement error and repeatability"

@@ -92,7 +92,7 @@ instance i {
     const m3 = load(`
 attribute_definition serial_number {
   name "Serial number"
-  definition "The manufacturer's serial number."
+  definition { The manufacturer's serial number. }
   value_type string
   origin declared
   scope model

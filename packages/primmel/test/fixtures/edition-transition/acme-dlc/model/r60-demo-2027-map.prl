@@ -7,31 +7,31 @@
 
 requirement oiml-r60-demo-2027#/req/metrological/measuring-range-min {
   name "alias: the 2027 minimum-load requirement"
-  statement "Local alias of the 2027 edition's measuring-range-minimum requirement (C21 — carried unchanged from the 2021 baseline)."
+  statement { Local alias of the 2027 edition's measuring-range-minimum requirement (C21 — carried unchanged from the 2021 baseline). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 
 requirement oiml-r60-demo-2027#/req/metrological/measuring-range-max {
   name "alias: the 2027 maximum-load requirement"
-  statement "Local alias of the 2027 edition's measuring-range-maximum requirement (C21 — carried unchanged)."
+  statement { Local alias of the 2027 edition's measuring-range-maximum requirement (C21 — carried unchanged). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 
 requirement oiml-r60-demo-2027#/req/metrological/zero-return {
   name "alias: the 2027 zero-return requirement (0.25 intervals)"
-  statement "Local alias of the 2027 edition's zero-return requirement — the TIGHTENED 0.25-scale-interval tolerance (C21)."
+  statement { Local alias of the 2027 edition's zero-return requirement — the TIGHTENED 0.25-scale-interval tolerance (C21). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 
 requirement oiml-r60-demo-2027#/req/technical/warm-up-time {
   name "alias: the 2027 warm-up requirement (15 min + record)"
-  statement "Local alias of the 2027 edition's warm-up requirement — 15 minutes with a completion record (C21)."
+  statement { Local alias of the 2027 edition's warm-up requirement — 15 minutes with a completion record (C21). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 
 requirement oiml-r60-demo-2027#/req/technical/warm-up-record {
   name "alias: the 2027 warm-up-record requirement (ADDED)"
-  statement "Local alias of the 2027 edition's warm-up-record requirement — the completion record, ADDED at the 2027 edition (C21)."
+  statement { Local alias of the 2027 edition's warm-up-record requirement — the completion record, ADDED at the 2027 edition (C21). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 

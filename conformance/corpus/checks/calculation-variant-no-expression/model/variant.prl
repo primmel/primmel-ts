@@ -6,21 +6,21 @@
 // silent — this case's only violation is the missing expression facet.
 symbol E_L {
   name "Load cell error"
-  definition "the load cell error at the reference load"
+  definition { the load cell error at the reference load }
   type number
   unit "1"
 }
 
 symbol I {
   name "Indication"
-  definition "the instrument indication at the load"
+  definition { the instrument indication at the load }
   type number
   unit "1"
 }
 
 symbol I_ref {
   name "Reference indication"
-  definition "the reference indication for the error computation"
+  definition { the reference indication for the error computation }
   type number
   unit "1"
 }

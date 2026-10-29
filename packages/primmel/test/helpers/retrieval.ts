@@ -51,7 +51,7 @@ export function buildRetrievalFixturePackage(): string {
 
 requirement /req/scope/alpha {
   name "Alpha"
-  statement "The widget shall frobnicate."
+  statement { The widget shall frobnicate. }
   guidance "Frobnicate gently."
   binds_to { family.parameters.x }
   applicability {
@@ -79,7 +79,7 @@ requirement /req/scope/alpha {
 
 requirement /req/scope/epsilon {
   name "Epsilon"
-  statement "The widget's frobnication shall tier by load."
+  statement { The widget's frobnication shall tier by load. }
   acceptance_criteria {
     type: "tiered"
     description: "MPE tiers by load range"
@@ -102,13 +102,13 @@ requirement /req/scope/epsilon {
 
 requirement /req/scope/zeta {
   name "Zeta"
-  statement "The widget shall be judged by inspection."
+  statement { The widget shall be judged by inspection. }
   acceptance_criteria { Judged by inspection against the reference checklist }
 }
 
 requirement /req/scope/beta {
   name "Beta"
-  statement "The widget should beep."
+  statement { The widget should beep. }
   obligation should
   applicability {
     tech: [analogue digital] match all
@@ -118,19 +118,19 @@ requirement /req/scope/beta {
 
 requirement /req/scope/gamma {
   name "Gamma"
-  statement "The widget shall hum."
+  statement { The widget shall hum. }
   ref derives-from "urn:test:r:9-1:2021#clause-_eb46a3a3-b2c3-4d5e-8f90-a1b2c3d4e5f6"
 }
 
 requirement /req/scope/delta {
   name "Delta"
-  statement "The widget shall match Table 2."
+  statement { The widget shall match Table 2. }
   ref derives-from "urn:test:r:9-1:2021#table-2"
 }
 
 requirement /req/orphan {
   name "Orphan"
-  statement "The widget shall stand alone."
+  statement { The widget shall stand alone. }
 }`,
   );
 
@@ -179,7 +179,7 @@ conformance_test /conf/scope/beta-composite {
     join(dir, 'terminology.prl'),
     `term frobnicator {
   label "frobnicator"
-  definition "a device that frobnicates"
+  definition { a device that frobnicates }
   section "3.2"
   source "urn:test:v:1:2022#clause-4.1 urn:test:r:9-1:2021#clause-3.2.1"
   language "en"
@@ -189,7 +189,7 @@ conformance_test /conf/scope/beta-composite {
 
 term orphan-term {
   label "orphan term"
-  definition "a term with only a section for provenance"
+  definition { a term with only a section for provenance }
   section "3.9"
 }`,
   );
@@ -200,7 +200,7 @@ term orphan-term {
     `attribute_definition widget_mass {
   symbol "M"
   name "widget mass"
-  definition "Mass of the widget."
+  definition { Mass of the widget. }
   quantity_kind mass
   unit "kg"
   value_type QuantityValue
@@ -216,7 +216,7 @@ term orphan-term {
     `behavior beep-response {
   kind acoustic
   stimulus trigger
-  response "The widget beeps when triggered."
+  response { The widget beeps when triggered. }
   ref derives-from "urn:test:r:9-1:2021#clause-3.7.1"
 }`,
   );
@@ -256,7 +256,7 @@ term orphan-term {
     join(dir, 'model', 'instrument.prl'),
     `instrument Widget {
   extends MeasuringInstrumentModel
-  definition "A widget."
+  definition { A widget. }
   dimension tech {
     label "Technology"
     scope family
@@ -298,7 +298,7 @@ calculation lookupFrob {
     join(dir, 'specification', 'symbols.prl'),
     `symbol b_l {
   name "Beep level"
-  definition "The beep level, in dB."
+  definition { The beep level, in dB. }
   type number
   unit "dB"
   kind observable

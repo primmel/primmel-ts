@@ -7,10 +7,10 @@ requirement_class /req/c {
   }
   requirement mpe_mass {
     name "M"
-    statement "S"
+    statement { S }
   }
   requirement d_floor {
     name "D"
-    statement "S"
+    statement { S }
   }
 }

@@ -519,7 +519,7 @@ requirement_class /req/other {
 
 requirement /req/scope/alpha {
   name "Alpha"
-  statement "The widget shall frobnicate & pass <all> \\"checks\\"."
+  statement { The widget shall frobnicate & pass <all> "checks". }
   guidance "Frobnicate gently."
   binds_to { family.parameters.x /req/scope/beta }
   limit {
@@ -534,20 +534,20 @@ requirement /req/scope/alpha {
 
 requirement /req/scope/beta {
   name "Beta"
-  statement "The widget should glow."
+  statement { The widget should glow. }
   obligation should
   ref derives-from "urn:test:r:1:2021#clause-5.3"
 }
 
 requirement /req/scope/gamma {
   name "Gamma"
-  statement "The widget may hum."
+  statement { The widget may hum. }
   obligation may
 }
 
 requirement /req/orphan {
   name "Orphan"
-  statement "The widget shall stand alone."
+  statement { The widget shall stand alone. }
 }`,
   );
   writeFileSync(
@@ -564,7 +564,7 @@ requirement /req/orphan {
     join(dir, 'terminology.prl'),
     `term widget {
   label "widget"
-  definition "a thing that frobnicates"
+  definition { a thing that frobnicates }
   section "3.1"
   source "urn:test:r:1:2021#clause-3.1"
   language "en"
@@ -576,7 +576,7 @@ requirement /req/orphan {
 
 term frobnication {
   label "frobnication"
-  definition "the act of frobnicating"
+  definition { the act of frobnicating }
   section "3.2"
   note "Frobnication is reversible."
   scope_note "Applies to widgets only."
@@ -588,7 +588,7 @@ term frobnication {
 
 term gloom {
   label "gloom"
-  definition "the state of a widget that does not glow"
+  definition { the state of a widget that does not glow }
   section "4.1"
 }`,
   );
