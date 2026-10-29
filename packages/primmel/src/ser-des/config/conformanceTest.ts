@@ -1,7 +1,6 @@
 import ConformanceTest, {
   TestVariable,
   TestObservable,
-  AcceptanceCriterion,
   TestPrecondition,
   TestInstances,
   PreparationStep,
@@ -44,7 +43,6 @@ import {
   dumpSourceDiscrepancy,
 } from './sourceDiscrepancy';
 import { parseAcceptance, dumpAcceptance } from './acceptance';
-import { conformanceTestFoldChecks } from './check-fold';
 import { parseDesign, dumpDesign } from './design';
 import {
   parseRequiredCompetence,
@@ -230,100 +228,6 @@ function parseObservables(block: string): TestObservable[] {
     out.push(o);
   }
   return out;
-}
-
-function parseAcceptanceCriteria(block: string, result: ConformanceTest): void {
-  const t = tokenize(block);
-  let i = 0;
-  while (i < t.length) {
-    const cmd = t[i++];
-    if (cmd === 'type') {
-      result.acceptanceCriteriaType = stripWrapping(t[i++]);
-      continue;
-    }
-    if (cmd === 'description') {
-      result.acceptanceCriteriaDescription = stripWrapping(t[i++]);
-      continue;
-    }
-    if (cmd === 'pass_if') {
-      // The deprecation ladder's rung (TODO.lang-gaps/03): the pass_if
-      // facet refuses at parse — the verdict declares the canonical
-      // check (the criterion-less composite slot's derived id).
-      throw new Error(
-        `Parsing error: conformance_test. ID ${result.id}: the pass_if facet is retired (TODO.lang-gaps/03) — declare the check conformance_test:${result.id}:acceptance_criteria { expression "…" ref derives-from "conformance_test:${result.id}" }`,
-      );
-    }
-    if (cmd !== 'criterion' && cmd !== 'item') {
-      if (i < t.length) {
-        unwrapBlock(t[i - 1]);
-      }
-      continue;
-    }
-    // The criterion name is optional — documentary criteria (description +
-    // reference only) arrive as `criterion { ... }` or `criterion "" { ... }`.
-    let item = '';
-    if (i < t.length && !t[i].startsWith('{')) {
-      item = stripWrapping(t[i++]);
-    }
-    const c: AcceptanceCriterion = {
-      item,
-      passIf: '',
-      requirementId: '',
-      criterion: '',
-      optional: false,
-      description: '',
-      reference: '',
-      sourceDiscrepancy: null,
-    };
-    if (i < t.length && t[i].startsWith('{')) {
-      const cb = unwrapBlock(t[i++]);
-      const ct = tokenize(cb);
-      let j = 0;
-      while (j < ct.length) {
-        const cc = ct[j++];
-        if (j >= ct.length) {
-          break;
-        }
-        if (cc === 'pass_if') {
-          // The deprecation ladder's rung (TODO.lang-gaps/03): the
-          // criterion's pass_if refuses at parse — the verdict declares
-          // the canonical check under the criterion's derived slot.
-          throw new Error(
-            `Parsing error: conformance_test. ID ${result.id}: the pass_if facet is retired (TODO.lang-gaps/03) — declare the check conformance_test:${result.id}:acceptance_criteria:${c.item || '<criterion>'} { expression "…" ref derives-from "conformance_test:${result.id}" }`,
-          );
-        } else if (cc === 'requirement' || cc === 'target') {
-          // `target /req/x` is the cc.yaml alias of `requirement /req/x`.
-          c.requirementId = stripWrapping(ct[j++]);
-        } else if (cc === 'criterion') {
-          c.criterion = stripWrapping(ct[j++]);
-        } else if (cc === 'optional') {
-          c.optional = stripWrapping(ct[j++]) === 'true';
-        } else if (cc === 'description') {
-          c.description = stripWrapping(ct[j++]);
-        } else if (cc === 'reference') {
-          c.reference = stripWrapping(ct[j++]);
-        } else if (cc === 'accepts') {
-          const ab = tokenize(unwrapBlock(ct[j++]));
-          const accepts = { verdict: '', op: '', limit: '' };
-          for (let k = 0; k + 1 < ab.length; k += 2) {
-            if (ab[k] === 'verdict') {
-              accepts.verdict = stripWrapping(ab[k + 1]);
-            } else if (ab[k] === 'op') {
-              accepts.op = stripWrapping(ab[k + 1]);
-            } else if (ab[k] === 'limit') {
-              accepts.limit = stripWrapping(ab[k + 1]);
-            }
-          }
-          c.accepts = accepts;
-        } else if (cc === 'source_discrepancy') {
-          c.sourceDiscrepancy = parseSourceDiscrepancy(unwrapBlock(ct[j++]));
-        } else {
-          unwrapBlock(ct[j++]);
-        }
-      }
-    }
-    result.acceptanceCriteria.push(c);
-  }
 }
 
 function parseDerivedValues(
@@ -959,7 +863,14 @@ export const parseConformanceTest: Parser = function (id, data) {
           unwrapBlock(value()),
         );
       } else if (keyword === 'acceptance_criteria') {
-        parseAcceptanceCriteria(unwrapBlock(value()), result);
+        // The deprecation ladder's rung (TODO.lang-gaps/03): the typed
+        // acceptance_criteria block refuses at parse — both the
+        // block-level verdict and the criteria declare the canonical
+        // checks (the block-level slot's derived id names the whole
+        // surface; the criteria ride the `:<criterion>` slots).
+        throw new Error(
+          `Parsing error: conformance_test. ID ${id}: the acceptance_criteria block is retired (TODO.lang-gaps/03) — declare the check conformance_test:${id}:acceptance_criteria { expression "…" ref derives-from "conformance_test:${id}" } and one check per criterion under the :<criterion> slot`,
+        );
       } else if (keyword === 'design') {
         result.design = parseDesign(unwrapBlock(value()));
       } else if (keyword === 'acceptance') {
@@ -1040,15 +951,6 @@ export const parseConformanceTest: Parser = function (id, data) {
 
   return ctx => {
     ctx.conformanceTests[id] = result;
-    // C161 (TODO.lang-gaps/03): the retired acceptance_criteria
-    // spellings fold into the checks collection at parse — the
-    // canonical checks are the view, never serialized (dump skips
-    // folded checks). The validate_measurement spelling retired with
-    // its refusal: no fold registers for it anymore, the check the
-    // verdict declares is an authored construct.
-    for (const fold of conformanceTestFoldChecks(result)) {
-      ctx.checks[fold.id] = fold;
-    }
     return ctx;
   };
 };

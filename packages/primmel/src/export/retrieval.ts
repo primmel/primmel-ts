@@ -80,7 +80,12 @@
 //      requirement's raw YAML read by the subset parser in
 //      yaml-lite.ts; the conformance test's kernel-typed criteria
 //      assembled onto the cc.yaml shape — the items' `pass_if` /
-//      `accepts` OCL first-class), `accepts` is the verdict triple
+//      `accepts` OCL first-class). Since the boolean-verdict migration
+//      (TODO.lang-gaps/03) retired the blocks, an owner whose
+//      acceptance lives in its canonical checks assembles the SAME
+//      facet from them (the block-level check the block entry, the
+//      criterion checks the items — the keys and the facet version do
+//      not move), `accepts` is the verdict triple
 //      `{ verdict, op, limit }` (the limit predicate an OCL field, no
 //      longer a `"verdict op limit"` string to split), and `acceptance`
 //      is the acceptance DECISION object (rule, guard band, uncertainty
@@ -123,6 +128,7 @@ import type Standard from '../types/Standard';
 import type { PackageManifest } from '../types/Package';
 import type { Requirement } from '../types/Requirement';
 import type ConformanceTest from '../types/ConformanceTest';
+import type { Check } from '../types/LmlAligned';
 import type Process from '../types/process';
 import type Term from '../types/Term';
 import type Calculation from '../types/Calculation';
@@ -308,9 +314,13 @@ export interface RetrievalAcceptanceCriteriaItem {
  * the rc.yaml acceptanceCriteria shape: `type`, `description`, `limit`
  * `{ expression, operator, threshold_expression, unit }`, `tiers`, …).
  * For a CONFORMANCE TEST it is the kernel-typed criteria assembled onto
- * the cc.yaml shape. A requirement block that walks off the subset
- * (free text, a keyword-form block) stays the RAW STRING — honest prose,
- * never a failed parse dressed as structure.
+ * the cc.yaml shape. Since the boolean-verdict migration retired the
+ * blocks (TODO.lang-gaps/03), an owner whose acceptance lives in its
+ * canonical checks assembles the same shape from them (the check's
+ * verdict triple re-assembles `limit`, an operator-less verdict rides
+ * `pass_if`, the criterion checks become `items`). A requirement block
+ * that walks off the subset (free text, a keyword-form block) stays the
+ * RAW STRING — honest prose, never a failed parse dressed as structure.
  */
 export type RetrievalAcceptanceCriteria = Record<string, unknown> | string;
 
@@ -939,19 +949,102 @@ function acceptanceSummary(unit: Omit<RetrievalUnit, 'passport'>): string {
   }
   const criteria = unit.acceptance_criteria;
   if (criteria && typeof criteria === 'object') {
-    const passIf = criteria['pass_if'];
-    if (present(passIf as string)) {
-      return passIf as string;
-    }
+    // The prose summary first (the /1 bytes shipped the block's
+    // description; the check-sourced facet keeps that preference).
     const description = criteria['description'];
     if (present(description as string)) {
       return description as string;
+    }
+    const passIf = criteria['pass_if'];
+    if (present(passIf as string)) {
+      return passIf as string;
     }
   }
   if (unit.acceptance?.rule) {
     return unit.acceptance.rule;
   }
   return '';
+}
+
+// ── the check-derived acceptance (the boolean-verdict migration) ─────
+
+/**
+ * The canonical acceptance checks of one owner under the fold-id
+ * convention (TODO.lang-gaps/03): the exact slot
+ * `<owner>:acceptance_criteria` is the block-level verdict, each
+ * `<owner>:acceptance_criteria:<slot>` a criterion check. The migrated
+ * corpus declares these adjacent to the owner; an owner whose
+ * acceptance still rides the retired block reads that block instead
+ * (the raw/YAML path above) — a Standard never reads both.
+ */
+function acceptanceChecksOf(
+  checks: Check[] | undefined,
+  owner: string,
+): { base?: Check; criteria: Array<{ slot: string; check: Check }> } {
+  const baseId = `${owner}:acceptance_criteria`;
+  const out: {
+    base?: Check;
+    criteria: Array<{ slot: string; check: Check }>;
+  } = { criteria: [] };
+  for (const c of checks ?? []) {
+    if (c.id === baseId) {
+      out.base = c;
+    } else if (c.id.startsWith(`${baseId}:`)) {
+      out.criteria.push({ slot: c.id.slice(baseId.length + 1), check: c });
+    }
+  }
+  return out;
+}
+
+/**
+ * The acceptance facet assembled from the owner's canonical checks when
+ * the retired block is absent: the check's verdict triple re-assembles
+ * the `limit` map (the operator riding its field), an operator-less
+ * verdict rides `pass_if`, the quarantined description rides
+ * `description`, and the criterion slots become `items`. The same key
+ * vocabulary the authored block carried — the facet shape does not move
+ * (retrieval-facet/2); only where the values are read from does.
+ * Undefined when the owner declares no acceptance checks.
+ */
+function checkAcceptanceCriteria(
+  checks: Check[] | undefined,
+  owner: string,
+): RetrievalAcceptanceCriteria | undefined {
+  const { base, criteria } = acceptanceChecksOf(checks, owner);
+  if (!base && criteria.length === 0) {
+    return undefined;
+  }
+  const out: Record<string, unknown> = {};
+  if (present(base?.description)) {
+    out['description'] = base!.description;
+  }
+  if (present(base?.expression)) {
+    if (present(base!.operator)) {
+      const limit: Record<string, unknown> = {
+        expression: base!.expression,
+        operator: base!.operator,
+      };
+      if (present(base!.threshold)) {
+        limit['threshold_expression'] = base!.threshold;
+      }
+      out['limit'] = limit;
+    } else {
+      out['pass_if'] = base!.expression;
+    }
+  }
+  if (criteria.length > 0) {
+    out['items'] = criteria.map(({ slot, check }) => {
+      const item: RetrievalAcceptanceCriteriaItem = { name: slot };
+      if (present(check.expression)) {
+        item.pass_if = check.expression;
+      }
+      if (present(check.description)) {
+        item.description = check.description;
+      }
+      return item;
+    });
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 // ── the flat retrieval facet (ask 3) ─────────────────────────────────
@@ -1250,11 +1343,15 @@ const present = (s: string | undefined | null): s is string =>
 const presentList = <T>(xs: T[] | undefined | null): T[] | undefined =>
   xs && xs.length > 0 ? xs : undefined;
 
-function requirementUnit(r: Requirement): UnitContent {
+function requirementUnit(r: Requirement, checks: Check[]): UnitContent {
   const decision = acceptanceDecisionOf(r.limit?.acceptance);
+  // The authored block reads structured (the yaml-lite subset; the raw
+  // string when it walks off); when the block is absent the acceptance
+  // rides the canonical checks (the migration's shape) and the facet
+  // assembles from them.
   const criteria = present(r.acceptanceCriteria)
     ? (parseYamlBlock(r.acceptanceCriteria) ?? r.acceptanceCriteria)
-    : undefined;
+    : checkAcceptanceCriteria(checks, `requirement:${r.id}`);
   return assemble(
     {
       id: r.id,
@@ -1325,7 +1422,7 @@ function processUnit(pr: Process): UnitContent {
   );
 }
 
-function conformanceTestUnit(t: ConformanceTest): UnitContent {
+function conformanceTestUnit(t: ConformanceTest, checks: Check[]): UnitContent {
   const payload: Record<string, unknown> = {
     ...(present(t.kind) ? { test_kind: t.kind } : {}),
     ...(present(t.methodRef) ? { method_ref: t.methodRef } : {}),
@@ -1338,7 +1435,13 @@ function conformanceTestUnit(t: ConformanceTest): UnitContent {
     ),
   ].sort();
   const decision = acceptanceDecisionOf(t.acceptance);
-  const criteria = testAcceptanceCriteriaOf(t);
+  // The kernel-typed criteria assemble first; when the retired block is
+  // absent the acceptance rides the canonical checks (the migration's
+  // shape) and the facet assembles from them — the block-level check is
+  // the block entry, the criterion checks the items.
+  const criteria =
+    testAcceptanceCriteriaOf(t) ??
+    checkAcceptanceCriteria(checks, `conformance_test:${t.id}`);
   return assemble(
     {
       id: t.id,
@@ -1930,10 +2033,10 @@ function exportStandardRetrievalInner(
     built.push({ content, elementId });
   };
   for (const r of standard.requirements ?? []) {
-    push(requirementUnit(r), r.id);
+    push(requirementUnit(r, standard.checks ?? []), r.id);
   }
   for (const t of standard.conformanceTests ?? []) {
-    push(conformanceTestUnit(t), t.id);
+    push(conformanceTestUnit(t, standard.checks ?? []), t.id);
   }
   for (const pr of standard.processes ?? []) {
     push(processUnit(pr), pr.id);

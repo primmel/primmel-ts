@@ -3361,6 +3361,18 @@
         "errorMatch": "the pass_fail block is retired"
       },
       "summary": "The boolean-verdict fold's first retirement (TODO.lang-gaps/03): the form's pass_fail block (and the acceptance_criteria pass_if facet) refuse at parse — the verdict declares the canonical check (form:<form-id>:pass_fail) with the predicate as its expression, the criteria prose in the quarantined description block, and the owner cited by the derives-from ref."
+    },
+    {
+      "id": "syn-04-parse-neg-retired-acceptance-criteria",
+      "clause": "SYN-04",
+      "polarity": "negative",
+      "kind": "parse",
+      "path": "syntax/retired-acceptance-criteria.prl",
+      "expect": {
+        "parse": "error",
+        "errorMatch": "the acceptance_criteria block is retired"
+      },
+      "summary": "The acceptance_criteria block retires (TODO.lang-gaps/03) — the verdicts declare the canonical checks; both carriers (the typed test block and the requirement's raw block) refuse."
     }
   ]
 }

@@ -716,53 +716,40 @@ describe('retrieval export — the structured acceptance (ask 8, #84)', () => {
     assert.equal(RETRIEVAL_PROJECTION, 'primmel-retrieval/2');
   });
 
-  it('reads the requirement acceptance_criteria block structured', () => {
+  it('assembles the acceptance facet from the canonical checks (the retired block reads the same keys)', () => {
     const { units } = fixtureUnits();
     const alpha = units.get('/req/scope/alpha')!;
-    // The /1 projection shipped this as a raw YAML string inside the
-    // JSON — the consumer-side re-parse the structured form eliminates.
+    // The block retired (TODO.lang-gaps/03): the facet assembles from
+    // the owner's canonical checks — the same key vocabulary
+    // (retrieval-facet/2 does not move), the values now check-sourced.
     assert.deepEqual(alpha.acceptance_criteria, {
-      type: 'threshold',
-      description: 'The frobnication error shall not exceed the MPE',
+      description:
+        'The frobnication error shall not exceed the MPE; the threshold reads mpe in v',
       limit: {
         expression: '|error|',
         operator: 'lte',
-        threshold_expression: 'mpe',
-        unit: 'v',
       },
     });
     assert.ok(typeof alpha.acceptance_criteria === 'object');
   });
 
-  it('resolves tier sequences and unquoted numbers (the tiered block)', () => {
+  it('carries a structured-shape acceptance as the quarantined description (the check has no tier grammar)', () => {
     const { units } = fixtureUnits();
     const epsilon = units.get('/req/scope/epsilon')!;
+    // The tiered block had no check form — its content carries in the
+    // quarantined description (the corpus doctrine for judgment shapes).
     assert.deepEqual(epsilon.acceptance_criteria, {
-      type: 'tiered',
-      description: 'MPE tiers by load range',
-      variable: 'load',
-      variable_unit: 'v',
-      limit_expression: 'factor × p_LC',
-      tiers: [
-        {
-          range: { min: 0 },
-          limit: { factor: 0.5, expression: '0.5 × p_LC' },
-        },
-        {
-          range: { min: 50000 },
-          limit: { factor: 1, expression: '1 × p_LC' },
-        },
-      ],
+      description:
+        'The MPE tiers by load range: from 0 the limit is 0.5 × p_LC; from 50000 it is 1 × p_LC (the variable is load, in v)',
     });
   });
 
-  it('keeps a free-text block the raw string — honest prose, never a failed parse', () => {
+  it('keeps a judgment acceptance the description-only check — honest prose, never a failed parse', () => {
     const { units } = fixtureUnits();
     const zeta = units.get('/req/scope/zeta')!;
-    assert.equal(
-      zeta.acceptance_criteria,
-      'Judged by inspection against the reference checklist',
-    );
+    assert.deepEqual(zeta.acceptance_criteria, {
+      description: 'Judged by inspection against the reference checklist',
+    });
   });
 
   it('carries the accepts triple structured, the limit predicate as an OCL field', () => {
@@ -801,21 +788,21 @@ describe('retrieval export — the structured acceptance (ask 8, #84)', () => {
   it('assembles the conformance test criteria onto the cc.yaml shape', () => {
     const { units } = fixtureUnits();
     const test = units.get('/conf/scope/beta-composite')!;
+    // The block retired (TODO.lang-gaps/03): the facet assembles from
+    // the criterion checks — the same key vocabulary, check-sourced.
     assert.deepEqual(test.acceptance_criteria, {
-      type: 'composite',
       description: 'Composite of partial checks',
+      pass_if: 'ocl{all_passed}',
       items: [
         {
           name: 'partial_check',
-          target: '/req/scope/beta',
-          criterion: 'I/MPE',
-          optional: true,
-          description: 'Partial check',
-          reference: 'urn:test:r:9-2:2021#clause-7.2',
+          pass_if: 'ocl{abs(x) <= mpe}',
+          description:
+            'Partial check — optional; criterion I/MPE; target /req/scope/beta; reference urn:test:r:9-2:2021#clause-7.2',
         },
         {
           name: 'verdict_check',
-          accepts: { verdict: 'beep_level', op: 'lte', limit: 'ocl{mpe}' },
+          pass_if: 'ocl{beep_level <= mpe}',
         },
       ],
     });
@@ -869,19 +856,29 @@ describe('retrieval export — the structured acceptance (ask 8, #84)', () => {
     });
   });
 
-  it('the structured acceptance is authored content: a block change moves the digest', () => {
+  it('the structured acceptance is authored content: a check edit moves the digest and the facet', () => {
+    // The acceptance lives in the canonical checks (the block retired,
+    // TODO.lang-gaps/03) — the checks are authored content, so an
+    // acceptance edit moves the owner's digest AND the facet bytes.
     const dir = buildRetrievalFixturePackage();
     const before = exportPackageRetrieval(dir);
     const path = join(dir, 'specification', 'requirements.prl');
     writeFileSync(
       path,
-      readFileSync(path, 'utf8').replace('factor: 0.5', 'factor: 0.6'),
+      readFileSync(path, 'utf8').replace(
+        'The frobnication error shall not exceed the MPE',
+        'The frobnication error shall not exceed the MPE at reference conditions',
+      ),
     );
     const after = exportPackageRetrieval(dir);
-    const b = before.document.units.find(u => u.id === '/req/scope/epsilon')!;
-    const a = after.document.units.find(u => u.id === '/req/scope/epsilon')!;
+    const b = before.document.units.find(u => u.id === '/req/scope/alpha')!;
+    const a = after.document.units.find(u => u.id === '/req/scope/alpha')!;
     assert.equal(a.id, b.id);
     assert.notEqual(a.content_hash, b.content_hash);
+    assert.notEqual(
+      JSON.stringify(a.acceptance_criteria),
+      JSON.stringify(b.acceptance_criteria),
+    );
   });
 });
 

@@ -39,11 +39,7 @@ import {
   type Workspace,
 } from './locators';
 import { parsePackage } from './config/packageManifest';
-import {
-  conformanceTestFoldChecks,
-  formFoldChecks,
-  requirementFoldChecks,
-} from './config/check-fold';
+import { formFoldChecks, requirementFoldChecks } from './config/check-fold';
 import type { Position } from './tokenize';
 import type { LoadOptions, LoadResult } from './index';
 import type { PackageManifest } from '../types/Package';
@@ -1090,11 +1086,11 @@ function composePackage(
   // The fold plane re-derives from the MERGED owners (C161,
   // TODO.lang-gaps/03): folded checks are the parse-side view of the
   // retired boolean spellings, so the composed closure's views are
-  // recomputed from the merged forms / requirements / conformance tests
-  // — the one derivation (ser-des/config/check-fold.ts) replayed over
-  // the merge's outcome, never merged as data of their own. (The
-  // validate_measurement leg retired with its spelling's parse refusal
-  // — wave 03 PR 3.)
+  // recomputed from the merged forms / requirements — the one
+  // derivation (ser-des/config/check-fold.ts) replayed over the merge's
+  // outcome, never merged as data of their own. (The validate_measurement
+  // leg retired with its spelling's parse refusal — wave 03 PR 3; the
+  // two acceptance_criteria legs retired with theirs — wave 03 PR 4.)
   {
     const checks = acc.checks;
     for (const key of Object.keys(checks)) {
@@ -1109,11 +1105,6 @@ function composePackage(
     }
     for (const requirement of Object.values(acc.requirements)) {
       for (const fold of requirementFoldChecks(requirement)) {
-        checks[fold.id] = fold;
-      }
-    }
-    for (const ct of Object.values(acc.conformanceTests)) {
-      for (const fold of conformanceTestFoldChecks(ct)) {
         checks[fold.id] = fold;
       }
     }

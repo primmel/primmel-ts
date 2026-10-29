@@ -1,0 +1,7 @@
+conformance_test RetiredAcceptance {
+  name "The acceptance block refuses"
+  acceptance_criteria {
+    type threshold
+    pass_if "ocl{x <= mpe}"
+  }
+}

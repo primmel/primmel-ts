@@ -15,29 +15,31 @@
 // carrying `folds`), so serialization stays byte-identical for
 // documents that spell the verdict the retired way.
 //
-// Spellings 1 and 2's pass_if retired at parse (wave 03 PR 2) and
-// spelling 5 — the validate_measurement strings — retired with it
-// (wave 03 PR 3): a retired spelling's derivation leaves this module
+// Spellings 1's pass_if retired at parse (wave 03 PR 2), spelling 5 —
+// the validate_measurement strings — retired with it (wave 03 PR 3),
+// and the two acceptance_criteria carriers — the conformance test's
+// typed block and the requirement's raw block — retired with those
+// (wave 03 PR 4): a retired spelling's derivation leaves this module
 // with its refusal (the spelling no longer parses, the fold would be
 // dead code), and the canonical check the verdict declares is an
-// authored construct. The remaining derivations serve Standards built
-// by hand or by an older parser.
+// authored construct. The remaining derivations (the form's pass_fail
+// view and the requirement limits) serve Standards built by hand or by
+// an older parser.
 // ─────────────────────────────────────────────────────────────────────
 
 import type { Check } from '../../types/LmlAligned';
 import type Form from '../../types/Form';
 import type { Requirement } from '../../types/Requirement';
-import type ConformanceTest from '../../types/ConformanceTest';
 import Standard from '../../types/Standard';
 import { freeIdentifiers, parseExpression } from '../../expressions';
-import { parseYamlBlock } from '../../export/yaml-lite';
 
 /**
  * The fold-id convention: `<owner-kind>:<owner-id>:<facet-slot>` —
  * derived and stable, deterministic given the document. The facet slot
- * enumerates repeated carriers (`limit:2`) and names the folded
- * criterion where the spelling carries one
- * (`acceptance_criteria:<criterion-id>`).
+ * enumerates repeated carriers (`limit:2`); the retired
+ * acceptance_criteria carriers named their criterion there
+ * (`acceptance_criteria:<criterion-id>`) and the migrated corpus's
+ * authored checks keep the same convention.
  */
 
 /** Words the OCL dialect and the measurement-string idiom provide —
@@ -209,112 +211,14 @@ export function formFoldChecks(form: Pick<Form, 'id' | 'passFail'>): Check[] {
   ];
 }
 
-// ── spelling 2: the conformance test's typed acceptance_criteria ─────
-
-/** `conformance_test <id> { acceptance_criteria { type … pass_if "…"
- *  criterion <c> { target … pass_if "…" } } }` — the block-level
- *  composite pass_if folds as the bare `acceptance_criteria` slot; each
- *  named criterion folds per criterion (`acceptance_criteria:<c>`, the
- *  1-based position standing in for an unnamed one). The criterion's
- *  target ref rides the inputs after the names its pass_if consumes.
- *  (The test's validate_measurement facet was the fifth spelling's
- *  conformance-test carrier — retired at parse, wave 03 PR 3.) */
-export function conformanceTestFoldChecks(
-  ct: Pick<ConformanceTest, 'id' | 'acceptancePassIf' | 'acceptanceCriteria'>,
-): Check[] {
-  const out: Check[] = [];
-  const owner = `conformance_test:${ct.id}`;
-  if (ct.acceptancePassIf) {
-    out.push(
-      makeFoldCheck(owner, 'acceptance_criteria', {
-        expression: ct.acceptancePassIf,
-        inputs: foldIdentifierInputs(ct.acceptancePassIf),
-      }),
-    );
-  }
-  ct.acceptanceCriteria.forEach((c, index) => {
-    if (!c.passIf) {
-      return;
-    }
-    out.push(
-      makeFoldCheck(
-        owner,
-        `acceptance_criteria:${c.item || String(index + 1)}`,
-        {
-          expression: c.passIf,
-          inputs: dedupe([
-            ...foldIdentifierInputs(c.passIf),
-            ...(c.requirementId ? [c.requirementId] : []),
-          ]),
-        },
-      ),
-    );
-  });
-  return out;
-}
-
-// ── spelling 3: the requirement's raw acceptance_criteria block ──────
-
-/** The raw YAML-ish block folds when it carries a boolean predicate —
- *  a `pass_if`, a `limit { expression … operator …
- *  threshold_expression … }`, or a `threshold { operator … value … }`.
- *  A qualitative block (typed items, prose descriptions) states no
- *  verdict and folds nothing. Total: an unparsable block folds nothing. */
-export function requirementAcceptanceCriteriaFold(
-  requirementId: string,
-  raw: string,
-): Check | null {
-  if (!raw) {
-    return null;
-  }
-  const block = parseYamlBlock(raw);
-  if (!block) {
-    return null;
-  }
-  const owner = `requirement:${requirementId}`;
-  const passIf = block['pass_if'];
-  if (typeof passIf === 'string' && passIf) {
-    return makeFoldCheck(owner, 'acceptance_criteria', {
-      expression: passIf,
-      inputs: foldIdentifierInputs(passIf),
-    });
-  }
-  const limit = block['limit'];
-  if (limit && typeof limit === 'object' && !Array.isArray(limit)) {
-    const l = limit as Record<string, unknown>;
-    if (typeof l['expression'] === 'string' && l['expression']) {
-      return makeFoldCheck(owner, 'acceptance_criteria', {
-        expression: l['expression'],
-        inputs: foldIdentifierInputs(l['expression']),
-        operator: typeof l['operator'] === 'string' ? l['operator'] : '',
-        threshold:
-          typeof l['threshold_expression'] === 'string'
-            ? l['threshold_expression']
-            : '',
-      });
-    }
-  }
-  const threshold = block['threshold'];
-  if (threshold && typeof threshold === 'object' && !Array.isArray(threshold)) {
-    const t = threshold as Record<string, unknown>;
-    if (typeof t['value'] === 'string' && t['value']) {
-      return makeFoldCheck(owner, 'acceptance_criteria', {
-        expression: t['value'],
-        inputs: foldIdentifierInputs(t['value']),
-        operator: typeof t['operator'] === 'string' ? t['operator'] : '',
-      });
-    }
-  }
-  return null;
-}
-
 // ── spelling 4: the requirement's limits ─────────────────────────────
 
 /** `requirement <id> { limit { expression … uses { … } accepts { … } } }`
  *  — every limit folds (the unnamed single is slot 1, the named list
  *  continues the enumeration); the expression is verbatim, the uses
  *  list is the inputs, and the accepts triple is the operator +
- *  threshold sugar. */
+ *  threshold sugar. (The raw acceptance_criteria leg retired with its
+ *  spelling's parse refusal — wave 03 PR 4.) */
 export function requirementFoldChecks(r: Requirement): Check[] {
   const out: Check[] = [];
   const limits = [...(r.limit ? [r.limit] : []), ...(r.limits ?? [])];
@@ -331,10 +235,6 @@ export function requirementFoldChecks(r: Requirement): Check[] {
       }),
     );
   });
-  const ac = requirementAcceptanceCriteriaFold(r.id, r.acceptanceCriteria);
-  if (ac) {
-    out.push(ac);
-  }
   return out;
 }
 
@@ -343,11 +243,14 @@ export function requirementFoldChecks(r: Requirement): Check[] {
 /** The fold ids the Standard's spellings SHOULD carry — the same
  *  per-construct derivations the parsers registered by, re-derived
  *  from the parsed data. The C161 walk compares this against the
- *  `folds` provenance on standard.checks. The validate_measurement
- *  spelling (process + test) retired at parse (wave 03 PR 3): its
- *  derivations left with the refusal, so a Standard built by an older
- *  parser carrying the strings expects no folds for them — the
- *  spelling refuses before any walk could run on a fresh parse. */
+ *  `folds` provenance on standard.checks. The retired spellings'
+ *  derivations left with their refusals (the validate_measurement
+ *  strings, wave 03 PR 3; the two acceptance_criteria carriers, wave 03
+ *  PR 4), so a Standard built by an older parser carrying them expects
+ *  no folds for them — the spellings refuse before any walk could run
+ *  on a fresh parse. The remaining derivations (the form pass_fail view
+ *  and the requirement limits) serve Standards built by hand or by an
+ *  older parser. */
 export function expectedFoldIds(standard: Standard): string[] {
   const out: string[] = [];
   for (const f of standard.forms ?? []) {
@@ -355,9 +258,6 @@ export function expectedFoldIds(standard: Standard): string[] {
   }
   for (const r of standard.requirements ?? []) {
     out.push(...requirementFoldChecks(r).map(c => c.id));
-  }
-  for (const ct of standard.conformanceTests ?? []) {
-    out.push(...conformanceTestFoldChecks(ct).map(c => c.id));
   }
   return out;
 }

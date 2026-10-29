@@ -118,19 +118,20 @@ const CT_SRC = `conformance_test ErrorTest {
     step record_indications "Record indications"
   }
   reference_materials { cgm }
-  acceptance_criteria {
-    type composite
-    description "Composite of partial tests"
-    criterion partial_mpe {
-      target /req/metrological/mpe
-      criterion I/MPE
-      optional true
-      description "Partial MPE check"
-      reference "urn:oiml:pub:r:60-2:2021#clause-2.5"
-    }
-  }
   dependencies { /conf/metrological-tests/warm-up }
   instances { by accuracy_class values { A { n_runs: 5 } B { n_runs: 5 } C { n_runs: 3 } } }
+}
+
+check conformance_test:ErrorTest:acceptance_criteria {
+  expression "ocl{all_passed}"
+  description { Composite of partial tests }
+  ref derives-from "conformance_test:ErrorTest"
+}
+
+check conformance_test:ErrorTest:acceptance_criteria:partial_mpe {
+  expression "ocl{abs(e_l) <= mpe}"
+  description { Partial MPE check — optional; criterion I/MPE; target /req/metrological/mpe; reference urn:oiml:pub:r:60-2:2021#clause-2.5 }
+  ref derives-from "conformance_test:ErrorTest"
 }
 `;
 
@@ -163,27 +164,28 @@ describe('conformance_test fidelity extensions', () => {
     assert.deepEqual(ct.dependencies, ['/conf/metrological-tests/warm-up']);
   });
 
-  it('parses block-level and per-criterion acceptance extensions', () => {
+  it('the acceptance block retired — the canonical checks ride beside the test', () => {
     const m = load(CT_SRC);
     const ct = m.conformanceTests[0];
-    assert.equal(ct.acceptanceCriteriaType, 'composite');
-    assert.equal(
-      ct.acceptanceCriteriaDescription,
-      'Composite of partial tests',
-    );
-    // the pass_if facets retired (TODO.lang-gaps/03): the verdicts
-    // declare the canonical checks alongside the test
+    // the block retired (TODO.lang-gaps/03): the verdicts declare the
+    // canonical checks alongside the test
+    assert.equal(ct.acceptanceCriteriaType, '');
+    assert.equal(ct.acceptanceCriteriaDescription, '');
     assert.equal(ct.acceptancePassIf, '');
-    assert.deepEqual(ct.acceptanceCriteria[0], {
-      item: 'partial_mpe',
-      passIf: '',
-      requirementId: '/req/metrological/mpe',
-      criterion: 'I/MPE',
-      optional: true,
-      description: 'Partial MPE check',
-      reference: 'urn:oiml:pub:r:60-2:2021#clause-2.5',
-      sourceDiscrepancy: null,
-    });
+    assert.deepEqual(ct.acceptanceCriteria, []);
+    const checks = m.checks ?? [];
+    assert.ok(
+      checks.find(
+        (c: { id: string }) =>
+          c.id === 'conformance_test:ErrorTest:acceptance_criteria',
+      ),
+    );
+    assert.ok(
+      checks.find(
+        (c: { id: string }) =>
+          c.id === 'conformance_test:ErrorTest:acceptance_criteria:partial_mpe',
+      ),
+    );
   });
 
   it('parses instances with numeric values', () => {
@@ -207,7 +209,9 @@ describe('conformance_test fidelity extensions', () => {
       ),
     );
     assert.ok(dumped.includes('outputs { e_l e_r mpe }'));
-    assert.ok(dumped.includes('type composite'));
+    assert.ok(
+      dumped.includes('check conformance_test:ErrorTest:acceptance_criteria {'),
+    );
     assert.ok(dumped.includes('instances { by accuracy_class values {'));
     const m2 = load(dumped);
     assert.deepEqual(m2.conformanceTests, m1.conformanceTests);

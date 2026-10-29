@@ -403,7 +403,12 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     } else if (cmd === 'obligation') {
       result.obligation = stripWrapping(t[i++]);
     } else if (cmd === 'acceptance_criteria') {
-      result.acceptanceCriteria = unwrapBlock(t[i++]).trim();
+      // The deprecation ladder's rung (TODO.lang-gaps/03): the raw
+      // acceptance_criteria block refuses at parse — the verdict (or
+      // the judgment prose) declares the canonical check.
+      throw new Error(
+        `Parsing error: requirement. ID ${id}: the acceptance_criteria block is retired (TODO.lang-gaps/03) — declare the check requirement:${id}:acceptance_criteria { expression "…" ref derives-from "requirement:${id}" } (a judgment block declares the prose in the check's description, no expression)`,
+      );
     } else if (cmd === 'verification') {
       const vblock = unwrapBlock(t[i++]);
       const vt = tokenize(vblock);
