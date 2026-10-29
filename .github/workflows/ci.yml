@@ -41,6 +41,10 @@ jobs:
         run: yarn workspace @primmel/primmel annex-a --check
         env:
           PRIMMEL_SPEC_SOURCES: ${{ github.workspace }}/spec/sources
+      - name: Registry parity (R2) — Annex B against the checker registry
+        run: yarn workspace @primmel/primmel annex-b --check
+        env:
+          PRIMMEL_SPEC_SOURCES: ${{ github.workspace }}/spec/sources
       - name: Conformance suite (the reference toolchain against the corpus)
         run: yarn test:conformance
       - name: The second checker's corpus leg (parsanol from npm — no checkout needed)
