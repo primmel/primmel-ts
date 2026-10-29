@@ -569,6 +569,20 @@ export const CHECK_RULES: CheckRule[] = [
     'normal',
     "every capability has_parameters member resolves to a declared datum or attribute_definition — the composition plane of the datum substrate, the alias doctrine's first rung (TODO.lang-gaps/04, spec [[datum-unification]])",
   ),
+  // ── C191: identity-slot-datum-coherence — the datum unification's
+  // second rung (TODO.lang-gaps/04, spec [[datum-unification]]): the
+  // identity_slot is the inscription plane of the one datum substrate,
+  // so its inline `datum { … }` block and its flat `type` name ONE
+  // value — a contradiction is an error. The absent block carries no
+  // leg (the flat spelling alone is the whole story).
+  R(
+    'C191',
+    'identity-slot-datum-coherence',
+    'base',
+    'error',
+    'normal',
+    "an identity_slot's inline datum block agrees with the slot's flat type — the inscription plane of the datum substrate, the alias doctrine's second rung (TODO.lang-gaps/04, spec [[datum-unification]])",
+  ),
   R(
     'C173',
     'step-plane-refs-resolve',
