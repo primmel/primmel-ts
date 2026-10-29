@@ -24,12 +24,23 @@
 //   min_items / max_items are POPULATED (previously parsed-then-skipped).
 // - Nested `subform_ref` inside a field block is captured.
 // - dumpFormField emits the full field fidelity (lossless round-trip).
+//
+// The datum unification's fifth rung (TODO.lang-gaps/04, spec
+// [[datum-unification]]): the field is the RUN plane of the datum
+// substrate — an inline `datum { … }` block carries the substrate
+// facets beside the flat head type + unit (which already ARE the
+// datum's type/unit, the wave 04 PR 3 finding), the C193 coherence leg
+// keeps a restated type honest, and `fieldDatumView` is the normalized
+// read. Before this rung the field body's unknown-cmd fallback
+// silently skipped a `datum { … }` block — the skip is now the
+// parse+store.
 // ─────────────────────────────────────────────────────────────────────
 
 import type {
   FormField,
   ApplicabilityEntry,
   EvaluationRule,
+  FieldDatum,
   RoleReference,
   SubformRef,
 } from '../../types/Form';
@@ -44,7 +55,7 @@ import {
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
-import { proseBlock } from '../parse-block';
+import { proseBlock, forEachEntry } from '../parse-block';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -228,6 +239,83 @@ export function readFieldHead(
   return { name, type, block: unwrapBlock(blockToken), next: i };
 }
 
+// The datum origin axis ([[datum-unification]]): the value's epistemic
+// provenance — the same closed vocabulary the datum construct enforces.
+const FIELD_DATUM_ORIGINS = [
+  'declared',
+  'design-fixed',
+  'observed',
+  'computed',
+] as const;
+
+/** The `datum { … }` block authored inside a form field (the datum
+ *  unification's fifth rung, TODO.lang-gaps/04, spec
+ *  [[datum-unification]]): the field is the RUN plane of the datum
+ *  substrate — the block's facets override/extend the field's flat
+ *  head type + `unit` (which already are the datum's type/unit — the
+ *  wave 04 PR 3 finding). The block takes NO id and NO type parg: the
+ *  field's name names the datum, and the type rides the `type` facet
+ *  (or the flat head type where the block is silent). Origin is the
+ *  datum's closed axis, enforced here fail-closed (the PR 2 precedent);
+ *  facets left unwritten stay '' — the flat facet stands in the view. */
+function readFieldDatum(data: string, name: string): FieldDatum {
+  const datum: FieldDatum = {
+    type: '',
+    unit: '',
+    quantityKind: '',
+    origin: 'declared',
+    scope: '',
+  };
+  forEachEntry(
+    data,
+    (keyword, value) => {
+      if (keyword === 'type') {
+        datum.type = stripWrapping(value());
+      } else if (keyword === 'unit') {
+        datum.unit = stripWrapping(value());
+      } else if (keyword === 'quantity_kind') {
+        datum.quantityKind = stripWrapping(value());
+      } else if (keyword === 'origin') {
+        const origin = stripWrapping(value());
+        if (!(FIELD_DATUM_ORIGINS as readonly string[]).includes(origin)) {
+          throw new Error(
+            `Parsing error: form field ${name}: Unknown datum origin "${origin}" (valid: ${FIELD_DATUM_ORIGINS.join(', ')})`,
+          );
+        }
+        datum.origin = origin as FieldDatum['origin'];
+      } else if (keyword === 'scope') {
+        datum.scope = stripWrapping(value());
+      } else {
+        return false;
+      }
+      return true;
+    },
+    { construct: 'field', id: name },
+  );
+  return datum;
+}
+
+/** The field's datum view ([[datum-unification]]): the run-plane value
+ *  wherever a datum is expected. The inline block's facets override;
+ *  the field's flat facets stand in where the block is silent — the
+ *  head type and `unit` ARE the datum's type/unit (the wave 04 PR 3
+ *  finding), and the origin (with no flat facet to stand in) defaults
+ *  to `declared`. The field's flat `scope` facet is deliberately NOT
+ *  folded in — it is the FORM's presentation scope (e.g.
+ *  administrative), a different axis from the datum's scope; the view's
+ *  scope comes from the block alone. The wire shape stays the authored
+ *  spelling — this is the normalized read, never the dump's input. */
+export function fieldDatumView(f: FormField): FieldDatum {
+  const d = f.datum;
+  return {
+    type: d?.type || f.type,
+    unit: d?.unit || f.unit,
+    quantityKind: d?.quantityKind ?? '',
+    origin: d?.origin || 'declared',
+    scope: d?.scope ?? '',
+  };
+}
+
 /**
  * Parse a `field <name> [: <type>] { ... }` block into a FormField.
  *
@@ -275,6 +363,7 @@ export function parseFormField(
     fields: [],
     itemsType: '',
     subformRef: null,
+    datum: null,
   };
 
   if (!block || !block.trim()) {
@@ -303,6 +392,23 @@ export function parseFormField(
       field.typeDeclared = true;
     } else if (cmd === 'unit') {
       field.unit = stripWrapping(t[i++]);
+    } else if (cmd === 'datum') {
+      // THE DATUM UNIFICATION'S FIFTH RUNG (TODO.lang-gaps/04, spec
+      // [[datum-unification]]): the field is the RUN plane of the
+      // datum substrate — the inline `datum { … }` block carries the
+      // substrate facets (type/unit/quantity_kind/origin/scope) that
+      // override/extend the flat head type + unit. The block takes no
+      // id (the field's name names the datum) and no type parg — a
+      // malformed spelling is a parse error, the fail-closed precedent
+      // (before this rung the unknown-cmd fallback SILENTLY SKIPPED
+      // the block; the skip is now the parse+store).
+      const block = t[i++];
+      if (!block.startsWith('{')) {
+        throw new Error(
+          `Parsing error: form field ${name}: the inline datum block is "datum { … }" — the field's name names the datum, the type rides the head or the type facet`,
+        );
+      }
+      field.datum = readFieldDatum(unwrapBlock(block), name);
     } else if (cmd === 'symbol') {
       field.symbol = stripWrapping(t[i++]);
     } else if (cmd === 'verdict') {
@@ -686,6 +792,31 @@ export function dumpFormField(field: FormField, indent: string): string {
   }
   if (field.unit) {
     inner.push('unit "' + escapeString(field.unit) + '"');
+  }
+  if (field.datum) {
+    // The AUTHORED spelling ([[datum-unification]] wave 04 PR 5): the
+    // inline datum block re-emits beside the flat head type + unit it
+    // extends — `origin declared` is the datum's default and stays
+    // omitted, the same convention the datum construct's dump and the
+    // slot/attribute rungs hold. The fixpoint: parse(dump(m)) === m.
+    const d = field.datum;
+    const facets: string[] = [];
+    if (d.type) {
+      facets.push('type ' + dumpBareSafe(d.type));
+    }
+    if (d.unit) {
+      facets.push('unit ' + dumpBareSafe(d.unit));
+    }
+    if (d.quantityKind) {
+      facets.push('quantity_kind ' + dumpBareSafe(d.quantityKind));
+    }
+    if (d.origin !== 'declared') {
+      facets.push('origin ' + dumpBareSafe(d.origin));
+    }
+    if (d.scope) {
+      facets.push('scope ' + dumpBareSafe(d.scope));
+    }
+    inner.push('datum { ' + facets.join(' ') + ' }');
   }
   if (field.symbol) {
     inner.push('symbol ' + field.symbol);

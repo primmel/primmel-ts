@@ -1830,6 +1830,90 @@ export function check(
       }
     }
 
+    // ── C193 field-datum-coherence (TODO.lang-gaps/04, the datum
+    //    unification's fifth and final rung): the form field is the RUN
+    //    plane of the datum substrate — when a field declares an inline
+    //    `datum { … }` block, a type the block restates must agree with
+    //    the field's explicitly declared head type (the two spellings
+    //    name ONE value). A block silent on the type — or the absent
+    //    block — carries no leg. The shape tree delivers the field two
+    //    ways and the walker takes both: the untyped head
+    //    (`field x { … }`) rides a `field` construct (the flat type is
+    //    a `type` line in its items), the typed head
+    //    (`field x : T [card] { … }`) rides an entry line whose key is
+    //    the name and whose first token is the head type. The datum
+    //    block itself rides a `datum` line whose block value holds the
+    //    facet lines (a head-less `datum` is not a named construct), so
+    //    the read is the datum line's blocks through the facetTokens
+    //    scan. Nested fields judge with the same rule, as do subform
+    //    fields (a subform's shape is the form's shape). ──
+    if (c.keyword === 'form' || c.keyword === 'subform') {
+      const judgeDatum = (
+        owner: string,
+        flatType: string,
+        body: Item[],
+        where: string,
+      ): void => {
+        for (const d of body
+          .filter(i => i.kind === 'line' && i.key === 'datum')
+          .flatMap(l => l.blocks)) {
+          const datumType = facetTokens(d, 'type')[0] ?? '';
+          if (flatType !== '' && datumType !== '' && datumType !== flatType) {
+            err(
+              'C193',
+              `form ${owner}: ${where}: the inline datum block's type "${datumType}" contradicts the field's flat type "${flatType}" (field-datum-coherence)`,
+            );
+          }
+        }
+      };
+      const walk = (owner: string, items: Item[], path: string): void => {
+        for (const it of items) {
+          if (it.kind === 'construct' && it.construct) {
+            const f = it.construct;
+            if (f.keyword === 'field') {
+              const where =
+                path === ''
+                  ? `field ${f.ident ?? ''}`
+                  : `field ${path}.${f.ident ?? ''}`;
+              judgeDatum(
+                owner,
+                facetTokens(f.items, 'type')[0] ?? '',
+                f.items,
+                where,
+              );
+              walk(
+                owner,
+                f.items,
+                path === '' ? (f.ident ?? '') : `${path}.${f.ident ?? ''}`,
+              );
+            } else if (f.keyword === 'fields') {
+              walk(owner, f.items, path);
+            }
+          } else if (
+            it.kind === 'line' &&
+            it.blocks.length > 0 &&
+            it.tokens.length > 0
+          ) {
+            // The typed head: name = the key, head type = the first
+            // token, body = the block value. (Facet lines never carry a
+            // block value AND a token run together; the datum line's
+            // own token run is empty, so it never re-enters here.)
+            const where =
+              path === ''
+                ? `field ${it.key ?? ''}`
+                : `field ${path}.${it.key ?? ''}`;
+            judgeDatum(owner, it.tokens[0] ?? '', it.blocks[0] ?? [], where);
+            walk(
+              owner,
+              it.blocks[0] ?? [],
+              path === '' ? (it.key ?? '') : `${path}.${it.key ?? ''}`,
+            );
+          }
+        }
+      };
+      walk(c.ident ?? '', c.items, '');
+    }
+
     // ── C104: a dataspace's policy register references declared
     //    policies.
     if (c.keyword === 'dataspace') {

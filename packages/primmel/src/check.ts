@@ -6749,6 +6749,58 @@ export function checkPackage(
     }
   }
 
+  // ── C193: field-datum-coherence (TODO.lang-gaps/04, the datum ───────
+  // unification's fifth rung — the wave's last) ────────────────────────
+  // The form field is the RUN plane of the datum substrate
+  // ([[datum-unification]], spec#87): the four plane carriers are ALIAS
+  // spellings of the one "named, typed, unit-ed value" primitive, and
+  // the field's name/type/unit already ARE the datum's id/type/unit
+  // (the wave 04 PR 3 finding). When the field declares an inline
+  // `datum { … }` block, a type the block restates must AGREE with the
+  // field's head type — because the two spellings name ONE value (a
+  // contradiction is an error, normal level, following C190/C191/C192).
+  // The head's type is OPTIONAL, so the leg gates on an AUTHORED flat
+  // spelling (`typeDeclared` — the untyped head's `string` is the parse
+  // default, not a spelling; a block type over an untyped head is the
+  // override the view resolves, never a contradiction). A block silent
+  // on the type — or the absent block — carries no leg. Subform fields
+  // share the grammar and are judged with the same rule (a subform's
+  // shape is the form's shape, the C184 doctrine).
+  const walkFieldDatum = (
+    formId: string,
+    fields: readonly FormField[],
+    path: string,
+  ): void => {
+    for (const f of fields) {
+      const where = path === '' ? `field ${f.name}` : `field ${path}.${f.name}`;
+      if (
+        f.datum &&
+        f.datum.type &&
+        f.typeDeclared &&
+        f.type &&
+        f.datum.type !== f.type
+      ) {
+        err(
+          'C193',
+          `form ${formId}: ${where}: the inline datum block's type "${f.datum.type}" contradicts the field's flat type "${f.type}" — the two spellings name one value (field-datum-coherence)`,
+        );
+      }
+      if (f.fields?.length) {
+        walkFieldDatum(
+          formId,
+          f.fields,
+          path === '' ? f.name : `${path}.${f.name}`,
+        );
+      }
+    }
+  };
+  for (const form of standard.forms ?? []) {
+    walkFieldDatum(form.id, form.fields ?? [], '');
+  }
+  for (const sf of standard.subforms ?? []) {
+    walkFieldDatum(sf.id, sf.fields ?? [], '');
+  }
+
   // ── C131: promise-certificate-projection (smart TODO.roadmap/40 ─────
   // batch 3; the packages-as-SSOT epic) ────────────────────────────────
   // The certificate print projection's shape, fired on subject promises
