@@ -1775,6 +1775,28 @@ export function check(
       }
     }
 
+    // ── C191 identity-slot-datum-coherence (TODO.lang-gaps/04, the
+    //    datum unification's second rung): the identity_slot is the
+    //    inscription plane of the datum substrate — when the slot
+    //    declares an inline `datum { … }` block, a type the block
+    //    restates must agree with the slot's flat `type` (the two
+    //    spellings name ONE value). The absent block — or a block
+    //    silent on the type — carries no leg. The block's facets ride
+    //    the open block's greedy runs (`type string unit v` — the key
+    //    plus the value run), so the read is the facetTokens scan. ──
+    if (c.keyword === 'identity_slot') {
+      const flatType = tokensOf(c, 'type')[0] ?? '';
+      for (const d of nested(c).filter(n => n.keyword === 'datum')) {
+        const datumType = facetTokens(d.items, 'type')[0] ?? '';
+        if (flatType !== '' && datumType !== '' && datumType !== flatType) {
+          err(
+            'C191',
+            `identity_slot ${c.ident}: the inline datum block's type "${datumType}" contradicts the slot's flat type "${flatType}" (identity-slot-datum-coherence)`,
+          );
+        }
+      }
+    }
+
     // ── C104: a dataspace's policy register references declared
     //    policies.
     if (c.keyword === 'dataspace') {

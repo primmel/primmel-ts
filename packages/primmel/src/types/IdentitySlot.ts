@@ -32,6 +32,34 @@
 
 import type { SourceRef } from './Subject';
 
+// ── The datum unification's second rung (TODO.lang-gaps/04, spec
+// [[datum-unification]]): the identity_slot is the inscription plane of
+// the one "named, typed, unit-ed value" substrate, so its value core
+// READS THE DATUM. The slot stays the carrier (the alias doctrine — the
+// construct is not going away); the `datum { … }` block authored inside
+// it carries the substrate facets, and the slot exposes the resolved
+// view through the kernel accessor (`identitySlotDatumView`,
+// ser-des/config/identitySlot.ts). The wire shape does not move: the
+// dump emits the AUTHORED spelling, so the fixpoint holds.
+/** The facets of the `datum { … }` block authored inside an identity
+ *  slot — the substrate view of the inscription value. `type` '' = the
+ *  block does not restate the type (the slot's flat `type` stands);
+ *  origin defaults to `declared` (the datum's own default). */
+export interface IdentitySlotDatum {
+  /** The datum's type (the slot's type vocabulary — the block's type
+   *  must agree with the flat `type` when both are declared; C191). */
+  type: string;
+  /** The unit the inscription value carries (unitsdb reference). */
+  unit: string;
+  /** The quantity kind (unitsdb reference). */
+  quantityKind: string;
+  /** declared | design-fixed | observed | computed (the datum's origin
+   *  axis — the value's provenance, never the executor's). */
+  origin: 'declared' | 'design-fixed' | 'observed' | 'computed';
+  /** The scope axis (model | family | sample | run). */
+  scope: string;
+}
+
 export default interface IdentitySlot {
   /** Snake-case slot id (manufacturer, model_designation, …). */
   id: string;
@@ -53,4 +81,8 @@ export default interface IdentitySlot {
   metamodelClass: string;
   /** Clause-URN provenance (optional). */
   source: SourceRef | null;
+  /** The inline `datum { … }` block ([[datum-unification]] wave 04
+   *  PR 2) — the substrate facets of the slot's inscription value;
+   *  null when the slot declares none (the flat `type` alone). */
+  datum: IdentitySlotDatum | null;
 }

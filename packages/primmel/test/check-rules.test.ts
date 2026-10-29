@@ -56,7 +56,8 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // the field's scalar range (C173-C175 reserved); C189 is the
     // re-homed datum render-notation leg (the boolean-fold fold,
     // TODO.lang-gaps/03); C190 is the capability-parameters resolution
-    // leg (the datum unification's first rung, TODO.lang-gaps/04).
+    // leg and C191 the identity-slot datum-coherence leg (the datum
+    // unification's first and second rungs, TODO.lang-gaps/04).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`).filter(
         id => id !== 'C112' && id !== 'C94',
@@ -65,11 +66,12 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
       ...Array.from({ length: 13 }, (_, i) => `C${i + 176}`),
       'C189',
       'C190',
+      'C191',
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       expected,
-      'C1-C128 except C112 (retired with the reference construct) and C94 (retired with the formulas_used construct), C130-C173 (phase 2 retired C129), C176-C188 (C174-C175 reserved; C186 the realization link TODO.lang-spec/13; C187-C188 the workspace locator plane, TODO.lang-spec/15), C189 the datum render-notation leg re-homed from the mislabeled C161 row, C190 the capability-parameters resolution leg (the datum unification, TODO.lang-gaps/04)',
+      'C1-C128 except C112 (retired with the reference construct) and C94 (retired with the formulas_used construct), C130-C173 (phase 2 retired C129), C176-C188 (C174-C175 reserved; C186 the realization link TODO.lang-spec/13; C187-C188 the workspace locator plane, TODO.lang-spec/15), C189 the datum render-notation leg re-homed from the mislabeled C161 row, C190 the capability-parameters resolution leg and C191 the identity-slot datum-coherence leg (the datum unification, TODO.lang-gaps/04)',
     );
   });
 

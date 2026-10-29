@@ -6692,6 +6692,27 @@ export function checkPackage(
     }
   }
 
+  // ── C191: identity-slot-datum-coherence (TODO.lang-gaps/04, the ─────
+  // datum unification's second rung) ───────────────────────────────────
+  // The identity_slot is the inscription plane of the datum substrate
+  // ([[datum-unification]], spec#87): the four plane carriers are ALIAS
+  // spellings of the one "named, typed, unit-ed value" primitive. When
+  // the slot declares an inline `datum { … }` block, its facets are the
+  // slot's datum view — and a type the block restates must AGREE with
+  // the slot's flat `type`, because the two spellings name ONE value
+  // (a contradiction is an error, normal level, following C190). An
+  // absent block carries no leg: the flat spelling alone is the whole
+  // story, and every corpus site spells it that way (the wave 04
+  // census: 15 slots, 0 quantity-bearing).
+  for (const s of standard.identitySlots ?? []) {
+    if (s.datum && s.datum.type && s.type && s.datum.type !== s.type) {
+      err(
+        'C191',
+        `identity_slot ${s.id}: the inline datum block's type "${s.datum.type}" contradicts the slot's flat type "${s.type}" — the two spellings name one value (identity-slot-datum-coherence)`,
+      );
+    }
+  }
+
   // ── C131: promise-certificate-projection (smart TODO.roadmap/40 ─────
   // batch 3; the packages-as-SSOT epic) ────────────────────────────────
   // The certificate print projection's shape, fired on subject promises
