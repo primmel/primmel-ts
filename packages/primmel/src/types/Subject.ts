@@ -244,6 +244,39 @@ export interface PairListDecl {
   components: PairListComponent[];
 }
 
+// ── The datum unification's fourth rung (TODO.lang-gaps/04, spec
+// [[datum-unification]]): the attribute_definition is the MODEL plane of
+// the one "named, typed, unit-ed value" substrate, so its value core
+// READS THE DATUM. The attribute stays the carrier (the alias doctrine —
+// the construct is not going away); the `datum { … }` block authored
+// inside it carries the substrate facets, and the attribute exposes the
+// resolved view through the kernel accessor
+// (`attributeDefinitionDatumView`, ser-des/config/subject.ts). The wire
+// shape does not move: the dump emits the AUTHORED spelling, so the
+// fixpoint holds.
+/** The facets of the `datum { … }` block authored inside an attribute
+ *  definition — the substrate view of the attribute's value. A `''`
+ *  facet = the block does not restate it (the attribute's flat facet —
+ *  value_type/unit/quantity_kind/origin/scope — stands); origin defaults
+ *  to the flat facet, never silently to `declared` (the attribute's own
+ *  flat origin is the authored truth). */
+export interface AttributeDefinitionDatum {
+  /** The datum's type — restates the flat `value_type` (must agree when
+   *  both are declared; C192). */
+  type: string;
+  /** The unit the attribute's value carries (unitsdb reference). */
+  unit: string;
+  /** The quantity kind (unitsdb reference). */
+  quantityKind: string;
+  /** declared | design-fixed | observed | computed (the datum's origin
+   *  axis — the value's provenance, never the executor's); '' = the
+   *  block is silent (the flat `origin` stands). */
+  origin: string;
+  /** The scope axis (model | family | sample | run); '' = the block is
+   *  silent (the flat `scope` stands). */
+  scope: string;
+}
+
 /** attribute_definition <id> — define an attribute ONCE (INV-2). */
 export interface AttributeDefinition {
   id: string;
@@ -291,6 +324,10 @@ export interface AttributeDefinition {
    * grammar as a registry entry's field.
    */
   classRef?: string;
+  /** The inline `datum { … }` block ([[datum-unification]] wave 04
+   *  PR 4) — the substrate facets of the attribute's value core; null
+   *  when the attribute declares none (the flat facets alone). */
+  datum?: AttributeDefinitionDatum | null;
 }
 
 /** capability <id> — mixin: what the instrument CAN do (OCP mechanism). */

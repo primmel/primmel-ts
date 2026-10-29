@@ -1,8 +1,50 @@
 # 04 — The datum unification
 
-**Status (2026-10-28): PR 3 LANDED (1.21.55, DOCUMENT-ONLY) — the
+**Status (2026-10-28): PR 4 LANDED (1.21.56) — the attribute_definition
+carrier: the MODEL plane of the substrate reads the datum.** The
+attribute STAYS the carrier (the alias doctrine) and its value core
+reads the datum: an optional inline `datum { … }` block (NO id — the
+attribute's id names the datum; NO type parg — the type rides the
+`type` facet or the flat `value_type`) carries the substrate facets
+type/unit/quantity_kind/origin/scope that override/extend the flat
+value_type/unit/quantity_kind/origin/scope; the plane extras (category,
+enum, is_dimension, correspondences) are untouched — extras on the
+substrate. The attribute exposes its datum view through
+`attributeDefinitionDatumView` (the block's facets override, the flat
+facets stand in where the block is silent — the attribute's flat origin
+is the authored truth, never silently defaulted to `declared`); the
+wire shape does not move — the dump re-emits the authored `datum { … }`
+block beside the flat facets it extends (facet defaults normalize away,
+the datum-dump convention; `origin declared` omitted), so the fixpoint
+holds. One new leg: C192 attribute-definition-datum-coherence (error,
+normal level, following C190/C191) — a facet the block RESTATES must
+AGREE with its flat spelling (the block's `type` against the flat
+`value_type`, `origin`, `scope`; the two spellings name ONE value); a
+facet the block leaves silent carries no leg, and the absent block
+carries no leg. checker2 mirrors C192 over the shape tree (the nested
+`datum` construct rides the generic block items — no grammar change,
+the attribute_definition block was already open; the flat facets are
+the attribute's own lines). The corpus census (359 attribute_definition
+lines in 34 files): ZERO inline datum blocks (the keyword is new), and
+the flat facets ALREADY ARE datum vocabulary — the corpus writes
+`origin design-fixed scope model` on quantity-bearing attributes — so
+no site is incoherent under the new leg (no block ⇒ no restatement ⇒
+no leg) and the corpus PR is skipped; the extended grammar only adds an
+optional block and every site parses unchanged. Census nuance, recorded
+for the axis conversation: the flat `origin` tokens spread beyond the
+datum's closed axis (declared ×122, design-fixed ×65, test-dependent
+×35, measured ×35, observed ×22, derived ×7, computed ×4; scopes
+model ×127, sample ×65, family ×43, group ×17) — the flat facets stay
+FREE-FORM (tightening them is the axis conversation, not this rung);
+the closed origin vocabulary is enforced inside the block (the
+fail-closed precedent PR 2 set), where an author deliberately speaks
+the substrate's language.
+
+**Prior rungs.** PR 3 (1.21.55, DOCUMENT-ONLY) — the
 table-columns rung resolved BY THE DOCTRINE: the column is the
-substrate's PROJECTION, not a carrier.** PR 1 (1.21.53): the capability
+substrate's PROJECTION, not a carrier (the spec's carrier enumeration
+has FOUR carriers and the table column is not one), plus the substrate
+head-type capture fix the rung exposed. PR 1 (1.21.53): the capability
 `has_parameters` plane reads the datum
 substrate — bare ids resolve against the declared datum register or the
 legacy `attribute_definition` alias (the C190
@@ -91,8 +133,10 @@ follow-up (not acted on): the block-facet `type` spelling still no-ops
 silently — loud-refusal vs capture is a grammar-policy decision for
 the owner; the head stays the canonical spelling. The old `colN`
 dialect's loud refusal (table.ts) is the END-STATE template and stays.
-Remaining carriers: the form field (PR 4) and attribute_definition
-(PR 5) — the corpus has 0 top-level `datum` declarations yet.
+Remaining carriers at PR 3's close: the form field and
+attribute_definition (PR 4 took the attribute_definition — see the
+status header; the form field, the RUN plane, remains) — the corpus has
+0 top-level `datum` declarations yet.
 
 **Gap.** "A named, typed, unit-ed value" is declared four ways:
 `attribute_definition` (model plane), `identity_slot` (inscription

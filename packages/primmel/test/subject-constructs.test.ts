@@ -4,7 +4,12 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { load, dump } from '../src/ser-des/index';
+import { checkPackage } from '../src/check';
+import { attributeDefinitionDatumView } from '../src/ser-des/config/subject';
 
 const PACKAGE = `
 instrument LoadCell {
@@ -242,5 +247,197 @@ describe('W1b subject-chain constructs', () => {
     const reparsed = load(first);
     assert.deepEqual(reparsed.attributeDefinitions, m.attributeDefinitions);
     assert.equal(dump(reparsed), first);
+  });
+});
+
+// ── The datum unification's fourth rung (TODO.lang-gaps/04, spec
+// [[datum-unification]]): the attribute_definition is the MODEL plane of
+// the datum substrate — the inline `datum { … }` block, the C192
+// coherence leg, and the datum view accessor. ──
+describe('attribute_definition datum rung (TODO.lang-gaps/04 PR 4)', () => {
+  const DATUM_ATTR = `
+attribute_definition e_max {
+  symbol "E_max"
+  name "Maximum capacity"
+  quantity_kind mass
+  unit t
+  value_type QuantityValue
+  origin design-fixed
+  scope model
+  datum { type QuantityValue unit t quantity_kind mass origin design-fixed scope model }
+  category metrological
+}
+`;
+
+  function makePackage(body: string): string {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-attrdef-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'model'));
+    writeFileSync(join(dir, 'model', 'package.prl'), body);
+    return dir;
+  }
+
+  it('parses the inline datum block; the flat facets stand beside it', () => {
+    const m = load(DATUM_ATTR);
+    const a = m.attributeDefinitions[0]!;
+    assert.equal(a.valueType, 'QuantityValue');
+    assert.equal(a.unit, 't');
+    assert.equal(a.origin, 'design-fixed');
+    assert.deepEqual(a.datum, {
+      type: 'QuantityValue',
+      unit: 't',
+      quantityKind: 'mass',
+      origin: 'design-fixed',
+      scope: 'model',
+    });
+    // The plane extras are untouched — extras on the substrate.
+    assert.equal(a.category, 'metrological');
+  });
+
+  it('the datum view accessor resolves the block over the flat facets', () => {
+    const m = load(DATUM_ATTR);
+    assert.deepEqual(attributeDefinitionDatumView(m.attributeDefinitions[0]!), {
+      type: 'QuantityValue',
+      unit: 't',
+      quantityKind: 'mass',
+      origin: 'design-fixed',
+      scope: 'model',
+    });
+    // A block silent on a facet lets the flat facet stand.
+    const partial = load(`
+attribute_definition t_min {
+  name "Minimum temperature"
+  value_type QuantityValue
+  unit "degC"
+  origin design-fixed
+  datum { unit k }
+}
+`).attributeDefinitions[0]!;
+    assert.deepEqual(attributeDefinitionDatumView(partial), {
+      type: 'QuantityValue',
+      unit: 'k',
+      quantityKind: '',
+      origin: 'design-fixed',
+      scope: '',
+    });
+    // No block: the flat facets alone are the datum view.
+    const plain = load(
+      'attribute_definition p { value_type string origin declared scope model }',
+    ).attributeDefinitions[0]!;
+    assert.deepEqual(attributeDefinitionDatumView(plain), {
+      type: 'string',
+      unit: '',
+      quantityKind: '',
+      origin: 'declared',
+      scope: 'model',
+    });
+  });
+
+  it('round-trips the authored spelling (the codec fixpoint)', () => {
+    const out = dump(load(DATUM_ATTR));
+    // The block spelling is preserved (never normalized away, never
+    // hoisted to a top-level datum); the facet defaults normalize away —
+    // `origin declared` is omitted, the same convention the datum
+    // construct's dump holds.
+    const once = dump(load(out));
+    assert.equal(once, out);
+    assert.ok(
+      out.includes(
+        '  datum { type QuantityValue unit t quantity_kind mass origin design-fixed scope model }\n',
+      ),
+    );
+    // The multi-line authored block normalizes to the single-line form
+    // and stabilizes there.
+    const multi = `
+attribute_definition n_lc {
+  name "Number of load cells"
+  value_type integer
+  origin declared
+  datum {
+    type integer
+    origin declared
+    scope model
+  }
+}
+`;
+    const first = dump(load(multi));
+    assert.ok(first.includes('  datum { type integer scope model }\n'));
+    assert.equal(dump(load(first)), first);
+    // A block-less attribute dumps exactly as before the rung — no
+    // invented `datum {` line.
+    assert.ok(!dump(load(PACKAGE)).includes('datum {'));
+  });
+
+  it('rejects an unknown origin inside the block (fail-closed)', () => {
+    assert.throws(
+      () =>
+        load(
+          'attribute_definition b { value_type string datum { origin asserted } }',
+        ),
+      /Unknown datum origin "asserted"/,
+    );
+  });
+
+  it('rejects a datum spelling with a stray value (no id, no parg)', () => {
+    assert.throws(
+      () =>
+        load(
+          'attribute_definition b { value_type string datum QuantityValue }',
+        ),
+      /the inline datum block is "datum \{ … \}"/,
+    );
+  });
+
+  it('C192: a contradiction between the block and a flat facet fires', () => {
+    const typeIssues = checkPackage(
+      makePackage(
+        'attribute_definition b { value_type string datum { type number } }',
+      ),
+    ).filter(i => i.check === 'C192');
+    assert.equal(typeIssues.length, 1);
+    assert.match(
+      typeIssues[0]!.message,
+      /block's type "number" contradicts the flat value_type "string"/,
+    );
+    const originIssues = checkPackage(
+      makePackage(
+        'attribute_definition b { origin design-fixed datum { origin observed } }',
+      ),
+    ).filter(i => i.check === 'C192');
+    assert.equal(originIssues.length, 1);
+    assert.match(
+      originIssues[0]!.message,
+      /block's origin "observed" contradicts the flat origin "design-fixed"/,
+    );
+    const scopeIssues = checkPackage(
+      makePackage('attribute_definition b { scope model datum { scope run } }'),
+    ).filter(i => i.check === 'C192');
+    assert.equal(scopeIssues.length, 1);
+    assert.match(
+      scopeIssues[0]!.message,
+      /block's scope "run" contradicts the flat scope "model"/,
+    );
+  });
+
+  it('C192: agreement, facet-silent blocks, and block-less attributes stay silent', () => {
+    const body = `
+${PACKAGE}
+attribute_definition agreeing {
+  value_type string
+  datum { type string }
+}
+attribute_definition silent {
+  origin design-fixed
+  datum { unit kg origin design-fixed }
+}
+attribute_definition extends_flat {
+  value_type number
+  datum { unit v }
+}
+`;
+    const issues = checkPackage(makePackage(body)).filter(
+      i => i.check === 'C192',
+    );
+    assert.deepEqual(issues, []);
   });
 });

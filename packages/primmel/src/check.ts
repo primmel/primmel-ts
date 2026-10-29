@@ -6713,6 +6713,42 @@ export function checkPackage(
     }
   }
 
+  // ── C192: attribute-definition-datum-coherence (TODO.lang-gaps/04, ──
+  // the datum unification's fourth rung) ───────────────────────────────
+  // The attribute_definition is the MODEL plane of the datum substrate
+  // ([[datum-unification]], spec#87): the four plane carriers are ALIAS
+  // spellings of the one "named, typed, unit-ed value" primitive. When
+  // the attribute declares an inline `datum { … }` block, a facet the
+  // block restates must AGREE with its flat spelling — the block's
+  // `type` against the flat `value_type`, `origin` against the flat
+  // `origin`, `scope` against the flat `scope` — because the two
+  // spellings name ONE value (a contradiction is an error, normal
+  // level, following C190/C191). A facet the block leaves silent
+  // carries no leg (the flat facet IS the view), and an absent block
+  // carries no leg: the flat spelling alone is the whole story — the
+  // wave 04 census: 359 attribute_definition sites in 34 corpus files,
+  // 0 inline datum blocks, all flat facets already datum vocabulary
+  // (`origin design-fixed scope model`).
+  for (const a of standard.attributeDefinitions ?? []) {
+    const d = a.datum;
+    if (!d) {
+      continue;
+    }
+    const restated: Array<[string, string, string]> = [
+      ['type', d.type, a.valueType],
+      ['origin', d.origin, a.origin],
+      ['scope', d.scope, a.scope],
+    ];
+    for (const [facet, blockValue, flatValue] of restated) {
+      if (blockValue && flatValue && blockValue !== flatValue) {
+        err(
+          'C192',
+          `attribute_definition ${a.id}: the inline datum block's ${facet} "${blockValue}" contradicts the flat ${facet === 'type' ? 'value_type' : facet} "${flatValue}" — the two spellings name one value (attribute-definition-datum-coherence)`,
+        );
+      }
+    }
+  }
+
   // ── C131: promise-certificate-projection (smart TODO.roadmap/40 ─────
   // batch 3; the packages-as-SSOT epic) ────────────────────────────────
   // The certificate print projection's shape, fired on subject promises

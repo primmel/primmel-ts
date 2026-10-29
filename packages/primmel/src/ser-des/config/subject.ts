@@ -106,7 +106,7 @@ import {
   stripWrapping,
   tokenizePackage,
 } from '../tokenize';
-import { skipUnknownValue, proseBlock } from '../parse-block';
+import { skipUnknownValue, proseBlock, forEachEntry } from '../parse-block';
 import { parseDatum } from './lmlAligned';
 import {
   stripColon,
@@ -140,6 +140,7 @@ import type { ConstructDefinition } from './index';
 import type { ParseContext } from '../types';
 import type {
   AttributeDefinition,
+  AttributeDefinitionDatum,
   Behavior,
   Capability,
   ClassificationDimension,
@@ -1077,6 +1078,15 @@ const dumpInstrument = function (inst: Instrument): string {
 };
 
 // ── attribute_definition ─────────────────────────────────────────────
+//
+// The datum unification's fourth rung (TODO.lang-gaps/04, spec
+// [[datum-unification]]): the attribute is the MODEL plane of the one
+// datum substrate — the construct STAYS (the alias doctrine) and its
+// value core reads the datum through the optional inline
+// `datum { … }` block; the plane extras (category, enum, is_dimension,
+// correspondences) are untouched — extras on the substrate. The C192
+// coherence leg keeps a restated facet honest against its flat
+// spelling.
 
 /**
  * The `pair_list { … }` block (smart TODO.roadmap/40 batch 4): key /
@@ -1162,6 +1172,87 @@ function dumpPairList(decl: PairListDecl): string {
   return out;
 }
 
+// The datum origin axis ([[datum-unification]]): the value's epistemic
+// provenance — the same closed vocabulary the datum construct enforces.
+const ATTRIBUTE_DEFINITION_DATUM_ORIGINS = [
+  'declared',
+  'design-fixed',
+  'observed',
+  'computed',
+] as const;
+
+/** The `datum { … }` block authored inside an attribute definition (the
+ *  datum unification's fourth rung, TODO.lang-gaps/04, spec
+ *  [[datum-unification]]): the attribute is the MODEL plane of the datum
+ *  substrate — the block's facets override/extend the attribute's flat
+ *  value_type/unit/quantity_kind/origin/scope. The block takes NO id and
+ *  NO type parg: the attribute's id names the datum, and the type rides
+ *  the `type` facet (or the flat `value_type` where the block is silent).
+ *  Facets left unwritten stay '' — the flat facet stands in the view,
+ *  and a restated facet must AGREE with its flat spelling (C192). */
+function readAttributeDefinitionDatum(
+  data: string,
+  id: string,
+): AttributeDefinitionDatum {
+  const datum: AttributeDefinitionDatum = {
+    type: '',
+    unit: '',
+    quantityKind: '',
+    origin: '',
+    scope: '',
+  };
+  forEachEntry(
+    data,
+    (keyword, value) => {
+      if (keyword === 'type') {
+        datum.type = stripWrapping(value());
+      } else if (keyword === 'unit') {
+        datum.unit = stripWrapping(value());
+      } else if (keyword === 'quantity_kind') {
+        datum.quantityKind = stripWrapping(value());
+      } else if (keyword === 'origin') {
+        const origin = stripWrapping(value());
+        if (
+          !(ATTRIBUTE_DEFINITION_DATUM_ORIGINS as readonly string[]).includes(
+            origin,
+          )
+        ) {
+          throw new Error(
+            `Parsing error: attribute_definition. ID ${id}: Unknown datum origin "${origin}" (valid: ${ATTRIBUTE_DEFINITION_DATUM_ORIGINS.join(', ')})`,
+          );
+        }
+        datum.origin = origin;
+      } else if (keyword === 'scope') {
+        datum.scope = stripWrapping(value());
+      } else {
+        return false;
+      }
+      return true;
+    },
+    { construct: 'attribute_definition', id },
+  );
+  return datum;
+}
+
+/** The attribute's datum view ([[datum-unification]]): the model-plane
+ *  value wherever a datum is expected. The inline block's facets
+ *  override; the attribute's flat facets (value_type/unit/quantity_kind/
+ *  origin/scope) stand in where the block is silent. The wire shape
+ *  stays the authored spelling — this is the normalized read, never the
+ *  dump's input. */
+export function attributeDefinitionDatumView(
+  a: AttributeDefinition,
+): AttributeDefinitionDatum {
+  const d = a.datum;
+  return {
+    type: d?.type || a.valueType,
+    unit: d?.unit || a.unit,
+    quantityKind: d?.quantityKind || a.quantityKind,
+    origin: d?.origin || a.origin,
+    scope: d?.scope || a.scope,
+  };
+}
+
 const parseAttributeDefinition: ConstructDefinition['parse'] = function (
   id,
   data,
@@ -1183,6 +1274,7 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
     irdi: '',
     derived: '',
     referenceIds: [],
+    datum: null,
   };
 
   const t = tokenizePackage(data);
@@ -1227,6 +1319,22 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
       result.origin = stripWrapping(t[i++]);
     } else if (cmd === 'scope') {
       result.scope = stripWrapping(t[i++]);
+    } else if (cmd === 'datum') {
+      // THE DATUM UNIFICATION'S FOURTH RUNG (TODO.lang-gaps/04, spec
+      // [[datum-unification]]): the attribute is the MODEL plane of the
+      // datum substrate — the inline `datum { … }` block carries the
+      // substrate facets (type/unit/quantity_kind/origin/scope) that
+      // override/extend the flat value_type/unit/quantity_kind/origin/
+      // scope. The block takes no id (the attribute's id names the
+      // datum) and no type parg — a malformed spelling is a parse
+      // error, the fail-closed precedent.
+      const block = t[i++];
+      if (!block.startsWith('{')) {
+        throw new Error(
+          `Parsing error: attribute_definition. ID ${id}: the inline datum block is "datum { … }" — the attribute's id names the datum, the type rides the value_type facet`,
+        );
+      }
+      result.datum = readAttributeDefinitionDatum(unwrapBlock(block), id);
     } else if (cmd === 'category') {
       result.category = stripWrapping(t[i++]);
     } else if (cmd === 'is_dimension') {
@@ -1323,6 +1431,32 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
   }
   if (a.scope) {
     out += '  scope ' + a.scope + '\n';
+  }
+  if (a.datum) {
+    // The AUTHORED spelling ([[datum-unification]]): the inline datum
+    // block re-emits beside the flat facets it extends — `origin
+    // declared` is the datum's default and stays omitted (a silent
+    // facet stores '', so only authored tokens re-emit), the same
+    // convention the datum construct's dump holds. The fixpoint:
+    // parse(dump(m)) === m.
+    const d = a.datum;
+    const facets: string[] = [];
+    if (d.type) {
+      facets.push('type ' + dumpBareSafe(d.type));
+    }
+    if (d.unit) {
+      facets.push('unit ' + dumpBareSafe(d.unit));
+    }
+    if (d.quantityKind) {
+      facets.push('quantity_kind ' + dumpBareSafe(d.quantityKind));
+    }
+    if (d.origin && d.origin !== 'declared') {
+      facets.push('origin ' + dumpBareSafe(d.origin));
+    }
+    if (d.scope) {
+      facets.push('scope ' + dumpBareSafe(d.scope));
+    }
+    out += '  datum { ' + facets.join(' ') + ' }\n';
   }
   if (a.category) {
     out += '  category ' + a.category + '\n';

@@ -1797,6 +1797,39 @@ export function check(
       }
     }
 
+    // ── C192 attribute-definition-datum-coherence (TODO.lang-gaps/04,
+    //    the datum unification's fourth rung): the attribute_definition
+    //    is the MODEL plane of the datum substrate — when the attribute
+    //    declares an inline `datum { … }` block, a facet the block
+    //    restates must agree with its flat spelling (the block's `type`
+    //    against the flat `value_type`, `origin`, `scope` — the two
+    //    spellings name ONE value). A facet the block leaves silent —
+    //    or the absent block — carries no leg. The block's facets ride
+    //    the open block's greedy runs, so the read is the facetTokens
+    //    scan; the flat facets are the attribute's own lines. ──
+    if (c.keyword === 'attribute_definition') {
+      const flat: Array<[string, string, string]> = [
+        ['type', 'value_type', tokensOf(c, 'value_type')[0] ?? ''],
+        ['origin', 'origin', tokensOf(c, 'origin')[0] ?? ''],
+        ['scope', 'scope', tokensOf(c, 'scope')[0] ?? ''],
+      ];
+      for (const d of nested(c).filter(n => n.keyword === 'datum')) {
+        for (const [facet, flatKey, flatValue] of flat) {
+          const blockValue = facetTokens(d.items, facet)[0] ?? '';
+          if (
+            blockValue !== '' &&
+            flatValue !== '' &&
+            blockValue !== flatValue
+          ) {
+            err(
+              'C192',
+              `attribute_definition ${c.ident}: the inline datum block's ${facet} "${blockValue}" contradicts the flat ${flatKey} "${flatValue}" (attribute-definition-datum-coherence)`,
+            );
+          }
+        }
+      }
+    }
+
     // ── C104: a dataspace's policy register references declared
     //    policies.
     if (c.keyword === 'dataspace') {
