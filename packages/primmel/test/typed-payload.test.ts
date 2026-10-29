@@ -25,7 +25,7 @@ class accuracy-class-data {
 }
 
 instrument LoadCell {
-  definition "Load cell."
+  definition { Load cell. }
   dimension accuracy_class {
     label "Accuracy Class"
     scope group
@@ -74,7 +74,7 @@ describe('C152 payload-typed-by-class (the typed kernel R2)', () => {
       makePackage(`
 class d { a : integer { modality SHALL } }
 instrument X {
-  definition "X."
+  definition { X. }
   dimension good {
     values { v1 { payload { a 1 } } }
     payload_class d

@@ -8,7 +8,7 @@ attribute_definition e_max {
 # C118 must fire.
 requirement /req/capacity {
   name "Maximum capacity"
-  statement "The instrument shall indicate up to its maximum capacity."
+  statement { The instrument shall indicate up to its maximum capacity. }
   parameters {
     param e_max: number { description "Maximum capacity." bind "model.parameters.ghost_attr" range { min 0 } }
   }

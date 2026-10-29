@@ -44,6 +44,7 @@ import {
 import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { parseRef, foldRefIntoLegacy, dumpSourceRefAsRef } from './ref';
 import { dumpCorrespondences, parseCorresponds } from './correspondence';
+import { proseBlock } from '../parse-block';
 import {
   parseSourceDiscrepancy,
   dumpSourceDiscrepancy,
@@ -292,17 +293,8 @@ export function parseFormField(
     if (cmd === 'label') {
       field.label = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-      // `definition { … }` canonical; the dump emits the block. The body is
-
-      // trimmed so the fixpoint holds.
-
-      const dv = t[i++];
-
-      field.definition = dv.startsWith('{')
-        ? unwrapBlock(dv).trim()
-        : stripWrapping(dv);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      field.definition = proseBlock(t[i++], 'form field', name, 'definition');
     } else if (cmd === 'description') {
       field.description = stripWrapping(t[i++]);
     } else if (cmd === 'type') {

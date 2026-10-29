@@ -1,6 +1,6 @@
 requirement /req/mpe {
   name "Maximum permissible error"
-  statement "The absolute value of the error shall not exceed the MPE"
+  statement { The absolute value of the error shall not exceed the MPE }
 }
 
 conformance_test /conf/error {

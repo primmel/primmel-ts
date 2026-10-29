@@ -13,7 +13,7 @@ process issue_certificate {
 }
 process ia_application {
   name "IA application"
-  summary "The manufacturer or its authorized representative applies to an OIML Issuing Authority."
+  summary { The manufacturer or its authorized representative applies to an OIML Issuing Authority. }
   executor actor
   roles { applicant }
   organs { management_committee }

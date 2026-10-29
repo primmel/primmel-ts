@@ -8,7 +8,7 @@ process scale {
 }
 requirement /req/addresses {
   name "Addresses"
-  statement "The scaling step's output is addressable."
+  statement { The scaling step's output is addressable. }
   limit {
     args {
       ind <- process:scale.scale.indication

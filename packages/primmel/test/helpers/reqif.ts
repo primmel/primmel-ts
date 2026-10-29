@@ -270,14 +270,14 @@ export function buildCounterexamplePackage(): string {
     join(dir, 'specification', 'reqs.prl'),
     `requirement /req/one {
   name "One"
-  statement "The widget shall bind."
+  statement { The widget shall bind. }
   binds_to { /req/not-exported sample.x }
   obligation SHALL
 }
 
 requirement /req/two {
   name "Two"
-  statement "The widget may rest."
+  statement { The widget may rest. }
   obligation may
 }`,
   );
@@ -322,7 +322,7 @@ requirement_class /req/other {
 
 requirement /req/scope/alpha {
   name "Alpha"
-  statement "The widget shall frobnicate & pass <all> \\"checks\\"."
+  statement { The widget shall frobnicate & pass <all> "checks". }
   guidance "Frobnicate gently."
   binds_to { family.parameters.x /req/scope/beta }
   limit {
@@ -337,20 +337,20 @@ requirement /req/scope/alpha {
 
 requirement /req/scope/beta {
   name "Beta"
-  statement "The widget should glow."
+  statement { The widget should glow. }
   obligation should
   ref derives-from "urn:test:r:1:2021#clause-5.3"
 }
 
 requirement /req/scope/gamma {
   name "Gamma"
-  statement "The widget may hum."
+  statement { The widget may hum. }
   obligation may
 }
 
 requirement /req/orphan {
   name "Orphan"
-  statement "The widget shall stand alone."
+  statement { The widget shall stand alone. }
 }`,
   );
   writeFileSync(

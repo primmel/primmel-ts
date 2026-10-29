@@ -1,6 +1,6 @@
 requirement /req/air {
   name "Air"
-  statement "S"
+  statement { S }
   limit {
     args {
       e <- symbol:e_vehicle

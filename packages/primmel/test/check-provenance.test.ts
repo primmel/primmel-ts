@@ -52,7 +52,7 @@ const issues = (files: Record<string, string>) => {
 
 describe('C169 provenance-clause-resolves', () => {
   const req = (ref: string) =>
-    `requirement /req/r { name "R"\n statement "S"\n ref derives-from "${ref}"\n}\n`;
+    `requirement /req/r { name "R"\n statement { S }\n ref derives-from "${ref}"\n}\n`;
 
   it('accepts an exact, subtree, and enclosure landing', () => {
     const msgs = issues({

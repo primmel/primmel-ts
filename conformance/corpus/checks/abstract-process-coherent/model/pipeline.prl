@@ -13,19 +13,19 @@ governance_organ management_committee {
 participant_kind issuing_authority {
   label "OIML Issuing Authority"
   clause "5.2"
-  definition "Certification body approved by the Management Committee to issue OIML certificates."
+  definition { Certification body approved by the Management Committee to issue OIML certificates. }
 }
 declaration_kind issuing_authority_declaration {
   label "OIML Issuing Authority Declaration"
   holder issuing_authority
   clause "5.5.1"
   procedure "PD-08"
-  definition "Declaration indicating the IA's scope for issuing OIML certificates."
+  definition { Declaration indicating the IA's scope for issuing OIML certificates. }
   scope_model categories_x_schemes
 }
 declaration_gate declaration-signed-before-issuance {
   clause "PD-08 cl. 5"
-  statement "An IA shall not issue any OIML certificate before its Declaration is signed."
+  statement { An IA shall not issue any OIML certificate before its Declaration is signed. }
   holder issuing_authority
   declaration issuing_authority_declaration
   blocks { issue_certificate }
@@ -53,7 +53,7 @@ process issue_certificate {
 }
 process ia_application {
   name "IA application"
-  summary "The manufacturer or its authorized representative applies to an OIML Issuing Authority."
+  summary { The manufacturer or its authorized representative applies to an OIML Issuing Authority. }
   executor actor
   roles { applicant }
   organs { management_committee }

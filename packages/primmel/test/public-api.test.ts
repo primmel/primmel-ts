@@ -33,7 +33,7 @@ describe('public API surface', () => {
   });
 
   it('parses and dumps the variable keyword round-trip', () => {
-    const src = 'variable MassUnit { type string definition "g, kg, or t" }';
+    const src = 'variable MassUnit { type string definition { g, kg, or t } }';
     const s = load(src);
     assert.equal(s.variables.length, 1);
     assert.equal(s.variables[0].id, 'MassUnit');

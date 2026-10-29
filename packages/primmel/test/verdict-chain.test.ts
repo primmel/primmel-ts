@@ -48,7 +48,7 @@ describe('parameter bind: parse + round-trip', () => {
     const m = load(`
       requirement /req/mpe {
         name "MPE"
-        statement "s"
+        statement { s }
         parameters {
           param e_max: number {
             description "Maximum capacity of the instrument under test."
@@ -68,7 +68,7 @@ describe('parameter bind: parse + round-trip', () => {
   it('round-trips bind to a fixed point; absent bind keeps the v3.1 shape', () => {
     const src = `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   parameters {
     param e_max: number { description "Maximum capacity." unit "kg" bind "model.parameters.e_max" range { min 0 } }
     param n_runs: integer { description "Repetitions." default 20 range { min 1 max 100 } }
@@ -180,7 +180,7 @@ describe('C118 requirement-parameter-shape', () => {
       SUBJECT +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   parameters {
     param e_max: number { unit kg bind "model.parameters.e_max" range { min 0 max 500 } }
     param cls: enum { enum_values { A B C D } bind "model.classification.accuracy_class" }
@@ -196,7 +196,7 @@ describe('C118 requirement-parameter-shape', () => {
       SUBJECT +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   parameters {
     param e_max: number { bind "model.parameters.phantom" }
   }
@@ -216,7 +216,7 @@ describe('C118 requirement-parameter-shape', () => {
       SUBJECT +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   parameters {
     param cls: enum { enum_values { A B } bind "model.classification.no_such_axis" }
   }
@@ -232,7 +232,7 @@ describe('C118 requirement-parameter-shape', () => {
       SUBJECT +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   parameters {
     param n: number { unit furlong }
   }
@@ -252,7 +252,7 @@ describe('C118 requirement-parameter-shape', () => {
       SUBJECT +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   parameters {
     param n: integer { range { min 100 max 1 } }
   }

@@ -1,17 +1,17 @@
 requirement /req/exact {
   name "Exact landing"
-  statement "S"
+  statement { S }
   ref derives-from "urn:x:corpus:c169#clause-3"
 }
 
 requirement /req/child {
   name "Child landing"
-  statement "S"
+  statement { S }
   ref derives-from "urn:x:corpus:c169#clause-3.1"
 }
 
 requirement /req/enclosure {
   name "Enclosure landing"
-  statement "S"
+  statement { S }
   ref derives-from "urn:x:corpus:c169#clause-3/table-1"
 }

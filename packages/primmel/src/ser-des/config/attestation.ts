@@ -8,7 +8,7 @@
 
 import type { Dumper, Parser } from '../types';
 import { stripWrapping, unwrapBlock } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, stripColon } from './field-parser';
 import Attestation, {
   AttestationClaim,
@@ -44,11 +44,8 @@ export const parseAttestation: Parser = (id: string, data: string) => {
         const name = stripWrapping(value());
         a.authority = { role, name };
       } else if (keyword === 'statement') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
-        const v = value();
-        a.statement = v.startsWith('{')
-          ? unwrapBlock(v).trim()
-          : stripWrapping(v);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        a.statement = proseBlock(value(), 'attestation', id, 'statement');
       } else if (keyword === 'limits') {
         forEachEntry(
           unwrapBlock(value()),

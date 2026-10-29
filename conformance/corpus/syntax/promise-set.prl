@@ -3,7 +3,7 @@
 promise_set LoadCell {
   promise e_max_values {
     target e_max
-    statement "Maximum capacity E_max per model."
+    statement { Maximum capacity E_max per model. }
     certificate {
       attribute e_max
       type string
@@ -16,7 +16,7 @@ promise_set LoadCell {
     target accuracy_class
     level symbolic C6
     conditions ocl{self.temperature >= rated.t_min and self.temperature <= rated.t_max}
-    statement "Holds class C6 across the rated range."
+    statement { Holds class C6 across the rated range. }
     certificate {
       type statement
       label "Accuracy envelope"

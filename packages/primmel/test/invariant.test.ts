@@ -44,7 +44,7 @@ if (!CORPUS_AVAILABLE) {
 const CLEAN = `
 invariant INV-1 {
   name "No bare numbers"
-  statement "every physical quantity is a QuantityValue (value + unit [+ uncertainty])."
+  statement { every physical quantity is a QuantityValue (value + unit [+ uncertainty]). }
   severity error
   applies_to { QuantityValue }
   source "docs/oiml-core/09-invariants.md#9.2"
@@ -55,7 +55,7 @@ invariant INV-1 {
 const ASPIRATIONAL = `
 invariant INV-99 {
   name "Future rule"
-  statement "a rule the gates will one day enforce."
+  statement { a rule the gates will one day enforce. }
   severity notice
   enforcement aspirational
 }
@@ -115,14 +115,14 @@ describe('invariant — parse (smart gap-close E9)', () => {
     const m = load(`
 invariant INV-2 {
   name "Schema/instance split"
-  statement "an attribute is DEFINED once and VALUED per Model or Sample."
+  statement { an attribute is DEFINED once and VALUED per Model or Sample. }
   severity error
   applies_to { AttributeDefinition, Parameter }
   enforcement { kernel:C1, linker:bind-paths; gate:codegen-entity-types }
 }
 invariant INV-3 {
   name "Single entry"
-  statement "one bare entry per list facet."
+  statement { one bare entry per list facet. }
   severity notice
   applies_to Verdict
   enforcement gate:verdict-reexecution
@@ -146,7 +146,7 @@ invariant INV-3 {
     const m = load(`
 invariant INV-4 {
   name "Reports contain no \\"verdicts\\""
-  statement "D2 contains no verdicts. If a TestReport says 'pass', the schema is broken."
+  statement { D2 contains no verdicts. If a TestReport says 'pass', the schema is broken. }
   severity "error"
   enforcement aspirational
 }
@@ -169,7 +169,7 @@ invariant INV-4 {
     const m = load(`
 invariant both {
   name "Both"
-  statement "marker and claims."
+  statement { marker and claims. }
   severity error
   enforcement aspirational
   enforcement { kernel:C1 }
@@ -183,7 +183,7 @@ invariant both {
 
   it('ignores unknown facets (forward compatibility) — C90 still catches the missing shape', () => {
     const m = load(
-      'invariant future {\n  name "F" statement "s" severity error enforcement aspirational\n  rationale "not yet a facet"\n}\n',
+      'invariant future {\n  name "F" statement { s } severity error enforcement aspirational\n  rationale "not yet a facet"\n}\n',
     );
     assert.equal(m.invariants.length, 1);
     assert.equal(m.invariants[0].name, 'F');
@@ -205,7 +205,7 @@ invariant both {
     const malformed = `
 invariant both {
   name "Both"
-  statement "marker and claims."
+  statement { marker and claims. }
   severity error
   enforcement aspirational
   enforcement { kernel:C1 }
@@ -250,7 +250,7 @@ describe('invariant lint rules (C90–C91)', () => {
 
     const noStatement = invariantIssues(
       makeTmpPackage(
-        CLEAN.replace(/ {2}statement "every physical quantity[^"]*"\n/, ''),
+        CLEAN.replace(/ {2}statement \{ every physical quantity[^}]*\}\n/, ''),
       ),
     ).filter(i => i.check === 'C90');
     assert.ok(noStatement.some(i => i.message.includes('no statement')));

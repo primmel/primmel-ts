@@ -42,7 +42,7 @@ function buildClosure(): { base: string; rec: string } {
   mkdirSync(join(base, 'model'), { recursive: true });
   writeFileSync(
     join(base, 'model', 'entities.prl'),
-    'class Zone {\n  attribute name, string {\n    modality SHALL\n    definition "The zone name."\n  }\n}\n',
+    'class Zone {\n  attribute name, string {\n    modality SHALL\n    definition { The zone name. }\n  }\n}\n',
   );
   writeFileSync(
     join(rec, 'package.primmel'),

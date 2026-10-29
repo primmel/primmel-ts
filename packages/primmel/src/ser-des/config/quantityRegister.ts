@@ -35,6 +35,7 @@ import type {
   QuantityRegister,
   UnitDef,
 } from '../../types/Quantity';
+import { proseBlock } from '../parse-block';
 
 function readDimensions(block: string): Record<string, number> {
   const out: Record<string, number> = {};
@@ -113,17 +114,13 @@ function parseUnit(id: string, block: string): UnitDef {
     } else if (cmd === 'offset') {
       out.offsetToSI = readNumber(t[i++], 0);
     } else if (cmd === 'definition') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-      // `definition { … }` canonical; the dump emits the block. The body is
-
-      // trimmed so the fixpoint holds.
-
-      const dv = t[i++];
-
-      out.definition = dv.startsWith('{')
-        ? unwrapBlock(dv).trim()
-        : stripWrapping(dv);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      out.definition = proseBlock(
+        t[i++],
+        'quantity_register',
+        id,
+        'definition',
+      );
     } else if (cmd === 'corresponds') {
       const { corr, next } = parseCorresponds(t, i, stripWrapping);
       (out.correspondences ??= []).push(corr);

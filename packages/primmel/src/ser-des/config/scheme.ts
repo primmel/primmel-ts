@@ -61,7 +61,7 @@ import {
   tokenizePackage,
   unwrapBlock,
 } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import {
   SchemeDefinition,
@@ -123,17 +123,13 @@ export const parseSchemeDefinition: Parser = (id: string, data: string) => {
       } else if (keyword === 'clause') {
         scheme.clause = stripWrapping(value());
       } else if (keyword === 'definition') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-        // `definition { … }` canonical; the dump emits the block. The body is
-
-        // trimmed so the fixpoint holds.
-
-        const dv = value();
-
-        scheme.definition = dv.startsWith('{')
-          ? unwrapBlock(dv).trim()
-          : stripWrapping(dv);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        scheme.definition = proseBlock(
+          value(),
+          'scheme_lifecycle',
+          id,
+          'definition',
+        );
       } else if (keyword === 'demonstration') {
         scheme.demonstration = parseDemonstration(unwrapBlock(value()));
       } else if (keyword === 'source') {

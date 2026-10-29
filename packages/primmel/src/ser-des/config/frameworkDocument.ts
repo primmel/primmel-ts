@@ -37,7 +37,7 @@
 
 import type { Dumper, Parser } from '../types';
 import { escapeString, stripWrapping, unwrapBlock } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import FrameworkDocument, {
   DocumentPrecedence,
@@ -138,11 +138,8 @@ export const parseDocumentPrecedence: Parser = (id: string, data: string) => {
       if (keyword === 'clause') {
         rule.clause = stripWrapping(value());
       } else if (keyword === 'statement') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
-        const v = value();
-        rule.statement = v.startsWith('{')
-          ? unwrapBlock(v).trim()
-          : stripWrapping(v);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        rule.statement = proseBlock(value(), 'decision_rule', id, 'statement');
       } else if (keyword === 'source') {
         rule.source = readSource(unwrapBlock(value()));
       } else if (keyword === 'ref') {

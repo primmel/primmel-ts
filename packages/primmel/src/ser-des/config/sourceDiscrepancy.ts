@@ -18,6 +18,7 @@
 import type SourceDiscrepancy from '../../types/SourceDiscrepancy';
 import tokenize from '../tokenize';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
+import { proseBlock } from '../parse-block';
 
 // Exported: the discrepancy_record corpus construct (TODO.roadmap/54)
 // shares the resolution vocabulary — one enum for both constructs.
@@ -39,10 +40,8 @@ export function parseSourceDiscrepancy(block: string): SourceDiscrepancy {
       break;
     }
     if (cmd === 'summary') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form — bare
-      // legacy, `summary { … }` canonical; the dump emits the block.
-      const v = t[i++];
-      sd.summary = v.startsWith('{') ? unwrapBlock(v).trim() : stripWrapping(v);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      sd.summary = proseBlock(t[i++], 'source_discrepancy', '', 'summary');
     } else if (cmd === 'sources') {
       sd.sources = tokenize(stripWrapping(t[i++]))
         .map(stripWrapping)
@@ -76,7 +75,7 @@ export function dumpSourceDiscrepancy(
   indent: string,
 ): string {
   let out = indent + 'source_discrepancy { ';
-  out += 'summary "' + escapeString(sd.summary) + '" ';
+  out += 'summary { ' + sd.summary + ' } ';
   out +=
     'sources { ' +
     sd.sources.map(s => '"' + escapeString(s) + '"').join(' ') +

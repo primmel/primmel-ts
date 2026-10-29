@@ -98,7 +98,7 @@ attribute_definition indication {
 behavior creep {
   kind temporal
   stimulus force
-  response "Change in output with time under constant load."
+  response { Change in output with time under constant load. }
 }
 
 subject LC500 {
@@ -109,12 +109,12 @@ subject LC500 {
       mpe_within {
         target error_hold
         level symbolic C6
-        statement "Holds accuracy class C6 across the rated range."
+        statement { Holds accuracy class C6 across the rated range. }
         verified_by { oiml-r60#/req/metrological/mpe }
       }
       creep_c6 {
         target creep
-        statement "Creep stays within the class C6 envelope over the 30-minute test."
+        statement { Creep stays within the class C6 envelope over the 30-minute test. }
         verified_by { oiml-r60#/req/metrological/creep }
       }
     }
@@ -130,13 +130,13 @@ subject LC500 {
 
 requirement oiml-r60#/req/metrological/mpe {
   name "alias: R 60 maximum permissible errors"
-  statement "Local alias of the Recommendation's MPE requirement (the implementation declares local copies of the reference elements it maps to — C21)."
+  statement { Local alias of the Recommendation's MPE requirement (the implementation declares local copies of the reference elements it maps to — C21). }
   verification { method examination description "Verified in the Recommendation's own evaluation program." }
 }
 
 requirement oiml-r60#/req/metrological/creep {
   name "alias: R 60 creep requirement"
-  statement "Local alias of the Recommendation's creep requirement."
+  statement { Local alias of the Recommendation's creep requirement. }
   verification { method examination description "Verified in the Recommendation's own evaluation program." }
 }
 
@@ -186,7 +186,7 @@ subject QuarryBeltScale {
       capacity_within_emax {
         target capacity_hold
         level range { min 0 max 500 unit kg }
-        statement "The rated capacity stays within the cell's E_max envelope (as-certified reference content, pinned edition 2021)."
+        statement { The rated capacity stays within the cell's E_max envelope (as-certified reference content, pinned edition 2021). }
         verified_by { /req/ops/design-review }
       }
     }
@@ -199,7 +199,7 @@ subject QuarryBeltScale {
 
 requirement /req/ops/design-review {
   name "Design review against the product reference model"
-  statement "The installation is designed against the LC-500's promised envelope (capacity within E_max) — validated at design time over the pinned abstract import."
+  statement { The installation is designed against the LC-500's promised envelope (capacity within E_max) — validated at design time over the pinned abstract import. }
   verification { method examination description "Design-time review of the installation model against the imported product reference content." }
 }
 
@@ -490,7 +490,7 @@ describe('C82 product-unmapped-promises', () => {
         manifest: 'package { id plain-pkg version "1" }',
         files: {
           'model/m.prl':
-            'subject S { is { promises { unattainable { target nothing statement "x" verified_by { } } } } }',
+            'subject S { is { promises { unattainable { target nothing statement { x } verified_by { } } } } }',
         },
       },
     });

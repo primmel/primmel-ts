@@ -15,17 +15,17 @@ const SOURCE = `
 promise_set LoadCell {
   promise accuracy_class {
     target accuracy_class
-    statement "The type holds its declared accuracy class."
+    statement { The type holds its declared accuracy class. }
     certificate { dimension accuracy_class type string label "Accuracy class" obligation mandatory }
   }
   promise e_max {
     target e_max
-    statement "Maximum capacity per model."
+    statement { Maximum capacity per model. }
     certificate { attribute e_max type string label "E_max values" obligation mandatory }
   }
   promise cable_length {
     target cable_length
-    statement "Integral cable length."
+    statement { Integral cable length. }
     certificate { attribute cable_length type quantity label "Cable length" obligation optional }
   }
 }
@@ -46,7 +46,7 @@ attestation r60-certificate-claim {
   promises   LoadCell
   basis      test_report "NMi-3826124-01"
   authority  issuing_authority "NMi Certin B.V."
-  statement  "This Certificate attests the conformity of the above identified Type."
+  statement { This Certificate attests the conformity of the above identified Type. }
   limits     { scope   "the metrological and technical characteristics of the type"
                legal    "does not bestow any form of legal international approval" }
   claims {

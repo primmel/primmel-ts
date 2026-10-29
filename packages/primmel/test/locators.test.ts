@@ -92,11 +92,11 @@ describe('C187/C188 — the checker legs', () => {
     const ws = makeWorkspace();
     try {
       writeFileSync(join(ws, LOCATOR_FILE), LOCATORS_OK);
-      makePackage(ws, 'dep-a', 'instrument A { definition "A." }', '');
+      makePackage(ws, 'dep-a', 'instrument A { definition { A. } }', '');
       const dir = makePackage(
         ws,
         'top',
-        'instrument I { definition "I." }',
+        'instrument I { definition { I. } }',
         'uses { acme-local::dep-a }',
       );
       const issues = checkPackage(dir).filter(i =>
@@ -115,7 +115,7 @@ describe('C187/C188 — the checker legs', () => {
       const dir = makePackage(
         ws,
         'top',
-        'instrument I { definition "I." }',
+        'instrument I { definition { I. } }',
         'uses { ghost-locator::dep-a }',
       );
       const issues = checkPackage(dir).filter(i => i.check === 'C187');
@@ -148,7 +148,7 @@ describe('C187/C188 — the checker legs', () => {
       const dir = makePackage(
         ws,
         'top',
-        'instrument I { definition "I." }',
+        'instrument I { definition { I. } }',
         'uses { leaky::dep-a }',
       );
       const issues = checkPackage(dir).filter(i => i.check === 'C188');
@@ -171,14 +171,14 @@ describe('the closure report — the license boundary (data, never errors)', () 
       const depA = makePackage(
         ws,
         'dep-a',
-        'instrument A { definition "A." }',
+        'instrument A { definition { A. } }',
         '',
       );
       // A product_reference sibling: interface-closed.
       const depB = makePackage(
         ws,
         'dep-b',
-        'instrument B { definition "B." }',
+        'instrument B { definition { B. } }',
         'kind product_reference',
       );
       // The root composes dep-a (bare) and dep-b through the locator;
@@ -186,7 +186,7 @@ describe('the closure report — the license boundary (data, never errors)', () 
       const top = makePackage(
         ws,
         'top',
-        'instrument T { definition "T." }',
+        'instrument T { definition { T. } }',
         'uses { acme-local::dep-a acme-local::dep-b acme-local::dep-c dep-d }',
       );
       void depA;

@@ -11,13 +11,13 @@ const PACKAGE = `
 behavior measure {
   kind measurement
   stimulus force
-  response "Indication of the applied load."
+  response { Indication of the applied load. }
 }
 
 behavior creep {
   kind temporal
   stimulus force
-  response "Change in load cell output with time under constant load."
+  response { Change in load cell output with time under constant load. }
 }
 
 subject LoadCell {
@@ -176,7 +176,7 @@ describe('v3 subject anatomy (is/has/does)', () => {
     const mixed = `
 instrument LoadCell {
   extends MeasuringInstrumentModel
-  definition "Measuring transducer."
+  definition { Measuring transducer. }
 }
 subject LoadCellV3 {
   extends LoadCell

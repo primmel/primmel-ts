@@ -1,10 +1,19 @@
 # 02 — THE PROSE QUARANTINE (critical)
 
-**Status (2026-10-28): DECLARED, ENFORCEMENT PARTIAL.** Spec §16
-declares C158 an error; the kernel enforces the datum-description
-proxy. The corpus still carries the bare strings (~1,181 statement,
-~2,203 definition, 191 summary, 88 response, 174 criteria); the
-global linter leg lands with the prose-surface migration.
+**Status (2026-10-29): ENFORCED (parse-level; 1.21.45–1.21.47).**
+Phase 1 (1.21.45/46): the five bare prose carriers (statement,
+definition, summary, response, criteria) dual-parse and canonicalize
+to the block form on dump; the corpus rebaked (3,821 + 221 inline
+occurrences, ~560 files; library v0.33.20). Phase 2 (1.21.47): the
+bare quoted spelling REFUSES at parse via the shared `proseBlock`
+reader naming this file — stronger than the spec §16 C158 linter
+level, same rule. The promise's quoted-string shorthand stays
+byte-pinned. **Open content debt (not language debt):** register
+items 3 and 5 — the numbers trapped in pass_fail criteria prose
+(→ declared datums + checks) and the data held in behavior-response /
+process-summary prose (→ structured fields) migrate package by
+package under the fidelity gates; item 6's label/name/title sprawl
+likewise. The LANGUAGE surface is closed: no bare prose string parses.
 
 **Rule (owner, 2026-10-12).** Primmel is a DATA MODELING LANGUAGE. NO
 prose in semantic positions — everything is explicit and useable.

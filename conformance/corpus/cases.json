@@ -3325,6 +3325,18 @@
         "errorMatch": "the calculation_bindings facet is retired"
       },
       "summary": "The retired form-field calculation_bindings rename map is rejected at parse; each calculation input binds through its own binding { from <source> to <input> } edge."
+    },
+    {
+      "id": "syn-03-parse-neg-bare-statement",
+      "clause": "SYN-03",
+      "polarity": "negative",
+      "kind": "parse",
+      "path": "syntax/retired-bare-statement.prl",
+      "expect": {
+        "parse": "error",
+        "errorMatch": "the bare statement string is retired"
+      },
+      "summary": "THE PROSE QUARANTINE (C158): the bare prose spelling refuses at parse; the five prose carriers (statement, definition, summary, response, criteria) take the block form only."
     }
   ]
 }

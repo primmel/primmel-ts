@@ -37,9 +37,9 @@ data_registry probe-records {
   data_class ProbeRecord#data
 }
 
-variable envelope_temperature_min { type number source declared definition "the applied low" }
-variable envelope_temperature_max { type number source declared definition "the applied high" }
-variable indication { type number source measured definition "the observed" }
+variable envelope_temperature_min { type number source declared definition { the applied low } }
+variable envelope_temperature_max { type number source declared definition { the applied high } }
+variable indication { type number source measured definition { the observed } }
 
 conformance_test /conf/probe {
   name "Probe"

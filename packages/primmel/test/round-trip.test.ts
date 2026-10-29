@@ -121,8 +121,8 @@ describe('round-trip', () => {
   it('preserves an enum definition', () => {
     const src = `
       enum status {
-        active { definition "active" }
-        archived { definition "archived" }
+        active { definition { active } }
+        archived { definition { archived } }
       }
     `;
     const out = roundTrip(src);
@@ -206,7 +206,7 @@ describe('round-trip', () => {
         schema "1" author "A" title "T" edition "1" namespace "ns" shortname "t"
       }
       role author { name "Author" }
-      enum status { active { definition "a" } }
+      enum status { active { definition { a } } }
     `;
     const once = roundTrip(src);
     const twice = roundTrip(once);
@@ -273,7 +273,7 @@ describe('ref (the unified reference/relation construct, spec docs/primmel/18)',
   it('round-trips refs with notes on a requirement', () => {
     const src = `requirement /req/demo {
   name "Demo"
-  statement "S"
+  statement { S }
   ref equivalent "urn:oiml:pub:r:76:2006#clause-T.2.2.2" { note "the shared definition" }
 }
 `;

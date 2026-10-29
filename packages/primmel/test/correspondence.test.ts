@@ -61,7 +61,7 @@ term load-cell {
   corresponds iec-cdd "0112/2///61987#ABA901"
 }
 requirement /req/metrological/mpe {
-  statement "The error shall not exceed the mpe."
+  statement { The error shall not exceed the mpe. }
   corresponds vc-claims "claim:mpeConformity"
 }
 form test-report {

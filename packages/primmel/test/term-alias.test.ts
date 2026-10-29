@@ -21,7 +21,7 @@ describe('term alias family: parse', () => {
     const m = load(`
       term durability {
         label "durability"
-        definition "Ability to maintain performance over a period of use."
+        definition { Ability to maintain performance over a period of use. }
         aliases { "long-term stability" }
         colloquial { "drifting" "scale keeps drifting" }
         abbreviations { "dur." }
@@ -100,7 +100,7 @@ describe('term alias family: serialization', () => {
     const src = `
       term durability {
         label "durability"
-        definition "Ability to maintain performance over a period of use."
+        definition { Ability to maintain performance over a period of use. }
         aliases { "long-term stability" }
         colloquial { "drifting" "scale keeps drifting" }
         abbreviations { "dur." }
@@ -125,7 +125,7 @@ describe('term alias family: the forward-compat skip (§9.5)', () => {
     // — a one-token skip would desynchronize the facet walk.
     const m = load(`
       requirement /req/metrological/mpe {
-        statement "The error shall not exceed the mpe."
+        statement { The error shall not exceed the mpe. }
         colloquial fra-Latn { "dérive" }
         obligation should
       }
@@ -137,7 +137,7 @@ describe('term alias family: the forward-compat skip (§9.5)', () => {
   it('skips the bare form on an unrecording construct', () => {
     const m = load(`
       requirement /req/metrological/mpe {
-        statement "The error shall not exceed the mpe."
+        statement { The error shall not exceed the mpe. }
         aliases { "maximum permissible error" }
         obligation should
       }
@@ -164,7 +164,7 @@ describe('term alias family: the checker (C110)', () => {
     const issues = check(`
 term durability {
   label "durability"
-  definition "…"
+  definition { … }
   aliases { "long-term stability" }
   colloquial { "drifting" }
   colloquial fra-Latn { "dérive" }

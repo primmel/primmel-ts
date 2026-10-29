@@ -98,7 +98,7 @@ subject LC500 {
       mpe_within {
         target error_hold
         level symbolic C6
-        statement "Holds accuracy class C6 across the rated range."
+        statement { Holds accuracy class C6 across the rated range. }
       }
     }
     artifacts { type_evaluation_dossier }

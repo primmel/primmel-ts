@@ -264,3 +264,25 @@ export function unwrapped(value: () => string): string {
   // trims so `facet { X }` parses back to X — the fixpoint holds.
   return unwrapBlock(x).trim();
 }
+
+/**
+ * THE PROSE QUARANTINE (TODO.lang-gaps/02): the canonical block-form
+ * reader for the five prose facets (response, criteria, summary,
+ * statement, definition). The bare quoted string is RETIRED — a
+ * document authored before the rebake refuses at parse, naming the
+ * block. The block body trims so `facet { X }` parses back to X.
+ */
+export function proseBlock(
+  value: string,
+  construct: string,
+  id: string,
+  facet: string,
+): string {
+  const at = id ? ` ID ${id}` : '';
+  if (!value.startsWith('{')) {
+    throw new Error(
+      `Parsing error: ${construct}.${at}: the bare ${facet} string is retired (TODO.lang-gaps/02) — the prose quarantine takes the block: ${facet} { … }`,
+    );
+  }
+  return unwrapBlock(value).trim();
+}

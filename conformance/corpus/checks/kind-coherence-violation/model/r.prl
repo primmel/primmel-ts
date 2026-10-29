@@ -1,6 +1,6 @@
 requirement /req/k {
   name "K"
-  statement "S"
+  statement { S }
   limit {
     args {
       m <- symbol:the_mass

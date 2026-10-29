@@ -200,7 +200,12 @@ import tokenize, {
   unwrapBlock,
   tokenizePackage,
 } from '../tokenize';
-import { forEachEntry, unwrapped, skipUnknownValue } from '../parse-block';
+import {
+  forEachEntry,
+  unwrapped,
+  skipUnknownValue,
+  proseBlock,
+} from '../parse-block';
 import { readExpressionCarrier } from '../expression-carrier';
 import {
   parseRefFromReaders,
@@ -578,11 +583,13 @@ function parseSegregation(block: string): SegregationEntry[] {
               .filter(s => s.length > 0),
           );
         } else if (ec === 'statement') {
-          // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
-          const v = et[j++];
-          entry.statement = v.startsWith('{')
-            ? unwrapBlock(v).trim()
-            : stripWrapping(v);
+          // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+          entry.statement = proseBlock(
+            et[j++],
+            'segregation constraint',
+            '',
+            'statement',
+          );
         } else {
           unwrapBlock(et[j++]);
         }
@@ -1260,13 +1267,8 @@ export const parseProcess: Parser = function (id, data) {
           .filter(s => s.length > 0);
       } else if (keyword === 'summary') {
         // The abstract-process model (smart TODO.roadmap/40 batch 2).
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form —
-        // bare legacy, `summary { … }` canonical; the dump emits the
-        // block. The body is trimmed so the fixpoint holds.
-        const v = value();
-        result.summary = v.startsWith('{')
-          ? unwrapBlock(v).trim()
-          : stripWrapping(v);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        result.summary = proseBlock(value(), 'process', id, 'summary');
       } else if (keyword === 'roles') {
         // roles { applicant … } — the role binding list; kept DISTINCT
         // from `executor` (the process-level default) — never collapsed.

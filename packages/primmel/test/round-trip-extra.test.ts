@@ -31,7 +31,7 @@ describe('round-trip: additional constructs', () => {
         title "R1"
         data_class dc1
       }
-      class dc1 { attr1: string { definition "x" } }
+      class dc1 { attr1: string { definition { x } } }
     `;
     const s = load(src);
     assert.equal(s.regs.length, 1);
@@ -43,8 +43,8 @@ describe('round-trip: additional constructs', () => {
   it('preserves an enum value definition', () => {
     const src = `
       enum status {
-        active { definition "Active status" }
-        archived { definition "Archived" }
+        active { definition { Active status } }
+        archived { definition { Archived } }
       }
     `;
     const out = roundTrip(src);

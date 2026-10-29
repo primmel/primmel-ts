@@ -7,25 +7,25 @@
 
 requirement oiml-r60-demo-2021#/req/metrological/measuring-range-min {
   name "alias: the 2021 minimum-load requirement"
-  statement "Local alias of the 2021 edition's measuring-range-minimum requirement (C21 — the product declares local copies of the reference elements it maps to)."
+  statement { Local alias of the 2021 edition's measuring-range-minimum requirement (C21 — the product declares local copies of the reference elements it maps to). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 
 requirement oiml-r60-demo-2021#/req/metrological/measuring-range-max {
   name "alias: the 2021 maximum-load requirement"
-  statement "Local alias of the 2021 edition's measuring-range-maximum requirement (C21)."
+  statement { Local alias of the 2021 edition's measuring-range-maximum requirement (C21). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 
 requirement oiml-r60-demo-2021#/req/metrological/zero-return {
   name "alias: the 2021 zero-return requirement (0.5 intervals)"
-  statement "Local alias of the 2021 edition's zero-return requirement — the 0.5-scale-interval tolerance (C21)."
+  statement { Local alias of the 2021 edition's zero-return requirement — the 0.5-scale-interval tolerance (C21). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 
 requirement oiml-r60-demo-2021#/req/technical/warm-up-time {
   name "alias: the 2021 warm-up requirement (30 min)"
-  statement "Local alias of the 2021 edition's warm-up requirement — 30 minutes, no record (C21)."
+  statement { Local alias of the 2021 edition's warm-up requirement — 30 minutes, no record (C21). }
   verification { method examination description "Verified in the Recommendation's own type evaluation program." }
 }
 

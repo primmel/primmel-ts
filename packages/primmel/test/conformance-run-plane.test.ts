@@ -17,7 +17,7 @@ const PKG = `package { id test }
 class ProbeRecord#data {
   meter_id: string {
     modality SHALL
-    definition "The meter under test"
+    definition { The meter under test }
   }
 }
 data_registry probe-records {
@@ -108,7 +108,7 @@ describe('the run plane', () => {
     const dir = make(
       PKG.replace(
         'data_registry probe-records {',
-        'class OtherRecord#data {\n  meter_id: string { modality SHALL definition "x" }\n}\ndata_registry probe-records {',
+        'class OtherRecord#data {\n  meter_id: string { modality SHALL definition { x } }\n}\ndata_registry probe-records {',
       ).replace('data_class ProbeRecord#data', 'data_class OtherRecord#data'),
     );
     const msgs = checkPackage(dir)

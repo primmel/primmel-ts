@@ -34,13 +34,13 @@ const PACKAGE = `
 behavior creep {
   kind temporal
   stimulus force
-  response "Change in load cell output with time under constant load."
+  response { Change in load cell output with time under constant load. }
 }
 
 behavior temp-effect-min-dead-load {
   kind influence-response
   stimulus temperature
-  response "Change of the signal output under minimum dead load due to a change in ambient temperature."
+  response { Change of the signal output under minimum dead load due to a change in ambient temperature. }
 }
 
 subject LoadCell {

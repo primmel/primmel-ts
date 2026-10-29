@@ -124,7 +124,7 @@ dimension power-supply-axis {
   values { ac-mains battery }
 }
 requirement /req/metrological/mpe {
-  statement "The error shall not exceed the mpe."
+  statement { The error shall not exceed the mpe. }
   applicability { power-supply-axis: [ac-mains] }
 }
 `);
@@ -141,7 +141,7 @@ dimension power-supply-axis {
   values { ac-mains battery }
 }
 requirement /req/metrological/mpe {
-  statement "The error shall not exceed the mpe."
+  statement { The error shall not exceed the mpe. }
   applicability { power-supply-axis: [solar] }
 }
 `);
@@ -160,7 +160,7 @@ capability digital-output {
   name "Digital output"
 }
 requirement /req/technical/interface {
-  statement "The instrument shall provide the declared interfaces."
+  statement { The instrument shall provide the declared interfaces. }
   applicability { capabilities: [digital-output] match all }
 }
 `);
@@ -180,7 +180,7 @@ capability digital-output {
   name "Digital output"
 }
 requirement /req/technical/interface {
-  statement "The instrument shall provide the declared interfaces."
+  statement { The instrument shall provide the declared interfaces. }
   applicability { capabilities: [wireless] }
 }
 `);
@@ -198,7 +198,7 @@ attribute_definition humidity_symbol {
   enum humidity_class
 }
 requirement /req/metrological/climatic {
-  statement "The instrument shall withstand the declared humidity class."
+  statement { The instrument shall withstand the declared humidity class. }
   applicability { humidity_symbol: [H1] }
 }
 `);
@@ -215,7 +215,7 @@ dimension accuracy-axis {
   values { A B }
 }
 requirement /req/metrological/mpe {
-  statement "The error shall not exceed the mpe."
+  statement { The error shall not exceed the mpe. }
   applicability { accuracy-axis: { A: 5 B: 3 } }
 }
 `);
@@ -229,7 +229,7 @@ dimension accuracy-axis {
   values { A B }
 }
 requirement /req/metrological/mpe {
-  statement "The error shall not exceed the mpe."
+  statement { The error shall not exceed the mpe. }
   applicability { accuracy-axis: { X: 5 } }
 }
 `);
@@ -315,7 +315,7 @@ dimension d {
   values_of outcomes
 }
 requirement /req/x {
-  statement "…"
+  statement { … }
   applicability { d: [anything-goes] }
 }
 `);

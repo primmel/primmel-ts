@@ -24,29 +24,29 @@ const REGISTER = `
 activity_archetype selection {
   label "selection"
   clause "A.2"
-  definition "planning and preparation activities in order to collect or produce all the information and input needed for the subsequent determination function"
+  definition { planning and preparation activities in order to collect or produce all the information and input needed for the subsequent determination function }
 }
 activity_archetype determination {
   label "determination"
   clause "A.3"
-  definition "activities undertaken to develop complete information regarding fulfilment of the specified requirements by the object of conformity assessment or its sample"
+  definition { activities undertaken to develop complete information regarding fulfilment of the specified requirements by the object of conformity assessment or its sample }
 }
 activity_archetype testing {
   label "testing"
   clause "6.2"
-  definition "determination of one or more characteristics of an object of conformity assessment (4.2), according to a procedure (5.2)"
+  definition { determination of one or more characteristics of an object of conformity assessment (4.2), according to a procedure (5.2) }
   parent determination
 }
 activity_archetype certification {
   label "certification"
   clause "7.6"
-  definition "third-party attestation (7.3) related to an object of conformity assessment (4.2), with the exception of accreditation (7.7)"
+  definition { third-party attestation (7.3) related to an object of conformity assessment (4.2), with the exception of accreditation (7.7) }
   parent attestation
 }
 activity_archetype attestation {
   label "attestation"
   clause "7.3"
-  definition "issue of a statement, based on a decision (7.2), that fulfilment of specified requirements (5.1) has been demonstrated"
+  definition { issue of a statement, based on a decision (7.2), that fulfilment of specified requirements (5.1) has been demonstrated }
 }
 `;
 
@@ -81,12 +81,12 @@ const REGISTER_DANGLING_PARENT = `
 activity_archetype selection {
   label "selection"
   clause "A.2"
-  definition "planning and preparation activities in order to collect or produce all the information and input needed for the subsequent determination function"
+  definition { planning and preparation activities in order to collect or produce all the information and input needed for the subsequent determination function }
 }
 activity_archetype testing {
   label "testing"
   clause "6.2"
-  definition "determination of one or more characteristics of an object of conformity assessment (4.2), according to a procedure (5.2)"
+  definition { determination of one or more characteristics of an object of conformity assessment (4.2), according to a procedure (5.2) }
   parent determination
 }
 `;

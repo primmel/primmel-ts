@@ -21,13 +21,13 @@ const PACKAGE = `
 behavior creep {
   kind temporal
   stimulus force
-  response "Change in load cell output with time under constant load."
+  response { Change in load cell output with time under constant load. }
   verified_by { /conf/metrological-tests/creep }
 }
 
 requirement /req/metrological/mpe {
   name "Maximum permissible errors"
-  statement "The error of indication shall not exceed the MPE."
+  statement { The error of indication shall not exceed the MPE. }
   limit {
     expression "ocl{abs(e_l) <= mpe}"
     uses { e_l mpe }
@@ -51,20 +51,20 @@ subject LoadCell {
         target error-hold
         level symbolic C6
         conditions ocl{self.temperature >= rated.t_min and self.temperature <= rated.t_max}
-        statement "Holds accuracy class C6 across the rated range −10…+40 °C."
+        statement { Holds accuracy class C6 across the rated range −10…+40 °C. }
         verified_by { /req/metrological/mpe /conf/metrological-tests/mpe-test }
         ref derives-from "urn:oiml:pub:r:60-1:2021#clause-5.1"
       }
       creep-limit {
         target creep
         level { value 0.7 unit v }
-        statement "Creep stays within 0.7 v over the 30-minute test."
+        statement { Creep stays within 0.7 v over the 30-minute test. }
       }
       temp-envelope {
         target creep
         level range { min -10 max 40 unit degC }
         conditions "over the rated temperature range"
-        statement "The rated envelope spans −10…+40 °C."
+        statement { The rated envelope spans −10…+40 °C. }
       }
       "a statement-only claim"
     }
@@ -184,7 +184,7 @@ describe('is.promises — rich promise entries (TODO.roadmap/08)', () => {
 subject Base {
   is {
     promises {
-      base-claim { target creep level symbolic C statement "base" }
+      base-claim { target creep level symbolic C statement { base } }
     }
   }
 }
@@ -192,7 +192,7 @@ subject Child {
   extends Base
   is {
     promises {
-      child-claim { target creep statement "child" }
+      child-claim { target creep statement { child } }
     }
   }
 }
@@ -242,16 +242,16 @@ subject LoadCell {
       accuracy-class {
         target error-hold
         level symbolic C6
-        statement "Holds accuracy class C6."
+        statement { Holds accuracy class C6. }
         verified_by { /req/metrological/mpe }
       }
       derived-verification {
         target error-hold
-        statement "Derivable via the MPE requirement binding e_l."
+        statement { Derivable via the MPE requirement binding e_l. }
       }
       behavior-claim {
         target creep
-        statement "Derivable via the behavior's verified_by."
+        statement { Derivable via the behavior's verified_by. }
       }
     }
   }
@@ -285,7 +285,7 @@ describe('promise lint rules (C42/C43/C44 + C2 verified_by)', () => {
     const dir = makeTmpPackage(`subject S {
   is {
     promises {
-      bogus { target no-such-thing statement "claims the impossible" }
+      bogus { target no-such-thing statement { claims the impossible } }
     }
   }
   has { characteristics { creep c_c = ocl{self.a} } }
@@ -310,9 +310,9 @@ symbol v { name "Speed" }
 subject S {
   is {
     promises {
-      mode-row { target mode_of_use statement "Holds its declared mode of use." }
-      speed-interval { target v statement "The measuring speed interval." }
-      bogus { target no-such-thing statement "claims the impossible" }
+      mode-row { target mode_of_use statement { Holds its declared mode of use. } }
+      speed-interval { target v statement { The measuring speed interval. } }
+      bogus { target no-such-thing statement { claims the impossible } }
     }
   }
 }
@@ -336,9 +336,9 @@ subject S {
   is {
     design_parameters { e_max : mass by design }
     promises {
-      bare-attr { target t_min level { value -10 unit degC } statement "t_min = −10 °C" }
-      bare-design { target e_max level { value 500 unit kg } statement "E_max = 500 kg" }
-      bare-exhibited { target d_min level { value 0 unit kg } statement "d_min = 0 kg" }
+      bare-attr { target t_min level { value -10 unit degC } statement { t_min = −10 °C } }
+      bare-design { target e_max level { value 500 unit kg } statement { E_max = 500 kg } }
+      bare-exhibited { target d_min level { value 0 unit kg } statement { d_min = 0 kg } }
     }
   }
   has { attributes { d_min : mass test_dependent } }
@@ -376,17 +376,17 @@ subject S {
 }
 requirement /req/metrological/temperature {
   name "Temperature limits"
-  statement "Holds across the rated range."
+  statement { Holds across the rated range. }
 }
 subject S {
   is {
     design_parameters { e_max : mass by design }
     promises {
-      conditioned { target t_min level { value -10 unit degC } conditions "ocl{self.climate == 'cold'}" statement "t_min = −10 °C for the cold-climate variant." }
-      symbolic-level { target e_max level symbolic heavy statement "Rated for the heavy-duty tier." }
-      envelope { target t_min level range { min -10 max 40 unit degC } statement "Holds across −10…+40 °C." }
-      verified { target t_min level { value -10 unit degC } verified_by { /req/metrological/temperature } statement "t_min = −10 °C, verified." }
-      citation { target e_max statement "Maximum capacity per model — reads the exhibited value." }
+      conditioned { target t_min level { value -10 unit degC } conditions "ocl{self.climate == 'cold'}" statement { t_min = −10 °C for the cold-climate variant. } }
+      symbolic-level { target e_max level symbolic heavy statement { Rated for the heavy-duty tier. } }
+      envelope { target t_min level range { min -10 max 40 unit degC } statement { Holds across −10…+40 °C. } }
+      verified { target t_min level { value -10 unit degC } verified_by { /req/metrological/temperature } statement { t_min = −10 °C, verified. } }
+      citation { target e_max statement { Maximum capacity per model — reads the exhibited value. } }
     }
   }
   has { attributes { d_min : mass test_dependent } }
@@ -424,7 +424,7 @@ behavior creep {
 }
 requirement /req/metrological/hold {
   name "Error hold"
-  statement "The error holds."
+  statement { The error holds. }
   limit {
     expression "ocl{abs(e_l) <= 1}"
     uses { e_l }
@@ -436,8 +436,8 @@ conformance_test /conf/metrological-tests/creep {
 subject S {
   is {
     promises {
-      behavior-wins { target creep level { value 0.7 unit v } statement "Creep stays within 0.7 v." }
-      characteristic-wins { target error-hold level { value 1 unit v } statement "The error characteristic holds." }
+      behavior-wins { target creep level { value 0.7 unit v } statement { Creep stays within 0.7 v. } }
+      characteristic-wins { target error-hold level { value 1 unit v } statement { The error characteristic holds. } }
     }
   }
   has {
@@ -461,7 +461,7 @@ subject S {
 subject S {
   is {
     promises {
-      lonely { target creep statement "nothing verifies this" }
+      lonely { target creep statement { nothing verifies this } }
       "statement-only claim"
     }
   }
@@ -504,7 +504,7 @@ subject S {
 subject S {
   is {
     promises {
-      bad-ref { target creep verified_by { /req/ghost } statement "dangling" }
+      bad-ref { target creep verified_by { /req/ghost } statement { dangling } }
     }
   }
 }
@@ -538,7 +538,7 @@ const CERT_PACKAGE = `
 attribute_definition e_max {
   symbol "E_max"
   name "Maximum capacity"
-  definition "The maximum load the cell measures."
+  definition { The maximum load the cell measures. }
   value_type quantity
 }
 subject LoadCell {
@@ -546,7 +546,7 @@ subject LoadCell {
     promises {
       e_max_values {
         target e_max
-        statement "Maximum capacity E_max per model."
+        statement { Maximum capacity E_max per model. }
         verified_by { /req/metrological/mpe }
         certificate {
           attribute e_max
@@ -557,7 +557,7 @@ subject LoadCell {
       }
       accuracy_note {
         target creep
-        statement "A statement-only print row."
+        statement { A statement-only print row. }
         certificate {
           type statement
           label "Accuracy envelope"
@@ -639,7 +639,7 @@ subject LoadCell {
 attribute_definition e_max {
   symbol "E_max"
   name "Maximum capacity"
-  definition "The maximum load the cell measures."
+  definition { The maximum load the cell measures. }
   value_type quantity
 }
 subject LoadCell {
@@ -678,7 +678,7 @@ describe('behavior realized_by — the realization link made explicit (C186)', (
   const SRC = (realized: string) => `behavior measure {
   kind measurement
   stimulus force
-  response "transduced"
+  response { transduced }
   ${realized}
 }
 subject LoadCell {

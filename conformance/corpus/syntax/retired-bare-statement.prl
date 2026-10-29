@@ -1,0 +1,4 @@
+requirement /req/retired-bare {
+  name "The bare prose carrier refuses"
+  statement "The requirement text authored as a bare string."
+}

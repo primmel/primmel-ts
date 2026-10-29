@@ -200,7 +200,7 @@ describe('C89 spelling-code-wellformed', () => {
     }
     requirement /req/a {
       name "A"
-      statement "A shall hold."
+      statement { A shall hold. }
     }
   `;
   const errs = (src: string) =>

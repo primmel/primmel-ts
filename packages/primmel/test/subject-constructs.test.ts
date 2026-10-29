@@ -9,7 +9,7 @@ import { load, dump } from '../src/ser-des/index';
 const PACKAGE = `
 instrument LoadCell {
   extends MeasuringInstrumentModel
-  definition "Measuring transducer that produces an output in response to an applied load."
+  definition { Measuring transducer that produces an output in response to an applied load. }
   dimension technology {
     label "Technology"
     scope group
@@ -39,7 +39,7 @@ instrument LoadCell {
     parameters { rated_output input_impedance }
   }
   model_group {
-    definition "Set of Models having identical metrological characteristics."
+    definition { Set of Models having identical metrological characteristics. }
     identical_characteristics { metrological_class n_lc y z temperature_rating }
     identical_attributes { accuracy_class n_lc y z t_min t_max }
   }
@@ -48,7 +48,7 @@ instrument LoadCell {
 attribute_definition e_max {
   symbol "E_max"
   name "Maximum capacity"
-  definition "Largest value of a quantity which may be applied to a load cell."
+  definition { Largest value of a quantity which may be applied to a load cell. }
   ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.5.5"
   quantity_kind mass
   unit kg
@@ -62,7 +62,7 @@ attribute_definition e_max {
 attribute_definition humidity_symbol {
   symbol "humidity_symbol"
   name "Humidity symbol"
-  definition "Symbol indicating the humidity conditions under which tested."
+  definition { Symbol indicating the humidity conditions under which tested. }
   ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.4.1"
   value_type string
   origin declared
@@ -75,7 +75,7 @@ attribute_definition humidity_symbol {
 attribute_definition y {
   symbol "Y"
   name "Relative v_min"
-  definition "Ratio E_max/v_min."
+  definition { Ratio E_max/v_min. }
   quantity_kind dimensionless
   origin design-fixed
   scope group
@@ -102,7 +102,7 @@ capability electronic {
 behavior creep {
   kind temporal
   stimulus force
-  response "Change in load cell output with time under constant load."
+  response { Change in load cell output with time under constant load. }
   ref derives-from "urn:oiml:pub:r:60-1:2021#clause-3.7.1"
   verified_by { /conf/metrological-tests/creep }
 }
@@ -112,7 +112,8 @@ behavior creep {
 describe('W1b subject-chain constructs', () => {
   it('refuses the retired subject variant facet, naming the dimension doctrine', () => {
     assert.throws(
-      () => load('instrument X { variant digital { definition "Digital." } }'),
+      () =>
+        load('instrument X { variant digital { definition { Digital. } } }'),
       /the variant facet is retired \(TODO\.lang-gaps\/06\)/,
     );
   });

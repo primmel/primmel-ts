@@ -14,7 +14,7 @@ import tokenize, {
   stripWrapping,
   unwrapBlock,
 } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, readSource, stripColon } from './field-parser';
 import IdentitySlot from '../../types/IdentitySlot';
 import { refTargetToSourceRef, dumpSourceRefAsRef } from './ref';
@@ -78,17 +78,13 @@ export const parseIdentitySlot: Parser = (id: string, data: string) => {
       } else if (keyword === 'optional') {
         slot.optional = value() === 'true';
       } else if (keyword === 'definition') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-        // `definition { … }` canonical; the dump emits the block. The body is
-
-        // trimmed so the fixpoint holds.
-
-        const dv = value();
-
-        slot.definition = dv.startsWith('{')
-          ? unwrapBlock(dv).trim()
-          : stripWrapping(dv);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        slot.definition = proseBlock(
+          value(),
+          'identity_slot',
+          id,
+          'definition',
+        );
       } else if (keyword === 'metamodel_class') {
         slot.metamodelClass = stripWrapping(value());
       } else if (keyword === 'source') {

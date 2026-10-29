@@ -49,7 +49,7 @@ import {
   tokenizePackage,
   unwrapBlock,
 } from '../tokenize';
-import { forEachEntry } from '../parse-block';
+import { forEachEntry, proseBlock } from '../parse-block';
 import { dumpBareSafe, readSource } from './field-parser';
 import DeclarationKind, {
   DeclarationContentSlot,
@@ -104,17 +104,13 @@ export const parseDeclarationKind: Parser = (id: string, data: string) => {
       } else if (keyword === 'procedure') {
         kind.procedure = stripWrapping(value());
       } else if (keyword === 'definition') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy,
-
-        // `definition { … }` canonical; the dump emits the block. The body is
-
-        // trimmed so the fixpoint holds.
-
-        const dv = value();
-
-        kind.definition = dv.startsWith('{')
-          ? unwrapBlock(dv).trim()
-          : stripWrapping(dv);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        kind.definition = proseBlock(
+          value(),
+          'declaration_kind',
+          id,
+          'definition',
+        );
       } else if (keyword === 'scope_model') {
         kind.scope_model = stripWrapping(value());
       } else if (keyword === 'scheme_a_obligation') {
@@ -221,11 +217,13 @@ export const parseDeclarationGate: Parser = (id: string, data: string) => {
       if (keyword === 'clause') {
         gate.clause = stripWrapping(value());
       } else if (keyword === 'statement') {
-        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
-        const v = value();
-        gate.statement = v.startsWith('{')
-          ? unwrapBlock(v).trim()
-          : stripWrapping(v);
+        // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+        gate.statement = proseBlock(
+          value(),
+          'declaration_gate',
+          id,
+          'statement',
+        );
       } else if (keyword === 'holder') {
         gate.holder = stripWrapping(value());
       } else if (keyword === 'declaration') {

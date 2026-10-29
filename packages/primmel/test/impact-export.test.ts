@@ -69,7 +69,7 @@ calculation mpe_absolute {
 }
 requirement /req/metrological/mpe {
   name "Maximum permissible error"
-  statement "The error of indication shall not exceed the mpe."
+  statement { The error of indication shall not exceed the mpe. }
   binds_to { model.parameters.e_max }
   dependencies { /req/general/zero }
   applicability { accuracy_class: [A, B] }
@@ -83,7 +83,7 @@ requirement /req/metrological/mpe {
 }
 requirement /req/general/zero {
   name "Zero"
-  statement "s"
+  statement { s }
 }
 conformance_test /conf/mpe-test {
   name "MPE test"

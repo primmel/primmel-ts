@@ -83,11 +83,11 @@ before(() => {
     join(recDir, 'terminology.prl'),
     `term load-cell {
   label "load cell"
-  definition "measuring transducer for load"
+  definition { measuring transducer for load }
 }
 term kilogram {
   label "kilogram"
-  definition "overlay definition"
+  definition { overlay definition }
   overlay true
 }`,
   );
@@ -116,7 +116,7 @@ term kilogram {
     join(coreDir, 'vocabulary.prl'),
     `term kilogram {
   label "kilogram"
-  definition "base definition"
+  definition { base definition }
 }`,
   );
 });

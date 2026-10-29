@@ -24,7 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
-import { skipUnknownValue } from '../parse-block';
+import { skipUnknownValue, proseBlock } from '../parse-block';
 import { canonicalizeExpression } from '../../expressions';
 import {
   escapeString,
@@ -366,11 +366,8 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     if (cmd === 'name') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'statement') {
-      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the dual form - bare legacy, `statement` block canonical; the dump emits the block. The body is trimmed so the fixpoint holds.
-      const v = t[i++];
-      result.statement = v.startsWith('{')
-        ? unwrapBlock(v).trim()
-        : stripWrapping(v);
+      // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
+      result.statement = proseBlock(t[i++], 'requirement', id, 'statement');
     } else if (cmd === 'guidance') {
       result.guidance = stripWrapping(t[i++]);
     } else if (cmd === 'binds_to') {

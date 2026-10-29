@@ -112,7 +112,7 @@ subject LC500 {
       mpe_within {
         target error_hold
         level symbolic C6
-        statement "Holds accuracy class C6 across the rated range."
+        statement { Holds accuracy class C6 across the rated range. }
         verified_by { oiml-r60#/req/metrological/mpe }
       }
     }
@@ -125,7 +125,7 @@ subject LC500 {
 
 requirement oiml-r60#/req/metrological/mpe {
   name "alias: R 60 maximum permissible errors"
-  statement "Local alias of the Recommendation's MPE requirement."
+  statement { Local alias of the Recommendation's MPE requirement. }
   verification { method examination description "Verified in the Recommendation's own evaluation program." }
 }
 
@@ -174,7 +174,7 @@ subject TwinUnderCertification {
       faithful_indication {
         target indication_delta
         level symbolic C6
-        statement "The served indication stays within the certification band of the reference reading at every probe point."
+        statement { The served indication stays within the certification band of the reference reading at every probe point. }
         verified_by { /req/twin-fidelity/indication-band }
       }
     }
@@ -187,7 +187,7 @@ subject TwinUnderCertification {
 
 requirement /req/twin-fidelity/indication-band {
   name "Twin-fidelity indication band"
-  statement "The twin's served indication stays within the certification band of the reference instrument's reading at every probe point."
+  statement { The twin's served indication stays within the certification band of the reference instrument's reading at every probe point. }
   verification { method examination description "Probe evaluation over the served/reference channel pair." }
 }
 
@@ -486,7 +486,7 @@ subject S {
       p1 {
         target c1
         level symbolic C6
-        statement "x"
+        statement { x }
         verified_by { /req/r1 }
       }
     }
@@ -499,7 +499,7 @@ subject S {
 
 requirement /req/r1 {
   name "r1"
-  statement "x"
+  statement { x }
   verification { method examination description "x" }
 }
 

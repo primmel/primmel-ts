@@ -42,7 +42,7 @@ describe('limit quantity: parse + round-trip', () => {
     const m = load(`
       requirement /req/mpe {
         name "MPE"
-        statement "s"
+        statement { s }
         limit {
           expression "ocl{self.e <= self.mpe}"
           uses { e mpe }
@@ -57,7 +57,7 @@ describe('limit quantity: parse + round-trip', () => {
   it('round-trips the quantity block to a fixed point (between notes and accepts)', () => {
     const src = `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   limit {
     expression "ocl{self.e <= self.mpe}"
     uses { e mpe }
@@ -76,7 +76,7 @@ describe('limit quantity: parse + round-trip', () => {
   it('emits a compound unit quoted (counts/v), byte-clean both directions', () => {
     const src = `requirement /req/sensitivity {
   name "Sensitivity"
-  statement "s"
+  statement { s }
   limit {
     expression "ocl{self.f > 0}"
     uses { f }
@@ -97,7 +97,7 @@ describe('limit quantity: parse + round-trip', () => {
     const m = load(`
       requirement /req/x {
         name "X"
-        statement "s"
+        statement { s }
         limit { expression "ocl{true}" }
       }
     `);
@@ -205,7 +205,7 @@ describe('C114 limit-quantity-coherence', () => {
         VERDICTS +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   limit {
     expression "ocl{...}"
     quantity { kind mass unit kg }
@@ -223,7 +223,7 @@ describe('C114 limit-quantity-coherence', () => {
         VERDICTS +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   limit {
     expression "ocl{...}"
     quantity { kind count unit kg }
@@ -246,7 +246,7 @@ describe('C114 limit-quantity-coherence', () => {
         VERDICTS +
         `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   limit {
     expression "ocl{...}"
     quantity { kind mass unit g }
@@ -269,7 +269,7 @@ describe('C114 limit-quantity-coherence', () => {
           VERDICTS +
           `requirement /req/mpe {
   name "MPE"
-  statement "s"
+  statement { s }
   limit {
     expression "ocl{...}"
     ${limit}

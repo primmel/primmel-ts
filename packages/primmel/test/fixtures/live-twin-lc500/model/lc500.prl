@@ -22,7 +22,7 @@ quantity_register si {
 attribute_definition d_min {
   symbol "d_min"
   name "Minimum dead load"
-  definition "Minimum dead load of the load cell (R 60-1, 3.3.2), read from the twin's test context."
+  definition { Minimum dead load of the load cell (R 60-1, 3.3.2), read from the twin's test context. }
   quantity_kind mass
   unit kg
   value_type QuantityValue
@@ -34,7 +34,7 @@ attribute_definition d_min {
 attribute_definition indication {
   symbol "I"
   name "Indication"
-  definition "The indication of the load cell — the served live reading (R 60-1, 3.4.1)."
+  definition { The indication of the load cell — the served live reading (R 60-1, 3.4.1). }
   quantity_kind mass
   unit kg
   value_type QuantityValue
@@ -57,7 +57,7 @@ state_machine lc_operational {
 behavior self_test {
   kind procedural
   stimulus invoke
-  response "The instrument runs its self-diagnostic and reports a diagnostic report (R 60-1, 6.3.4 software-controlled instruments)."
+  response { The instrument runs its self-diagnostic and reports a diagnostic report (R 60-1, 6.3.4 software-controlled instruments). }
 }
 
 subject LoadCellModel {

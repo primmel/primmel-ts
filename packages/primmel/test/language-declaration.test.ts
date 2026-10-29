@@ -13,7 +13,7 @@ const make = (manifest: string, body: string): string => {
   return dir;
 };
 
-const REQ = 'requirement /req/r {\n name "R"\n statement "S"\n}\n';
+const REQ = 'requirement /req/r {\n name "R"\n statement { S }\n}\n';
 
 describe('the declared language generation', () => {
   it('parses strict: an unknown keyword errors when the language is declared', () => {

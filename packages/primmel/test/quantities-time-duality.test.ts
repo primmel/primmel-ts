@@ -621,7 +621,7 @@ describe('primmel check — C36 map-type', () => {
       'classes.prl': `class Widget {
   store widgets
   params : map<string> {
-    definition "broken map type"
+    definition { broken map type }
   }
 }
 `,
@@ -649,10 +649,10 @@ describe('primmel check — C36 map-type', () => {
       'classes.prl': `class Widget {
   store widgets
   params : map<string,QuantityValue> {
-    definition "parameter map"
+    definition { parameter map }
   }
   name : string {
-    definition "legacy primitive type"
+    definition { legacy primitive type }
   }
 }
 attribute_definition grid {

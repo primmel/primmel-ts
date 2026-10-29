@@ -10,10 +10,10 @@ const SRC = `
 class MeasuringInstrumentModel#data {
   store { measuringInstrumentModels }
   indexes { family_id group_id manufacturer_id standard_id }
-  id: string [1..1] { modality SHALL definition "Record id" }
+  id: string [1..1] { modality SHALL definition { Record id } }
   family_id: reference(MeasuringInstrumentModelFamily#data) [1..1] {
     modality SHALL
-    definition "Owning family"
+    definition { Owning family }
     on_delete restrict
   }
   model: string [0..1] { modality MAY deprecated true }
@@ -27,7 +27,7 @@ requirement_class /req/metrological {
 
 requirement /req/metrological/mpe {
   name "Maximum permissible error"
-  statement "Under rated operating conditions the MPE shall not exceed the stated values."
+  statement { Under rated operating conditions the MPE shall not exceed the stated values. }
   binds_to { model.parameters.mpe model.classification.accuracy_class }
   limit {
     expression "ocl{abs(error) <= lookupMPE(load, accuracy_class, p_lc)}"
@@ -79,7 +79,7 @@ table mpe_tiers {
 
 term measuring-instrument {
   label "measuring instrument"
-  definition "device used for making measurements"
+  definition { device used for making measurements }
   vocab_ref { register viml-2022 clause "0.10" }
   vocab_term "measuring instrument"
 }

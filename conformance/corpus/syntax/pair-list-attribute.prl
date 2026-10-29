@@ -5,7 +5,7 @@
 attribute_definition interfering_components {
   symbol "I_c"
   name "Interfering components"
-  definition "The maximum concentration of each interfering component."
+  definition { The maximum concentration of each interfering component. }
   value_type pair-list
   pair_list {
     key component
