@@ -92,13 +92,17 @@ describe('capability has_parameters inline datum (TODO.lang-gaps/04)', () => {
     );
     assert.equal(m.datums.length, 1);
     assert.equal(m.datums[0]!.id, 'stability');
+    // The head type captures (wave 04 PR 3): the authored `: ratio`
+    // rides into the datum's type axis.
+    assert.equal(m.datums[0]!.type, 'ratio');
   });
 
   it('normalizes the inline declaration to a top-level datum (fixpoint)', () => {
     const m1 = load(INLINE_DATUM);
     const dumped = dump(m1);
-    // The dump emits the datum at top level and the list as bare ids.
-    assert.ok(dumped.includes('datum stability {'));
+    // The dump emits the datum at top level (its authored head type
+    // re-emitted — dumpDatum's ` : <type>`) and the list as bare ids.
+    assert.ok(dumped.includes('datum stability : ratio {'));
     assert.ok(dumped.includes('has_parameters { efficiency stability }'));
     const m2 = load(dumped);
     assert.deepEqual(m2.datums, m1.datums);

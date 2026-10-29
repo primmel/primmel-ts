@@ -26,7 +26,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { load } from '../src/ser-des/index';
+import { load, dump } from '../src/ser-des/index';
 import { checkLmlAligned, checkPackage, type CheckIssue } from '../src/check';
 import { checkRule } from '../src/check-rules';
 import { formFoldChecks } from '../src/ser-des/config/check-fold';
@@ -534,5 +534,89 @@ describe('the LML-aligned rules through checkPackage', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// The datum unification's table-columns rung (wave 04 PR 3,
+// TODO.lang-gaps/04, spec [[datum-unification]] via primmel/spec#87).
+// DOCUMENT-ONLY for the column: the doctrine's carrier enumeration has
+// FOUR carriers (attribute_definition / identity_slot /
+// has_parameters / form field) and the table column is not one —
+// "a table column types the column and states the cells — both
+// reference the substrate, never re-declare it". The typed column
+// entry is the substrate's PROJECTION: {name, type, unit} IS the
+// datum's {id, type, unit} value core, with no plane extras of its
+// own, so there is no second spelling to cohere (no C191 surface) and
+// no bare-id member to resolve (no C190 surface) — no grammar change,
+// no C-row, no checker2 mirror. The rung exposed the substrate's head
+// type dropping silently at parse; the capture fix above makes the
+// projection's type axis real, and this block pins it: the projection,
+// the clean column↔datum coexistence (no invented leg), the fixpoint.
+// ─────────────────────────────────────────────────────────────────────
+
+describe("the datum unification's table-columns rung (wave 04 PR 3)", () => {
+  const SRC = `datum load_min : number {
+  unit si:metre
+  label "Minimum load"
+}
+table tiers {
+  title "Tiers"
+  columns {
+    accuracy_class: string
+    load_min: number "m"
+  }
+  data {
+    "A" "0.5"
+  }
+}
+`;
+
+  function pkg(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-datum-col-'));
+    writeFileSync(
+      join(dir, 'package.primmel'),
+      'package { id p version "1" editions { 1 } baseUrn "urn:p:1" description "d" }',
+    );
+    writeFileSync(join(dir, 'model.prl'), SRC);
+    return dir;
+  }
+
+  it('the typed column entry is the datum value core (the projection)', () => {
+    const m = load(SRC);
+    const d = m.datums.find(x => x.id === 'load_min')!;
+    const c = m.tables[0]!.columnDefs!.find(x => x.name === 'load_min')!;
+    assert.equal(c.name, d.id);
+    // The type axis is real on BOTH spellings: the datum's authored
+    // head type captures (the PR 3 capture fix), the column's type
+    // token is the same value-type vocabulary.
+    assert.equal(d.type, 'number');
+    assert.equal(c.type, d.type);
+    // The unit axis is present on both spellings (the column's is the
+    // display string, the datum's the registry reference — C167).
+    assert.ok(c.unit);
+    assert.ok(d.unit);
+  });
+
+  it('the column↔datum coexistence checks clean (no invented leg)', () => {
+    const dir = pkg();
+    try {
+      assert.deepEqual(checkPackage(dir), []);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('the combined model round-trips (authored spelling emitted)', () => {
+    const m1 = load(SRC);
+    const dumped = dump(m1);
+    // The datum dump re-emits the authored head type; the columns block
+    // re-emits the authored name/type/unit spellings.
+    assert.ok(dumped.includes('datum load_min : number {'));
+    assert.ok(dumped.includes('load_min: number "m"'));
+    const m2 = load(dumped);
+    assert.deepEqual(m2.datums, m1.datums);
+    assert.deepEqual(m2.tables, m1.tables);
+    assert.equal(dump(m2), dumped);
   });
 });

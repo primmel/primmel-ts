@@ -223,11 +223,18 @@ export const dumpNamespace: Dumper<NamespaceDecl> = function (d) {
 
 export const parseDatum: Parser = function (id, raw) {
   // The datum's type capture rides the payload head (`: <type> { ... }`
-  // — the parg captures it between the ident and the block).
-  const data = raw.replace(/^\s*:\s*\S+\s*/, '');
+  // — the parg captures it between the ident and the block). The head
+  // token folds into the datum's `type` axis — the capture the
+  // payload-head spelling always promised (wave 04 PR 3: the datum
+  // unification's table-columns rung exposed the silent drop; the
+  // authored type survives the round trip through dumpDatum's
+  // ` : <type>` emission). The head is the canonical spelling (the
+  // spec: "the type rides the head").
+  const head = /^\s*:\s*(\S+)\s*/.exec(raw);
+  const data = head ? raw.slice(head[0].length) : raw;
   const out: Datum = {
     id,
-    type: '',
+    type: head?.[1] ?? '',
     unit: '',
     quantityKind: '',
     origin: 'declared',
