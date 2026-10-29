@@ -191,11 +191,15 @@ function toDeclarations(
       let afterIdent =
         headerEnd(id) || headerEnd(fmt) || headerEnd(kw) || anchor;
       // The datum's optional `: <type>` pair sits between the id and
-      // the block — skip it so the payload is the block (the token
-      // front end folds the same pair into the payload head).
+      // the block — the token front end folds the pair into the payload
+      // head (parse.ts's optionalTypedId) and the datum parser captures
+      // the type from there (wave 04 PR 3: the head-type capture), so
+      // the shape front end folds the same pair the same way.
+      let typeFold = '';
       if (kw.value === 'datum') {
-        const typed = /^(\s*:\s*\S+\s*)\{/.exec(source.slice(afterIdent));
+        const typed = /^(\s*:\s*(\S+)\s*)\{/.exec(source.slice(afterIdent));
         if (typed) {
+          typeFold = `: ${typed[2]} `;
           afterIdent += typed[1].length;
         }
       }
@@ -204,7 +208,7 @@ function toDeclarations(
       out.push({
         keyword: kw.value,
         id: foldedId,
-        payload: payloadBlock(source, afterIdent),
+        payload: typeFold + payloadBlock(source, afterIdent),
         start: { line: -1, col: -1, offset: kw.offset },
       });
     } else if ('kwline' in n || 'entry' in n) {
