@@ -48,7 +48,7 @@ const cases = JSON.parse(
 ) as { cases: SuiteCase[] };
 const register = JSON.parse(
   readFileSync(join(SUITE_DIR, 'checker2-rules.json'), 'utf8'),
-) as { implemented: string[] };
+) as { implemented: string[]; outOfSurface?: Record<string, string> };
 const implemented = new Set(register.implemented);
 
 // Register drift: the implementation's rule ids must equal the
@@ -65,6 +65,26 @@ for (const r of emitted) {
 for (const r of implemented) {
   if (!emitted.has(r)) {
     die(`register drift: checker2-rules.json lists ${r} but rules.ts does not emit it`);
+  }
+}
+
+// Register completeness: every kernel registry rule lands in exactly
+// one place — checker2's implemented set or the outOfSurface map. An
+// id in NEITHER is the omission the emission drift check cannot see
+// (the deeper audit found C189 in that hole).
+const registrySrc = readFileSync(
+  join(REPO_ROOT, 'packages', 'primmel', 'src', 'check-rules.ts'),
+  'utf8',
+);
+const registryIds = [
+  ...registrySrc.matchAll(/\bR\(\s*\n?\s*'(C\d+)'/g),
+].map(m => m[1]!);
+const outOfSurface = new Set(Object.keys(register.outOfSurface ?? {}));
+for (const r of registryIds) {
+  if (!implemented.has(r) && !outOfSurface.has(r)) {
+    die(
+      `register completeness: kernel registry rule ${r} is in neither checker2-rules.json implemented nor outOfSurface`,
+    );
   }
 }
 

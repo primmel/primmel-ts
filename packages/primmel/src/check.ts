@@ -1182,6 +1182,11 @@ export function checkPackage(
     [
       ...(standard.symbols ?? []).map(s => s.id),
       ...(standard.symbols ?? []).map(s => s.id.split('/').pop() ?? ''),
+      // the measurement plane (the spec's canonical test-quantity
+      // keyword, MN 113 §2.3; `variable` is the legacy alias) — an
+      // `observable:` arg binds these like the kind-observable symbols
+      ...(standard.variables ?? []).map(v => v.id),
+      ...(standard.variables ?? []).map(v => v.id.split('/').pop() ?? ''),
       ...(standard.datums ?? []).map(d => d.id),
       ...(standard.verdicts ?? []).map(v => v.id),
       // the lookup tables: a dotted helper call's OBJECT is declared here —
@@ -1402,6 +1407,9 @@ export function checkPackage(
     'verdict',
     'attribute',
     'process',
+    // the observable prefix resolves against the symbols registry
+    // (kind observable) — C53's limit.uses leg resolves the same way
+    'observable',
   ]);
   // the dispatch-context roots: the chain the expression reads the
   // subject through — allowed as PATH roots, never as bare scalars
@@ -1544,26 +1552,28 @@ export function checkPackage(
             }
             continue;
           }
-          if (kind !== 'observable') {
-            if (!DECLARATION_KINDS.has(kind)) {
-              err(
-                'C171',
-                `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — "${kind}" is not a declaration kind (symbol table datum verdict attribute observable) (expression-identifiers-resolve)`,
-              );
-              continue;
-            }
-            const idRoot = id.split('.')[0];
-            const idTail = id.split('.').pop() ?? id;
-            if (
-              !globalExprNames.has(id) &&
-              !globalExprNames.has(idRoot) &&
-              !globalExprNames.has(idTail)
-            ) {
-              err(
-                'C171',
-                `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no declared ${kind} names — air inside the formula (expression-identifiers-resolve)`,
-              );
-            }
+          // `observable:` resolves like every declaration kind — the
+          // observables live in the symbols registry (kind observable),
+          // so the id lands in globalExprNames like any symbol (C53's
+          // leg resolves the same prefix in limit.uses).
+          if (!DECLARATION_KINDS.has(kind)) {
+            err(
+              'C171',
+              `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}" — "${kind}" is not a declaration kind (symbol table datum verdict attribute observable) (expression-identifiers-resolve)`,
+            );
+            continue;
+          }
+          const idRoot = id.split('.')[0];
+          const idTail = id.split('.').pop() ?? id;
+          if (
+            !globalExprNames.has(id) &&
+            !globalExprNames.has(idRoot) &&
+            !globalExprNames.has(idTail)
+          ) {
+            err(
+              'C171',
+              `${ownerKind} ${ownerId}: argument "${a.name}" binds to "${a.source}", which no declared ${kind} names — air inside the formula (expression-identifiers-resolve)`,
+            );
           }
           continue;
         }
@@ -2063,7 +2073,7 @@ export function checkPackage(
     for (const a of cArgs) {
       if (a.source.includes(':')) {
         const segs = a.source.split(':');
-        if (segs.length === 2 && segs[0] !== 'observable') {
+        if (segs.length === 2) {
           const [kind, id] = segs;
           if (!DECLARATION_KINDS.has(kind)) {
             err(

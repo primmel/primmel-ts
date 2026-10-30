@@ -9,11 +9,21 @@ blocks the language surface — they are backlog the owner schedules.
 
 ## Defect leads (verify, then fix or close)
 
-- **C171's observable guard** (CRITIQUE-2 #4, partial): `observable:`
-  prefixed args skip C171's declaration check — the `kind !==
-  'observable'` guard at check.ts:1547 is the named hole. The symbols
-  registry carries observables (check.ts:734); the escape should close
-  or be documented as deliberate.
+- **C171's observable guard** (CRITIQUE-2 #4): RESOLVED
+  (2026-10-30, kernel + model-library#154). Verified: an
+  `observable:never-declared` arg escaped C171 at both args walks
+  (the requirement-limit walk and the constraints walk) — the
+  differential probe fired C171 on an undeclared `symbol:` control
+  and stayed silent on the undeclared observable. The fix resolves
+  `observable:` like every declaration kind: the prefix joins
+  DECLARATION_KINDS, the id resolves against the expression registry,
+  and the measurement plane (`standard.variables`, MN 113 §2.3's
+  canonical test-quantity keyword) joins the registry. The corpus
+  sites the escape was hiding: ten r49 measurements (test-quantities),
+  the r49 relative-error Vi/Va re-spells, and the core's five
+  completion collections (oiml-smart-core
+  `specification/symbols.prl`). All gates green: unit 1916, suite
+  281/281, checker2 138, corpus 68/0.
 
 ## Register-less items (the critique series dropped them; now they live here)
 
