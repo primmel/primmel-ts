@@ -133,6 +133,15 @@ export interface QuantityRegister {
   kinds: QuantityKindDef[];
   units: UnitDef[];
   referenceIds: string[];
+  /**
+   * The composition overlay marker: a same-id redeclaration merges
+   * field-wise into the upstream register (first-seen entry order,
+   * scalars override — the OVERLAY_DEEP_MERGE_FIELDS semantics in
+   * ser-des/package.ts). Unmarked, a redeclaration stays
+   * uses-no-redefine. Consumed by composition; never survives into
+   * the merged value.
+   */
+  overlay?: boolean;
 }
 
 /**

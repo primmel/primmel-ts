@@ -185,6 +185,12 @@ const parseQuantityRegister: ConstructDefinition['parse'] = function (
       result.referenceIds = tokenize(stripWrapping(t[i++]))
         .map(stripWrapping)
         .filter(s => s.length > 0);
+    } else if (cmd === 'overlay') {
+      // The composition overlay marker (OVERLAY_DEEP_MERGE_FIELDS):
+      // consumed by the merge, never data — the parse carries it so a
+      // marked redeclaration reaches the field-wise merge instead of
+      // the uses-no-redefine throw.
+      result.overlay = stripWrapping(t[i++]) === 'true';
     } else {
       unwrapBlock(t[i++]);
     }
@@ -238,6 +244,9 @@ function dumpDimensions(dimensions: Record<string, number>): string {
 
 const dumpQuantityRegister = function (reg: QuantityRegister): string {
   let out = 'quantity_register ' + reg.id + ' {\n';
+  if (reg.overlay) {
+    out += '  overlay true\n';
+  }
   for (const k of reg.kinds) {
     let line = '  kind ' + k.id + ' {' + dumpDimensions(k.dimensions);
     if (k.siUnit) {
