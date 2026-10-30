@@ -8,3 +8,5 @@ constraint fees_settled {
   }
   violation_meaning "An unpaid fee stands."
 }
+
+symbol fees { label "fees" kind observable }

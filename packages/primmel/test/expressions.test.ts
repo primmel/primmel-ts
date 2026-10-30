@@ -216,6 +216,31 @@ describe('C171/C172 on the AST', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it('resolves an observable: arg against the symbols registry', () => {
+    // the observables are declared symbols (kind observable) — a
+    // declared one binds, an undeclared one is air (the guard once
+    // skipped the observable branch entirely; TODO.lang-gaps/21)
+    const ok = make(
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { n <- observable:n_axles }\n  expression {\n   n >= 0\n  }\n }\n}\nsymbol n_axles { label "n" kind observable }\n',
+    );
+    assert.deepEqual(ids(ok, 'C171'), []);
+    rmSync(ok, { recursive: true, force: true });
+  });
+
+  it('rejects an observable: arg naming no declared symbol', () => {
+    const dir = make(
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { n <- observable:never_declared }\n  expression {\n   n >= 0\n  }\n }\n}\n',
+    );
+    const msgs = ids(dir, 'C171');
+    assert.ok(
+      msgs.some(
+        m =>
+          m.includes('never_declared') && m.includes('no declared observable'),
+      ),
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it('scopes the class law to the containment', () => {
     const ok = make(
       'requirement_class /req/c {\n name "C"\n limit {\n  expression {\n   mpe_mass or d_floor\n  }\n }\n requirement mpe_mass {\n  name "M"\n  statement { S }\n }\n requirement d_floor {\n  name "D"\n  statement { S }\n }\n}\n',
@@ -374,6 +399,7 @@ describe('the series aggregations (W4)', () => {
   }
  }
 }
+symbol dwell_samples { label "dwell" kind observable }
 `;
     const dir = make(body);
     const msgs = checkPackage(dir)
@@ -385,7 +411,7 @@ describe('the series aggregations (W4)', () => {
 
   it('keeps unknown aggregations as air', () => {
     const dir = make(
-      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { r <- observable:readings }\n  expression {\n   median_of(r) >= 0\n  }\n }\n}\n',
+      'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { r <- observable:readings }\n  expression {\n   median_of(r) >= 0\n  }\n }\n}\nsymbol readings { label "r" kind observable }\n',
     );
     const msgs = checkPackage(dir)
       .filter(i => i.check === 'C171')
@@ -474,7 +500,7 @@ describe('the collection navigation (register 24)', () => {
       return dir;
     };
     const ok = mk(
-      'constraint done {\n stereotype inv\n name "D"\n args {\n  fees <- observable:fees\n }\n check {\n  fees -> forAll(f | f.status = \'MARKED_PAID\')\n }\n violation_meaning "An unpaid fee stands."\n}\n',
+      'constraint done {\n stereotype inv\n name "D"\n args {\n  fees <- observable:fees\n }\n check {\n  fees -> forAll(f | f.status = \'MARKED_PAID\')\n }\n violation_meaning "An unpaid fee stands."\n}\nsymbol fees { label "fees" kind observable }\n',
     );
     const msgs = checkPackage(ok)
       .filter(i => i.check === 'C171')
