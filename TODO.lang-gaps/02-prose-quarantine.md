@@ -45,3 +45,31 @@ anything changes, semantics were smuggled in prose.
 **Enforcement.** Linter: no bare string field outside
 {label, description block, expression, urn}; every ref role resolves
 to a urn; no expression names an undeclared identifier.
+
+**Item 6 census (2026-10-30 — the sprawl, sized).** The five prose
+facet carriers across the corpus: `name` 2,676 · `label` 2,476 ·
+`definition` 2,144 · `title` 431 · `summary` 189. The "ONE label + ONE
+description" option is a pure-spelling wave — `name`→`label` alone
+moves 2,676 sites with zero semantic gain — and stays the owner's
+deferred call, per this file's disposition. The carriers' block forms
+are canonical since phase 2; nothing here is bare.
+
+**The content campaign (2026-10-30 — items 3 and 5 executed, library#151).**
+Item 3's ledger over 575 checks (112 with numerals): 31 declared
+already, **46 newly declared** as typed requirement params (11
+packages; 3 registers born, 8 grown), ~34 incidental prose (clause
+refs, scope statements) — the prose stays everywhere per doctrine, no
+description payload changed. Item 5's ledger: 101 response + 192
+summary blocks — 199 genuine prose stay, **2 flagged for the
+owner — RESOLVED by the model's own reading (2026-10-30):** the
+PD-03 ia_application and PD-04 tl_application 5.1 letter lists are
+already transcribed in order by the model's
+`/req/cs/pd-03/application-contents` statement and the evidence
+blocks, and the document draws ONE completeness obligation (a single
+inspection verification) — splitting the letters into per-item
+requirements would invent verification boundaries the document does
+not draw. The summaries stay, faithful. The suspected register-merge bug (adding a
+quantity_register to oiml-cs breaking d036's C115) does NOT
+reproduce — kind-only and unit-carrying registers both check clean
+(the closure's unit namespace is empty; the lead was a unit used
+before its register existed, which is correct C115).
