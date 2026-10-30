@@ -54,15 +54,20 @@ blocks the language surface — they are backlog the owner schedules.
   portable with the package. The remedy sketched: one typed ledger per
   package, structured keys, the gates as readers; message-glob
   matching dies last. Tooling-scale; owner schedules.
-- **C171's remaining watch legs** (CRITIQUE-2 #4's residue after this
-  round's closure): the dispatch-context roots (`model.*`,
-  `family.*`, `sample.*`) ride as path roots without their leaves
-  resolving. The forms' `bind observable:X` leg CLOSED (2026-10-30):
-  C1 resolves the bind against the same registries the limits' args
-  use — a typo on the form side can no longer agree with a limit-side
-  typo by both being unchecked (the closure surfaced r49's two stale
-  Va/Vi binds, re-spelled to the declared measurements). The core leg
-  — the observable declaration check — is closed (above).
+- **~~C171's remaining watch legs~~** (CRITIQUE-2 #4) — FULLY
+  DISPOSITIONED (2026-10-30, three PRs):
+  the core leg — the observable declaration check — closed (above);
+  the forms' `bind observable:X` leg closed (C1 resolves the bind
+  against the same registries the limits' args use; it surfaced r49's
+  two stale Va/Vi binds, re-spelled to the declared measurements);
+  and the dispatch-context leaf leg closed — the DECLARABLE planes
+  resolve their leaves (the attribute planes
+  `{model,family,group}.{parameters,attributes}.X` join the attribute
+  registry, `*.classification.X` joins the dimensions; corpus 68/0
+  clean on landing). The run-context roots (`sample.*`, `instrument.*`,
+  `specimen.*`) stay open BY DOCTRINE — runtime data, no registry to
+  join ("a body over pure dispatch-context paths binds nothing and is
+  legal"). CRITIQUE-2 #4 is closed end to end.
 - **CLAUDE-2 residue**: one list shape (applicability vs enum_values vs
   values); derived-plane annotation; `--explain` + the truth table;
   spelling normalization as a layer (spelling.ts is ISO 24229 tagging,
