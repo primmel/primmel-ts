@@ -22,18 +22,45 @@ blocks the language surface — they are backlog the owner schedules.
   sites the escape was hiding: ten r49 measurements (test-quantities),
   the r49 relative-error Vi/Va re-spells, and the core's five
   completion collections (oiml-smart-core
-  `specification/symbols.prl`). All gates green: unit 1916, suite
+  `specification/symbols.prl`). All gates green: unit 1922, suite
   281/281, checker2 138, corpus 68/0.
 
 ## Register-less items (the critique series dropped them; now they live here)
 
-- **Condition-set → table migration** (CRITIQUE-3 REVIEW's top register
-  item): `DECLARATION_KINDS` unchanged (symbol|table|datum|verdict|
-  attribute|process, check.ts:1398) — the migration the review rated
-  first was never scheduled.
+- **~~Condition-set → table migration~~** (CRITIQUE-3 REVIEW's top
+  register item): **RESOLVED before it was ever scheduled** — the
+  register entry was stale when written. The typed-table migration
+  landed as C154; the corpus carries zero live `condition_set` blocks
+  (the severity/levels registers of the IEC and R packages are typed
+  tables, the rows bind via `table:<id>.<column>`; every migrated file
+  names the migration in its header). Verified 2026-10-30 by census.
+- **~~The numeric-semantics declaration~~** (CRITIQUE-3 REVIEW's other
+  register-worthy item): **RESOLVED** — spec §12 `[[numeric-semantics]]`
+  declares exact-decimal surface literals (trailing zeros are
+  precision statements, preserved verbatim on the wire — the
+  round-trip gate is the proof), auxiliary numerics canonicalize, and
+  comparisons are binary double (IEEE 754) by doctrine.
 - **Variable ↔ subform type link** (CRITIQUE-3 REVIEW watch item): a
   variable's type and the subform field it feeds share no declared
-  linkage.
+  linkage — `type collection` carries no element type, so C177 goes
+  silent exactly where data is most structured. The remedy sketched:
+  `type collection<Row>` against a declared row shape. Watch — not
+  scheduled.
+- **The four suppression ledgers** (CRITIQUE-2 #5 — never registered
+  until this pass): a package's known debt lives in four places (the
+  package allowlist, coverage.json's sentence allowances, the fidelity
+  gate's inline EXPLAINED map, link-method-refs' KNOWN_ABSENCES), with
+  three suppression semantics, two of them in code — the debt is not
+  portable with the package. The remedy sketched: one typed ledger per
+  package, structured keys, the gates as readers; message-glob
+  matching dies last. Tooling-scale; owner schedules.
+- **C171's remaining watch legs** (CRITIQUE-2 #4's residue after this
+  round's closure): the dispatch-context roots (`model.*`,
+  `family.*`, `sample.*`) ride as path roots without their leaves
+  resolving, and the forms' `bind observable:X` edges do not close the
+  loop against the limits' observable args (a typo on each side agrees
+  with itself). The core leg — the observable declaration check — is
+  closed (above).
 - **CLAUDE-2 residue**: one list shape (applicability vs enum_values vs
   values); derived-plane annotation; `--explain` + the truth table;
   spelling normalization as a layer (spelling.ts is ISO 24229 tagging,
