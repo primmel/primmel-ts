@@ -114,6 +114,37 @@ describe('primmel check (W8)', () => {
         .join('\n')}`,
     );
   });
+
+  it('a form bind observable:<id> resolves like the limits observable args (fixture)', () => {
+    // the CRITIQUE-2 #4 loop's form leg: a declared measurement or
+    // kind-observable symbol binds; an undeclared one is named air —
+    // the form side can no longer agree with a limit-side typo by
+    // both being unchecked
+    const { mkdtempSync, mkdirSync, writeFileSync } = require('fs');
+    const { tmpdir } = require('os');
+    const { join } = require('path');
+    const dir = mkdtempSync(join(tmpdir(), 'primmel-c1-obs-'));
+    writeFileSync(join(dir, 'package.primmel'), 'package { id test }');
+    mkdirSync(join(dir, 'specification'), { recursive: true });
+    mkdirSync(join(dir, 'execution'), { recursive: true });
+    writeFileSync(
+      join(dir, 'specification', 'q.prl'),
+      'measurement sampled_count {\n  type integer\n  definition { the Table 7 minimum }\n}\n',
+    );
+    writeFileSync(
+      join(dir, 'execution', 'f.prl'),
+      'form F {\n  name "F"\n  field n : number { description "count" bind observable:sampled_count }\n  field ghost : number { description "g" bind observable:never_declared }\n}\n',
+    );
+    const c1 = checkPackage(dir).filter(i => i.check === 'C1');
+    assert.ok(
+      c1.some(i => i.message.includes('never_declared')),
+      `the undeclared observable bind is named: ${c1.map(i => i.message).join('\n')}`,
+    );
+    assert.ok(
+      !c1.some(i => i.message.includes('sampled_count')),
+      `the declared bind stays silent: ${c1.map(i => i.message).join('\n')}`,
+    );
+  });
 });
 
 describe('primmel check — process lint rules (C14 guard, C15, C16)', () => {

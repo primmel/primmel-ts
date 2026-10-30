@@ -57,10 +57,12 @@ blocks the language surface — they are backlog the owner schedules.
 - **C171's remaining watch legs** (CRITIQUE-2 #4's residue after this
   round's closure): the dispatch-context roots (`model.*`,
   `family.*`, `sample.*`) ride as path roots without their leaves
-  resolving, and the forms' `bind observable:X` edges do not close the
-  loop against the limits' observable args (a typo on each side agrees
-  with itself). The core leg — the observable declaration check — is
-  closed (above).
+  resolving. The forms' `bind observable:X` leg CLOSED (2026-10-30):
+  C1 resolves the bind against the same registries the limits' args
+  use — a typo on the form side can no longer agree with a limit-side
+  typo by both being unchecked (the closure surfaced r49's two stale
+  Va/Vi binds, re-spelled to the declared measurements). The core leg
+  — the observable declaration check — is closed (above).
 - **CLAUDE-2 residue**: one list shape (applicability vs enum_values vs
   values); derived-plane annotation; `--explain` + the truth table;
   spelling normalization as a layer (spelling.ts is ISO 24229 tagging,
