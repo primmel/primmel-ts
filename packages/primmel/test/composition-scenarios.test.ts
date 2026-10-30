@@ -37,7 +37,7 @@ function makePackage(
 
 const resolveFrom = (root: string) => (id: string) => join(root, id);
 
-async function rejection(fn: () => Promise<unknown>): Promise<string> {
+async function rejection(fn: () => unknown): Promise<string> {
   try {
     await fn();
   } catch (e) {
