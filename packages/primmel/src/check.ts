@@ -791,6 +791,23 @@ export function checkPackage(
     }
   }
 
+  // The observable bind registry (the C1 walk runs before the
+  // expression registry is built): the symbols (C53's observable leg
+  // resolves against the full registry — kind is not filtered) and the
+  // measurement plane, full ids and leaf segments.
+  const observableBindIds = new Set<string>(
+    [
+      ...(standard.symbols ?? []).flatMap(s => [
+        s.id,
+        s.id.split('/').pop() ?? '',
+      ]),
+      ...(standard.variables ?? []).flatMap(v => [
+        v.id,
+        v.id.split('/').pop() ?? '',
+      ]),
+    ].filter(x => x !== ''),
+  );
+
   // C1 — bind path scope vs attribute scope
   for (const form of standard.forms ?? []) {
     const checkField = (f: FormField) => {
@@ -801,6 +818,19 @@ export function checkPackage(
         const scope = BIND_SCOPES[prefix];
         if (isIdentityPath(String(f.bind))) {
           // identity binds are always valid
+        } else if (String(f.bind).startsWith('observable:')) {
+          // the CRITIQUE-2 #4 loop's form leg: a bind observable:<id>
+          // resolves like the limits' observable args do — the
+          // kind-observable symbols and the measurement plane. A typo
+          // on the form side can no longer agree with a typo on the
+          // limit side by both being unchecked.
+          const id = String(f.bind).slice('observable:'.length);
+          if (!observableBindIds.has(id)) {
+            err(
+              'C1',
+              `form ${form.id}: bind "${f.bind}" — which no declared observable names (attribute-bind-scope)`,
+            );
+          }
         } else if (scope) {
           if (!attrIds.has(id)) {
             err(
