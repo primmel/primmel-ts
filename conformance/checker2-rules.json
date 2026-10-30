@@ -189,6 +189,7 @@
   "C165": "RESERVED in the kernel for the calculation math plane (Formula 1 / plurimath-ts) \u2014 no kernel leg exists",
   "C166": "RESERVED in the kernel for the calculation math plane (the Plurimath-conformant parse) \u2014 no kernel leg exists",
   "C187": "the workspace locator plane (TODO.lang-spec/15) \u2014 the locators file is the WORKSPACE\u2019s own (.primmel/locators.prl), never package content; a single-package checker never sees it",
-  "C188": "the workspace locator plane (TODO.lang-spec/15) \u2014 the locator auth facet lives in the workspace\u2019s locators file, outside a single-package checker\u2019s surface"
+  "C188": "the workspace locator plane (TODO.lang-spec/15) \u2014 the locator auth facet lives in the workspace\u2019s locators file, outside a single-package checker\u2019s surface",
+  "C189": "the render-notation leg guards programmatically built Standards only \u2014 the parser drops an unknown notation token at parse, so no parsed package ever carries one; a grammar-tree checker never sees the input"
  }
 }
