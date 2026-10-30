@@ -1531,7 +1531,10 @@ export function checkPackage(
           const segs = id.split('.');
           const plane = segs[1];
           const leaf = segs[segs.length - 1];
-          if (segs.length >= 3 && (plane === 'parameters' || plane === 'attributes')) {
+          if (
+            segs.length >= 3 &&
+            (plane === 'parameters' || plane === 'attributes')
+          ) {
             if (!attrIds.has(leaf)) {
               err(
                 'C171',
