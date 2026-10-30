@@ -227,6 +227,28 @@ describe('C171/C172 on the AST', () => {
     rmSync(ok, { recursive: true, force: true });
   });
 
+  it('resolves the dispatch-context leaves on the declarable planes', () => {
+    // CRITIQUE-2 #4's residue: the attribute planes join the attribute
+    // registry, the classification plane joins the dimensions; the
+    // run-context roots (sample.*, instrument.*, specimen.*) stay open
+    const dir = make(
+      'attribute_definition mpe { symbol "M" origin design-fixed scope model }\ndimension accuracy_class { scope group\n  values { A B }\n}\nrequirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { m <- attribute:mpe }\n  expression {\n   m <= model.parameters.mpe and model.parameters.no_such_attr <= m\n  }\n }\n}\n',
+    );
+    const msgs = ids(dir, 'C171');
+    assert.ok(
+      msgs.some(
+        m =>
+          m.includes('model.parameters.no_such_attr') &&
+          m.includes('declares no "no_such_attr"'),
+      ),
+    );
+    assert.ok(
+      !msgs.some(m => m.includes('"model.parameters.mpe"')),
+      'the declared leaf stays silent',
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it('rejects an observable: arg naming no declared symbol', () => {
     const dir = make(
       'requirement /req/x {\n name "X"\n statement { S }\n limit {\n  args { n <- observable:never_declared }\n  expression {\n   n >= 0\n  }\n }\n}\n',

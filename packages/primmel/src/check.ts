@@ -1514,11 +1514,43 @@ export function checkPackage(
     }
     for (const id of new Set(ids.names)) {
       const root = id.split('.')[0];
-      if (
-        id.includes('.') &&
-        (root === 'self' || argNames.has(root) || CONTEXT_ROOTS.has(root))
-      ) {
-        continue;
+      if (id.includes('.')) {
+        if (root === 'self' || argNames.has(root)) {
+          continue;
+        }
+        if (CONTEXT_ROOTS.has(root)) {
+          // the dispatch-context leaf leg (CRITIQUE-2 #4's residue): a
+          // DECLARABLE plane resolves its leaf — the attribute planes
+          // ({model,family,group}.{parameters,attributes}.X) join the
+          // attribute registry (C53's uses leg already compares the
+          // same leaf) and the classification plane joins the
+          // dimension registry. The run-context roots (sample.*,
+          // instrument.*, specimen.*) carry runtime data and stay
+          // open; the other planes (aspects, channels) have no
+          // registry to join.
+          const segs = id.split('.');
+          const plane = segs[1];
+          const leaf = segs[segs.length - 1];
+          if (
+            segs.length >= 3 &&
+            (plane === 'parameters' || plane === 'attributes')
+          ) {
+            if (!attrIds.has(leaf)) {
+              err(
+                'C171',
+                `${ownerKind} ${ownerId}: the limit expression reads "${id}" — the ${root} ${plane} declares no "${leaf}" (expression-identifiers-resolve)`,
+              );
+            }
+          } else if (segs.length >= 3 && plane === 'classification') {
+            if (!dimIds.has(leaf)) {
+              err(
+                'C171',
+                `${ownerKind} ${ownerId}: the limit expression reads "${id}" — no declared classification dimension "${leaf}" (expression-identifiers-resolve)`,
+              );
+            }
+          }
+          continue;
+        }
       }
       if (argNames.has(id)) {
         continue;
