@@ -576,7 +576,7 @@ describe('C80 under composition: the register is the union the closure declares'
 describe('the manifest list facets take one shape (CRITIQUE-2 #2)', () => {
   const read = (text: string): PackageManifest => {
     const ctx = { packageManifest: null as PackageManifest | null };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (parsePackage as any)(text)(ctx);
     return ctx.packageManifest!;
   };
@@ -592,7 +592,13 @@ describe('the manifest list facets take one shape (CRITIQUE-2 #2)', () => {
   });
 
   it('the line-run spelling refuses at parse — it silently truncated', () => {
-    for (const facet of ['provides', 'requires', 'waives', 'editions', 'uses']) {
+    for (const facet of [
+      'provides',
+      'requires',
+      'waives',
+      'editions',
+      'uses',
+    ]) {
       let threw: string | null = null;
       try {
         read(`package {\n  id probe\n  ${facet} alpha beta\n}\n`);
