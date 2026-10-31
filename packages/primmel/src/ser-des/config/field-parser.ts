@@ -94,10 +94,17 @@ export function readValueToken(
 export function parseValueEntries(
   raw: string,
 ): Array<string | { value: string; label: string }> {
-  const inner = raw
-    .trim()
-    .replace(/^[[{]/, '')
-    .replace(/[\]}]$/, '');
+  // CRITIQUE-2 #2's facet half (TODO.lang-gaps/21): the value-set
+  // facets take ONE shape — the block `{ … }` or the bracket list
+  // `[A, B]`. A bare line-run payload read ONE entry and silently
+  // dropped the rest; it refuses at parse instead.
+  const shape = raw.trim();
+  if (shape !== '' && !shape.startsWith('{') && !shape.startsWith('[')) {
+    throw new Error(
+      `Parsing error: a value-set facet takes the block form — values { ${shape} … } or values [${shape}, …] (the bare line-run spelling refuses at parse: it read one entry and silently dropped the rest)`,
+    );
+  }
+  const inner = shape.replace(/^[[{]/, '').replace(/[\]}]$/, '');
   const t = tokenizePackage(inner);
   const out: Array<string | { value: string; label: string }> = [];
   let i = 0;

@@ -234,7 +234,13 @@ function parseInputs(block: string): CalculationInput[] {
             defaultValue = stripWrapping(pt[j++]);
             hasDefault = true;
           } else if (cmd === 'enum_values') {
-            enumValues = tokenizePackage(unwrapBlock(pt[j++]));
+            const raw = pt[j++];
+            if (!raw.startsWith('{')) {
+              throw new Error(
+                `Parsing error: enum_values takes the block form — enum_values { ${stripWrapping(raw)} … } (the bare line-run spelling refuses at parse: it read one value and silently dropped the rest)`,
+              );
+            }
+            enumValues = tokenizePackage(unwrapBlock(raw));
           } else {
             j++; // skip unknown
           }

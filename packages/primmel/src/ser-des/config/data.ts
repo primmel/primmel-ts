@@ -273,7 +273,13 @@ const parseDataAttribute = (
       } else if (keyword === 'deprecated') {
         result.deprecated = value() === 'true';
       } else if (keyword === 'enum_values') {
-        result.enumValues = tokenizePackage(value());
+        const raw = value();
+        if (!raw.trim().startsWith('{')) {
+          throw new Error(
+            `Parsing error: enum_values takes the block form — enum_values { ${stripWrapping(raw)} … } (the bare line-run spelling refuses at parse: it read one value and silently dropped the rest)`,
+          );
+        }
+        result.enumValues = tokenizePackage(raw);
       } else if (keyword === 'required') {
         result.required = value() === 'true';
       } else if (keyword === 'unit') {
