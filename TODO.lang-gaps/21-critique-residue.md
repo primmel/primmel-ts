@@ -76,8 +76,12 @@ blocks the language surface — they are backlog the owner schedules.
   ambiguity: the manifest's line-run spelling parsed `provides a b` as
   `['alpha']`, silently truncating. The six list facets take the block
   list form; the line-run spelling refuses at parse (kernel#261,
-  1.21.66; spec §9, spec#95). The facet-level residue — applicability
-  vs enum_values vs values inside constructs — remains open);
+  1.21.66; spec §9, spec#95). the facet-level residue is
+  RESOLVED too (kernel#264, 1.21.67; spec §10.6, spec#96): the
+  construct-level value-set facets (dimension `values`, attribute and
+  calculation-input `enum_values`, form-field `values`) take the
+  block or bracket form, the truncating line-run spelling refuses at
+  parse — the applicability bracket-list vocabulary stays);
   derived-plane annotation; ~~`--explain` + the truth table~~
   (**RESOLVED 2026-10-31**: `primmel check --explain <rule-id>` prints
   the rule's adjudication from the checker's own constants; spec §17.4
