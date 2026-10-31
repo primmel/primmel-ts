@@ -57,6 +57,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import tokenize from '../tokenize';
+import { EDITION_STATUSES, PACKAGE_KINDS } from './manifestSchema';
 import { skipUnknownValue } from '../parse-block';
 import { escapeString, unwrapBlock, stripWrapping } from '../tokenize';
 import { parseRef, foldRefIntoLegacy } from './ref';
@@ -84,20 +85,6 @@ function readList(block: string, facet?: string): string[] {
     .map(stripWrapping)
     .filter(s => s.length > 0);
 }
-
-const PACKAGE_KINDS: readonly string[] = [
-  'core',
-  'module',
-  'rec',
-  'product_reference',
-  'certification_program',
-];
-const EDITION_STATUSES: readonly string[] = [
-  'current',
-  'preview',
-  'superseded',
-  'withdrawn',
-];
 
 /** One URN or a `{ … }` list of them (supersedes/replaces/superseded_by). */
 function readUrnList(token: string): string[] {
