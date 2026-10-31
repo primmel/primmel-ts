@@ -69,7 +69,17 @@ import type {
 } from '../../types/Package';
 import type { Parser } from '../types';
 
-function readList(block: string): string[] {
+function readList(block: string, facet?: string): string[] {
+  // CRITIQUE-2 #2 (TODO.lang-gaps/21): the manifest's list facets take
+  // ONE shape — the block list. The line-run spelling (`provides a b`)
+  // read ONE name and silently dropped the rest (a truncating parse,
+  // the worst kind); with the corpus fully block-form the spelling
+  // refuses at parse instead.
+  if (facet !== undefined && !block.startsWith('{')) {
+    throw new Error(
+      `Parsing error: package manifest facet ${facet} takes the block list form — ${facet} { ${stripWrapping(block)} … } (the bare line-run spelling refuses at parse: it read one name and silently dropped the rest)`,
+    );
+  }
   return tokenize(stripWrapping(block))
     .map(stripWrapping)
     .filter(s => s.length > 0);
@@ -130,7 +140,7 @@ export const parsePackage: Parser = function (data) {
     } else if (cmd === 'language') {
       manifest.language = stripWrapping(t[i++]);
     } else if (cmd === 'editions') {
-      manifest.editions = readList(t[i++]);
+      manifest.editions = readList(t[i++], 'editions');
     } else if (cmd === 'baseUrn' || cmd === 'base_urn') {
       manifest.baseUrn = stripWrapping(t[i++]);
     } else if (cmd === 'extends') {
@@ -146,7 +156,7 @@ export const parsePackage: Parser = function (data) {
       const ids: string[] = [];
       const pins: Record<string, string> = {};
       const locators: Record<string, string> = {};
-      for (const entry of readList(t[i++])) {
+      for (const entry of readList(t[i++], 'uses')) {
         let rest = entry;
         let qualifier = '';
         const dc = rest.indexOf('::');
@@ -207,7 +217,7 @@ export const parsePackage: Parser = function (data) {
     } else if (cmd === 'product') {
       manifest.product = stripWrapping(t[i++]);
     } else if (cmd === 'maps_to' || cmd === 'mapsTo') {
-      manifest.mapsTo = readList(t[i++]);
+      manifest.mapsTo = readList(t[i++], 'maps_to');
     } else if (cmd === 'ref') {
       // The unified typed reference (spec: docs/primmel/18).
       const r = parseRef(t, i, stripWrapping, unwrapBlock);
@@ -242,11 +252,11 @@ export const parsePackage: Parser = function (data) {
       // allowed alone (attribution without an entitlement claim).
       manifest.licenseHolder = stripWrapping(t[i++]);
     } else if (cmd === 'provides') {
-      manifest.provides = readList(t[i++]);
+      manifest.provides = readList(t[i++], 'provides');
     } else if (cmd === 'requires') {
-      manifest.requires = readList(t[i++]);
+      manifest.requires = readList(t[i++], 'requires');
     } else if (cmd === 'waives') {
-      manifest.waives = readList(t[i++]);
+      manifest.waives = readList(t[i++], 'waives');
     } else if (cmd === 'supersedes') {
       manifest.supersedes = readUrnList(t[i++]);
     } else if (cmd === 'replaces') {
