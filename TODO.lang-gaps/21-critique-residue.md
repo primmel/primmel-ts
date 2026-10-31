@@ -68,8 +68,14 @@ blocks the language surface — they are backlog the owner schedules.
   `specimen.*`) stay open BY DOCTRINE — runtime data, no registry to
   join ("a body over pure dispatch-context paths binds nothing and is
   legal"). CRITIQUE-2 #4 is closed end to end.
-- **CLAUDE-2 residue**: one list shape (applicability vs enum_values vs
-  values); derived-plane annotation; ~~`--explain` + the truth table~~
+- **CLAUDE-2 residue**: ~~one list shape (applicability vs enum_values
+  vs values)~~ (**RESOLVED 2026-10-31** — and it was a defect, not an
+  ambiguity: the manifest's line-run spelling parsed `provides a b` as
+  `['alpha']`, silently truncating. The six list facets take the block
+  list form; the line-run spelling refuses at parse (kernel#261,
+  1.21.66; spec §9, spec#95). The facet-level residue — applicability
+  vs enum_values vs values inside constructs — remains open);
+  derived-plane annotation; ~~`--explain` + the truth table~~
   (**RESOLVED 2026-10-31**: `primmel check --explain <rule-id>` prints
   the rule's adjudication from the checker's own constants; spec §17.4
   `[[adjudication-matrix]]` states the five-step composition as law);
