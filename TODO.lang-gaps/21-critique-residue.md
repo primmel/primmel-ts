@@ -74,7 +74,12 @@ blocks the language surface — they are backlog the owner schedules.
   the rule's adjudication from the checker's own constants; spec §17.4
   `[[adjudication-matrix]]` states the five-step composition as law);
   spelling normalization as a layer (spelling.ts is ISO 24229 tagging,
-  not normalization); family invariants; the manifest schema.
+  not normalization); ~~family invariants~~ (**RESOLVED 2026-10-31**:
+  FAMILY_INVARIANTS in the registry — one ownership sentence per
+  family, the MECE boundary a new rule declares against; Annex B's
+  section intros carry them (spec#94), --rules and --explain print
+  them, and the tests assert the map covers every rule-bearing family
+  and vice versa — kernel#259, 1.21.65); the manifest schema.
 - **Merge tooling** (PROPOSAL-model-separation): the prerequisites
   (model diff, locators, the closure report) landed; the tool itself
   is backlog.
