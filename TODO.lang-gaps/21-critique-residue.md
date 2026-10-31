@@ -40,12 +40,13 @@ blocks the language surface — they are backlog the owner schedules.
   precision statements, preserved verbatim on the wire — the
   round-trip gate is the proof), auxiliary numerics canonicalize, and
   comparisons are binary double (IEEE 754) by doctrine.
-- **Variable ↔ subform type link** (CRITIQUE-3 REVIEW watch item): a
-  variable's type and the subform field it feeds share no declared
-  linkage — `type collection` carries no element type, so C177 goes
-  silent exactly where data is most structured. The remedy sketched:
-  `type collection<Row>` against a declared row shape. Watch — not
-  scheduled.
+- **~~Variable ↔ subform type link~~** (CRITIQUE-3 REVIEW watch
+  item): **RESOLVED** (2026-10-31, kernel#266 → 1.21.68,
+  library#164 v0.33.41, spec#97): `type collection<Row>` — the
+  parameterized element type, opt-in (a bare `collection` stays
+  untyped). The navigation's lambda parameter reads against the
+  declared class's attributes; an unknown member is air (C194,
+  checker2-mirrored; CHK-194 in the suite).
 - **The four suppression ledgers** (CRITIQUE-2 #5 — never registered
   until this pass): a package's known debt lives in four places (the
   package allowlist, coverage.json's sentence allowances, the fidelity
