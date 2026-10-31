@@ -38,12 +38,14 @@ describe('the value-set facets take one shape', () => {
         'dimension accuracy_class {\n  scope group\n  values { A B }\n}\nattribute_definition kind_x {\n  symbol "K"\n  origin design-fixed\n  scope model\n  enum_values { alpha beta }\n}\n',
       ),
     ).standard!;
-    const dim = std.dimensions.find((d: any) => d.id === 'accuracy_class');
+    const dim: any = std.dimensions.find(
+      (d: any) => d.id === 'accuracy_class',
+    );
     assert.deepEqual(
       dim.values.map((v: any) => v.id),
       ['A', 'B'],
     );
-    const attr = std.attributeDefinitions.find(
+    const attr: any = std.attributeDefinitions.find(
       (a: any) => a.id === 'kind_x',
     );
     assert.deepEqual(attr.enumValues, ['alpha', 'beta']);
