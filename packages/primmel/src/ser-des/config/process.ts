@@ -1695,7 +1695,9 @@ export const dumpProcess: (
     }
     out += '  }\n';
   }
-  // the C160 plane (stepRequires) is DERIVED: the pass-1 parse hoists
+  // the C160 plane (stepRequires) is DERIVED (declared in
+  // ser-des/derived-planes.ts; the fixpoint guard pins it): the pass-1
+  // parse hoists
   // the steps' own `requires` facets into it, and the parse rebuilds it
   // from those lines on every load — serializing it would re-ingest as
   // a fresh process-level `requires` on the next parse and grow the
