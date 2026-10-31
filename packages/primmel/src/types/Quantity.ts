@@ -112,6 +112,14 @@ export interface UnitDef {
   offsetToSI: number;
   /** Free-text definition (e.g. "kg⋅m/s²" for N). */
   definition: string;
+  /**
+   * The declared normalization layer (CRITIQUE-2 #8): the token
+   * spellings this unit answers to beside its canonical symbol —
+   * `spelling_variants [ "80%" "80 %" ]`. The register's own
+   * resolution reads them; a variant colliding with any unit id,
+   * symbol, or other variant refuses at parse.
+   */
+  spellingVariants?: string[];
   /** The external unit-vocabulary bindings (v3.2, clause 13.4). */
   correspondences?: import('./Correspondence').Correspondence[];
   /**

@@ -6317,6 +6317,23 @@ export function checkPackage(
           unitToKind.set(key, u.kind);
         }
       }
+      // the declared normalization layer (CRITIQUE-2 #8): a variant
+      // token resolves to its unit — the same home, entry, and kind.
+      // A collision refused at parse; a cross-register variant rehome
+      // follows the unit's own entry.
+      for (const v of u.spellingVariants ?? []) {
+        const prior = unitHome.get(v);
+        if (prior !== undefined && unitEntry.get(v) !== entry) {
+          err(
+            'C33',
+            `quantity_register ${reg.id}: unit "${u.id}" ("${v}") redefines a token already answered by register "${prior}" — a package extends the register, it never redefines entries (quantity-coherence)`,
+          );
+        } else if (prior === undefined) {
+          unitHome.set(v, reg.id);
+          unitEntry.set(v, entry);
+          unitToKind.set(v, u.kind);
+        }
+      }
     }
   }
   const kindOfUnit = (unit: string | undefined): string | undefined =>
