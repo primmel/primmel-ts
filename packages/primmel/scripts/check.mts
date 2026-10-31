@@ -104,7 +104,7 @@ import { readFileSync, existsSync, readdirSync, statSync, writeFileSync } from '
 import { join, resolve } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { fmtPackage, type FmtResult } from '../src/fmt.ts';
-import { CHECK_RULES, formatRules } from '../src/check-rules.ts';
+import { CHECK_RULES, FAMILY_INVARIANTS, formatRules } from '../src/check-rules.ts';
 import { explainRule } from '../src/check-explain.ts';
 import { CONSTRUCTS } from '../src/ser-des/config/index.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
@@ -271,6 +271,10 @@ function checkCli(args: string[]): void {
         '--audit adds the audit rules + the coverage budgets (C55/C72); --strict ' +
         'promotes warnings to errors (KNOWN/budgeted issues excepted).',
     )
+    console.log('\nfamily invariants (what each family owns — CRITIQUE-2 #9):')
+    for (const [family, invariant] of Object.entries(FAMILY_INVARIANTS)) {
+      console.log(`  ${family.padEnd(15)} ${invariant}`)
+    }
     // The deprecation ladder's standing surface (spec §16, spec#58):
     // C154's arms render their migration paths here, so an adopter reading
     // a C154 warning finds the target WITHOUT hunting the spec.

@@ -48,6 +48,50 @@ export interface CheckRule {
   docs: string;
 }
 
+/**
+ * CRITIQUE-2 #9 (TODO.lang-gaps/21): what each family OWNS — the MECE
+ * boundary a new rule declares itself against (a rule lands in exactly
+ * one family; the family's invariant states its scope). The catalog
+ * prints these (annex-b section intros, --rules, --explain); the
+ * registry tests assert the map covers every rule-bearing family.
+ */
+export const FAMILY_INVARIANTS: Record<CheckFamily, string> = {
+  attestation:
+    'the attestation plane — references resolve and every claim\'s lineage reaches the evidence that validates it',
+  base:
+    'the package\'s own declaration integrity — every name a declaration uses resolves in the package\'s registries, every shape is well-formed, and recorded debt stays honest',
+  anatomy:
+    'the subject anatomy — every facet sits in its family, characteristics derive, behaviors resolve, and extensions name real parents',
+  process:
+    'the process plane\'s graph and vocabulary — one start, terminal ends, flows resolve, signatures realize, and the facet vocabulary is live',
+  instantiation:
+    'the instance chains — scopes, version pins, acyclicity, instantiation targets, power types, and class extensions resolve',
+  mapping:
+    'the wire-mapping plane — mappings resolve and stay directional, calculus-consistent, import-separate, described, and view-read-only',
+  composition:
+    'the uses closure — edges resolve, redefinitions are marked, cycles refuse, and every consumed name is provided or waived',
+  quantities:
+    'the quantity substrate — registers, units, kinds, and series records are coherent, qualified, and bindable (the math plane\'s legs are reserved)',
+  state:
+    'the operational-state machines — transitions resolve, lifecycle and operational families never mix, referenced states exist, and preconditions name known violations',
+  promises:
+    'the promise plane — targets resolve, every promise is verifiable, and none is a bare value',
+  artifacts:
+    'the artifact contracts — definitions carry the contract, instances resolve to them, evidence stays separate from the artifact, and derivations are declared',
+  characteristics:
+    'the characteristic and verdict chains — one home per characteristic, behavior links and derivations resolve, verdict inputs resolve and stay acyclic',
+  twins:
+    'the digital-twin surface — serve targets, payloads, access scopes, freshness, endpoints, and monitors resolve and agree with the twin bindings they serve',
+  coverage:
+    'the verification chain\'s inputs and outputs — requirement/test evidence, form judgments, limit inputs, lookup tables, and the run plane bind and resolve',
+  edition:
+    'the edition packagings — status, validity windows, supersession, pins, lineage, and the base URN are declared and coherent',
+  'supply-chain':
+    'the product and licensing surface — maps resolve, promises are covered, abstract imports are pinned, and the license key/holder pair is shaped and unique',
+  dataspace:
+    'the dataspace plane — references, trust anchors, governance provenance, policies, and correspondences are shaped and resolve',
+};
+
 const R = (
   id: string,
   name: string,

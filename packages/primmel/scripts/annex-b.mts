@@ -16,7 +16,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CHECK_RULES } from '../src/check-rules';
+import { CHECK_RULES, FAMILY_INVARIANTS } from '../src/check-rules';
 
 function specAnnexPath(): string {
   const env = process.env.PRIMMEL_SPEC_SOURCES;
@@ -89,7 +89,12 @@ const order = [...known, ...novel];
 
 const out = [
   ...preamble,
-  ...order.flatMap(family => [`=== ${family}`, ...familyTable(family)]),
+  ...order.flatMap(family => [
+    `=== ${family}`,
+    '',
+    FAMILY_INVARIANTS[family as keyof typeof FAMILY_INVARIANTS],
+    ...familyTable(family),
+  ]),
   '',
 ];
 
