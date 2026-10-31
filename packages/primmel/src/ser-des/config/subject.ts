@@ -628,7 +628,16 @@ export function parseDimension(
     } else if (cmd === 'reference' || cmd === 'source') {
       dim.source = readSource(unwrapBlock(t[i++]));
     } else if (cmd === 'values') {
-      dim.values = parseDimensionValues(unwrapBlock(t[i++]));
+      // the one-shape guard (the value-set facets refuse the line-run
+      // spelling — it truncated silently); the check precedes
+      // unwrapBlock, which strips the braces
+      const raw = t[i++];
+      if (!raw.startsWith('{')) {
+        throw new Error(
+          `Parsing error: a dimension's values facet takes the block form — values { ${stripWrapping(raw)} … } (the bare line-run spelling refuses at parse: it read one value and silently dropped the rest)`,
+        );
+      }
+      dim.values = parseDimensionValues(unwrapBlock(raw));
     } else if (cmd === 'payload_class') {
       dim.payloadClass = stripColon(stripWrapping(t[i++]));
     } else if (cmd === 'values_of') {
@@ -1342,7 +1351,15 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
     } else if (cmd === 'enum') {
       result.enumRef = stripWrapping(t[i++]);
     } else if (cmd === 'enum_values') {
-      result.enumValues = readIdList(t[i++]);
+      // the one-shape guard (the value-set facets refuse the line-run
+      // spelling — it truncated silently)
+      const raw = t[i++];
+      if (!raw.trim().startsWith('{') && !raw.trim().startsWith('[')) {
+        throw new Error(
+          `Parsing error: enum_values takes the block form — enum_values { ${stripWrapping(raw)} … } (the bare line-run spelling refuses at parse: it read one value and silently dropped the rest)`,
+        );
+      }
+      result.enumValues = readIdList(raw);
     } else if (cmd === 'note') {
       result.note = stripWrapping(t[i++]);
     } else if (cmd === 'irdi') {
