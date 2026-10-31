@@ -49,11 +49,14 @@ blocks the language surface — they are backlog the owner schedules.
 - **The four suppression ledgers** (CRITIQUE-2 #5 — never registered
   until this pass): a package's known debt lives in four places (the
   package allowlist, coverage.json's sentence allowances, the fidelity
-  gate's inline EXPLAINED map, link-method-refs' KNOWN_ABSENCES), with
-  three suppression semantics, two of them in code — the debt is not
-  portable with the package. The remedy sketched: one typed ledger per
-  package, structured keys, the gates as readers; message-glob
-  matching dies last. Tooling-scale; owner schedules.
+  gate's inline EXPLAINED map — 10 packages, 49 tokens — and
+  link-method-refs' KNOWN_ABSENCES — empty since its one entry went
+  STALE), with three suppression semantics, two of them in code — the
+  debt is not portable with the package. The design proposal is
+  written: `PROPOSAL-debt-ledger.md` (2026-10-31) — Option A extends
+  the allowlist with typed `fidelity_entry`/`method_ref_entry` shapes
+  (the STALE walk transfers), coverage.json STAYS as the measurement's
+  input; awaits the ruling.
 - **~~C171's remaining watch legs~~** (CRITIQUE-2 #4) — FULLY
   DISPOSITIONED (2026-10-30, three PRs):
   the core leg — the observable declaration check — closed (above);
