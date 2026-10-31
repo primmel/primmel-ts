@@ -36,6 +36,7 @@ import type {
   UnitDef,
 } from '../../types/Quantity';
 import { proseBlock } from '../parse-block';
+import { parseValueEntries, readBalanced } from './field-parser';
 
 function readDimensions(block: string): Record<string, number> {
   const out: Record<string, number> = {};
@@ -103,7 +104,26 @@ function parseUnit(id: string, block: string): UnitDef {
     if (i >= t.length) {
       break;
     }
-    if (cmd === 'symbol') {
+    if (cmd === 'spelling_variants') {
+      // CRITIQUE-2 #8: the declared normalization layer — the token
+      // spellings this unit answers to beside its canonical symbol.
+      // Bracket form only (the applicability bracket-list idiom; the
+      // one-shape discipline — the line-run spelling truncates).
+      // the tokenizer splits brackets — the balanced read consumes
+      // the whole list
+      const read = readBalanced(t, i);
+      i = read.next;
+      if (!read.text.startsWith('[')) {
+        throw new Error(
+          `Parsing error: quantity_register. unit ${id}: spelling_variants takes the bracket list form — spelling_variants [ "80%" "80 %" ] (the bare line-run spelling refuses at parse: it read one variant and silently dropped the rest)`,
+        );
+      }
+      (out.spellingVariants ??= []).push(
+        ...parseValueEntries(read.text)
+          .map(String)
+          .filter(x => x.length > 0),
+      );
+    } else if (cmd === 'symbol') {
       out.symbol = stripWrapping(t[i++]);
     } else if (cmd === 'label') {
       out.label = stripWrapping(t[i++]);
@@ -196,6 +216,47 @@ const parseQuantityRegister: ConstructDefinition['parse'] = function (
     }
   }
 
+  // The declared normalization layer's collision guard: a variant is
+  // an answer to THIS unit — it must not collide with any unit's id or
+  // symbol, nor with another variant (the ambiguity the register
+  // exists to close; C33's doctrine at parse).
+  {
+    // A unit's OWN id and symbol may coincide (`unit ppm { symbol
+    // "ppm" }`) — the guard checks each token against the PRIOR
+    // claims only, then claims the unit's tokens together.
+    const claimed = new Map<string, string>();
+    for (const u of result.units) {
+      const tokens = [u.id, u.symbol].filter(x => x);
+      const variants = u.spellingVariants ?? [];
+      for (const token of tokens) {
+        const prior = claimed.get(token);
+        if (prior !== undefined && prior !== `the unit ${u.id}`) {
+          throw new Error(
+            `Parsing error: quantity_register ${id}: the unit ${u.id} "${token}" collides with ${prior} — a variant answers one unit only, the register's resolution must stay unambiguous`,
+          );
+        }
+      }
+      for (const v of variants) {
+        const prior = claimed.get(v);
+        if (prior !== undefined) {
+          throw new Error(
+            `Parsing error: quantity_register ${id}: unit ${u.id}'s spelling variant "${v}" collides with ${prior} — a variant answers one unit only, the register's resolution must stay unambiguous`,
+          );
+        }
+      }
+      for (const token of tokens) {
+        if (!claimed.has(token)) {
+          claimed.set(token, `the unit ${u.id}`);
+        }
+      }
+      for (const v of variants) {
+        if (!claimed.has(v)) {
+          claimed.set(v, `a spelling variant of the unit ${u.id}`);
+        }
+      }
+    }
+  }
+
   return ctx => {
     ctx.quantityRegisters[id] = result;
     return ctx;
@@ -277,6 +338,12 @@ const dumpQuantityRegister = function (reg: QuantityRegister): string {
     }
     if (u.definition) {
       line += ' definition { ' + u.definition + ' }';
+    }
+    if (u.spellingVariants && u.spellingVariants.length > 0) {
+      line +=
+        ' spelling_variants [' +
+        u.spellingVariants.map(v => '"' + escapeString(v) + '"').join(' ') +
+        ']';
     }
     if (u.unitsdb && (u.unitsdb.nist || u.unitsdb.unitsml)) {
       line += ' unitsdb {';
