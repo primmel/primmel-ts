@@ -37,9 +37,7 @@ describe('spelling_variants on the register unit', () => {
     assert.match(wire, /spelling_variants \["80%" "80 %" "pct"\]/);
     // the resolution: a value carrying a variant token resolves — the
     // unit kind is found through the variant (C33's map)
-    const c33 = checkPackage(pkg(register + '')).filter(
-      i => i.check === 'C33',
-    );
+    const c33 = checkPackage(pkg(register + '')).filter(i => i.check === 'C33');
     assert.deepEqual(c33, []);
   });
 
@@ -54,10 +52,7 @@ describe('spelling_variants on the register unit', () => {
     } catch (e) {
       threw = String((e as Error).message);
     }
-    assert.match(
-      threw,
-      /spelling_variants takes the bracket list form/,
-    );
+    assert.match(threw, /spelling_variants takes the bracket list form/);
   });
 
   it('a variant colliding with a unit id refuses at parse', () => {
