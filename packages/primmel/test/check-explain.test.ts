@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { explainRule } from '../src/check-explain';
-import { CHECK_RULES } from '../src/check-rules';
+import { CHECK_RULES, FAMILY_INVARIANTS } from '../src/check-rules';
 
 describe('check --explain', () => {
   it('an unknown id says so', () => {
@@ -43,5 +43,29 @@ describe('check --explain', () => {
         `${r.id} carries the matrix`,
       );
     }
+  });
+});
+
+describe('the family invariants (CRITIQUE-2 #9)', () => {
+  it('every rule-bearing family has a stated invariant, and vice versa', () => {
+    const families = new Set<string>(CHECK_RULES.map(r => r.family));
+    const invariantFamilies = new Set(Object.keys(FAMILY_INVARIANTS));
+    for (const f of families) {
+      assert.ok(
+        invariantFamilies.has(f),
+        `family ${f} carries rules but states no invariant`,
+      );
+    }
+    for (const f of invariantFamilies) {
+      assert.ok(
+        families.has(f),
+        `family ${f} states an invariant but carries no rules`,
+      );
+    }
+  });
+
+  it('--explain names the owning invariant', () => {
+    const text = explainRule('C57').join('\n');
+    assert.match(text, /owns: the package's own declaration integrity/);
   });
 });

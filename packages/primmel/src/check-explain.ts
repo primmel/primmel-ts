@@ -13,7 +13,12 @@ import {
   TEXT_BUDGETED_RULES,
   ALLOWLIST_FILENAME,
 } from './check-allowlist';
-import { activeRuleIds, checkRule, type CheckLevel } from './check-rules';
+import {
+  activeRuleIds,
+  checkRule,
+  FAMILY_INVARIANTS,
+  type CheckLevel,
+} from './check-rules';
 
 /** The adjudication lines for one rule id: the catalog row, the level
  *  behavior, the suppression avenues, and the matrix's footnotes. */
@@ -26,6 +31,7 @@ export function explainRule(id: string): string[] {
   out.push(
     `${rule.id} — ${rule.name} (${rule.family} family, ${rule.level}-level, default severity: ${rule.severity})`,
   );
+  out.push(`  owns: ${FAMILY_INVARIANTS[rule.family]}`);
   out.push(`  docs: ${rule.docs}`);
 
   // Level behavior
