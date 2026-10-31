@@ -105,6 +105,7 @@ import { join, resolve } from 'node:path';
 import { checkPackage } from '../src/check.ts';
 import { fmtPackage, type FmtResult } from '../src/fmt.ts';
 import { CHECK_RULES, formatRules } from '../src/check-rules.ts';
+import { explainRule } from '../src/check-explain.ts';
 import { CONSTRUCTS } from '../src/ser-des/config/index.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
 import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
@@ -128,7 +129,7 @@ import { closureReport } from '../src/ser-des/package.ts';
 import type { ResolvePackage } from '../src/ser-des/package.ts';
 
 const CHECK_USAGE =
-  'Usage: primmel check [--strict] [--audit] [--coverage] [--rules] [--unitsdb <file>] [--with <pkg-id>=<dir>]… <package-dir>';
+  'Usage: primmel check [--strict] [--audit] [--coverage] [--rules] [--explain <rule-id>] [--unitsdb <file>] [--with <pkg-id>=<dir>]… <package-dir>';
 const DIFF_USAGE =
   'Usage: primmel diff [--json] [--exit-code] [--compare-texts] [--with <pkg-id>=<dir>]… <a> <b>';
 const EXPORT_USAGE =
@@ -225,11 +226,20 @@ function checkCli(args: string[]): void {
     args,
     ['--strict', '--audit', '--coverage', '--rules'],
     CHECK_USAGE,
-    ['--unitsdb'],
+    ['--unitsdb', '--explain'],
   );
   const strict = flags.has('--strict');
   const audit = flags.has('--audit');
   const coverage = flags.has('--coverage');
+
+  if (values.has('--explain')) {
+    // CLAUDE-2 #7: the adjudication printed, not folklore — why the
+    // rule fires, what suppresses it, what each level does.
+    for (const line of explainRule(values.get('--explain')!)) {
+      console.log(line);
+    }
+    process.exit(0);
+  }
   // The UnitsDB snapshot (kernel#87's plane): a JSON file in the
   // unitsdb release export's shape — the caller supplies the data, the
   // kernel owns no copy. C185 reads it; without it the pins stay
