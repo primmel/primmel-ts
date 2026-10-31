@@ -572,3 +572,38 @@ describe('C80 under composition: the register is the union the closure declares'
     assert.match(c80[0].message, /"2014" does not resolve/);
   });
 });
+
+describe('the manifest list facets take one shape (CRITIQUE-2 #2)', () => {
+  const read = (text: string): PackageManifest => {
+    const ctx = { packageManifest: null as PackageManifest | null };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (parsePackage as any)(text)(ctx);
+    return ctx.packageManifest!;
+  };
+
+  it('the block list parses every name', () => {
+    const m = read(
+      'package {\n  id probe\n  provides { alpha beta }\n  requires { gamma }\n  waives { delta epsilon }\n  editions { 2020 2025 }\n}\n',
+    );
+    assert.deepEqual(m.provides, ['alpha', 'beta']);
+    assert.deepEqual(m.requires, ['gamma']);
+    assert.deepEqual(m.waives, ['delta', 'epsilon']);
+    assert.deepEqual(m.editions, ['2020', '2025']);
+  });
+
+  it('the line-run spelling refuses at parse — it silently truncated', () => {
+    for (const facet of ['provides', 'requires', 'waives', 'editions', 'uses']) {
+      let threw: string | null = null;
+      try {
+        read(`package {\n  id probe\n  ${facet} alpha beta\n}\n`);
+      } catch (e) {
+        threw = String((e as Error).message);
+      }
+      assert.match(
+        threw ?? 'no rejection',
+        new RegExp(`${facet} takes the block list form`),
+        `${facet} refuses the line-run spelling`,
+      );
+    }
+  });
+});
