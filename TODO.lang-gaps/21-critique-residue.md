@@ -93,8 +93,13 @@ blocks the language surface — they are backlog the owner schedules.
   (**RESOLVED 2026-10-31**: `primmel check --explain <rule-id>` prints
   the rule's adjudication from the checker's own constants; spec §17.4
   `[[adjudication-matrix]]` states the five-step composition as law);
-  spelling normalization as a layer (spelling.ts is ISO 24229 tagging,
-  not normalization); ~~the manifest schema~~ (**RESOLVED
+  ~~spelling normalization as a layer~~ (**RESOLVED 2026-10-31**:
+  `spelling_variants [ … ]` on the register unit — the declared
+  normalization layer; the register's resolution reads the variants, a
+  collision refuses at parse both ways; opt-in, the corpus carries
+  zero variant sites, the gates' string massaging migrates with the
+  debt-ledger ruling — kernel#272 → 1.21.71, library#167 v0.33.44,
+  spec#100); ~~the manifest schema~~ (**RESOLVED
   2026-10-31**: the facet registry — `ser-des/config/manifestSchema.ts`
   — declares every manifest facet's keyword, aliases, arity, closed
   vocabulary, and judging rules; `primmel check --manifest-schema`
