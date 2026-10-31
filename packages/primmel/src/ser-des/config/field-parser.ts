@@ -104,9 +104,7 @@ export function parseValueEntries(
       `Parsing error: a value-set facet takes the block form — values { ${shape} … } or values [${shape}, …] (the bare line-run spelling refuses at parse: it read one entry and silently dropped the rest)`,
     );
   }
-  const inner = shape
-    .replace(/^[[{]/, '')
-    .replace(/[\]}]$/, '');
+  const inner = shape.replace(/^[[{]/, '').replace(/[\]}]$/, '');
   const t = tokenizePackage(inner);
   const out: Array<string | { value: string; label: string }> = [];
   let i = 0;

@@ -38,9 +38,7 @@ describe('the value-set facets take one shape', () => {
         'dimension accuracy_class {\n  scope group\n  values { A B }\n}\nattribute_definition kind_x {\n  symbol "K"\n  origin design-fixed\n  scope model\n  enum_values { alpha beta }\n}\n',
       ),
     ).standard!;
-    const dim: any = std.dimensions.find(
-      (d: any) => d.id === 'accuracy_class',
-    );
+    const dim: any = std.dimensions.find((d: any) => d.id === 'accuracy_class');
     assert.deepEqual(
       dim.values.map((v: any) => v.id),
       ['A', 'B'],
@@ -53,9 +51,7 @@ describe('the value-set facets take one shape', () => {
 
   it('the line-run spelling refuses at every carrier', () => {
     assert.match(
-      rejection(
-        'dimension accuracy_class {\n  scope group\n  values A B\n}\n',
-      ),
+      rejection('dimension accuracy_class {\n  scope group\n  values A B\n}\n'),
       /values \{ A … \}/,
       'the dimension values facet refuses',
     );
