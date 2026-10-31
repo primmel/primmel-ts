@@ -59,7 +59,8 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
     // leg, C191 the identity-slot datum-coherence leg, C192 the
     // attribute-definition datum-coherence leg, and C193 the field
     // datum-coherence leg (the datum unification's first, second,
-    // fourth, and fifth rungs, TODO.lang-gaps/04).
+    // fourth, and fifth rungs, TODO.lang-gaps/04); C194 is the
+    // collection-element leg (CRITIQUE-3 #4).
     const expected = [
       ...Array.from({ length: 128 }, (_, i) => `C${i + 1}`).filter(
         id => id !== 'C112' && id !== 'C94',
@@ -71,6 +72,7 @@ describe('check rule catalog (TODO.roadmap/17)', () => {
       'C191',
       'C192',
       'C193',
+      'C194',
     ];
     assert.deepEqual(
       [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),

@@ -2,7 +2,20 @@ import type { SeriesDecl } from './Series';
 import type { SourceRef } from './Subject';
 
 export type SymbolType =
-  'number' | 'integer' | 'string' | 'boolean' | 'enum' | 'collection' | 'array';
+  | 'number'
+  | 'integer'
+  | 'string'
+  | 'boolean'
+  | 'enum'
+  | 'collection'
+  | 'array'
+  /**
+   * The parameterized element type (CRITIQUE-3 #4): `collection<Row>`
+   * where Row names a declared data class — the navigation's lambda
+   * members resolve against the class's attributes (C194). A bare
+   * `collection` stays untyped.
+   */
+  | `collection<${string}>`;
 
 /** Inline formula declaration (display form + executable expression). */
 export interface SymbolFormula {

@@ -675,6 +675,14 @@ export const CHECK_RULES: CheckRule[] = [
     "a comparison in an inline expression sets operands of the same declared quantity kind — the kinds from the args' declared sources; unknown-kind and bare-number operands never conflict",
   ),
   R(
+    'C194',
+    'collection-element-resolves',
+    'base',
+    'error',
+    'normal',
+    "a navigation's lambda member resolves against the element type: an arg bound to `collection<T>` where T names a declared dataclass checks its lambda's member accesses against the class's attributes — an unknown member is air (CRITIQUE-3 #4; a bare `collection` stays untyped)",
+  ),
+  R(
     'C178',
     'legacy-carrier-deprecated',
     'base',
