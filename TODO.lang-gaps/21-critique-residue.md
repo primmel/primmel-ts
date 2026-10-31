@@ -88,7 +88,13 @@ blocks the language surface — they are backlog the owner schedules.
   the rule's adjudication from the checker's own constants; spec §17.4
   `[[adjudication-matrix]]` states the five-step composition as law);
   spelling normalization as a layer (spelling.ts is ISO 24229 tagging,
-  not normalization); ~~family invariants~~ (**RESOLVED 2026-10-31**:
+  not normalization); ~~the manifest schema~~ (**RESOLVED
+  2026-10-31**: the facet registry — `ser-des/config/manifestSchema.ts`
+  — declares every manifest facet's keyword, aliases, arity, closed
+  vocabulary, and judging rules; `primmel check --manifest-schema`
+  publishes it; the tests pin it against the parser's handler set in
+  both directions — kernel#268 → 1.21.69, spec#98);
+  ~~family invariants~~ (**RESOLVED 2026-10-31**:
   FAMILY_INVARIANTS in the registry — one ownership sentence per
   family, the MECE boundary a new rule declares against; Annex B's
   section intros carry them (spec#94), --rules and --explain print
