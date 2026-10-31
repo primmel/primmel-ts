@@ -48,9 +48,7 @@ describe('check --explain', () => {
 
 describe('the family invariants (CRITIQUE-2 #9)', () => {
   it('every rule-bearing family has a stated invariant, and vice versa', () => {
-    const families = new Set<string>(
-      CHECK_RULES.map(r => r.family),
-    );
+    const families = new Set<string>(CHECK_RULES.map(r => r.family));
     const invariantFamilies = new Set(Object.keys(FAMILY_INVARIANTS));
     for (const f of families) {
       assert.ok(
