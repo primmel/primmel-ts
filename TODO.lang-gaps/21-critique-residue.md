@@ -69,7 +69,10 @@ blocks the language surface — they are backlog the owner schedules.
   join ("a body over pure dispatch-context paths binds nothing and is
   legal"). CRITIQUE-2 #4 is closed end to end.
 - **CLAUDE-2 residue**: one list shape (applicability vs enum_values vs
-  values); derived-plane annotation; `--explain` + the truth table;
+  values); derived-plane annotation; ~~`--explain` + the truth table~~
+  (**RESOLVED 2026-10-31**: `primmel check --explain <rule-id>` prints
+  the rule's adjudication from the checker's own constants; spec §17.4
+  `[[adjudication-matrix]]` states the five-step composition as law);
   spelling normalization as a layer (spelling.ts is ISO 24229 tagging,
   not normalization); family invariants; the manifest schema.
 - **Merge tooling** (PROPOSAL-model-separation): the prerequisites
