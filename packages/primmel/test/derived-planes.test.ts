@@ -44,7 +44,7 @@ requirement /req/x {
 
 describe('the derived-plane fixpoint guard (CRITIQUE-2 #3)', () => {
   it('declares the known derived planes', () => {
-    const paths = DERIVED_PLANES.map((p) => p.path);
+    const paths = DERIVED_PLANES.map(p => p.path);
     assert.ok(
       paths.includes('processes[].stepRequires'),
       'the C160 plane is declared',
@@ -74,7 +74,7 @@ describe('the derived-plane fixpoint guard (CRITIQUE-2 #3)', () => {
     // two-space process-level indentation)
     assert.doesNotMatch(
       wire,
-      /^  requires /m,
+      /^ {2}requires /m,
       'the process-level requires plane never serializes',
     );
     assert.doesNotMatch(

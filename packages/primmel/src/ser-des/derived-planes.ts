@@ -25,6 +25,6 @@ export const DERIVED_PLANES: readonly DerivedPlane[] = [
   {
     path: 'checks[].folds',
     doctrine:
-      "the boolean fold (C161, TODO.lang-gaps/03): a folded check is the parse-side VIEW of its owner spelling — the serializer emits the canonical form only (dump skips checks carrying folds), and composition re-derives the folds from the merged owners.",
+      'the boolean fold (C161, TODO.lang-gaps/03): a folded check is the parse-side VIEW of its owner spelling — the serializer emits the canonical form only (dump skips checks carrying folds), and composition re-derives the folds from the merged owners.',
   },
 ];
