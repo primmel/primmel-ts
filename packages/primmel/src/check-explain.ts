@@ -72,10 +72,20 @@ export function explainRule(id: string): string[] {
   // The matrix (shared footnotes)
   out.push('');
   out.push('the adjudication matrix (applied in this order):');
-  out.push('  1. runs?        normal-level rules run by default; --audit adds the audit-level rules.');
-  out.push('  2. KNOWN?       an allowlisted issue never counts, every level, --strict included.');
-  out.push('  3. budget?      C51/C52 (coverage_budget) and C71 (text_coverage_budget) warnings within the budget stay warnings.');
-  out.push('  4. --strict?    every other surviving warning promotes to an error.');
-  out.push('  5. STALE?       an allowlist entry whose rule is ACTIVE but matches nothing is C57\'s error — the entry must die.');
+  out.push(
+    '  1. runs?        normal-level rules run by default; --audit adds the audit-level rules.',
+  );
+  out.push(
+    '  2. KNOWN?       an allowlisted issue never counts, every level, --strict included.',
+  );
+  out.push(
+    '  3. budget?      C51/C52 (coverage_budget) and C71 (text_coverage_budget) warnings within the budget stay warnings.',
+  );
+  out.push(
+    '  4. --strict?    every other surviving warning promotes to an error.',
+  );
+  out.push(
+    "  5. STALE?       an allowlist entry whose rule is ACTIVE but matches nothing is C57's error — the entry must die.",
+  );
   return out;
 }
