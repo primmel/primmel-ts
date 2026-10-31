@@ -69,3 +69,16 @@ describe('spelling_variants on the register unit', () => {
     assert.match(threw, /the unit pct "pct" collides/);
   });
 });
+
+it('a unit whose symbol equals its id stands — the guard checks prior claims only', () => {
+  const r = loadPackageWithIssues(
+    pkg(
+      `quantity_register probe {
+  kind concentration { dimensions { 1 } si_unit "%"}
+  unit ppm { symbol "ppm" label "ppm" kind concentration factor 1 }
+}
+`,
+    ),
+  );
+  assert.equal(r.standard!.quantityRegisters[0]!.units[0]!.id, 'ppm');
+});

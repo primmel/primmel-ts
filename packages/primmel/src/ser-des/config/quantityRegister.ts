@@ -221,26 +221,38 @@ const parseQuantityRegister: ConstructDefinition['parse'] = function (
   // symbol, nor with another variant (the ambiguity the register
   // exists to close; C33's doctrine at parse).
   {
+    // A unit's OWN id and symbol may coincide (`unit ppm { symbol
+    // "ppm" }`) — the guard checks each token against the PRIOR
+    // claims only, then claims the unit's tokens together.
     const claimed = new Map<string, string>();
-    const collide = (token: string, whose: string, kind: string): void => {
-      const prior = claimed.get(token);
-      if (prior !== undefined) {
-        throw new Error(
-          `Parsing error: quantity_register ${id}: ${whose} "${token}" collides with ${prior} — a variant answers one unit only, the register's resolution must stay unambiguous`,
-        );
-      }
-      claimed.set(token, kind);
-    };
     for (const u of result.units) {
-      for (const key of [u.id, u.symbol].filter(x => x)) {
-        collide(key, `the unit ${u.id}`, `the unit ${u.id}`);
+      const tokens = [u.id, u.symbol].filter(x => x);
+      const variants = u.spellingVariants ?? [];
+      for (const token of tokens) {
+        const prior = claimed.get(token);
+        if (prior !== undefined && prior !== `the unit ${u.id}`) {
+          throw new Error(
+            `Parsing error: quantity_register ${id}: the unit ${u.id} "${token}" collides with ${prior} — a variant answers one unit only, the register's resolution must stay unambiguous`,
+          );
+        }
       }
-      for (const v of u.spellingVariants ?? []) {
-        collide(
-          v,
-          `unit ${u.id}'s spelling variant`,
-          `a spelling variant of the unit ${u.id}`,
-        );
+      for (const v of variants) {
+        const prior = claimed.get(v);
+        if (prior !== undefined) {
+          throw new Error(
+            `Parsing error: quantity_register ${id}: unit ${u.id}'s spelling variant "${v}" collides with ${prior} — a variant answers one unit only, the register's resolution must stay unambiguous`,
+          );
+        }
+      }
+      for (const token of tokens) {
+        if (!claimed.has(token)) {
+          claimed.set(token, `the unit ${u.id}`);
+        }
+      }
+      for (const v of variants) {
+        if (!claimed.has(v)) {
+          claimed.set(v, `a spelling variant of the unit ${u.id}`);
+        }
       }
     }
   }
