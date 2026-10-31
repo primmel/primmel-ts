@@ -72,7 +72,13 @@ blocks the language surface — they are backlog the owner schedules.
   `specimen.*`) stay open BY DOCTRINE — runtime data, no registry to
   join ("a body over pure dispatch-context paths binds nothing and is
   legal"). CRITIQUE-2 #4 is closed end to end.
-- **CLAUDE-2 residue**: ~~one list shape (applicability vs enum_values
+- **CLAUDE-2 residue**: ~~the derived-plane annotation~~ (**RESOLVED
+  2026-10-31**: `ser-des/derived-planes.ts` declares the derived
+  planes — the C160 hoist and the C161 folds — each with its doctrine,
+  and the fixpoint guard asserts the declaration against the dumpers
+  both ways: the wire carries no declared plane,
+  dump(load(dump(x))) is dump(x) — kernel#270 → 1.21.70, spec#99);
+  ~~one list shape (applicability vs enum_values
   vs values)~~ (**RESOLVED 2026-10-31** — and it was a defect, not an
   ambiguity: the manifest's line-run spelling parsed `provides a b` as
   `['alpha']`, silently truncating. The six list facets take the block
