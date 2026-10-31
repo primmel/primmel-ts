@@ -7,11 +7,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DERIVED_PLANES } from '../src/ser-des/derived-planes';
-import { loadPackageWithIssues, loadPackage, dump } from '../src/ser-des/index';
+import { loadPackage, dump } from '../src/ser-des/index';
 
 function pkg(): string {
   const dir = mkdtempSync(join(tmpdir(), 'prl-derived-'));
