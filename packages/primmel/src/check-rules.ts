@@ -57,13 +57,12 @@ export interface CheckRule {
  */
 export const FAMILY_INVARIANTS: Record<CheckFamily, string> = {
   attestation:
-    'the attestation plane — references resolve and every claim\'s lineage reaches the evidence that validates it',
-  base:
-    'the package\'s own declaration integrity — every name a declaration uses resolves in the package\'s registries, every shape is well-formed, and recorded debt stays honest',
+    "the attestation plane — references resolve and every claim's lineage reaches the evidence that validates it",
+  base: "the package's own declaration integrity — every name a declaration uses resolves in the package's registries, every shape is well-formed, and recorded debt stays honest",
   anatomy:
     'the subject anatomy — every facet sits in its family, characteristics derive, behaviors resolve, and extensions name real parents',
   process:
-    'the process plane\'s graph and vocabulary — one start, terminal ends, flows resolve, signatures realize, and the facet vocabulary is live',
+    "the process plane's graph and vocabulary — one start, terminal ends, flows resolve, signatures realize, and the facet vocabulary is live",
   instantiation:
     'the instance chains — scopes, version pins, acyclicity, instantiation targets, power types, and class extensions resolve',
   mapping:
@@ -71,7 +70,7 @@ export const FAMILY_INVARIANTS: Record<CheckFamily, string> = {
   composition:
     'the uses closure — edges resolve, redefinitions are marked, cycles refuse, and every consumed name is provided or waived',
   quantities:
-    'the quantity substrate — registers, units, kinds, and series records are coherent, qualified, and bindable (the math plane\'s legs are reserved)',
+    "the quantity substrate — registers, units, kinds, and series records are coherent, qualified, and bindable (the math plane's legs are reserved)",
   state:
     'the operational-state machines — transitions resolve, lifecycle and operational families never mix, referenced states exist, and preconditions name known violations',
   promises:
@@ -83,7 +82,7 @@ export const FAMILY_INVARIANTS: Record<CheckFamily, string> = {
   twins:
     'the digital-twin surface — serve targets, payloads, access scopes, freshness, endpoints, and monitors resolve and agree with the twin bindings they serve',
   coverage:
-    'the verification chain\'s inputs and outputs — requirement/test evidence, form judgments, limit inputs, lookup tables, and the run plane bind and resolve',
+    "the verification chain's inputs and outputs — requirement/test evidence, form judgments, limit inputs, lookup tables, and the run plane bind and resolve",
   edition:
     'the edition packagings — status, validity windows, supersession, pins, lineage, and the base URN are declared and coherent',
   'supply-chain':
