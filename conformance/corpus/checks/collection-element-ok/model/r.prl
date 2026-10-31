@@ -1,0 +1,15 @@
+class DailyRecord#helper {
+  indication: number { modality SHALL }
+  day: integer { modality SHALL }
+}
+symbol readings { label "r" type collection<DailyRecord> }
+requirement /req/c194/ok {
+ name "The typed collection checks its lambda"
+ statement { the lambda members resolve against the element class }
+ limit {
+  args { r <- symbol:readings }
+  expression {
+   r -> exists(m | m.indication >= 0)
+  }
+ }
+}

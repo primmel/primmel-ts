@@ -81,7 +81,10 @@ export const parseSymbol: Parser = function (id, data) {
         result.definition = unwrapped(value);
       } else if (command === 'type') {
         const v = value() as SymbolType;
-        if (!VALID_SYMBOL_TYPES.includes(v)) {
+        // `collection<Row>` — the parameterized element type (C194's
+        // grammar; the Row id's resolution is the checker's leg)
+        const parameterized = /^collection<[A-Za-z][A-Za-z0-9_]*>$/.test(v);
+        if (!VALID_SYMBOL_TYPES.includes(v) && !parameterized) {
           throw new Error(
             `Parsing error: symbol. ID ${id}: Unknown type ${v} (valid: ${VALID_SYMBOL_TYPES.join(
               ', ',

@@ -1668,6 +1668,138 @@ export function checkPackage(
         );
       }
     }
+    // ── C194 collection-element-resolves ─────────────────────────────
+    // CRITIQUE-3 #4: an arg bound to `collection<T>` gives the
+    // navigation's lambda parameter T's shape — the member accesses
+    // rooted at the parameter resolve against the class's attributes,
+    // and an unknown member is air. A bare `collection` stays untyped
+    // (the parameterized form is opt-in).
+    {
+      const elementOf = new Map<string, string>();
+      for (const a of args) {
+        if (!a.source.includes(':')) {
+          continue;
+        }
+        const segs = a.source.split(':');
+        if (
+          segs.length !== 2 ||
+          (segs[0] !== 'observable' && segs[0] !== 'symbol')
+        ) {
+          continue;
+        }
+        const id = segs[1]!;
+        const decl =
+          (standard.symbols ?? []).find(
+            (s: Symbol) => s.id === id || s.id.split('/').pop() === id,
+          ) ?? (standard.variables ?? []).find(v => v.id === id);
+        const t = (decl as { type?: string } | undefined)?.type ?? '';
+        const m = /^collection<([A-Za-z0-9_]+)>$/.exec(t);
+        if (m) {
+          elementOf.set(a.name, m[1]!);
+        }
+      }
+      if (elementOf.size > 0 && ast !== null) {
+        const fieldsOf = new Map<string, Set<string>>();
+        for (const dc of standard.dataclasses ?? []) {
+          const fields = new Set(dc.attributes.map(f => f.id));
+          fieldsOf.set(dc.id, fields);
+          // the class head id may carry a marker (`X#data`); the type
+          // parameter names the bare head
+          const bare = dc.id.split('#')[0]!;
+          if (bare !== dc.id && !fieldsOf.has(bare)) {
+            fieldsOf.set(bare, fields);
+          }
+        }
+        const membersOf = (
+          n: ExprAst,
+          node: { source: string; var: string },
+          elem: string,
+          fields: Set<string>,
+        ): void => {
+          if (n.type === 'name') {
+            const segs = n.path[0]!.split('.');
+            if (
+              segs[0] === node['var'] &&
+              segs.length >= 2 &&
+              !fields.has(segs[1]!)
+            ) {
+              err(
+                'C194',
+                `${ownerKind} ${ownerId}: the element type "${elem}" declares no member "${segs[1]}" — the lambda reads "${node['var']}.${segs[1]}" against the class's attributes (${[...fields].join(', ') || 'none'}) (collection-element-resolves)`,
+              );
+            }
+            return;
+          }
+          switch (n.type) {
+            case 'binop':
+              membersOf(n.left, node, elem, fields);
+              membersOf(n.right, node, elem, fields);
+              return;
+            case 'unop':
+              membersOf(n.operand, node, elem, fields);
+              return;
+            case 'ifelse':
+              membersOf(n.cond, node, elem, fields);
+              membersOf(n.then, node, elem, fields);
+              membersOf(n.else, node, elem, fields);
+              return;
+            case 'call':
+              for (const x of n.args) {
+                membersOf(x, node, elem, fields);
+              }
+              return;
+            case 'member':
+              membersOf(n.object, node, elem, fields);
+              return;
+            default:
+              return;
+          }
+        };
+        const visit = (node: ExprAst): void => {
+          switch (node.type) {
+            case 'nav': {
+              const elem = elementOf.get(node.source);
+              if (elem !== undefined) {
+                const fields = fieldsOf.get(elem);
+                if (!fields) {
+                  err(
+                    'C194',
+                    `${ownerKind} ${ownerId}: the navigation over "${node.source}" reads element type "${elem}", which names no declared data class (collection-element-resolves)`,
+                  );
+                } else {
+                  membersOf(node.body, node, elem, fields);
+                }
+              }
+              visit(node.body);
+              return;
+            }
+            case 'binop':
+              visit(node.left);
+              visit(node.right);
+              return;
+            case 'unop':
+              visit(node.operand);
+              return;
+            case 'ifelse':
+              visit(node.cond);
+              visit(node.then);
+              visit(node.else);
+              return;
+            case 'call':
+              for (const x of node.args) {
+                visit(x);
+              }
+              return;
+            case 'member':
+              visit(node.object);
+              return;
+            default:
+              return;
+          }
+        };
+        visit(ast);
+      }
+    }
     // ── C177 kind-coherence ──────────────────────────────────────────
     // The comparisons compare operands of the same declared quantity
     // kind. The kinds come from the args' declared sources; an operand

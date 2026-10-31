@@ -2756,6 +2756,103 @@ export function check(
           }
         }
       }
+      // ── C194 collection-element-resolves (the CRITIQUE-3 #4 mirror) ──
+      // An arg bound to symbol:/observable: whose declared type is
+      // collection<T> gives the navigation's lambda parameter T's
+      // shape — the lambda's member accesses resolve against the
+      // class's attributes. The kernel's leg reads the Standard; this
+      // mirror reads the shape tree with its own nav reader.
+      {
+        const classFieldsM = new Map<string, Set<string>>();
+        for (const dc of closureConstructs.filter(
+          x => x.keyword === 'class' && x.ident,
+        )) {
+          const fields = new Set<string>();
+          for (const g of nested(dc).filter(n => n.keyword === 'attributes')) {
+            for (const a of nested(g)) {
+              if (a.ident) {
+                fields.add(a.ident);
+              }
+            }
+          }
+          // the direct body entries: `name: type { … }` parses as a
+          // nested construct whose KEYWORD carries the colon
+          // (`indication:`) and whose ident is the type; the
+          // nested-attributes group spelling carries the idents
+          for (const g of nested(dc)) {
+            if (g.keyword === 'attributes') {
+              for (const a of nested(g)) {
+                if (a.ident) {
+                  fields.add(a.ident);
+                }
+              }
+              continue;
+            }
+            if (g.keyword.endsWith(':')) {
+              fields.add(g.keyword.slice(0, -1));
+            } else if (g.ident && !fields.has(g.ident)) {
+              fields.add(g.ident);
+            }
+          }
+          classFieldsM.set(dc.ident!, fields);
+        }
+        const typeOfM = new Map<string, string>();
+        for (const kw of ['symbol', 'variable', 'measurement']) {
+          for (const c of closureConstructs.filter(
+            x => x.keyword === kw && x.ident && Array.isArray(x.items),
+          )) {
+            const t = facetTokens(c.items, 'type')[0];
+            if (t) {
+              typeOfM.set(tail(c.ident), t);
+            }
+          }
+        }
+        let navs: ReturnType<typeof readNavMembers> | null = null;
+        for (const a of args) {
+          const segs = a.source.split(':');
+          if (
+            segs.length !== 2 ||
+            (segs[0] !== 'symbol' && segs[0] !== 'observable')
+          ) {
+            continue;
+          }
+          const t = typeOfM.get(tail(segs[1]!));
+          if (!t) {
+            continue;
+          }
+          const m = /^collection<([A-Za-z0-9_]+)>$/.exec(t);
+          if (!m) {
+            continue;
+          }
+          const elem = m[1]!;
+          const fields =
+            classFieldsM.get(elem) ??
+            classFieldsM.get(`${elem}#data`) ??
+            classFieldsM.get(`${elem}#helper`);
+          if (!fields) {
+            err(
+              'C194',
+              `${ownerKind} ${ownerId}: the navigation over "${a.name}" reads element type "${elem}", which names no declared data class (collection-element-resolves)`,
+            );
+            continue;
+          }
+          navs ??= readNavMembers(src);
+          for (const nav of navs) {
+            if (nav.source !== a.name) {
+              continue;
+            }
+            for (const f of nav.fields) {
+              const head = f.split('.')[0]!;
+              if (!fields.has(head)) {
+                err(
+                  'C194',
+                  `${ownerKind} ${ownerId}: the element type "${elem}" declares no member "${head}" — the lambda reads "${nav.lambda}.${f}" (collection-element-resolves)`,
+                );
+              }
+            }
+          }
+        }
+      }
     };
     for (const c of pkg.constructs.filter(x => x.keyword === 'requirement')) {
       const limit = nested(c).find(n => n.keyword === 'limit');

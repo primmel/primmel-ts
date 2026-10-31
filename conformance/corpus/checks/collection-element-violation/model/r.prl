@@ -1,0 +1,15 @@
+class DailyRecord#helper {
+  indication: number { modality SHALL }
+  day: integer { modality SHALL }
+}
+symbol readings { label "r" type collection<DailyRecord> }
+requirement /req/c194/air {
+ name "A typo lambda member is air"
+ statement { the element class declares no such member }
+ limit {
+  args { r <- symbol:readings }
+  expression {
+   r -> exists(m | m.indictaion >= 0)
+  }
+ }
+}
