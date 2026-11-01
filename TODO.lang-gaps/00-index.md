@@ -54,3 +54,20 @@ execution). One loop, one primitive per role; MECE. Dispositioned
 | 07 | the process vocabularies: abstract vs realized vs workflows; gateways are steps | RESOLVED BY THE EXISTING SHAPE — all corpus workflows are `process` declarations; `realized_by` is the edge (C121/C186); `exclusive_gateway` is the applicability cascade (WF-02) |
 | 08 | record templates: form/subform/header vs class X#data; registries are pairings, not a data shape | RESOLVED BY THE EXISTING SHAPE — one shared field grammar (spec §10); `subform_ref`/`header` composition; registries are C157 pairings |
 | 20 | calculations are declared math bound to declared symbols | BLOCKED EXTERNALLY (#201 — plurimath/unitsml); C165/C166 reserved; notation vocabulary + C161 render check in place |
+
+## The critique-series residue (file 21)
+
+Opened by the 2026-10-30 program audit: what the critique series
+(LANGUAGE-CRITIQUE 1–3 + REVIEW, PRIMITIVE-AUDIT, CLAUDE-2) left open,
+registered so nothing was silently dropped. **CLOSED 2026-11-01** —
+every item landed through the standard dance (the C171 observable
+closure, the dispatch leaves, the form binds, --explain + the
+adjudication matrix, the family invariants, the list shapes at both
+levels, `type collection<Row>` as C194, the manifest schema, the
+derived planes, `spelling_variants`, the one debt ledger, and
+`primmel merge`), or carries its written design/recommendation behind
+a named gate: the v3.4 ratchet (a version call), the origin-axis
+fourth kind (a domain-semantics fork), item-6's spelling (executable,
+the census recommends against), the grammar-leg skips' bake run (the
+scoped design is in the register), and #201 (external). File 21 is
+the record; this index is its front door.
