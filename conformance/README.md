@@ -1,6 +1,6 @@
 # The Primmel conformance test suite
 
-**Version 3.12.0 · 2026-10-30.** The public, versioned corpus and runner
+**Version 3.13.0 · 2026-11-01.** The public, versioned corpus and runner
 with which any implementation of the Primmel modelling language proves
 its conformance, clause by clause. The suite pairs with the Primmel
 Language Specification (MN 114, draft for comment, the v3.3 revision):
@@ -8,6 +8,12 @@ when the specification publishes its
 conformance clauses, this suite's clause identifiers re-key to them (see
 `clauses.json`, the `spec` block); the v3.1 clauses (DAT-01 to DAT-04)
 already anchor to MN 114 clause 19.
+
+Version 3.13.0 over 3.12.0: the collection-element clause (CRITIQUE-3
+#4's `type collection<Row>`) — the suite grows 281 → 283 cases and
+89 → 90 clauses (CHK-194's positive and negative: a lambda member over
+a `collection<T>` arg resolves against the declared element class; a
+typo member is air). Both checker implementations judge it.
 
 Version 3.12.0 over 3.11.1: the language program's retirement waves pin
 their refusals — the suite grows 276 → 281 cases (the step-level
