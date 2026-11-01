@@ -399,11 +399,13 @@ export function parseAllowlist(text: string): {
   entries: AllowlistEntry[];
   budgets: { key: string; raw: string }[];
   directives: string[];
+  gateEntries: { kind: string; key: string }[];
 } {
   const t = tokenizeAllowlist(text);
   const entries: AllowlistEntry[] = [];
   const budgets: { key: string; raw: string }[] = [];
   const directives: string[] = [];
+  const gateEntries: { kind: string; key: string }[] = [];
   let i = 0;
   const strip = (tok: string): string =>
     tok.startsWith('"') && tok.endsWith('"') && tok.length >= 2
@@ -440,6 +442,29 @@ export function parseAllowlist(text: string): {
       }
       i++;
       entries.push(e);
+    } else if (cmd === 'fidelity_entry' || cmd === 'method_ref_entry') {
+      // CRITIQUE-2 #5's one ledger: the gates' declared exclusions
+      // travel with the package; the mirror recognizes the directives
+      // (never unknown) and collects their shapes for parity.
+      if (t[i] === '{') {
+        i++;
+        let token = '';
+        let citation = '';
+        while (i < t.length && t[i] !== '}') {
+          const key = strip(t[i++]!);
+          const value = strip(t[i++] ?? '');
+          if (key === 'token') {
+            token = value;
+          } else if (key === 'citation') {
+            citation = value;
+          }
+        }
+        i++;
+        gateEntries.push({
+          kind: cmd,
+          key: cmd === 'fidelity_entry' ? token : citation,
+        });
+      }
     } else if (cmd === 'coverage_budget' || cmd === 'text_coverage_budget') {
       budgets.push({ key: cmd, raw: strip(t[i++] ?? '') });
     } else {
@@ -449,7 +474,7 @@ export function parseAllowlist(text: string): {
       }
     }
   }
-  return { entries, budgets, directives };
+  return { entries, budgets, directives, gateEntries };
 }
 
 export interface ParsedPackage {

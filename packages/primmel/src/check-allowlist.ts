@@ -74,6 +74,24 @@ export interface AllowlistEntry {
   retiresWith?: string;
 }
 
+/** The fidelity gate's declared exclusions (CRITIQUE-2 #5's one
+ *  ledger): a source-extract token the package deliberately does not
+ *  carry, with its reason — the fidelity-external gate reads these
+ *  instead of an inline script map. */
+export interface FidelityEntry {
+  token: string;
+  reason: string;
+  auditRef: string;
+}
+
+/** The method-ref gate's declared absences (CRITIQUE-2 #5): a citation
+ *  the package deliberately leaves unlinked, with its reason. */
+export interface MethodRefEntry {
+  citation: string;
+  reason: string;
+  auditRef: string;
+}
+
 export interface PackageAllowlist {
   coverageBudget: number | null;
   /** The optional quoted justification trailing the budget (recommended,
@@ -84,6 +102,8 @@ export interface PackageAllowlist {
   textCoverageBudget: number | null;
   textCoverageBudgetReason: string | null;
   entries: AllowlistEntry[];
+  fidelityEntries: FidelityEntry[];
+  methodRefEntries: MethodRefEntry[];
 }
 
 const EMPTY: PackageAllowlist = {
@@ -92,6 +112,8 @@ const EMPTY: PackageAllowlist = {
   textCoverageBudget: null,
   textCoverageBudgetReason: null,
   entries: [],
+  fidelityEntries: [],
+  methodRefEntries: [],
 };
 
 /** The issue's leading element identity: `requirement /req/x: …` →
@@ -164,6 +186,8 @@ export function loadAllowlist(dir: string): {
     textCoverageBudget: null,
     textCoverageBudgetReason: null,
     entries: [],
+    fidelityEntries: [],
+    methodRefEntries: [],
   };
   let i = 0;
   while (i < tokens.length) {
@@ -203,11 +227,47 @@ export function loadAllowlist(dir: string): {
       if (entry.rule && entry.match && entry.reason && entry.auditRef) {
         allowlist.entries.push(entry);
       }
+    } else if (cmd === 'fidelity_entry' || cmd === 'method_ref_entry') {
+      // CRITIQUE-2 #5's one ledger: the gates' declared exclusions
+      // travel with the package (typed entries, the same validation
+      // discipline — a non-empty key, reason, and audit_ref; C56
+      // judges malformed entries).
+      const block = unwrapBlock(tokens[i++] ?? '');
+      const entry = parseGateEntry(block);
+      const key = cmd === 'fidelity_entry' ? entry.token : entry.citation;
+      if (!key) {
+        issues.push({
+          check: 'C56',
+          severity: 'error',
+          message: `${ALLOWLIST_FILENAME}: ${cmd} carries no ${cmd === 'fidelity_entry' ? 'token' : 'citation'} (allowlist-malformed)`,
+        });
+      }
+      if (!entry.reason) {
+        issues.push({
+          check: 'C56',
+          severity: 'error',
+          message: `${ALLOWLIST_FILENAME}: ${cmd}${key ? ` (${key})` : ''} has no reason — gate entries require clause-referenced reasons (allowlist-malformed)`,
+        });
+      }
+      if (!entry.auditRef) {
+        issues.push({
+          check: 'C56',
+          severity: 'error',
+          message: `${ALLOWLIST_FILENAME}: ${cmd}${key ? ` (${key})` : ''} has no audit_ref — gate entries require clause-referenced reasons (allowlist-malformed)`,
+        });
+      }
+      if (key && entry.reason && entry.auditRef) {
+        if (cmd === 'fidelity_entry') {
+          allowlist.fidelityEntries.push(entry as FidelityEntry);
+        } else {
+          allowlist.methodRefEntries.push(entry as MethodRefEntry);
+        }
+      }
     } else {
       issues.push({
         check: 'C56',
         severity: 'error',
-        message: `${ALLOWLIST_FILENAME}: unknown directive "${cmd}" — expected coverage_budget | text_coverage_budget | allowlist_entry (allowlist-malformed)`,
+        message: `${ALLOWLIST_FILENAME}: unknown directive "${cmd}" — expected coverage_budget | text_coverage_budget | allowlist_entry | fidelity_entry | method_ref_entry (allowlist-malformed)`,
       });
       // Skip a following block so one bad directive does not cascade.
       if (i < tokens.length && tokens[i].startsWith('{')) {
@@ -244,6 +304,35 @@ function parseEntry(block: string): AllowlistEntry {
       entry.migratedBy = value;
     } else if (key === 'retires_with') {
       entry.retiresWith = value;
+    }
+  }
+  return entry;
+}
+
+/** The gate entries' key reader: token | citation, reason, audit_ref. */
+function parseGateEntry(block: string): {
+  token: string;
+  citation: string;
+  reason: string;
+  auditRef: string;
+} {
+  const entry = { token: '', citation: '', reason: '', auditRef: '' };
+  const t = tokenize(block);
+  let i = 0;
+  while (i < t.length) {
+    const key = t[i++];
+    if (i >= t.length) {
+      break;
+    }
+    const value = stripWrapping(t[i++]);
+    if (key === 'token') {
+      entry.token = value;
+    } else if (key === 'citation') {
+      entry.citation = value;
+    } else if (key === 'reason') {
+      entry.reason = value;
+    } else if (key === 'audit_ref') {
+      entry.auditRef = value;
     }
   }
   return entry;
