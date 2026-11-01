@@ -126,6 +126,8 @@ import {
 } from '../src/text-coverage.ts';
 import { diffPackageDirs } from '../src/package-diff.ts';
 import { formatDiffReport } from '../src/model-diff.ts';
+import { mergeStandards } from '../src/model-merge.ts';
+import { dump } from '../src/ser-des/index.ts';
 import { closureReport } from '../src/ser-des/package.ts';
 import type { ResolvePackage } from '../src/ser-des/package.ts';
 
@@ -673,8 +675,74 @@ function closureCli(args: string[]): void {
   }
 }
 
+function mergeCli(args: string[]): void {
+  const usage =
+    'Usage: primmel merge --base <dir> --ours <dir> --theirs <dir> [--out <file>] [--with <pkg-id>=<dir>]…';
+  const parsed = parseArgs(
+    args,
+    [],
+    usage,
+    ['--base', '--ours', '--theirs', '--out'],
+  );
+  for (const required of ['--base', '--ours', '--theirs']) {
+    if (!parsed.values.get(required)) {
+      console.error(usage);
+      process.exit(2);
+    }
+  }
+  const locator = parsed.locator;
+  const resolve = locator.size
+    ? (id: string) => locator.get(id)
+    : undefined;
+  const load = (flag: string) => {
+    const dir = parsed.values.get(flag)!;
+    const { standard } = loadPackageWithIssues(dir, { resolvePackage: resolve });
+    if (!standard) {
+      console.error(`merge: ${dir} did not load`);
+      process.exit(2);
+    }
+    return standard;
+  };
+  const base = load('--base');
+  const ours = load('--ours');
+  const theirs = load('--theirs');
+  const r = mergeStandards(base, ours, theirs);
+
+  console.log(`merge: ${r.dispositions.length} disposition(s), ${r.conflicts.length} conflict(s)`);
+  const byOutcome = new Map<string, number>();
+  for (const d of r.dispositions) {
+    byOutcome.set(d.outcome, (byOutcome.get(d.outcome) ?? 0) + 1);
+  }
+  for (const [outcome, n] of [...byOutcome.entries()].sort()) {
+    console.log(`  ${n} ${outcome}`);
+  }
+  for (const c of r.conflicts) {
+    if (c.element) {
+      console.log(`  CONFLICT ${c.key}: modify/delete — ours changed, theirs removed`);
+    } else {
+      for (const f of c.fields) {
+        console.log(
+          `  CONFLICT ${c.key} field ${f.name}:\n    ours:   ${f.ours}\n    theirs: ${f.theirs}`,
+        );
+      }
+    }
+  }
+  const wire = dump(r.standard);
+  const out = parsed.values.get('--out');
+  if (out) {
+    writeFileSync(out, wire);
+    console.log(`\nmerged document: ${out}`);
+  } else {
+    console.log('');
+    console.log(wire);
+  }
+  process.exit(r.conflicts.length > 0 ? 1 : 0);
+}
+
 if (args[0] === 'diff') {
   diffCli(args.slice(1));
+} else if (args[0] === 'merge') {
+  mergeCli(args.slice(1));
 } else if (args[0] === 'closure') {
   closureCli(args.slice(1));
 } else if (args[0] === 'check') {
