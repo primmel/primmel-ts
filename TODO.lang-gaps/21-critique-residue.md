@@ -110,9 +110,13 @@ blocks the language surface — they are backlog the owner schedules.
   section intros carry them (spec#94), --rules and --explain print
   them, and the tests assert the map covers every rule-bearing family
   and vice versa — kernel#259, 1.21.65); the manifest schema.
-- **Merge tooling** (PROPOSAL-model-separation): the prerequisites
-  (model diff, locators, the closure report) landed; the tool itself
-  is backlog.
+- **~~Merge tooling~~** (CRITIQUE-3 REVIEW #10): **RESOLVED**
+  (2026-11-01, kernel#276 → 1.21.73): `primmel merge --base --ours
+  --theirs` — the three-way structural merge over the id-keyed plane
+  (adds, removes, modify/delete conflicts, the field-level resolution;
+  conflicts keep ours and exit 1; the semantic plane stays the
+  checker's). The review's "unbuilt work over existing foundations"
+  is built on those foundations.
 
 ## Owner-demoted or -deferred (recorded, not scheduled)
 
