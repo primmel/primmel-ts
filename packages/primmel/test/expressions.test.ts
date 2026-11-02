@@ -480,6 +480,35 @@ describe('C178 legacy-carrier-deprecated (W6)', () => {
     assert.deepEqual(ids(dir), []);
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it("counts the check construct's quoted expression", () => {
+    const dir = make(
+      'package {\n id test\n language v3.4\n}',
+      'check c:verdict:x:expression {\n expression "ocl{1 <= 2}"\n operator <=\n}\n',
+    );
+    const msgs = ids(dir);
+    assert.equal(msgs.length, 1);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("does not count the check construct's inline block", () => {
+    const dir = make(
+      'package {\n id test\n language v3.4\n}',
+      'check c:verdict:x:expression {\n expression {\n  1 <= 2\n }\n operator <=\n}\n',
+    );
+    assert.deepEqual(ids(dir), []);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("counts the step completion's quoted gate expression", () => {
+    const dir = make(
+      'package {\n id test\n language v3.4\n}',
+      'process p {\n step s1 {\n  completion check g1 {\n   expression "ocl{ok}"\n  }\n }\n}\n',
+    );
+    const msgs = ids(dir);
+    assert.equal(msgs.length, 1);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 describe('the collection navigation (register 24)', () => {

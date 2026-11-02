@@ -218,6 +218,17 @@ function tokenize(src: string): Tok[] {
       i += 2;
       continue;
     }
+    if (ch === '#') {
+      // the OCL enum literal (#ready): one token; evaluates as the
+      // bare member name so the state-gate comparison is a string =
+      let j = i + 1;
+      while (j < s.length && /[A-Za-z0-9_]/.test(s[j])) {
+        j += 1;
+      }
+      out.push({ t: 'id', v: s.slice(i, j) });
+      i = j;
+      continue;
+    }
     if ('+-*/()<>=,.'.includes(ch)) {
       out.push({ t: 'op', v: ch });
       i++;
@@ -401,6 +412,14 @@ function evalAtom(r: Reader, env: RunEnv): number {
   const t = r.next();
   if (t.t === 'num') {
     return t.v;
+  }
+  if (t.t === 'id' && t.v.startsWith('#')) {
+    // the OCL enum literal is state-gate vocabulary — the textual gate
+    // reader (evaluateStateGate) owns it; the numeric evaluator never
+    // sees a well-formed gate, so this is a diagnostic, not a value
+    throw new Error(
+      `runtime: the enum literal "${t.v}" is state-gate vocabulary, not a numeric value`,
+    );
   }
   if (t.t === 'id') {
     // The list aggregators (the MMEL v2 measurement language's postfix

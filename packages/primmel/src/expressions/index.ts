@@ -90,6 +90,19 @@ export function lex(src: string): ExprToken[] {
       i = j;
       continue;
     }
+    if (c === '#' && /[A-Za-z0-9_]/.test(src[i + 1] ?? '')) {
+      // the OCL enum literal (#ready, the state-gate vocabulary): one
+      // name-shaped token, '#' included, so the canonical render and
+      // the state-gate readers see the spelling verbatim; a bare '#'
+      // stays a bad character
+      let j = i + 1;
+      while (j < src.length && /[A-Za-z0-9_]/.test(src[j])) {
+        j += 1;
+      }
+      tokens.push({ kind: 'name', value: src.slice(i, j) });
+      i = j;
+      continue;
+    }
     if (/[A-Za-z_]/.test(c)) {
       let j = i;
       while (j < src.length && /[A-Za-z0-9_.]/.test(src[j])) {
