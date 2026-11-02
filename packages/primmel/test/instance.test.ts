@@ -47,10 +47,10 @@ attribute_definition t_min { symbol "T_min" origin declared scope family }
 attribute_definition n_lc { symbol "n_LC" origin design-fixed scope group }
 attribute_definition v_min { symbol "v_min" origin design-fixed scope group }
 attribute_definition e_max { symbol "E_max" origin design-fixed scope model }
-attribute_definition d_min { symbol "D_min" origin test-dependent scope sample }
-attribute_definition d_max { symbol "D_max" origin test-dependent scope sample }
-attribute_definition v { symbol "v" origin test-dependent scope sample }
-attribute_definition n { symbol "n" origin test-dependent scope sample }
+attribute_definition d_min { symbol "D_min" origin observed scope sample }
+attribute_definition d_max { symbol "D_max" origin observed scope sample }
+attribute_definition v { symbol "v" origin observed scope sample }
+attribute_definition n { symbol "n" origin observed scope sample }
 
 instance fam-hbk-hlci {
   of LoadCellModelFamily
@@ -396,8 +396,8 @@ describe('delegation resolution (INV-10)', () => {
     // attribute restated in the sample's test_context, and a declared
     // model-scope attribute that exists ONLY there.
     const src = R60_CHAIN.replace(
-      'attribute_definition d_min { symbol "D_min" origin test-dependent scope sample }',
-      'attribute_definition d_min { symbol "D_min" origin test-dependent scope sample }\nattribute_definition extra_note { origin declared scope model }',
+      'attribute_definition d_min { symbol "D_min" origin observed scope sample }',
+      'attribute_definition d_min { symbol "D_min" origin observed scope sample }\nattribute_definition extra_note { origin declared scope model }',
     ).replace(
       'test_context { d_min : 0 kg d_max : 2.2 t v : 0.037 kg n : 6000 }',
       'test_context { d_min : 0 kg d_max : 2.2 t v : 0.037 kg n : 6000 e_max : 99 t extra_note : "x" }',

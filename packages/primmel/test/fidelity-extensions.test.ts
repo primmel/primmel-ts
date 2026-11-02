@@ -394,7 +394,7 @@ const SYMBOL_SRC = `symbol e_l {
   unit "v"
   kind observable
   quantity_kind mass
-  origin measured
+  origin observed
   legacy_id E_l
   attribute e_l
   calculation load_cell_error
@@ -412,7 +412,7 @@ describe('symbol fidelity extensions', () => {
     const s = m.symbols[0];
     assert.equal(s.kind, 'observable');
     assert.equal(s.quantityKind, 'mass');
-    assert.equal(s.origin, 'measured');
+    assert.equal(s.origin, 'observed');
     assert.equal(s.legacyId, 'E_l');
     assert.equal(s.attribute, 'e_l');
     assert.equal(s.calculation, 'load_cell_error');

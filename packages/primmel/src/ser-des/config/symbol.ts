@@ -21,6 +21,7 @@ import { parseSeriesDecl, dumpSeriesDecl } from './series';
 import { readSource } from './field-parser';
 import type Symbol from '../../types/Symbol';
 import type { SymbolType, ResolvableSymbol } from '../../types/Symbol';
+import { assertDatumOrigin } from './datum-origins';
 
 const VALID_SYMBOL_TYPES: SymbolType[] = [
   'number',
@@ -134,7 +135,10 @@ export const parseSymbol: Parser = function (id, data) {
       } else if (command === 'quantity_kind') {
         result.quantityKind = stripWrapping(value());
       } else if (command === 'origin') {
-        result.origin = stripWrapping(value());
+        // the origin axis is closed (the origin-axis wave) — the same
+        // four tokens the datum block and the attribute's flat facet
+        // enforce
+        result.origin = assertDatumOrigin(stripWrapping(value()), 'symbol', id);
       } else if (command === 'legacy_id') {
         result.legacyId = stripWrapping(value());
       } else if (command === 'attribute') {

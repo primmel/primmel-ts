@@ -32,7 +32,7 @@ attribute_definition d_min {
   definition { The smallest load applied during test (the served reading). }
   quantity_kind mass
   unit kg
-  origin measured
+  origin observed
   scope sample
 }
 
@@ -41,7 +41,7 @@ attribute_definition d_max {
   definition { The largest load applied during test. }
   quantity_kind mass
   unit kg
-  origin measured
+  origin observed
   scope sample
 }
 

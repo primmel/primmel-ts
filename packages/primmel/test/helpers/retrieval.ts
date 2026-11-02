@@ -293,7 +293,7 @@ calculation lookupFrob {
   unit "dB"
   kind observable
   quantity_kind sound_pressure
-  origin derived
+  origin computed
   formula {
     display "B_L = b / f"
     expression "(b - b0) / f"

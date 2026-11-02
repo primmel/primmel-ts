@@ -34,7 +34,7 @@ attribute_definition d_min {
   definition { The smallest load applied during test (the served reading). }
   quantity_kind mass
   unit kg
-  origin measured
+  origin observed
   scope sample
 }
 
@@ -43,7 +43,7 @@ attribute_definition d_max {
   definition { The largest load applied during test. }
   quantity_kind mass
   unit kg
-  origin measured
+  origin observed
   scope sample
 }
 
@@ -60,7 +60,7 @@ attribute_definition warm_up_recorded {
   definition { Whether the instrument records the warm-up completion time (ADDED at the 2027 edition — the 2021 edition required no record). }
   quantity_kind dimensionless
   unit dimensionless
-  origin measured
+  origin observed
   scope sample
 }
 

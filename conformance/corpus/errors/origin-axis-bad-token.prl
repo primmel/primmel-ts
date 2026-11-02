@@ -1,0 +1,13 @@
+# Conformance corpus: a flat origin facet carrying a retired
+# free-form token.
+# Clause: ERR-02 (negative): the parser rejects the value and names the
+# valid axis.
+requirement /req/a {
+ name "Anchor"
+ statement { S }
+}
+
+attribute_definition n_lc {
+ symbol "n_lc"
+ origin measured
+}
