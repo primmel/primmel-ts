@@ -69,7 +69,7 @@ const parsePolicy: ConstructDefinition['parse'] = function (id, data) {
   forEachEntry(
     data,
     (command, value, peek) => {
-      if (command === 'name') {
+      if ((command === 'name' || command === 'label')) {
         policy.name = unwrapped(value);
       } else if (command === 'description') {
         policy.description = unwrapped(value);

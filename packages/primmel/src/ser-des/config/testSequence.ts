@@ -124,7 +124,7 @@ const parseTestSequence: ConstructDefinition['parse'] = function (id, data) {
         `Parsing error: test_sequence. ID ${id}: Expecting value for ${command}`,
       );
     }
-    if (command === 'name') {
+    if ((command === 'name' || command === 'label')) {
       sequence.name = stripWrapping(t[i++]);
     } else if (command === 'description') {
       sequence.description = stripWrapping(t[i++]);

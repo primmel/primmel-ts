@@ -62,7 +62,7 @@ export const parseForm: Parser = function (id, data) {
     while (i < t.length) {
       const command: string = t[i++];
       if (i < t.length) {
-        if (command === 'name') {
+        if ((command === 'name' || command === 'label')) {
           result.name = stripWrapping(t[i++]);
         } else if (command === 'description') {
           result.description = stripWrapping(t[i++]);
@@ -240,7 +240,7 @@ function parseFormInstances(block: string): FormInstance[] {
         if (j >= it.length) {
           break;
         }
-        if (ic === 'name') {
+        if ((ic === 'name' || ic === 'label')) {
           inst.name = stripWrapping(it[j++]);
         } else {
           unwrapBlock(it[j++]);

@@ -364,7 +364,7 @@ const parseRequirement: ConstructDefinition['parse'] = function (id, data) {
     if (i >= t.length) {
       break;
     }
-    if (cmd === 'name') {
+    if ((cmd === 'name' || cmd === 'label')) {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'statement') {
       // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.
@@ -727,7 +727,7 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
     if (i >= t.length) {
       break;
     }
-    if (cmd === 'name') {
+    if ((cmd === 'name' || cmd === 'label')) {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'title') {
       result.title = stripWrapping(t[i++]);

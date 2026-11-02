@@ -1138,7 +1138,7 @@ function parsePairList(block: string): PairListDecl {
           if (j >= et.length) {
             break;
           }
-          if (ec === 'name') {
+          if ((ec === 'name' || ec === 'label')) {
             component.name = stripWrapping(et[j++]);
           } else if (ec === 'source') {
             component.source = readSource(unwrapBlock(et[j++]));
@@ -1297,7 +1297,7 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
       result.symbol = stripWrapping(t[i++]);
     } else if (cmd === 'overlay') {
       result.overlay = stripWrapping(t[i++]) === 'true';
-    } else if (cmd === 'name') {
+    } else if ((cmd === 'name' || cmd === 'label')) {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'definition') {
       // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.

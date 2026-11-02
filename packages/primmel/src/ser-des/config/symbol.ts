@@ -76,7 +76,7 @@ export const parseSymbol: Parser = function (id, data) {
         return true;
       }
 
-      if (command === 'name') {
+      if ((command === 'name' || command === 'label')) {
         result.name = unwrapped(value);
       } else if (command === 'definition') {
         result.definition = unwrapped(value);
