@@ -216,7 +216,7 @@ const parseArtifactDefinition: ConstructDefinition['parse'] = function (
     if (i >= t.length) {
       break;
     }
-    if (cmd === 'name') {
+    if (cmd === 'name' || cmd === 'label') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'description') {
       result.description = stripWrapping(t[i++]);

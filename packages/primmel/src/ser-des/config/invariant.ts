@@ -63,7 +63,7 @@ const parseInvariant: ConstructDefinition['parse'] = function (id, data) {
   forEachEntry(
     data,
     (command, value) => {
-      if (command === 'name') {
+      if (command === 'name' || command === 'label') {
         invariant.name = stripWrapping(value());
       } else if (command === 'statement') {
         // THE PROSE QUARANTINE (TODO.lang-gaps/02): the block form only.

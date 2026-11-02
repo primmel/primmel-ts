@@ -555,7 +555,7 @@ function parseSoftware(block: string): DesignSoftware {
             if (k >= bt.length) {
               break;
             }
-            if (bc === 'name') {
+            if (bc === 'name' || bc === 'label') {
               item.name = stripWrapping(bt[k++]);
             } else if (bc === 'd31') {
               item.d31 = stripWrapping(bt[k++]);

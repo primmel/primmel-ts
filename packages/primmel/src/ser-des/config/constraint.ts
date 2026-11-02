@@ -69,7 +69,7 @@ export const parseConstraint: Parser = function (id, data) {
     }
     if (keyword === 'stereotype') {
       result.stereotype = stripWrapping(t[i++]);
-    } else if (keyword === 'name') {
+    } else if (keyword === 'name' || keyword === 'label') {
       result.name = readValue(t[i++]);
     } else if (keyword === 'args') {
       // register 24: the inline check's scope — name <- source per line

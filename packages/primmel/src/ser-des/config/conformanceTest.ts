@@ -699,7 +699,7 @@ export const parseConformanceTest: Parser = function (id, data) {
   forEachEntry(
     data,
     (keyword, value, peek) => {
-      if (keyword === 'name') {
+      if (keyword === 'name' || keyword === 'label') {
         result.name = unwrapped(value);
       } else if (keyword === 'purpose') {
         result.purpose = unwrapped(value);
