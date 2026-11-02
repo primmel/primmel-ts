@@ -204,7 +204,7 @@ export const parseReferenceMaterial: Parser = function (id, data) {
     (keyword, value, peek) => {
       if (keyword === 'kind') {
         result.kind = stripWrapping(value());
-      } else if ((keyword === 'name' || keyword === 'label')) {
+      } else if (keyword === 'name' || keyword === 'label') {
         result.name = unwrapped(value);
       } else if (keyword === 'definition') {
         result.definition = unwrapped(value);

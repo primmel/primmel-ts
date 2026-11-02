@@ -42,7 +42,7 @@ export const parseCalculation: Parser = function (id, data) {
     while (i < t.length) {
       const command: string = t[i++];
       if (i < t.length) {
-        if ((command === 'name' || command === 'label')) {
+        if (command === 'name') {
           result.name = unwrapBlock(t[i++]);
         } else if (command === 'identifier') {
           result.identifier = stripWrapping(t[i++]);
@@ -326,7 +326,7 @@ function parseOutput(block: string): CalculationOutput {
               unwrapBlock(rt[k++]);
             }
           }
-        } else if ((cmd === 'name' || cmd === 'label')) {
+        } else if (cmd === 'name') {
           name = stripWrapping(pt[j++]);
         } else if (cmd === 'description') {
           description = stripWrapping(pt[j++]);

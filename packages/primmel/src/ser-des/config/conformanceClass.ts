@@ -48,7 +48,7 @@ const parseConformanceClass: ConstructDefinition['parse'] = function (
     if (i >= t.length) {
       break;
     }
-    if ((cmd === 'name' || cmd === 'label')) {
+    if (cmd === 'name' || cmd === 'label') {
       result.name = stripWrapping(t[i++]);
     } else if (cmd === 'title') {
       result.title = stripWrapping(t[i++]);

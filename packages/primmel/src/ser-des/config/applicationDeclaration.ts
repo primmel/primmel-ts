@@ -45,7 +45,7 @@ export const parseApplicationDeclaration: Parser = (
         forEachEntry(
           unwrapBlock(value()),
           (k2, v2) => {
-            if ((k2 === 'name' || k2 === 'label')) {
+            if (k2 === 'name' || k2 === 'label') {
               doc.name = stripWrapping(v2());
             } else if (k2 === 'description') {
               doc.description = stripWrapping(v2());

@@ -54,7 +54,7 @@ export const parseApproval: Parser = function (id, data) {
     (keyword, value) => {
       if (keyword === 'modality') {
         result.modality = value();
-      } else if ((keyword === 'name' || keyword === 'label')) {
+      } else if (keyword === 'name' || keyword === 'label') {
         result.name = unwrapped(value);
       } else if (keyword === 'actor') {
         result._relations.actor = value();

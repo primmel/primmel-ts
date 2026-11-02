@@ -73,7 +73,7 @@ const parseDataspace: ConstructDefinition['parse'] = function (id, data) {
   forEachEntry(
     data,
     (command, value, peek) => {
-      if ((command === 'name' || command === 'label')) {
+      if (command === 'name' || command === 'label') {
         ds.name = unwrapped(value);
       } else if (command === 'description') {
         ds.description = unwrapped(value);

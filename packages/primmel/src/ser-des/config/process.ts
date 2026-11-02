@@ -1074,7 +1074,7 @@ export const parseProcess: Parser = function (id, data) {
         result.gates.push(...parseGateEntries(unwrapBlock(value()), id));
       } else if (keyword === 'guard' || keyword === 'machine_steps') {
         throw new Error(retiredGateSpelling(keyword, id));
-      } else if ((keyword === 'name' || keyword === 'label')) {
+      } else if (keyword === 'name' || keyword === 'label') {
         result.name = unwrapped(value);
       } else if (keyword === 'overlay') {
         result.overlay = value() === 'true';
