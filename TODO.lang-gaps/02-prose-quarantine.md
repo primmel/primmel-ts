@@ -54,6 +54,18 @@ moves 2,676 sites with zero semantic gain — and stays the owner's
 deferred call, per this file's disposition. The carriers' block forms
 are canonical since phase 2; nothing here is bare.
 
+**Item 6, rung one EXECUTED (2026-11-02, the proceed-all waves):**
+`label` is now the authoring ALIAS of the `name` facet (kernel#287 —
+every name-facet parser accepts both spellings identically; the wire
+field and the dump stay `name`; the datum, form-field, role, and
+calculation label facets are their OWN surfaces, not aliases), and the
+corpus's 2,676 authored `name "…"` facets migrate onto `label` on the
+next library cut. The dump-flip (the canonical serialization emitting
+`label`) is the recorded NEXT rung — a separately-timed decision, since
+it re-bases every dump-expectation in the kernel's tests. `title`
+(431) and `summary` (189) stay their own facets (typed carriers, not
+spellings of name).
+
 **The content campaign (2026-10-30 — items 3 and 5 executed, library#151).**
 Item 3's ledger over 575 checks (112 with numerals): 31 declared
 already, **46 newly declared** as typed requirement params (11
