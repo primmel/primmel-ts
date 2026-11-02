@@ -1,5 +1,6 @@
 import type { SeriesDecl } from './Series';
 import type { SourceRef } from './Subject';
+import type DatumOrigin from './DatumOrigin';
 
 export type SymbolType =
   | 'number'
@@ -43,8 +44,11 @@ interface Symbol {
   kind: string;
   /** Quantity kind (e.g. mass, volume-fraction). */
   quantityKind: string;
-  /** measured | derived | declared (free string). */
-  origin: string;
+  /** The datum origin axis (declared | design-fixed | observed |
+   *  computed) — the value's provenance; the free-form spellings
+   *  refuse at parse (the origin-axis wave). '' = the symbol omits
+   *  the facet. */
+  origin: DatumOrigin | '';
   /** Legacy identifier from the source document. */
   legacyId: string;
   /** Attribute id this symbol is bound to. */

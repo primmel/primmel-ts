@@ -1,0 +1,39 @@
+# Conformance corpus: the origin axis tokens on the flat facets.
+# Clause: ERR-02 (positive): every axis token parses on
+# attribute_definition and on symbol.
+requirement /req/a {
+ name "Anchor"
+ statement { S }
+}
+
+attribute_definition depth_max {
+ symbol "d_max"
+ origin declared
+}
+
+attribute_definition n_lc {
+ symbol "n_lc"
+ origin design-fixed
+}
+
+attribute_definition reading {
+ symbol "r"
+ origin observed
+}
+
+attribute_definition ratio {
+ symbol "q"
+ origin computed
+}
+
+symbol s_observed {
+ name "Observed reading"
+ type number
+ origin observed
+}
+
+symbol s_declared {
+ name "Table value"
+ type number
+ origin declared
+}

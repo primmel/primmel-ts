@@ -136,6 +136,10 @@ import {
   dumpScalarToken,
   readQuantityBlock,
 } from './quantity';
+import {
+  assertDatumOrigin,
+  DATUM_ORIGINS as ATTRIBUTE_DEFINITION_DATUM_ORIGINS,
+} from './datum-origins';
 import type { ConstructDefinition } from './index';
 import type { ParseContext } from '../types';
 import type {
@@ -1182,13 +1186,9 @@ function dumpPairList(decl: PairListDecl): string {
 }
 
 // The datum origin axis ([[datum-unification]]): the value's epistemic
-// provenance — the same closed vocabulary the datum construct enforces.
-const ATTRIBUTE_DEFINITION_DATUM_ORIGINS = [
-  'declared',
-  'design-fixed',
-  'observed',
-  'computed',
-] as const;
+// provenance — declared once in datum-origins.ts (imported at the file
+// head as ATTRIBUTE_DEFINITION_DATUM_ORIGINS); the datum block keeps
+// its "Unknown datum origin" diagnostic (the corpus's tests pin it).
 
 /** The `datum { … }` block authored inside an attribute definition (the
  *  datum unification's fourth rung, TODO.lang-gaps/04, spec
@@ -1230,7 +1230,7 @@ function readAttributeDefinitionDatum(
             `Parsing error: attribute_definition. ID ${id}: Unknown datum origin "${origin}" (valid: ${ATTRIBUTE_DEFINITION_DATUM_ORIGINS.join(', ')})`,
           );
         }
-        datum.origin = origin;
+        datum.origin = origin as AttributeDefinitionDatum['origin'];
       } else if (keyword === 'scope') {
         datum.scope = stripWrapping(value());
       } else {
@@ -1325,7 +1325,15 @@ const parseAttributeDefinition: ConstructDefinition['parse'] = function (
       // The pair-list block (smart TODO.roadmap/40 batch 4).
       result.pairList = parsePairList(unwrapBlock(t[i++]));
     } else if (cmd === 'origin') {
-      result.origin = stripWrapping(t[i++]);
+      // THE ORIGIN AXIS IS CLOSED (the origin-axis wave, spec
+      // [[datum-unification]]): the flat facet takes the same four
+      // tokens the datum block enforces — the free-form spellings
+      // (measured, derived, test-dependent, lookup) refuse at parse.
+      result.origin = assertDatumOrigin(
+        stripWrapping(t[i++]),
+        'attribute_definition',
+        id,
+      );
     } else if (cmd === 'scope') {
       result.scope = stripWrapping(t[i++]);
     } else if (cmd === 'datum') {

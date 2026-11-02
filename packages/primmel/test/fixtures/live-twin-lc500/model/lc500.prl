@@ -38,7 +38,7 @@ attribute_definition indication {
   quantity_kind mass
   unit kg
   value_type QuantityValue
-  origin measured
+  origin observed
   scope sample
   category metrological
 }

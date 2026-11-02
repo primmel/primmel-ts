@@ -13,6 +13,7 @@ import {
   unwrapBlock,
 } from '../tokenize';
 import { forEachEntry, proseBlock } from '../parse-block';
+import { assertDatumOrigin } from './datum-origins';
 import {
   parseRefFromReaders,
   refTargetToSourceRef,
@@ -263,10 +264,14 @@ export const parseDatum: Parser = function (id, raw) {
       } else if (command === 'quantity_kind') {
         out.quantityKind = stripWrapping(value());
       } else if (command === 'origin') {
-        const o = stripWrapping(value());
-        if (['declared', 'design-fixed', 'observed', 'computed'].includes(o)) {
-          out.origin = o as Datum['origin'];
-        }
+        // the origin axis is closed here too (the origin-axis wave) —
+        // an off-axis token used to be silently dropped, leaving the
+        // 'declared' default; the silent coercion refuses at parse now.
+        out.origin = assertDatumOrigin(
+          stripWrapping(value()),
+          'attribute (LutaML surface)',
+          id,
+        ) as Datum['origin'];
       } else if (command === 'scope') {
         out.scope = stripWrapping(value());
       } else {

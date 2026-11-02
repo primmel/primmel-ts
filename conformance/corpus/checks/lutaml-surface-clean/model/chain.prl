@@ -9,7 +9,7 @@ attribute_definition serial_number {
 attribute_definition e_max {
   name "Maximum capacity"
   value_type number
-  origin design-variable
+  origin design-fixed
   scope model
   category metrological
 }

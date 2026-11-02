@@ -13,6 +13,7 @@ import type { QuantityValue } from './Quantity';
 import type { ApplicabilityEntry } from './Form';
 import type { Endpoint, ServeBinding } from './Twin';
 import type { CompositionDecl } from './Composition';
+import type DatumOrigin from './DatumOrigin';
 
 export interface SourceRef {
   doc: string;
@@ -268,10 +269,9 @@ export interface AttributeDefinitionDatum {
   unit: string;
   /** The quantity kind (unitsdb reference). */
   quantityKind: string;
-  /** declared | design-fixed | observed | computed (the datum's origin
-   *  axis — the value's provenance, never the executor's); '' = the
-   *  block is silent (the flat `origin` stands). */
-  origin: string;
+  /** The datum origin axis (the value's provenance, never the
+   *  executor's); '' = the block is silent (the flat `origin` stands). */
+  origin: DatumOrigin | '';
   /** The scope axis (model | family | sample | run); '' = the block is
    *  silent (the flat `scope` stands). */
   scope: string;
@@ -291,7 +291,9 @@ export interface AttributeDefinition {
   quantityKind: string;
   unit: string;
   valueType: string;
-  origin: string;
+  /** '' = the attribute omits the facet (the datum view falls back to
+   *  the block or stays silent); authored values are axis tokens only. */
+  origin: DatumOrigin | '';
   scope: string;
   category: string;
   /**
