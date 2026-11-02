@@ -15,6 +15,10 @@ import {
 import { forEachEntry, proseBlock } from '../parse-block';
 import { assertDatumOrigin } from './datum-origins';
 import {
+  readExpressionCarrier,
+  dumpExpressionBlock,
+} from '../expression-carrier';
+import {
   parseRefFromReaders,
   refTargetToSourceRef,
   dumpSourceRefAsRef,
@@ -333,7 +337,11 @@ export const parseCheck: Parser = function (id, data) {
           : [];
         out.inputs = inner.map(x => stripWrapping(x));
       } else if (command === 'expression') {
-        out.expression = stripWrapping(value());
+        // Two carriers: the legacy quoted ocl{…} string and the v3.3
+        // inline block — the value's shape decides (register 18).
+        const c = readExpressionCarrier(value(), `check ${id} expression`);
+        out.expression = c.source;
+        out.expressionBound = c.inline || undefined;
       } else if (command === 'operator') {
         out.operator = stripWrapping(value());
       } else if (command === 'threshold') {
@@ -375,7 +383,12 @@ export const dumpCheck: Dumper<Check> = function (x) {
     lines.push(`  inputs { ${x.inputs.join(' ')} }`);
   }
   if (x.expression) {
-    lines.push(`  expression "${escapeString(x.expression)}"`);
+    if (x.expressionBound) {
+      const block = dumpExpressionBlock('expression', x.expression, '  ');
+      lines.push(block.trimEnd());
+    } else {
+      lines.push(`  expression "${escapeString(x.expression)}"`);
+    }
   }
   if (x.operator) {
     lines.push(`  operator ${x.operator}`);

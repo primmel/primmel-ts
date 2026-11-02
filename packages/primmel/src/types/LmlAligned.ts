@@ -81,6 +81,9 @@ export interface Check {
   id: string;
   inputs: string[];
   expression: string;
+  /** The v3.3 inline block carrier — the checker walks the AST, exactly;
+   *  the quoted ocl{…} string is the legacy carrier C178 deprecates. */
+  expressionBound?: boolean;
   operator: string;
   /** The threshold expression or bound symbol name. */
   threshold: string;

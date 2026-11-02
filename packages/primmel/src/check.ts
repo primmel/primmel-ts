@@ -1321,7 +1321,12 @@ export function checkPackage(
         return;
       }
       seen.add(id);
-      if (OCL_WORDS.has(id) || scopeSet.has(id) || usesCovers(uses, id)) {
+      if (
+        OCL_WORDS.has(id) ||
+        id.startsWith('#') ||
+        scopeSet.has(id) ||
+        usesCovers(uses, id)
+      ) {
         return;
       }
       out.push(id);
@@ -1429,6 +1434,13 @@ export function checkPackage(
     'mean_of',
     'stddev_of',
     'count_of',
+    // the OCL null-check literal's call form — OCL_WORDS carries the
+    // word; the calls leg needs the call spelling too
+    'oclIsUndefined',
+    // the series-access vocabulary (OCL_WORDS carries the words): the
+    // creep-family derivations read their windows positionally
+    'reading_at',
+    'window',
   ]);
   const DECLARATION_KINDS = new Set([
     'symbol',
@@ -1440,6 +1452,9 @@ export function checkPackage(
     // the observable prefix resolves against the symbols registry
     // (kind observable) — C53's limit.uses leg resolves the same way
     'observable',
+    // the measurement plane joins the expression registry (the C171
+    // closure) — the args walk accepts its sources symmetrically
+    'measurement',
   ]);
   // the dispatch-context roots: the chain the expression reads the
   // subject through — allowed as PATH roots, never as bare scalars
@@ -1470,10 +1485,25 @@ export function checkPackage(
     const ids = freeIdentifiers(ast);
     const args = limit.args ?? [];
     const argNames = new Set(args.map(a => a.name));
+    // the expression's own uses list binds (the C171 doctrine's second
+    // registry): a name the uses list covers is declared, exactly like
+    // an args binding
+    const uses = limit.uses ?? [];
+    const bareUse = (q: string): string => q.split(':').pop() ?? q;
+    const useCoversId = (id: string): boolean =>
+      uses.some(u => {
+        const tail = bareUse(u.replace(/\./g, ':'));
+        return u === id || tail === id || u.endsWith('.' + id);
+      });
+    // the OCL literals (true/false/null/invalid) are words, never free
+    // identifiers — the inline carrier's strict walk sees them raw
+    const freeNames = ids.names.filter(
+      n => !OCL_WORDS.has(n) && !n.startsWith('#'),
+    );
     if (
       memberScope === null &&
       args.length === 0 &&
-      ids.names.some(n => !n.includes('.'))
+      freeNames.some(n => !n.includes('.') && !useCoversId(n))
     ) {
       // a body over pure dispatch-context paths (`sample.test_context.*`)
       // binds nothing and is legal; any bare identifier is ambient air
@@ -1512,10 +1542,13 @@ export function checkPackage(
         `${ownerKind} ${ownerId}: the limit calls "${call}(…)", which no argument binds and which is not in the expression function vocabulary (abs max min floor ceil round sqrt exp ln log mod sum count exists forall) — air inside the formula (expression-identifiers-resolve)`,
       );
     }
-    for (const id of new Set(ids.names)) {
+    for (const id of new Set(freeNames)) {
+      if (useCoversId(id)) {
+        continue;
+      }
       const root = id.split('.')[0];
       if (id.includes('.')) {
-        if (root === 'self' || argNames.has(root)) {
+        if (root === 'self' || argNames.has(root) || useCoversId(root)) {
           continue;
         }
         if (CONTEXT_ROOTS.has(root)) {
@@ -2413,6 +2446,24 @@ export function checkPackage(
   // generation) activates the ratchet. The inline blocks are the only
   // forward form.
   const DEPRECATION_GENERATION = 'v3.4';
+  // the ratchet counts only carriers the language can parse — the
+  // legacy-string population that never parsed (the prose judgments, the
+  // bracket idioms, the bar-abs) is inert data on a separate retirement
+  // track, never a C178 finding
+  const migratableCarrier = (source: string): boolean => {
+    // the quoted carrier stores the ocl{…} wrapper verbatim — probe the
+    // body the same way the fold's identifier reader does
+    const inner =
+      source.startsWith('ocl{') && source.endsWith('}')
+        ? source.slice(4, -1)
+        : source;
+    try {
+      parseExpression(inner);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const generationRank = (g: string): number => {
     const m = g.match(/^v(\d+)(?:\.(\d+))?$/);
     if (!m) {
@@ -2433,33 +2484,72 @@ export function checkPackage(
       ) {
         let legacy = 0;
         for (const r of standard.requirements ?? []) {
-          if (r.limit && !r.limit.argsBound && r.limit.expression) {
+          if (
+            r.limit &&
+            !r.limit.argsBound &&
+            r.limit.expression &&
+            migratableCarrier(r.limit.expression)
+          ) {
             legacy += 1;
           }
         }
         for (const v of standard.verdicts ?? []) {
+          const derive = (v as { derive?: string }).derive;
           if (
-            (v as { derive?: string }).derive &&
-            !(v as { deriveBound?: boolean }).deriveBound
+            derive &&
+            !(v as { deriveBound?: boolean }).deriveBound &&
+            migratableCarrier(derive)
           ) {
             legacy += 1;
           }
         }
         for (const t of standard.conformanceTests ?? []) {
           for (const v of t.variables ?? []) {
-            if (v.derivation && !v.derivationBound) {
+            if (
+              v.derivation &&
+              !v.derivationBound &&
+              migratableCarrier(v.derivation)
+            ) {
               legacy += 1;
             }
           }
           for (const p of t.preconditions ?? []) {
-            if (p.check && !p.checkBound) {
+            if (p.check && !p.checkBound && migratableCarrier(p.check)) {
               legacy += 1;
             }
           }
         }
         for (const c of standard.constraints ?? []) {
-          if (c.check && !c.checkBound) {
+          if (c.check && !c.checkBound && migratableCarrier(c.check)) {
             legacy += 1;
+          }
+        }
+        // the check construct's own expression carrier (the corpus's
+        // dominant plane — the canonical verdict declarations) and the
+        // process steps' completion gates
+        for (const c of standard.checks ?? []) {
+          // a FOLDED check is the parse-side view of its owner's carrier
+          // (C161) — the owner's facet is counted by its own leg above;
+          // counting the view would double-count one carrier
+          if (
+            c.expression &&
+            !c.expressionBound &&
+            !c.folds &&
+            migratableCarrier(c.expression)
+          ) {
+            legacy += 1;
+          }
+        }
+        for (const p of standard.processes ?? []) {
+          for (const st of (p as { steps?: unknown[] }).steps ?? []) {
+            const completion = (st as { completion?: string }).completion;
+            if (
+              completion &&
+              !(st as { completionBound?: boolean }).completionBound &&
+              migratableCarrier(completion)
+            ) {
+              legacy += 1;
+            }
           }
         }
         if (legacy > 0) {
