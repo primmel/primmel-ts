@@ -705,9 +705,29 @@ export function computeTextCoverage(
   for (const manifest of manifests) {
     const urn = manifest.document.urn;
     const sentences = manifest.sentences;
+    // the coverage matcher follows the same subtree doctrine the C169
+    // resolution walk uses: a binding naming the fragment's ANCESTOR
+    // (at a dot/slash boundary) covers the sentences the fragment
+    // carries — the corpus binds annex roots (clause-A) and body parts,
+    // and the exact match alone produced a false-gap flood (the
+    // coverage books finding, the 2026-11-02 audit)
+    const fragmentCovered = (fragment: string): boolean => {
+      let f = fragment;
+      for (;;) {
+        if (boundFragments.has(`${urn}#${f}`)) {
+          return true;
+        }
+        const dot = f.lastIndexOf('.');
+        const slash = f.lastIndexOf('/');
+        const cut = Math.max(dot, slash);
+        if (cut <= 0) {
+          return false;
+        }
+        f = f.slice(0, cut);
+      }
+    };
     const sentenceCovered = (s: SentenceRecord): boolean =>
-      boundFragments.has(`${urn}#${s.fragment}`) ||
-      boundSentences.has(`${urn}#${s.address}`);
+      fragmentCovered(s.fragment) || boundSentences.has(`${urn}#${s.address}`);
 
     // First pass: allowance matches (per document).
     const allowanceOf = new Map<string, CoverageAllowance>();

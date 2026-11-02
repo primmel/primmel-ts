@@ -250,6 +250,34 @@ describe('text coverage in primmel check (TODO.roadmap/26)', () => {
     assert.equal(normalIssues.filter(i => i.check === 'C71').length, 0);
   });
 
+  it("an ancestor binding covers the fragment's sentences (the subtree doctrine, the C169 matching)", () => {
+    // a ref at the PARENT clause covers the sub-clause fragment's
+    // sentences — the corpus binds annex roots and body parts; the
+    // exact match alone produced a false-gap flood (the coverage
+    // books finding)
+    const req = `requirement /req/annex {
+  binds_to { model.parameters.e_max }
+  statement { The annex provisions bind the model }
+  ref derives-from "${URN}#clause-5"
+}
+instrument T {
+  dimension accuracy_class { scope group values { A B } }
+}
+attribute_definition e_max {
+  symbol "E_max" origin design-fixed scope model unit t quantity_kind mass
+}
+`;
+    const issues = checked(
+      { 'm.prl': req, 'sources-prd/r60-1.sentences.json': SEEDED_MANIFEST },
+      { strictness: 'audit' },
+    );
+    const c71 = issues.filter(i => i.check === 'C71');
+    // clause-5.3.2/s1 is covered THROUGH the clause-5 ancestor binding;
+    // clause-2.2/s1 (no ancestor bound) and the 2.12.1 pair stay
+    assert.equal(c71.length, 3);
+    assert.ok(!c71.some(i => i.message.includes('clause-5.3.2')));
+  });
+
   it('a sentence-level binding covers exactly the bound sentence (source … fragment "s1")', () => {
     const req = `requirement /req/envelope {
   binds_to { model.parameters.e_max }
