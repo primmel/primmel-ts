@@ -95,7 +95,8 @@
     "annex-a": "../../node_modules/.bin/tsx scripts/annex-a.mts",
     "annex-b": "../../node_modules/.bin/tsx scripts/annex-b.mts",
     "check": "../../node_modules/.bin/tsx scripts/check.mts",
-    "test:browser": "node --test --import tsx scripts/browser-build.test.mts"
+    "test:browser": "node --test --import tsx scripts/browser-build.test.mts",
+    "rebake-golden": "tsx scripts/rebake-golden.mts"
   },
   "files": [
     "dist/",
