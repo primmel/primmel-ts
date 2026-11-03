@@ -103,6 +103,18 @@ export function lex(src: string): ExprToken[] {
       i = j;
       continue;
     }
+    if (c === '$' && /[A-Za-z_]/.test(src[i + 1] ?? '')) {
+      // the form-derivation row context ($index, $prev): one name
+      // token, '$' included, so the canonical render and the row
+      // wiring see the spelling verbatim
+      let j = i + 1;
+      while (j < src.length && /[A-Za-z0-9_]/.test(src[j])) {
+        j += 1;
+      }
+      tokens.push({ kind: 'name', value: src.slice(i, j) });
+      i = j;
+      continue;
+    }
     if (/[A-Za-z_]/.test(c)) {
       let j = i;
       while (j < src.length && /[A-Za-z0-9_.]/.test(src[j])) {
@@ -281,11 +293,13 @@ class ExprParser {
           throw new Error('expression: expected "else" in the conditional');
         }
         const whenFalse = this.parseLevel(0);
-        const endTok = this.take();
-        if (endTok.kind !== 'name' || endTok.value !== 'endif') {
-          throw new Error(
-            'expression: expected "endif" to close the conditional',
-          );
+        // endif is OPTIONAL: the runtime's conditional reads the
+        // endif-less spelling (the corpus carries both), and the
+        // canonical render emits the endif (the unambiguous delimiter
+        // for nested branches)
+        const endTok = this.peek();
+        if (endTok?.kind === 'name' && endTok.value === 'endif') {
+          this.take();
         }
         return { type: 'ifelse', cond, then: whenTrue, else: whenFalse };
       }

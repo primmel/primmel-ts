@@ -218,6 +218,17 @@ function tokenize(src: string): Tok[] {
       i += 2;
       continue;
     }
+    if (ch === '$' && /[A-Za-z_]/.test(s[i + 1] ?? '')) {
+      // the form-derivation row context ($index, $prev): one token,
+      // '$' included — the row wiring binds it verbatim
+      let j = i + 1;
+      while (j < s.length && /[A-Za-z0-9_]/.test(s[j])) {
+        j += 1;
+      }
+      out.push({ t: 'id', v: s.slice(i, j) });
+      i = j;
+      continue;
+    }
     if (ch === '#') {
       // the OCL enum literal (#ready): one token; evaluates as the
       // bare member name so the state-gate comparison is a string =
@@ -294,6 +305,10 @@ function evalIf(r: Reader, env: RunEnv): number {
       throw new Error('runtime: the derivation expected "else"');
     }
     const b = evalIf(r, env);
+    const endB = r.peek();
+    if (endB && endB.t === 'id' && endB.v === 'endif') {
+      r.next();
+    }
     return cond ? a : b;
   }
   return evalComparison(r, env);
