@@ -87,6 +87,19 @@ jobs:
           repository: oimlsmart/model-library
           path: .corpus
           token: ${{ secrets.OIMLSMART_CORPUS_TOKEN }}
+      # The pair-smoke: when this kernel branch carries a corpus change
+      # under the SAME branch name (the cross-repo waves' convention),
+      # the smoke runs against THAT branch — the mutual-gate dance's
+      # red-by-design CI becomes green-with-proof. A branch pair that
+      # exists but fails still fails here: the healing proof rides the
+      # pair, never the hope.
+      - name: Prefer the paired corpus branch (same branch name, when it exists)
+        if: steps.corpus.outcome == 'success' && github.head_ref != ''
+        working-directory: .corpus
+        run: |
+          git fetch origin "${{ github.head_ref }}" && git checkout "${{ github.head_ref }}" \
+            && echo "paired corpus branch: ${{ github.head_ref }}" \
+            || echo "no paired branch — the smoke runs on the corpus default branch"
       - name: Composed corpus smoke (strict + audit, the full uses closure)
         env:
           PRIMMEL_CORPUS_DIR: ${{ github.workspace }}/.corpus
