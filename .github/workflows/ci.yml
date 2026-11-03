@@ -47,12 +47,17 @@ jobs:
           PRIMMEL_SPEC_SOURCES: ${{ github.workspace }}/spec/sources
       - name: Conformance suite (the reference toolchain against the corpus)
         run: yarn test:conformance
-      - name: The second checker's corpus leg (parsanol from npm — no checkout needed)
+      - name: The second checker's corpus leg (parsanol from npm, PINNED — no checkout needed)
         run: |
           SCRATCH="$(mktemp -d)"
           cd "$SCRATCH"
-          npm init -y > /dev/null 2>&1
-          npm install parsanol --no-audit --no-fund
+          # the version is PINNED: parsanol publishes fast (three releases
+          # in one day broke this leg wholesale — 0.10.35 shipped a wire
+          # change and the adapter executed zero cases), and a floating
+          # install turns the parsanol owner's release into this repo's
+          # red CI. The bump is deliberate: verify the new version
+          # against this leg LOCALLY, then raise the pin.
+          npm install parsanol@0.10.32 --no-audit --no-fund
           cd "$GITHUB_WORKSPACE"
           PRIMMEL_PARSANOL_TS="$SCRATCH/node_modules/parsanol" yarn test:conformance:checker2
   corpus:
