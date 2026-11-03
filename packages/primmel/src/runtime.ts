@@ -156,101 +156,16 @@ export interface RunInput {
 }
 
 /** ── The expression evaluator ─────────────────────────────────────
- *  A recursive-descent reader for the closed-derivation subset. */
+ *  ONE language, ONE grammar: the evaluator walks the same AST the
+ *  checker parses (expressions/index.ts). The private tokenizer and
+ *  the recursive-descent reader it replaced disagreed with the AST
+ *  parser three times in one program (the conditional's endif, the
+ *  row context, the aggregator vocabulary) — each found by the corpus
+ *  breaking in CI, never by a test. Walking the parsed tree makes that
+ *  disagreement class structurally impossible: a syntax the parser
+ *  accepts is a syntax the evaluator walks. */
 
-type Tok =
-  { t: 'num'; v: number } | { t: 'id'; v: string } | { t: 'op'; v: string };
-
-function tokenize(src: string): Tok[] {
-  const out: Tok[] = [];
-  let i = 0;
-  const s = src;
-  while (i < s.length) {
-    const ch = s[i]!;
-    if (/\s/.test(ch)) {
-      i++;
-      continue;
-    }
-    if (/[0-9]/.test(ch) || (ch === '.' && /[0-9]/.test(s[i + 1] ?? ''))) {
-      // The same number grammar as the expression parser (kernel#197):
-      // integer, fraction, leading dot, and exponent forms.
-      let j = i;
-      while (j < s.length && /[0-9]/.test(s[j]!)) {
-        j++;
-      }
-      if (s[j] === '.') {
-        j++;
-        while (j < s.length && /[0-9]/.test(s[j]!)) {
-          j++;
-        }
-      }
-      if (s[j] === 'e' || s[j] === 'E') {
-        let k = j + 1;
-        if (s[k] === '+' || s[k] === '-') {
-          k++;
-        }
-        if (/[0-9]/.test(s[k] ?? '')) {
-          j = k;
-          while (j < s.length && /[0-9]/.test(s[j]!)) {
-            j++;
-          }
-        }
-      }
-      out.push({ t: 'num', v: Number(s.slice(i, j)) });
-      i = j;
-      continue;
-    }
-    if (/[A-Za-z_]/.test(ch)) {
-      let j = i;
-      while (j < s.length && /[A-Za-z0-9_]/.test(s[j]!)) {
-        j++;
-      }
-      out.push({ t: 'id', v: s.slice(i, j) });
-      i = j;
-      continue;
-    }
-    if (
-      s.startsWith('<=', i) ||
-      s.startsWith('>=', i) ||
-      s.startsWith('!=', i)
-    ) {
-      out.push({ t: 'op', v: s.slice(i, i + 2) });
-      i += 2;
-      continue;
-    }
-    if (ch === '$' && /[A-Za-z_]/.test(s[i + 1] ?? '')) {
-      // the form-derivation row context ($index, $prev): one token,
-      // '$' included — the row wiring binds it verbatim
-      let j = i + 1;
-      while (j < s.length && /[A-Za-z0-9_]/.test(s[j])) {
-        j += 1;
-      }
-      out.push({ t: 'id', v: s.slice(i, j) });
-      i = j;
-      continue;
-    }
-    if (ch === '#') {
-      // the OCL enum literal (#ready): one token; evaluates as the
-      // bare member name so the state-gate comparison is a string =
-      let j = i + 1;
-      while (j < s.length && /[A-Za-z0-9_]/.test(s[j])) {
-        j += 1;
-      }
-      out.push({ t: 'id', v: s.slice(i, j) });
-      i = j;
-      continue;
-    }
-    if ('+-*/()<>=,.'.includes(ch)) {
-      out.push({ t: 'op', v: ch });
-      i++;
-      continue;
-    }
-    throw new Error(
-      `runtime: the derivation uses a character the evaluator does not know: "${ch}"`,
-    );
-  }
-  return out;
-}
+import { parseExpression, type ExprAst } from './expressions';
 
 /** The evaluation environment: plain values, list payloads (the
  *  measurement language's list variables), and nested objects for
@@ -260,324 +175,207 @@ export interface RunScopeObj {
 }
 export type RunEnv = RunScopeObj;
 
-class Reader {
-  constructor(private toks: Tok[]) {}
-  private pos = 0;
-  peek(): Tok | undefined {
-    return this.toks[this.pos];
-  }
-  peekAt(offset: number): Tok | undefined {
-    return this.toks[this.pos + offset];
-  }
-  next(): Tok {
-    const t = this.toks[this.pos];
-    if (!t) {
-      throw new Error('runtime: the derivation ended unexpectedly');
-    }
-    this.pos++;
-    return t;
-  }
-  expectOp(v: string): void {
-    const t = this.next();
-    if (t.t !== 'op' || t.v !== v) {
-      throw new Error(`runtime: the derivation expected "${v}"`);
-    }
-  }
-}
+type Value = number | string | number[] | RunScopeObj;
 
-function evalExpr(r: Reader, env: RunEnv): number {
-  return evalIf(r, env);
-}
-
-// if <cond> then <expr> else <expr> — R 60's tier selection rides it.
-function evalIf(r: Reader, env: RunEnv): number {
-  const t = r.peek();
-  if (t && t.t === 'id' && t.v === 'if') {
-    r.next();
-    const cond = evalComparison(r, env);
-    const thenT = r.next();
-    if (thenT.t !== 'id' || thenT.v !== 'then') {
-      throw new Error('runtime: the derivation expected "then"');
-    }
-    const a = evalIf(r, env);
-    const elseT = r.next();
-    if (elseT.t !== 'id' || elseT.v !== 'else') {
-      throw new Error('runtime: the derivation expected "else"');
-    }
-    const b = evalIf(r, env);
-    const endB = r.peek();
-    if (endB && endB.t === 'id' && endB.v === 'endif') {
-      r.next();
-    }
-    return cond ? a : b;
-  }
-  return evalComparison(r, env);
-}
-
-function evalComparison(r: Reader, env: RunEnv): number {
-  const left = evalAdd(r, env);
-  const t = r.peek();
-  if (t && t.t === 'op' && ['<=', '>=', '<', '>', '=', '!='].includes(t.v)) {
-    r.next();
-    const right = evalAdd(r, env);
-    switch (t.v) {
-      case '<=':
-        return left <= right ? 1 : 0;
-      case '>=':
-        return left >= right ? 1 : 0;
-      case '<':
-        return left < right ? 1 : 0;
-      case '>':
-        return left > right ? 1 : 0;
-      case '=':
-        return left === right ? 1 : 0;
-      case '!=':
-        return left !== right ? 1 : 0;
-    }
-  }
-  return left;
-}
-
-function evalAdd(r: Reader, env: RunEnv): number {
-  let v = evalMul(r, env);
-  for (;;) {
-    const t = r.peek();
-    if (t && t.t === 'op' && (t.v === '+' || t.v === '-')) {
-      r.next();
-      const rhs = evalMul(r, env);
-      v = t.v === '+' ? v + rhs : v - rhs;
-      continue;
-    }
-    return v;
-  }
-}
-
-function evalMul(r: Reader, env: RunEnv): number {
-  let v = evalUnary(r, env);
-  for (;;) {
-    const t = r.peek();
-    if (t && t.t === 'op' && (t.v === '*' || t.v === '/')) {
-      r.next();
-      const rhs = evalUnary(r, env);
-      v = t.v === '*' ? v * rhs : v / rhs;
-      continue;
-    }
-    return v;
-  }
-}
-
-function evalUnary(r: Reader, env: RunEnv): number {
-  const t = r.peek();
-  if (t && t.t === 'op' && (t.v === '-' || t.v === '+')) {
-    r.next();
-    const v = evalUnary(r, env);
-    return t.v === '-' ? -v : v;
-  }
-  return evalPostfix(r, env);
-}
-
-function evalPostfix(r: Reader, env: RunEnv): number {
-  let v: number | string | number[] | RunScopeObj = evalAtom(r, env);
-  for (;;) {
-    const t = r.peek();
-    if (t && t.t === 'op' && t.v === '.') {
-      r.next();
-      const field = r.next();
-      if (field.t !== 'id') {
-        throw new Error('runtime: the derivation expected a field name');
-      }
-      if (v === null || typeof v !== 'object' || Array.isArray(v)) {
-        throw new Error(
-          `runtime: the derivation reads "${field.v}" off a plain value`,
-        );
-      }
-      const scope: RunScopeObj = v;
-      const next: number | string | number[] | RunScopeObj | undefined =
-        scope[field.v];
-      if (next === undefined) {
-        throw new Error(
-          `runtime: the derivation reads the undeclared field "${field.v}"`,
-        );
-      }
-      v = next;
-      continue;
-    }
-    return v as number;
-  }
-}
-
-/** True when the reader's next tokens are `( id )` and that id binds a
- *  list — the discriminator between scalar min/max(a, b) and the
- *  aggregators min(list)/max(list). Pure peek: no state to restore. */
-function listShaped(r: Reader, env: RunEnv): boolean {
-  const open = r.peek();
-  const id = r.peekAt(1);
-  const close = r.peekAt(2);
-  return (
-    open?.t === 'op' &&
-    open.v === '(' &&
-    id?.t === 'id' &&
-    close?.t === 'op' &&
-    close.v === ')' &&
-    Array.isArray(env[id.v])
-  );
-}
-
-function evalAtom(r: Reader, env: RunEnv): number {
-  const t = r.next();
-  if (t.t === 'num') {
-    return t.v;
-  }
-  if (t.t === 'id' && t.v.startsWith('#')) {
-    // the OCL enum literal is state-gate vocabulary — the textual gate
-    // reader (evaluateStateGate) owns it; the numeric evaluator never
-    // sees a well-formed gate, so this is a diagnostic, not a value
-    throw new Error(
-      `runtime: the enum literal "${t.v}" is state-gate vocabulary, not a numeric value`,
-    );
-  }
-  if (t.t === 'id') {
-    // The list aggregators (the MMEL v2 measurement language's postfix
-    // `.sum/.max/.min/.count/.average`, retained as call-form over the
-    // run scope's list payloads): sum/max/min/count/average(list).
-    // The min/max LIST form is discriminated by listShaped — scalar
-    // min/max(a, b) keeps its branch below.
-    if (
-      t.v === 'sum' ||
-      t.v === 'count' ||
-      t.v === 'average' ||
-      ((t.v === 'min' || t.v === 'max') && listShaped(r, env))
-    ) {
-      r.expectOp('(');
-      const name = r.next();
-      r.expectOp(')');
-      const list = env[name.v];
-      if (!Array.isArray(list)) {
-        throw new Error(
-          `runtime: ${t.v}(...) aggregates a list — "${name.v}" is ${Array.isArray(list) ? 'a list' : typeof list}`,
-        );
-      }
-      const nums = list.map(Number);
-      if (t.v === 'count') {
-        return nums.length;
-      }
-      if (nums.length === 0) {
-        throw new Error(`runtime: ${t.v}(...) over the empty list "${name.v}"`);
-      }
-      if (t.v === 'sum') {
-        return nums.reduce((a, b) => a + b, 0);
-      }
-      if (t.v === 'average') {
-        return nums.reduce((a, b) => a + b, 0) / nums.length;
-      }
-      return t.v === 'min' ? Math.min(...nums) : Math.max(...nums);
-    }
-    if (t.v === 'abs' || t.v === 'min' || t.v === 'max') {
-      r.expectOp('(');
-      const a = evalExpr(r, env);
-      let b: number | null = null;
-      const comma = r.peek();
-      if (comma && comma.t === 'op' && comma.v === ',') {
-        r.next();
-        b = evalExpr(r, env);
-      }
-      r.expectOp(')');
-      if (t.v === 'abs') {
-        return Math.abs(a);
-      }
-      if (b === null) {
-        throw new Error(`runtime: ${t.v} needs two arguments`);
-      }
-      return t.v === 'min' ? Math.min(a, b) : Math.max(a, b);
-    }
-    if (t.v === 'ocl') {
-      // The calculation idiom's wrapping token — the expression inside
-      // the braces was already unwrapped by the caller.
-      r.expectOp('(');
-      const v = evalExpr(r, env);
-      r.expectOp(')');
-      return v;
-    }
-    if (t.v === 'true') {
-      return 1;
-    }
-    if (t.v === 'false') {
-      return 0;
-    }
-    if (!(t.v in env)) {
+const evalAst = (ast: ExprAst, env: RunEnv): Value => {
+  switch (ast.type) {
+    case 'num':
+      return ast.value;
+    case 'bool':
+      return ast.value ? 1 : 0;
+    case 'str':
       throw new Error(
-        `runtime: the derivation names "${t.v}", which the run scope does not bind`,
+        `runtime: the derivation carries the string literal '${ast.value}' — the closed-derivation subset is numeric`,
+      );
+    case 'nav':
+      throw new Error(
+        `runtime: the derivation navigates "${ast.source} -> ${ast.op}" — the collection operations are the calculation plane's, not the run evaluator's`,
+      );
+    case 'name': {
+      // the lexer joins dotted paths into one token, so the path array
+      // carries the whole reference; the run scope reads it segment by
+      // segment exactly as the field walk did
+      const ref = ast.path[0] ?? '';
+      if (ref.startsWith('#')) {
+        throw new Error(
+          `runtime: the enum literal "${ref}" is state-gate vocabulary, not a numeric value`,
+        );
+      }
+      const segs = ref.split('.');
+      let v: Value = env;
+      for (const seg of segs) {
+        if (v === null || typeof v !== 'object' || Array.isArray(v)) {
+          throw new Error(
+            `runtime: the derivation reads "${seg}" off a plain value`,
+          );
+        }
+        const scope: RunScopeObj = v;
+        const next: Value | undefined = scope[seg];
+        if (next === undefined) {
+          if (v === env && segs.length === 1) {
+            throw new Error(
+              `runtime: the derivation names "${ref}", which the run scope does not bind`,
+            );
+          }
+          throw new Error(
+            `runtime: the derivation reads the undeclared field "${seg}"`,
+          );
+        }
+        v = next;
+      }
+      return typeof v === 'string' ? Number(v) : v;
+    }
+    case 'member':
+      throw new Error(
+        `runtime: the derivation reads "${renderSafe(ast)}" — the member-of-call navigation is the calculation plane's`,
+      );
+    case 'unop': {
+      const v = Number(evalAst(ast.operand, env));
+      return ast.op === '-' ? -v : v;
+    }
+    case 'binop': {
+      const l = evalAst(ast.left, env);
+      const r = evalAst(ast.right, env);
+      const ln = typeof l === 'string' ? Number(l) : (l as number);
+      const rn = typeof r === 'string' ? Number(r) : (r as number);
+      switch (ast.op) {
+        case '+':
+          return ln + rn;
+        case '-':
+          return ln - rn;
+        case '*':
+          return ln * rn;
+        case '/':
+          return ln / rn;
+        case '<=':
+          return ln <= rn ? 1 : 0;
+        case '>=':
+          return ln >= rn ? 1 : 0;
+        case '<':
+          return ln < rn ? 1 : 0;
+        case '>':
+          return ln > rn ? 1 : 0;
+        case '=':
+          return ln === rn ? 1 : 0;
+        case '!=':
+          return ln !== rn ? 1 : 0;
+        default:
+          throw new Error(
+            `runtime: the derivation uses the operator "${ast.op}", which the run evaluator does not know`,
+          );
+      }
+    }
+    case 'ifelse': {
+      // the branches share the numeric discipline: a comparison yields
+      // 1/0, and the condition is truthy when non-zero
+      const c = evalAst(ast.cond, env);
+      return Number(c) !== 0
+        ? Number(evalAst(ast.then, env))
+        : Number(evalAst(ast.else, env));
+    }
+    case 'call': {
+      // the MMEL v2 measurement language's aggregators, retained as
+      // call-form over the run scope's list payloads; min/max
+      // discriminate the list form from the scalar pair by arity
+      const name = ast.callee;
+      const args = ast.args;
+      const listArg = (a: ExprAst): number[] => {
+        if (a.type !== 'name') {
+          throw new Error(
+            `runtime: ${name}(...) aggregates a list by name — the argument is not a scope reference`,
+          );
+        }
+        const ref = a.path[0] ?? '';
+        const list: Value | undefined = env[ref];
+        if (!Array.isArray(list)) {
+          throw new Error(
+            `runtime: ${name}(...) aggregates a list — "${ref}" is ${Array.isArray(list) ? 'a list' : typeof list}`,
+          );
+        }
+        return list.map(Number);
+      };
+      if (
+        name === 'sum' ||
+        name === 'count' ||
+        name === 'average' ||
+        ((name === 'min' || name === 'max') && args.length === 1)
+      ) {
+        if (args.length !== 1) {
+          throw new Error(`runtime: ${name}(...) takes one list argument`);
+        }
+        const nums = listArg(args[0]!);
+        if (name === 'count') {
+          return nums.length;
+        }
+        if (nums.length === 0) {
+          throw new Error(`runtime: ${name}(...) over an empty list`);
+        }
+        if (name === 'sum') {
+          return nums.reduce((a, b) => a + b, 0);
+        }
+        if (name === 'average') {
+          return nums.reduce((a, b) => a + b, 0) / nums.length;
+        }
+        return name === 'min' ? Math.min(...nums) : Math.max(...nums);
+      }
+      if (name === 'abs' || name === 'min' || name === 'max') {
+        if (args.length < 1 || args.length > 2) {
+          throw new Error(`runtime: ${name}(...) takes one or two arguments`);
+        }
+        const a = Number(evalAst(args[0]!, env));
+        if (args.length === 1) {
+          if (name === 'abs') {
+            return Math.abs(a);
+          }
+          throw new Error(`runtime: ${name} needs two arguments`);
+        }
+        const b = Number(evalAst(args[1]!, env));
+        return name === 'min' ? Math.min(a, b) : Math.max(a, b);
+      }
+      if (name === 'true' || name === 'false') {
+        return name === 'true' ? 1 : 0;
+      }
+      if (name === 'ocl') {
+        // the calculation idiom's wrapping token — the expression
+        // inside was already unwrapped by the carrier reader
+        if (args.length !== 1) {
+          throw new Error('runtime: ocl(...) wraps one expression');
+        }
+        return Number(evalAst(args[0]!, env));
+      }
+      throw new Error(
+        `runtime: the derivation calls "${name}(...)", which the run evaluator does not implement`,
       );
     }
-    const v = env[t.v];
-    if (typeof v === 'object') {
-      return v as unknown as number;
-    } // a payload object for '.' access
-    return typeof v === 'string' ? Number(v) : v;
   }
-  if (t.t === 'op' && t.v === '(') {
-    const v = evalExpr(r, env);
-    r.expectOp(')');
-    return v;
+};
+
+const renderSafe = (ast: ExprAst): string => {
+  try {
+    // the member node's object renders for the diagnostic; the member
+    // navigation itself stays unevaluated
+    return ast.type === 'member'
+      ? ast.property
+      : String((ast as { value?: unknown }).value ?? '');
+  } catch {
+    return '?';
   }
-  throw new Error(`runtime: the derivation has an unexpected token`);
+};
+
+export function evaluateExpression(expr: string, env: RunEnv): number {
+  const cleaned = expr
+    .replace(/^ocl\{/, '')
+    .replace(/\}$/, '')
+    .trim();
+  const v = evalAst(parseExpression(cleaned), env);
+  return typeof v === 'string' ? Number(v) : (v as number);
 }
 
-/** Evaluate one closed derivation over the run scope. The checks
- *  guarantee every referenced name is declared (C149); this throws —
- *  never silently indeterminates — when the scope lacks one. */
-/** One model table (the subset the lookup reads): id + the data grid
- *  (row 0 is the header — the legacy's slice(1) convention). */
 export interface LookupTable {
   id: string;
   data: string[][];
 }
 
-/**
- * The MMEL v2 TABLE-variable family — the `type` facet values that mark
- * a variable whose value IS a table lookup, never an expression (the
- * legacy measurement types `TABLE_OPTIONS` / `TABLE_REFERENCE`).
- */
-export function isTableVariable(variable: Pick<Variable, 'type'>): boolean {
-  return (
-    variable.type === 'TABLE_OPTIONS' || variable.type === 'TABLE_REFERENCE'
-  );
-}
-
-/**
- * The MMEL v2 TABLE-variable evaluation (the legacy Checker's
- * measurement evaluation for the TABLE family): a `type TABLE_OPTIONS` /
- * `TABLE_REFERENCE` variable's value is `lookupTable` over the model's
- * declared tables with the variable's `definition` string. Throws when
- * the variable is not a TABLE variable or carries no definition.
- */
-export function evaluateTableVariable(
-  variable: Pick<Variable, 'id' | 'type' | 'definition'>,
-  tables: LookupTable[],
-  values: RunEnv,
-): number | string {
-  if (!isTableVariable(variable)) {
-    throw new Error(
-      `runtime: ${variable.id} declares type ${variable.type} — the table evaluation takes the TABLE variable family (TABLE_OPTIONS / TABLE_REFERENCE)`,
-    );
-  }
-  if (variable.definition === '') {
-    throw new Error(
-      `runtime: the table variable ${variable.id} carries no definition`,
-    );
-  }
-  return lookupTable(tables, variable.definition, values);
-}
-
-/**
- * The MMEL v2 TABLE-variable lookup, retained with the legacy's exact
- * signature and semantics (Checker.js `lookupTable`): the definition
- * string is `tableId,targetCol,(matchCol,varName)…` — filter the
- * table's rows (below the header) where every match column equals the
- * named variable's value, and return the first surviving row's target
- * cell (numeric when it parses). Throws — never silently nulls — when
- * the table is missing or no row matches.
- */
 export function lookupTable(
   tables: LookupTable[],
   definition: string,
@@ -613,17 +411,28 @@ export function lookupTable(
   return cell !== '' && !Number.isNaN(num) ? num : cell;
 }
 
-export function evaluateExpression(expr: string, env: RunEnv): number {
-  const cleaned = expr
-    .replace(/^ocl\{/, '')
-    .replace(/\}$/, '')
-    .trim();
-  const r = new Reader(tokenize(cleaned));
-  const v = evalExpr(r, env);
-  if (r.peek() !== undefined) {
-    throw new Error('runtime: the derivation has trailing tokens');
+export function evaluateTableVariable(
+  variable: Pick<Variable, 'id' | 'type' | 'definition'>,
+  tables: LookupTable[],
+  values: RunEnv,
+): number | string {
+  if (!isTableVariable(variable)) {
+    throw new Error(
+      `runtime: ${variable.id} declares type ${variable.type} — the table evaluation takes the TABLE variable family (TABLE_OPTIONS / TABLE_REFERENCE)`,
+    );
   }
-  return v;
+  if (variable.definition === '') {
+    throw new Error(
+      `runtime: the table variable ${variable.id} carries no definition`,
+    );
+  }
+  return lookupTable(tables, variable.definition, values);
+}
+
+export function isTableVariable(variable: Pick<Variable, 'type'>): boolean {
+  return (
+    variable.type === 'TABLE_OPTIONS' || variable.type === 'TABLE_REFERENCE'
+  );
 }
 
 /** One certificate claim as projected: the declared value with its
