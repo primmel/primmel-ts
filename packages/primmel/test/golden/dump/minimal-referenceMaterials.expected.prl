@@ -1,0 +1,12 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+reference_material x {
+  name "The referenceMaterials fixture"
+}

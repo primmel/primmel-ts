@@ -1,0 +1,27 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+role applicant {
+  name "Applicant"
+}
+approval a {
+  name "Broken references"
+  actor ghost_applicant
+  approve_by ghost_checker
+  approval_record {
+    ghost_store
+  }
+}
+class Application#data {
+  store { applications }
+  id: string {
+    definition {  }
+    modality SHALL
+  }
+}

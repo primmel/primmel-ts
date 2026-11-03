@@ -1,0 +1,23 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+evaluation_dimensions evaluation {
+  field accuracy_class {
+    label "Accuracy Class"
+    enum accuracy-category
+    required true
+    editable false
+  }
+}
+dimension accuracy_class {
+  cardinality single
+  values {
+    A { label "Class A" }
+  }
+}

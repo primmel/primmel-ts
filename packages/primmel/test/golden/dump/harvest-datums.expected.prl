@@ -1,0 +1,13 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+datum load_v : number {
+  quantity_kind si:dimensionless
+  unit si:1
+}

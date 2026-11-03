@@ -1,0 +1,15 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+view_profile QmsLeadership {
+  description "The leadership lens over the quality-management layer."
+  roles { qms-manager }
+  visible { PolicyAndObjectives InternalAudit }
+  against qms-ref
+}

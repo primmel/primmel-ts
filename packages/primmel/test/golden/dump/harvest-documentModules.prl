@@ -1,0 +1,7 @@
+// The layer pins its owned requirement namespace by DECLARATION — a
+// document_module namespace facet, no requirement_class at all.
+document_module scheme_doc {
+  document "Toy scheme document"
+  title "The layer's governing document"
+  namespace /req/scheme
+}

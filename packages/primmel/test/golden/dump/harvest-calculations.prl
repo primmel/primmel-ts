@@ -1,0 +1,6 @@
+# Conformance corpus: the calculation entity.
+# Clauses: SYN-06 (positive), SER-01 (positive).
+calculation ErrorCalc {
+  name "Error"
+  expression "[indication] - [reference]"
+}

@@ -1,0 +1,13 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+namespace CeramicsNs {
+  uri "http://example.com/ceramics"
+  prefix "cer"
+}

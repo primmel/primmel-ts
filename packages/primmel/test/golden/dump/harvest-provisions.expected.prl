@@ -1,0 +1,17 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+provision ProvMPE {
+  condition "The error shall not exceed the maximum permissible error"
+  modality SHALL
+}
+requirement /req/metrological/mpe {
+  name "Maximum permissible error"
+  statement { The absolute value of the error shall not exceed the MPE }
+}

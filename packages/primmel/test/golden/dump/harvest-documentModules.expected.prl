@@ -1,0 +1,14 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+document_module scheme_doc {
+  document "Toy scheme document"
+  title "The layer's governing document"
+  namespace /req/scheme
+}

@@ -1,0 +1,8 @@
+# The value id `mains` is declared twice in one dimension: C111 must fire.
+dimension supply {
+  label "Supply"
+  values {
+    mains { label "Mains" }
+    mains { label "Mains, restated" }
+  }
+}

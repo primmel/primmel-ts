@@ -13,7 +13,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { load, dump } from '../src/ser-des/index';
+import { load, dump, loadFile } from '../src/ser-des/index';
+import { CONSTRUCTS } from '../src/ser-des/config/index';
 
 const GOLDEN = join(process.cwd(), 'test', 'golden', 'dump');
 
@@ -22,6 +23,32 @@ const inputs = existsSync(GOLDEN)
       f => f.endsWith('.prl') && !f.endsWith('.expected.prl'),
     )
   : [];
+
+describe('the construct coverage of the golden fixtures', () => {
+  // every registered construct is pinned through parse -> dump by at
+  // least one golden fixture: a new construct without a pinned dump
+  // fails here, and the harvest mode seeds the fixture mechanically
+  const byField = new Map<string, string[]>();
+  for (const f of inputs) {
+    const std = loadFile(join(GOLDEN, f)) as unknown as Record<
+      string,
+      unknown[]
+    >;
+    for (const [field, items] of Object.entries(std)) {
+      if (Array.isArray(items) && items.length > 0) {
+        byField.set(field, [...(byField.get(field) ?? []), f]);
+      }
+    }
+  }
+  for (const c of CONSTRUCTS) {
+    it(`${c.keyword} -> ${c.field} is pinned`, () => {
+      assert.ok(
+        byField.has(c.field as string),
+        `no golden fixture exercises the ${c.field} plane (${c.keyword}) — add one, or run rebake-golden --harvest`,
+      );
+    });
+  }
+});
 
 describe('the golden dump harness', () => {
   it('has fixtures (the harness is not silently empty)', () => {

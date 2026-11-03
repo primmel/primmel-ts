@@ -1,0 +1,14 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+calculation ErrorCalc {
+  name "Error"
+  output : number { unit "1" }
+  expression "[indication] - [reference]"
+}

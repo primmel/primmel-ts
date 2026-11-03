@@ -1,0 +1,19 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+role verifier {
+  name "Verifier"
+}
+role analyst {
+  name "Analyst"
+}
+link L1 {
+  type REPO
+  target ""
+}

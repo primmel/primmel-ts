@@ -1,0 +1,16 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+dimension supply {
+  label "Supply"
+  values {
+    mains { label "Mains" }
+    mains { label "Mains, restated" }
+  }
+}

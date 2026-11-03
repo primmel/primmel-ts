@@ -1,0 +1,25 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+symbol fees {
+  name "fees"
+  type number
+  kind observable
+}
+constraint fees_settled {
+  stereotype inv
+  args {
+    fees <- observable:fees
+  }
+  check {
+    fees -> forAll(f | f.status = 'MARKED_PAID')
+  }
+  violation_meaning "An unpaid fee stands."
+  on_violation invalid
+}

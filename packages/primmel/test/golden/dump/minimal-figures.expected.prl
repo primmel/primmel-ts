@@ -1,0 +1,13 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+figure x {
+  title ""
+  src ""
+}

@@ -1,0 +1,20 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+evaluation_profile p {
+  dimensions { accuracy_class X }
+  description "Bad class"
+}
+dimension accuracy_class {
+  cardinality single
+  values {
+    A { label "Class A" }
+    B { label "Class B" }
+  }
+}
