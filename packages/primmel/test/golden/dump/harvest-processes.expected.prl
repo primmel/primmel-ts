@@ -1,0 +1,21 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+process review {
+  name ""
+  does {
+    start_event begin
+    action examine
+    end_event done
+    flow {
+      begin -> examine
+      examine -> done
+    }
+  }
+}

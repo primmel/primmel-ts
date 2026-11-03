@@ -1,0 +1,12 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+role verifier {
+  name "Verifier"
+}

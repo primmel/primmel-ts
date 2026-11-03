@@ -1,0 +1,16 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+role verifier {
+  name "The \"chief\" verifier"
+}
+note N1 {
+  type NOTE
+  message ""
+}

@@ -1,0 +1,5 @@
+
+specimen_governance_rule g {
+  rule "A sample is one physical unit."
+  rationale "The continuity rule."
+}

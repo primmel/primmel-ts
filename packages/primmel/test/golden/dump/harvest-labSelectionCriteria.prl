@@ -1,0 +1,5 @@
+
+lab_selection_criterion x {
+  weight required
+  match { operator has_capability }
+}

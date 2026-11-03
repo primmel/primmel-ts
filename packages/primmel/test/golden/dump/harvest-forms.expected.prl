@@ -1,0 +1,13 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+form IntakeForm {
+  name "Intake"
+  field ref { bind model.identity.ref }
+}

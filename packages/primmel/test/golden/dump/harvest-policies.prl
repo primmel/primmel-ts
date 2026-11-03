@@ -1,0 +1,23 @@
+# A rule without its action says nothing: C107.
+dataspace bfs-exchange {
+  artifact_class evaluation-report { element /art/evaluation-report }
+  ref derives-from "urn:example:bfs:2026#clause-5.1"
+}
+
+artifact_definition /art/evaluation-report {
+  name "Evaluation report"
+  content_contract {
+    fields {
+      lot_id : string
+      verdict : string
+    }
+  }
+  produced_when per_measurement
+}
+
+policy restricted-exchange {
+  governs { evaluation-report }
+  rule incomplete {
+    kind permission
+  }
+}

@@ -1,0 +1,31 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+framework_document b18 {
+  rank 1
+  doc "OIML B 18"
+  title "Framework for the OIML Certification System (OIML-CS)"
+  approved_by ciml
+  clause "6 a)"
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
+}
+framework_document cid-01 {
+  rank 2
+  doc "OIML-CS CID-01"
+  title "Clarification and Interpretation Document"
+  approved_by management_committee
+  clause "6 b)"
+  note "Clarifications and interpretations of OIML-CS documents intended as guidance and additional information; they do not supersede the text of the current editions (CID-01, clause 2)."
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
+}
+document_precedence higher_position_prevails {
+  clause "6"
+  statement { In the event of a conflict, contradiction or inconsistency between the provisions of one of the governing documents and the provisions of another, the provisions of the document listed in a higher position take precedence over the provisions of the document listed in a lower position (clause 6). }
+  ref derives-from "urn:oiml:pub:b:18:2025#clause-6"
+}

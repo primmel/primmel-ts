@@ -1,0 +1,9 @@
+root Root
+
+mapping xml Ceramic {
+  element "ceramic"
+  namespace CeramicsNs
+  map_element "location" location
+  map_attribute "kiln" kiln
+  map_content notes
+}

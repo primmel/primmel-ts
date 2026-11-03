@@ -1,0 +1,12 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+identity_slot bare {
+  type string
+}

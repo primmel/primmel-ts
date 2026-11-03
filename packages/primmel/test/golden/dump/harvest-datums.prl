@@ -1,0 +1,6 @@
+root Root
+
+datum load_v : number {
+  unit si:1
+  quantity_kind si:dimensionless
+}

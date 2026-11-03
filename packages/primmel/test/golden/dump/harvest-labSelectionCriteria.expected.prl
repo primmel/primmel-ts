@@ -1,0 +1,15 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+lab_selection_criterion x {
+  weight required
+  match {
+    operator has_capability
+  }
+}

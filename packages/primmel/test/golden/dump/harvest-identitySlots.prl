@@ -1,0 +1,4 @@
+
+identity_slot bare {
+  type string
+}

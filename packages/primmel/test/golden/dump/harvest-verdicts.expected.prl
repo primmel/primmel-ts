@@ -1,0 +1,14 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+verdict v1 {
+  quantity { kind mass unit "kg" }
+  derive "ocl{...}"
+  inputs { phantom }
+}

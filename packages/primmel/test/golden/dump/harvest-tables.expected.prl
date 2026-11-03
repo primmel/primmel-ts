@@ -1,0 +1,15 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+table MpeTable {
+  title ""
+  columns {
+    load: mpe
+  }
+}

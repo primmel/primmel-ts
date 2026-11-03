@@ -1,0 +1,5 @@
+
+test_report_checklist x {
+  entry a { element "a" }
+  entry a { element "b" }
+}

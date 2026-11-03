@@ -1,0 +1,15 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+certificate_template certificate {
+  characteristic x {
+    type float
+    label "X"
+  }
+}

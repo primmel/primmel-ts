@@ -1,0 +1,40 @@
+# The CDDAL interop fixture (TODO.reconfigure/04, "CDDAL interop"): the
+# dictionary subset — one class with typed fields, one instance with
+# exhibited values. The class id is identifier-safe; the instance id
+# carries a hyphen on purpose: it pins the projection's code-carry (the
+# verbatim id rides `code:` quoted; the sanitized symbol rides the
+# declaration's name slot — cddal-spec clause 11 makes the code the
+# round-trip identity).
+class LoadCellSample {
+  serial_number : string { modality SHALL }
+  e_max : quantity { modality SHALL unit "t" }
+  accuracy_class : string { modality SHALL }
+}
+
+instance smp-001 {
+  of LoadCellSample
+  level sample
+  has {
+    attributes {
+      serial_number : "HBK-001"
+      e_max : 2.2 t
+      accuracy_class : "C3"
+    }
+  }
+}
+
+enum accuracy {
+  A { }
+  B { }
+  C { }
+}
+
+attribute_definition serial_number {
+  name "Serial number"
+  definition { The manufacturer's serial number of the load cell. }
+  value_type string
+  origin declared
+  scope model
+  category administrative
+  corresponds iec-cdd "0112/2///61987#ABA123"
+}

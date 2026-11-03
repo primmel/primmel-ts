@@ -1,0 +1,51 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+class LoadCellSample {
+  serial_number: string {
+    definition {  }
+    modality SHALL
+  }
+  e_max: quantity {
+    definition {  }
+    modality SHALL
+    unit "t"
+  }
+  accuracy_class: string {
+    definition {  }
+    modality SHALL
+  }
+}
+enum accuracy {
+  A {
+    definition {  }
+  }
+  B {
+    definition {  }
+  }
+  C {
+    definition {  }
+  }
+}
+attribute_definition serial_number {
+  name "Serial number"
+  definition { The manufacturer's serial number of the load cell. }
+  corresponds iec-cdd "0112/2///61987#ABA123"
+  value_type string
+  origin declared
+  scope model
+  category administrative
+}
+instance smp-001 {
+  of LoadCellSample
+  level sample
+  has {
+    attributes { serial_number : HBK-001 e_max : 2.2 t accuracy_class : C3 }
+  }
+}

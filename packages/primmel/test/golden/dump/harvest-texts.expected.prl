@@ -1,0 +1,12 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+text dictionary/serial_number.definition {
+  spell fr "Numéro de série de la cellule de pesage."
+}

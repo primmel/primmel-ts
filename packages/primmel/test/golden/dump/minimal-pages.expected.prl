@@ -1,0 +1,17 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+canvas x {
+  elements {
+  }
+  process_flow {
+  }
+  data {
+  }
+}

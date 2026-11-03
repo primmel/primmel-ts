@@ -1,0 +1,19 @@
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
+verification_pathway p {
+  kind initial
+  validity {
+    window { years 1 }
+    trigger t {
+      kind signal
+      action a
+    }
+  }
+}
