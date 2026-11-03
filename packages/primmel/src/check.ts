@@ -8933,6 +8933,18 @@ export function checkPackage(
   // form covers a requirement it targets. inherits_from chains inherit
   // the parent's evidence links (R 60's class-driven instances).
   if (strictness === 'audit') {
+    // the unified adjudication ledger: a test whose evidence exclusion
+    // is adjudicated in coverage.json (the reasoned entry, the C73
+    // staleness leg watching it) is recorded, never a gap
+    let evidenceExclusions: ReadonlySet<string> = new Set();
+    try {
+      const { config } = loadTextCoverageData(dir);
+      evidenceExclusions = new Set(
+        (config?.evidence_exclusions ?? []).map(x => x.test),
+      );
+    } catch {
+      // the coverage payloads unreadable — the metric's own C73 owns it
+    }
     const testById = new Map(
       (standard.conformanceTests ?? []).map(t => [t.id, t]),
     );
@@ -8968,6 +8980,9 @@ export function checkPackage(
       return parent !== undefined && hasEvidence(parent, seen);
     };
     for (const t of standard.conformanceTests ?? []) {
+      if (evidenceExclusions.has(t.id)) {
+        continue; // adjudicated exclusion — recorded in coverage.json
+      }
       if (!hasEvidence(t, new Set())) {
         warn(
           'C51',
@@ -9023,6 +9038,23 @@ export function checkPackage(
   // `primmel check --coverage`, never auto-failed here.
   const textCoverageData = loadTextCoverageData(dir);
   issues.push(...textCoverageData.issues);
+  // the exclusions' hygiene (C73, the unified ledger's drift leg):
+  // an exclusion naming no declared conformance test is stale — the
+  // test is gone, the entry must die. Independent of the sentence
+  // manifests: the ledger stands on its own.
+  {
+    const declaredTests = new Set(
+      (standard.conformanceTests ?? []).map(t => t.id),
+    );
+    for (const x of textCoverageData.config?.evidence_exclusions ?? []) {
+      if (!declaredTests.has(x.test)) {
+        err(
+          'C73',
+          `sources-prd/coverage.json: the evidence exclusion names "${x.test}", which no declared conformance test carries — the test is gone, the exclusion must die (text-coverage-config)`,
+        );
+      }
+    }
+  }
   if (textCoverageData.manifests.length > 0) {
     const textCoverage = computeTextCoverage(
       standard,

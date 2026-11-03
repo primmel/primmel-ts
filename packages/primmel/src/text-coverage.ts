@@ -99,6 +99,19 @@ export interface CoverageConfigJson {
   prd_coverage: string;
   allowances?: CoverageAllowance[];
   duplicate_adjudications?: DuplicateAdjudication[];
+  /** The C51 exclusions (the unified adjudication ledger): a
+   *  conformance test whose evidence is a design review or a
+   *  life-of-type evaluation carries its exclusion HERE — the same
+   *  reasoned-entry structure as the sentence allowances — instead of
+   *  riding a budget line in the allowlist. One concept, one book. */
+  evidence_exclusions?: EvidenceExclusion[];
+}
+
+export interface EvidenceExclusion {
+  test: string;
+  reason: string;
+  since?: string;
+  task?: string;
 }
 
 const SENTENCES_FORMAT = '0.1.0';
@@ -618,6 +631,22 @@ export function computeTextCoverage(
       boundSentences.add(key);
     } else {
       boundFragments.add(key);
+    }
+  }
+
+  // the exclusions' hygiene (C73, the unified ledger's drift leg): an
+  // exclusion naming no declared conformance test is stale — the data
+  // was fixed, the entry must die
+  for (const x of config?.evidence_exclusions ?? []) {
+    const declared = (standard.conformanceTests ?? []).some(
+      t => t.id === x.test,
+    );
+    if (!declared) {
+      configIssues.push({
+        check: 'C73',
+        severity: 'error',
+        message: `sources-prd/coverage.json: the evidence exclusion names "${x.test}", which no declared conformance test carries — the test is gone, the exclusion must die (text-coverage-config)`,
+      });
     }
   }
 
