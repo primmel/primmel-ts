@@ -109,6 +109,7 @@ import { MANIFEST_FACETS } from '../src/ser-des/config/manifestSchema.ts';
 import { explainRule } from '../src/check-explain.ts';
 import { CONSTRUCTS } from '../src/ser-des/config/index.ts';
 import { loadPackageWithIssues } from '../src/ser-des/package.ts';
+import { censusCli } from './census.mts';
 import { exportPackageReqif, type ReqifExport } from '../src/export/reqif.ts';
 import { exportPackageRdf, type RdfExport } from '../src/export/rdf.ts';
 import {
@@ -747,6 +748,8 @@ if (args[0] === 'diff') {
   closureCli(args.slice(1));
 } else if (args[0] === 'check') {
   checkCli(args.slice(1));
+} else if (args[0] === 'census') {
+  censusCli(args.slice(1));
 } else if (args[0] === 'export') {
   exportCli(args.slice(1));
 } else if (args[0] === 'pack') {
