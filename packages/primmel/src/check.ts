@@ -1437,6 +1437,10 @@ export function checkPackage(
     // the OCL null-check literal's call form — OCL_WORDS carries the
     // word; the calls leg needs the call spelling too
     'oclIsUndefined',
+    // the runtime's own list aggregator (average(list)): the call form
+    // the runtime evaluator implements, so the checker's vocabulary
+    // carries the same callable
+    'average',
     // the series-access vocabulary (OCL_WORDS carries the words): the
     // creep-family derivations read their windows positionally
     'reading_at',
