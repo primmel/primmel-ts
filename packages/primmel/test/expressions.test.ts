@@ -16,6 +16,7 @@ import {
   parseExpression,
   renderExpression,
 } from '../src/expressions';
+import { evaluateExpression } from '../src/runtime';
 import { loadPackage } from '../src/ser-des/package';
 import { dump } from '../src/ser-des/index';
 import { checkPackage } from '../src/check';
@@ -508,6 +509,44 @@ describe('C178 legacy-carrier-deprecated (W6)', () => {
     const msgs = ids(dir);
     assert.equal(msgs.length, 1);
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('the conditional and the row context (the two-implementations alignment)', () => {
+  it('parses the conditional in BOTH spellings and renders the endif canonically', () => {
+    for (const src of [
+      'if a >= 5 then 1 else 2 endif',
+      'if a >= 5 then 1 else 2',
+      'if a then if b then c else d endif else e endif',
+    ]) {
+      const once = parseExpression(src);
+      const rendered = renderExpression(once);
+      assert.ok(rendered.endsWith('endif'), rendered);
+      const twice = parseExpression(rendered);
+      assert.deepEqual(twice, once);
+    }
+  });
+
+  it('parses the form-derivation row context ($index, $prev) verbatim', () => {
+    const src =
+      'if $index = 0 then 0 else (indication - $prev.indication) / conversion_factor_f endif';
+    const once = parseExpression(src);
+    assert.equal(renderExpression(once), src);
+    assert.deepEqual(parseExpression(renderExpression(once)), once);
+  });
+
+  it('the runtime evaluates the canonical (endif) render', () => {
+    // the two implementations read one language: the AST parser accepts
+    // both spellings, the canonical render carries endif, and the
+    // runtime evaluator consumes it
+    assert.equal(evaluateExpression('if 5 >= 50 then 1 else 2 endif', {}), 2);
+    assert.equal(
+      evaluateExpression(
+        'if 5 >= 50 then 1 else if 5 >= 20 then 2 else 3 endif endif',
+        {},
+      ),
+      3,
+    );
   });
 });
 
