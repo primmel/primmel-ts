@@ -494,6 +494,8 @@ import {
 } from './text-coverage';
 import { parseSpellingCode, parseConversionCode } from './spelling';
 import { runLicenseFacetsFamily } from './check-families/license-facets';
+import { runGenerationRatchetFamily } from './check-families/generation-ratchet';
+import { runUncertaintyBudgetFamily } from './check-families/uncertainty-budget';
 
 export interface CheckIssue {
   check: string;
@@ -2436,212 +2438,13 @@ export function checkPackage(
     }
   }
 
-  // ── C176 language-declared-wellformed ───────────────────────────────
-  // A declared language generation must be well-formed (v<digit>[.digit])
-  // — the strict-parse contract's key. The unknown-keyword errors come
-  // from the parse itself (the strict mode); this rule only checks the
-  // declaration's shape.
-  // ── C178 legacy-carrier-deprecated ──────────────────────────────────
-  // The deprecation mechanism (register W6): the legacy quoted
-  // expression carriers (`expression "ocl{…}"`, the quoted derive /
-  // derivation / check) warn once a package declares the generation
-  // that deprecates them. The generation constant is INERT until the
-  // owner's release bump — no package declares it today, so nothing
-  // warns; flipping the constant (or packages declaring the newer
-  // generation) activates the ratchet. The inline blocks are the only
-  // forward form.
-  const DEPRECATION_GENERATION = 'v3.4';
-  // the ratchet counts only carriers the language can parse — the
-  // legacy-string population that never parsed (the prose judgments, the
-  // bracket idioms, the bar-abs) is inert data on a separate retirement
-  // track, never a C178 finding
-  const migratableCarrier = (source: string): boolean => {
-    // the quoted carrier stores the ocl{…} wrapper verbatim — probe the
-    // body the same way the fold's identifier reader does
-    const inner =
-      source.startsWith('ocl{') && source.endsWith('}')
-        ? source.slice(4, -1)
-        : source;
-    try {
-      parseExpression(inner);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-  const generationRank = (g: string): number => {
-    const m = g.match(/^v(\d+)(?:\.(\d+))?$/);
-    if (!m) {
-      return -1;
-    }
-    return Number(m[1]) * 1000 + Number(m[2] ?? '0');
-  };
-  try {
-    const mf = readPackageManifest(dir);
-    if (mf.language !== undefined) {
-      if (!/^v\d+(\.\d+)?$/.test(mf.language)) {
-        err(
-          'C176',
-          `the declared language "${mf.language}" is not a generation (v<major>[.<minor>]) (language-declared-wellformed)`,
-        );
-      } else if (
-        generationRank(mf.language) >= generationRank(DEPRECATION_GENERATION)
-      ) {
-        let legacy = 0;
-        for (const r of standard.requirements ?? []) {
-          if (
-            r.limit &&
-            !r.limit.argsBound &&
-            r.limit.expression &&
-            migratableCarrier(r.limit.expression)
-          ) {
-            legacy += 1;
-          }
-        }
-        for (const v of standard.verdicts ?? []) {
-          const derive = (v as { derive?: string }).derive;
-          if (
-            derive &&
-            !(v as { deriveBound?: boolean }).deriveBound &&
-            migratableCarrier(derive)
-          ) {
-            legacy += 1;
-          }
-        }
-        for (const t of standard.conformanceTests ?? []) {
-          for (const v of t.variables ?? []) {
-            if (
-              v.derivation &&
-              !v.derivationBound &&
-              migratableCarrier(v.derivation)
-            ) {
-              legacy += 1;
-            }
-          }
-          for (const p of t.preconditions ?? []) {
-            if (p.check && !p.checkBound && migratableCarrier(p.check)) {
-              legacy += 1;
-            }
-          }
-        }
-        for (const c of standard.constraints ?? []) {
-          if (c.check && !c.checkBound && migratableCarrier(c.check)) {
-            legacy += 1;
-          }
-        }
-        // the check construct's own expression carrier (the corpus's
-        // dominant plane — the canonical verdict declarations) and the
-        // process steps' completion gates
-        for (const c of standard.checks ?? []) {
-          // a FOLDED check is the parse-side view of its owner's carrier
-          // (C161) — the owner's facet is counted by its own leg above;
-          // counting the view would double-count one carrier
-          if (
-            c.expression &&
-            !c.expressionBound &&
-            !c.folds &&
-            migratableCarrier(c.expression)
-          ) {
-            legacy += 1;
-          }
-        }
-        for (const p of standard.processes ?? []) {
-          for (const st of (p as { steps?: unknown[] }).steps ?? []) {
-            const completion = (st as { completion?: string }).completion;
-            if (
-              completion &&
-              !(st as { completionBound?: boolean }).completionBound &&
-              migratableCarrier(completion)
-            ) {
-              legacy += 1;
-            }
-          }
-        }
-        if (legacy > 0) {
-          warn(
-            'C178',
-            `${legacy} quoted expression carrier${legacy === 1 ? '' : 's'} — the ocl{…} string form is deprecated as of ${DEPRECATION_GENERATION}; migrate to the inline blocks (expression { … }, derive { … }, derivation { … }, check { … }) (legacy-carrier-deprecated)`,
-          );
-        }
-      }
-    }
-  } catch {
-    // the manifest unreadable — the load errors own that
-  }
+  // ── C176 language-declared-wellformed + C178 legacy-carrier-deprecated:
+  // the generation declaration and the legacy-carrier ratchet
+  // (check-families/generation-ratchet) ─────────────────────────────
+  runGenerationRatchetFamily({ dir, standard, err, warn });
 
-  // ── C179 uncertainty-budget-resolves ────────────────────────────────
-  // The budget is a declaration, never arithmetic: its target is a
-  // declared verdict (the measured quantity it backs), a Type A
-  // component names a declared test variable that holds a captured
-  // series, a Type B component states its distribution and half-width,
-  // and the coverage factor is a positive number. The propagation law
-  // is the GUM's — the evaluation plane's, never restated here.
-  {
-    const seriesVariables = new Map<string, boolean>();
-    for (const t of standard.conformanceTests ?? []) {
-      for (const v of t.variables ?? []) {
-        seriesVariables.set(v.name, v.series !== null);
-      }
-    }
-    for (const b of standard.uncertaintyBudgets ?? []) {
-      if (!b.target) {
-        err(
-          'C179',
-          `uncertainty_budget ${b.id}: declares no target — the budget backs a declared verdict's measured quantity (uncertainty-budget-resolves)`,
-        );
-      } else if (!(standard.verdicts ?? []).some(v => v.id === b.target)) {
-        err(
-          'C179',
-          `uncertainty_budget ${b.id}: target "${b.target}" is not a declared verdict — the budget backs a measured quantity the verdicts own (uncertainty-budget-resolves)`,
-        );
-      }
-      if (b.components.length === 0) {
-        warn(
-          'C179',
-          `uncertainty_budget ${b.id}: declares no components — an empty budget states no uncertainty (uncertainty-budget-resolves)`,
-        );
-      }
-      if (b.coverageK && !(Number(b.coverageK) > 0)) {
-        err(
-          'C179',
-          `uncertainty_budget ${b.id}: coverage k "${b.coverageK}" is not a positive number (uncertainty-budget-resolves)`,
-        );
-      }
-      for (const c of b.components) {
-        if (c.type === 'A') {
-          if (!c.series) {
-            err(
-              'C179',
-              `uncertainty_budget ${b.id}: component ${c.id} is Type A but names no series — the statistics compute from a declared captured series (uncertainty-budget-resolves)`,
-            );
-          } else if (!seriesVariables.has(c.series)) {
-            err(
-              'C179',
-              `uncertainty_budget ${b.id}: component ${c.id}'s series "${c.series}" is not a declared test variable (uncertainty-budget-resolves)`,
-            );
-          } else if (!seriesVariables.get(c.series)) {
-            err(
-              'C179',
-              `uncertainty_budget ${b.id}: component ${c.id}'s series "${c.series}" declares no series shape — a Type A evaluation needs the captured series' axes and cell (uncertainty-budget-resolves)`,
-            );
-          }
-        } else {
-          if (!c.distribution) {
-            err(
-              'C179',
-              `uncertainty_budget ${b.id}: component ${c.id} is Type B but states no distribution (uncertainty-budget-resolves)`,
-            );
-          }
-          if (!c.halfWidth) {
-            err(
-              'C179',
-              `uncertainty_budget ${b.id}: component ${c.id} is Type B but states no half_width — the distribution spans a half-width (uncertainty-budget-resolves)`,
-            );
-          }
-        }
-      }
-    }
-  }
+  // ── C179: uncertainty-budget-resolves (check-families/uncertainty-budget) ──
+  runUncertaintyBudgetFamily({ standard, err, warn });
 
   // ── C173 step-plane-refs-resolve (register 19) ──────────────────────
   // A signature step's completion is one expression over the step's own
