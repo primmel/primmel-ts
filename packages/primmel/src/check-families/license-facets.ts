@@ -17,14 +17,16 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import type Standard from '../types/Standard';
-import type { CheckIssue } from '../check';
 
 export interface LicenseFacetsContext {
   standard: Standard;
   err: (check: string, message: string) => void;
 }
 
-export function runLicenseFacetsFamily({ standard, err }: LicenseFacetsContext): void {
+export function runLicenseFacetsFamily({
+  standard,
+  err,
+}: LicenseFacetsContext): void {
   const m = standard.packageManifest;
   if (m && m.licenseKey !== undefined) {
     if (!/^std:[a-z0-9-]+$/.test(m.licenseKey)) {
