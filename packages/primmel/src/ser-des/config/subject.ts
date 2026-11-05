@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────
 // Subject-chain constructs (Primmel v2, gap G1):
-//   instrument, attribute_definition, capability, behavior, condition_set
+//   instrument, attribute_definition, capability, behavior
 //
 // Grammar sketch:
 //   instrument LoadCell {
@@ -41,12 +41,6 @@
 //     kind temporal  stimulus force  response "..."
 //     ref derives-from "...#clause-3.7.1"  verified_by { /conf/... }
 //   }
-//
-//   condition_set load-cell-reference {
-//     role reference
-//     entries { temperature { value 20 unit degC tolerance 1 } }
-//   }
-//
 // Subject anatomy (Primmel v3, TODO.roadmap/01) — the `subject` construct
 // organizes the aspect catalog by the three families is / has / does:
 //
@@ -1713,8 +1707,6 @@ const dumpBehavior = function (b: Behavior): string {
   out += '}\n';
   return out;
 };
-
-// ── condition_set ────────────────────────────────────────────────────
 
 function readStringMap(block: string): Record<string, string> {
   const out: Record<string, string> = {};

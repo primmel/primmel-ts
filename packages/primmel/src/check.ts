@@ -71,13 +71,11 @@
 //   C32 inv1-no-bare-quantity: a value stated for a declared physical
 //      quantity (attribute unit, quantity_kind, or QuantityValue
 //      value_type) carries a unit — an empty-string unit token counts as
-//      bare; numeric condition-set entries carry a unit too (free-text
-//      values stay legal) — INV-1, no bare numbers (TODO.roadmap/06)
+//      bare — INV-1, no bare numbers (TODO.roadmap/06)
 //   C33 quantity-coherence: register integrity (unit kinds resolve, no
 //      cross-register redefinition) + comparison coherence on quantity
-//      KINDS (instance values vs attribute definitions, condition-set
-//      entries, symbols, verdicts) — mass vs time fails; unmapped units
-//      are warnings
+//      KINDS (instance values vs attribute definitions, symbols,
+//      verdicts) — mass vs time fails; unmapped units are warnings
 //   C34 duality-coherence: a dual carries ≥1 role; each stated role of a
 //      dual bound to a declared physical quantity carries a unit (or an
 //      explicit kind) — INV-1; both roles stated ⇒ same quantity kind
