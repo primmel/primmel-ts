@@ -783,7 +783,7 @@ export function dumpDesign(design: TestDesign, indent: string): string {
       for (const it of s.items) {
         let line = indent + '      item ' + it.item + ' { ';
         if (it.name) {
-          line += 'name "' + escapeString(it.name) + '" ';
+          line += 'label "' + escapeString(it.name) + '" ';
         }
         if (it.d31) {
           line += 'd31 "' + escapeString(it.d31) + '" ';

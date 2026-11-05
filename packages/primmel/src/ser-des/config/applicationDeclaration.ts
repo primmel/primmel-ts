@@ -103,7 +103,7 @@ export const dumpApplicationDeclaration: Dumper<ApplicationDeclaration> =
     for (const doc of d.documents) {
       out += '  document ' + dumpBareSafe(doc.id) + ' {\n';
       if (doc.name) {
-        out += '    name "' + escapeString(doc.name) + '"\n';
+        out += '    label "' + escapeString(doc.name) + '"\n';
       }
       if (doc.description) {
         out += '    description "' + escapeString(doc.description) + '"\n';

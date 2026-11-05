@@ -1168,7 +1168,7 @@ function dumpPairList(decl: PairListDecl): string {
   for (const c of decl.components) {
     out += '    component ' + dumpBareSafe(c.id) + ' {\n';
     if (c.name) {
-      out += '      name "' + escapeString(c.name) + '"\n';
+      out += '      label "' + escapeString(c.name) + '"\n';
     }
     if (c.source && (c.source.doc || c.source.clause)) {
       out += dumpSourceRefAsRef(c.source, '      ', escapeString);
@@ -1405,7 +1405,7 @@ const dumpAttributeDefinition = function (a: AttributeDefinition): string {
     out += '  symbol "' + escapeString(a.symbol) + '"\n';
   }
   if (a.name) {
-    out += '  name "' + escapeString(a.name) + '"\n';
+    out += '  label "' + escapeString(a.name) + '"\n';
   }
   if (a.definition) {
     out += '  definition { ' + a.definition + ' }\n';

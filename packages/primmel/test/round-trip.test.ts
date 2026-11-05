@@ -173,7 +173,7 @@ describe('round-trip', () => {
     `;
     const out = roundTrip(src);
     assert.match(out, /form f1 \{/);
-    assert.match(out, /name "Form 1"/);
+    assert.match(out, /label "Form 1"/);
   });
 
   it('preserves a Primmel symbol definition', () => {

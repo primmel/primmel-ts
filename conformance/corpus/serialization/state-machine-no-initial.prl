@@ -1,6 +1,12 @@
-# Conformance corpus: a state machine without its initial state.
-# Clause: CHK-06 (the codec half — the serializer never emits the
-# dangling keyword; the refusal itself is the checker's, C109).
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
 state_machine TestReport {
   states {
     DRAFT

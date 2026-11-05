@@ -27,12 +27,12 @@ state_machine lc_operational {
   }
 }
 requirement oiml-r60#/req/metrological/mpe {
-  name "alias: R 60 maximum permissible errors"
+  label "alias: R 60 maximum permissible errors"
   statement { Local alias of the Recommendation's MPE requirement (the implementation declares local copies of the reference elements it maps to — C21). }
   verification { method examination description "Verified in the Recommendation's own evaluation program." }
 }
 requirement oiml-r60#/req/metrological/creep {
-  name "alias: R 60 creep requirement"
+  label "alias: R 60 creep requirement"
   statement { Local alias of the Recommendation's creep requirement. }
   verification { method examination description "Verified in the Recommendation's own evaluation program." }
 }
@@ -89,7 +89,7 @@ subject LC500 {
   }
 }
 artifact_definition type_evaluation_dossier {
-  name "Type evaluation dossier"
+  label "Type evaluation dossier"
   description "The executed type evaluation record the certificate derives from (doctrine ch. 15 §15.7 step 2)."
   content_contract {
     fields {

@@ -8,11 +8,11 @@ metadata {
 }
 
 symbol e_vehicle {
-  name "e"
+  label "e"
   type number
 }
 requirement /req/air {
-  name "Air"
+  label "Air"
   statement { S }
   limit {
     args {

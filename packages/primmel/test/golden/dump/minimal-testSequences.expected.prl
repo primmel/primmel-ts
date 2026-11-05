@@ -8,5 +8,5 @@ metadata {
 }
 
 test_sequence x {
-  name "The testSequences fixture"
+  label "The testSequences fixture"
 }

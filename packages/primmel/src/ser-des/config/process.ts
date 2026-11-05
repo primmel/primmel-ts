@@ -1641,7 +1641,7 @@ export const dumpProcess: (
   ctx?: { nested?: boolean },
 ) => string = function (process, ctx) {
   let out: string = 'process ' + process.id + ' {\n';
-  out += '  name "' + escapeString(process.name) + '"\n';
+  out += '  label "' + escapeString(process.name) + '"\n';
   // The overlay marker (composition; the absent marker never
   // canonicalizes to `overlay false` — the terms' dump precedent).
   if (process.overlay) {

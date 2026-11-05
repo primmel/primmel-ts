@@ -26,7 +26,7 @@ function makePackage(body: string): string {
 }
 
 // The r60 conduct_tests shape: the facets the old emitter dropped
-// (label vs name is the emitter's; the kernel reads `name`). The
+// (the kernel reads both spellings; the dump now emits `label`). The
 // validate_measurement verdict is absent — the spelling retired at
 // parse (TODO.lang-gaps/03); the verdict declares the canonical check,
 // which is the fold tests' subject.
@@ -122,7 +122,7 @@ describe('process workflow facets (smart TODO.roadmap/40 batch 5, step 5a)', () 
 
   it('a process without the new facets keeps the batch-2 shape exactly', () => {
     const out = dump(load('process p { name "Plain" }'));
-    assert.ok(out.includes('process p {\n  name "Plain"\n}\n'));
+    assert.ok(out.includes('process p {\n  label "Plain"\n}\n'));
     assert.equal(dump(load(out)), out);
   });
 });
@@ -313,7 +313,7 @@ describe('approval provenance + resolution (smart TODO.roadmap/40 batch 5, step 
     assert.ok(
       out.includes(
         'approval ia_approve_application {\n' +
-          '  name "IA approves the application"\n' +
+          '  label "IA approves the application"\n' +
           '  actor applicant\n' +
           '  modality shall\n' +
           '  approve_by ia_checker\n' +
@@ -332,7 +332,7 @@ describe('approval provenance + resolution (smart TODO.roadmap/40 batch 5, step 
       load('approval a { name "Plain" actor applicant approve_by ia_checker }'),
     );
     assert.ok(
-      out.includes('approval a {\n  name "Plain"\n  actor applicant\n'),
+      out.includes('approval a {\n  label "Plain"\n  actor applicant\n'),
     );
     assert.ok(!out.includes('modality'));
     assert.equal(dump(load(out)), out);

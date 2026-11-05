@@ -8,6 +8,6 @@ metadata {
 }
 
 form IntakeForm {
-  name "Intake"
+  label "Intake"
   field ref { bind model.identity.ref }
 }

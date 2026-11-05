@@ -8,5 +8,5 @@ metadata {
 }
 
 invariant x {
-  name "The invariants fixture"
+  label "The invariants fixture"
 }

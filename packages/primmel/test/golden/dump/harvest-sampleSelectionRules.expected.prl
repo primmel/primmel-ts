@@ -8,7 +8,7 @@ metadata {
 }
 
 attribute_definition e_max {
-  name "Maximum capacity"
+  label "Maximum capacity"
   value_type QuantityValue
   is_dimension false
 }

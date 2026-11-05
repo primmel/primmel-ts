@@ -11,7 +11,7 @@ role applicant {
   name "Applicant"
 }
 approval a {
-  name "Broken references"
+  label "Broken references"
   actor ghost_applicant
   approve_by ghost_checker
   approval_record {

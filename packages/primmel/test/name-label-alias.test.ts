@@ -2,9 +2,9 @@
 // The name→label unification (the register's item 6, the proceed-all
 // waves): `label` is the authoring alias of the `name` facet wherever
 // a name facet exists — both spellings parse identically, the wire
-// field stays `name`, the dump keeps the canonical spelling (the
-// deprecation ladder's rung: the authoring vocabulary unifies first;
-// a dump flip is a separately-timed rung). The datum's own `label`
+// field stays `name`. RUNG TWO (executed 2026-11-05): the canonical
+// dump emits `label` — the wire field stays `name`, the serialization
+// spells the authored vocabulary. The datum's own `label`
 // facet is unaffected (it has no name facet to alias).
 // ─────────────────────────────────────────────────────────────────────
 

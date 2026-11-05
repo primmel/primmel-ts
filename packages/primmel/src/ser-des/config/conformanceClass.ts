@@ -85,7 +85,7 @@ const dumpConformanceClass = function (cc: ConformanceClass): string {
     out += '  title "' + escapeString(cc.title) + '"\n';
   }
   if (cc.name) {
-    out += '  name "' + escapeString(cc.name) + '"\n';
+    out += '  label "' + escapeString(cc.name) + '"\n';
   }
   if (cc.target) {
     out += '  target ' + cc.target + '\n';

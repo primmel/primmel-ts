@@ -8,7 +8,7 @@ metadata {
 }
 
 symbol state_class {
-  name "State classification"
+  label "State classification"
   type enum
   values { DRAFT ISSUED "with conditions" }
 }

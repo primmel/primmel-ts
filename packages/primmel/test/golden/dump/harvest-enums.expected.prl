@@ -34,7 +34,7 @@ enum accuracy {
   }
 }
 attribute_definition serial_number {
-  name "Serial number"
+  label "Serial number"
   definition { The manufacturer's serial number of the load cell. }
   corresponds iec-cdd "0112/2///61987#ABA123"
   value_type string

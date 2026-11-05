@@ -191,7 +191,7 @@ export const parseSymbol: Parser = function (id, data) {
 
 export const dumpSymbol: Dumper<Symbol> = function (s) {
   let out = 'symbol ' + s.id + ' {\n';
-  out += '  name "' + escapeString(s.name) + '"\n';
+  out += '  label "' + escapeString(s.name) + '"\n';
   if (s.definition) {
     out += '  definition { ' + s.definition + ' }\n';
   }

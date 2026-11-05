@@ -17,7 +17,7 @@ instrument LoadCell {
 }
 attribute_definition e_max {
   symbol "E_max"
-  name "Maximum capacity"
+  label "Maximum capacity"
   definition { The maximum load the cell measures. }
   value_type quantity
 }
