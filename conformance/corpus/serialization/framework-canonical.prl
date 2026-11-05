@@ -8,10 +8,10 @@ metadata {
 }
 
 process issue {
-  name "Certificate issuance"
+  label "Certificate issuance"
 }
 process evaluation {
-  name "Type evaluation"
+  label "Type evaluation"
 }
 participant_kind issuing_authority {
   label "OIML Issuing Authority"

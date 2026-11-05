@@ -1,9 +1,16 @@
-# Conformance corpus: string values with escaped quotes and backslashes.
-# Clauses: SER-01 (positive), SER-02 (positive).
+metadata {
+  title ""
+  schema ""
+  edition ""
+  author ""
+  namespace ""
+  shortname ""
+}
+
 role verifier {
   name "The \"chief\" verifier"
 }
-
 note N1 {
-  text "The path C:\\lab\\reports holds the output"
+  type NOTE
+  message ""
 }

@@ -8,6 +8,6 @@ metadata {
 }
 
 form test_report {
-  name "Test report"
+  label "Test report"
   field e_max : number { label "Maximum error" bind model.parameters.e_max required true }
 }

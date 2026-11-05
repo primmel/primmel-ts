@@ -8,7 +8,7 @@ metadata {
 }
 
 requirement /req/sensitivity {
-  name "Sensitivity"
+  label "Sensitivity"
   statement { The conversion factor from counts to verification units is positive. }
   limit {
     expression "ocl{self.f > 0}"
