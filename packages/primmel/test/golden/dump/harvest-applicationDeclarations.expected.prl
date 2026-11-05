@@ -9,9 +9,9 @@ metadata {
 
 application_declaration application {
   document measurement-principle {
-    name "One"
+    label "One"
   }
   document measurement-principle {
-    name "Two"
+    label "Two"
   }
 }

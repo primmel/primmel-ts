@@ -96,7 +96,7 @@ canvas Root {
     );
     assert.ok(dumped.includes('process Assembly {'), 'child process in output');
     assert.ok(
-      dumped.includes('name "Assemble components"'),
+      dumped.includes('label "Assemble components"'),
       'child name preserved',
     );
 

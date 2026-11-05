@@ -8,7 +8,7 @@ metadata {
 }
 
 symbol fees {
-  name "fees"
+  label "fees"
   type number
   kind observable
 }

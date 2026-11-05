@@ -209,7 +209,7 @@ const parseDataspace: ConstructDefinition['parse'] = function (id, data) {
 const dumpDataspace = function (d: Dataspace): string {
   let out = 'dataspace ' + d.id + ' {\n';
   if (d.name) {
-    out += '  name "' + escapeString(d.name) + '"\n';
+    out += '  label "' + escapeString(d.name) + '"\n';
   }
   if (d.description) {
     out += '  description "' + escapeString(d.description) + '"\n';

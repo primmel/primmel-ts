@@ -121,7 +121,7 @@ export const resolveApproval: Resolver<Approval, ResolvableApproval> =
 
 export const dumpApproval: Dumper<Approval> = function (approval) {
   let out: string = 'approval ' + approval.id + ' {\n';
-  out += '  name "' + escapeString(approval.name) + '"\n';
+  out += '  label "' + escapeString(approval.name) + '"\n';
   // The reference facets dump from the RAW ids — an unresolved id still
   // round-trips byte-clean (the provisionRefs precedent).
   if (approval.actorRef) {

@@ -8,5 +8,5 @@ metadata {
 }
 
 reference_material x {
-  name "The referenceMaterials fixture"
+  label "The referenceMaterials fixture"
 }

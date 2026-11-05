@@ -582,7 +582,7 @@ function dumpLimit(limit: RequirementLimit): string {
 const dumpRequirement = function (r: Requirement): string {
   let out = 'requirement ' + r.id + ' {\n';
   if (r.name) {
-    out += '  name "' + escapeString(r.name) + '"\n';
+    out += '  label "' + escapeString(r.name) + '"\n';
   }
   if (r.statement) {
     out += '  statement { ' + r.statement + ' }\n';
@@ -774,7 +774,7 @@ const parseRequirementClass: ConstructDefinition['parse'] = function (
 const dumpRequirementClass = function (rc: RequirementClass): string {
   let out = 'requirement_class ' + rc.id + ' {\n';
   if (rc.name) {
-    out += '  name "' + escapeString(rc.name) + '"\n';
+    out += '  label "' + escapeString(rc.name) + '"\n';
   }
   if (rc.subject) {
     out += '  subject "' + escapeString(rc.subject) + '"\n';

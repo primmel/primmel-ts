@@ -280,7 +280,7 @@ function dumpProducedWhen(pw: ProducedWhen): string {
 const dumpArtifactDefinition = function (d: ArtifactDefinition): string {
   let out = 'artifact_definition ' + d.id + ' {\n';
   if (d.name) {
-    out += '  name "' + escapeString(d.name) + '"\n';
+    out += '  label "' + escapeString(d.name) + '"\n';
   }
   if (d.description) {
     out += '  description "' + escapeString(d.description) + '"\n';

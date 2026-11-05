@@ -353,7 +353,7 @@ function makeSubformRefField(subformId: string, block: string): FormField {
 
 export const dumpForm: Dumper<Form> = function (f) {
   let out = 'form ' + f.id + ' {\n';
-  out += '  name "' + escapeString(f.name) + '"\n';
+  out += '  label "' + escapeString(f.name) + '"\n';
   if (f.description) {
     out += '  description "' + escapeString(f.description) + '"\n';
   }
@@ -438,7 +438,7 @@ export const dumpForm: Dumper<Form> = function (f) {
       out +=
         '    instance ' +
         inst.id +
-        ' { name "' +
+        ' { label "' +
         escapeString(inst.name) +
         '" }\n';
     }

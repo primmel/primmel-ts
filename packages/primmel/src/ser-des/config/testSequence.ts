@@ -182,7 +182,7 @@ const parseTestSequence: ConstructDefinition['parse'] = function (id, data) {
 const dumpTestSequence = function (seq: TestSequence): string {
   let out = 'test_sequence ' + seq.id + ' {\n';
   if (seq.name !== '') {
-    out += '  name "' + escapeString(seq.name) + '"\n';
+    out += '  label "' + escapeString(seq.name) + '"\n';
   }
   if (seq.description !== '') {
     out += '  description "' + escapeString(seq.description) + '"\n';

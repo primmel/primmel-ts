@@ -8,7 +8,7 @@ metadata {
 }
 
 artifact_definition /art/evaluation-report {
-  name "Evaluation report"
+  label "Evaluation report"
   content_contract {
     fields {
       lot_id : string

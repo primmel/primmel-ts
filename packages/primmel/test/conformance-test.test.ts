@@ -103,7 +103,7 @@ canvas Root {
     const model = load(original);
     const dumped = dump(model);
     assert.ok(dumped.includes('conformance_test CT1'));
-    assert.ok(dumped.includes('name "Test CT"'));
+    assert.ok(dumped.includes('label "Test CT"'));
     assert.ok(dumped.includes('type Inspection'));
     assert.ok(dumped.includes('step step_one "Step one"'));
 

@@ -30,7 +30,7 @@ state_machine lc_operational {
 }
 attribute_definition d_min {
   symbol "d_min"
-  name "Minimum dead load"
+  label "Minimum dead load"
   definition { Minimum dead load of the load cell (R 60-1, 3.3.2), read from the twin's test context. }
   quantity_kind mass
   unit "kg"
@@ -41,7 +41,7 @@ attribute_definition d_min {
 }
 attribute_definition indication {
   symbol "I"
-  name "Indication"
+  label "Indication"
   definition { The indication of the load cell — the served live reading (R 60-1, 3.4.1). }
   quantity_kind mass
   unit "kg"

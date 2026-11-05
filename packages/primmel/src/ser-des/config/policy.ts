@@ -156,7 +156,7 @@ const parsePolicy: ConstructDefinition['parse'] = function (id, data) {
 const dumpPolicy = function (p: Policy): string {
   let out = 'policy ' + p.id + ' {\n';
   if (p.name) {
-    out += '  name "' + escapeString(p.name) + '"\n';
+    out += '  label "' + escapeString(p.name) + '"\n';
   }
   if (p.description) {
     out += '  description "' + escapeString(p.description) + '"\n';

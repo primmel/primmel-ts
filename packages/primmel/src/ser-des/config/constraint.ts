@@ -116,7 +116,7 @@ export const dumpConstraint: Dumper<Constraint> = function (c) {
     out += '  stereotype ' + c.stereotype + '\n';
   }
   if (c.name) {
-    out += '  name "' + escapeString(c.name) + '"\n';
+    out += '  label "' + escapeString(c.name) + '"\n';
   }
   if ((c.args ?? []).length > 0) {
     out += '  args {\n';

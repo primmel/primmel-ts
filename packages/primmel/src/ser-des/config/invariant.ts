@@ -107,7 +107,7 @@ const parseInvariant: ConstructDefinition['parse'] = function (id, data) {
 const dumpInvariant = function (inv: Invariant): string {
   let out = 'invariant ' + inv.id + ' {\n';
   if (inv.name !== '') {
-    out += '  name "' + escapeString(inv.name) + '"\n';
+    out += '  label "' + escapeString(inv.name) + '"\n';
   }
   if (inv.statement !== '') {
     out += '  statement { ' + inv.statement + ' }\n';

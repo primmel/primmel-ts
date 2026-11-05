@@ -42,7 +42,7 @@ const LEGACY = `requirement /req/r {
 `;
 
 const CANONICAL = `requirement /req/r {
-  name "R"
+  label "R"
   statement { S }
   limit {
     expression "ocl{1 <= 2}"
@@ -96,7 +96,7 @@ describe('fmt', () => {
 
   it('handles the args-bound carrier form to a fixpoint', () => {
     const inline = `requirement /req/m {
-  name "M"
+  label "M"
   statement { S }
   limit {
     args {

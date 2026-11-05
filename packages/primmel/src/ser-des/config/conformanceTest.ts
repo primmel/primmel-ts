@@ -958,7 +958,7 @@ export const parseConformanceTest: Parser = function (id, data) {
 export const dumpConformanceTest: Dumper<ConformanceTest> = function (ct) {
   let out = 'conformance_test ' + ct.id + ' {\n';
   if (ct.name) {
-    out += '  name "' + escapeString(ct.name) + '"\n';
+    out += '  label "' + escapeString(ct.name) + '"\n';
   }
   if (ct.type) {
     out += '  type ' + ct.type + '\n';

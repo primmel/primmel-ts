@@ -8,7 +8,7 @@ metadata {
 }
 
 process review {
-  name ""
+  label ""
   does {
     start_event begin
     action examine

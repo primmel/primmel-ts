@@ -8,5 +8,5 @@ metadata {
 }
 
 conformance_class x {
-  name "The conformanceClasses fixture"
+  label "The conformanceClasses fixture"
 }

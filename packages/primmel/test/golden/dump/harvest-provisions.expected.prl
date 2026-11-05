@@ -12,6 +12,6 @@ provision ProvMPE {
   modality SHALL
 }
 requirement /req/metrological/mpe {
-  name "Maximum permissible error"
+  label "Maximum permissible error"
   statement { The absolute value of the error shall not exceed the MPE }
 }

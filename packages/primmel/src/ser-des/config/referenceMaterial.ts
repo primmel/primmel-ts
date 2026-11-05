@@ -250,7 +250,7 @@ export const dumpReferenceMaterial: Dumper<ReferenceMaterial> = function (m) {
     out += '  kind ' + m.kind + '\n';
   }
   if (m.name) {
-    out += '  name "' + escapeString(m.name) + '"\n';
+    out += '  label "' + escapeString(m.name) + '"\n';
   }
   if (m.definition) {
     out += '  definition { ' + m.definition + ' }\n';
