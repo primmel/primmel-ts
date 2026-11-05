@@ -4,9 +4,8 @@ import { load, dump } from '../src/ser-des/index.js';
 
 // Reconciliation round-trips (task 15b follow-up): the small grammar
 // additions the converter needs so nothing it emits is silently dropped —
-// dimension-value labels, calculation source blocks, condition_set source,
-// applicability mapping commas, named subform_ref fields, escaped table
-// cells.
+// dimension-value labels, calculation source blocks, applicability
+// mapping commas, named subform_ref fields, escaped table cells.
 
 describe('dimension value label', () => {
   const SRC = `instrument LoadCell {

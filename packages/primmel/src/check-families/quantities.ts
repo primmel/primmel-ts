@@ -213,10 +213,6 @@ export function runQuantitiesFamily({
     }
   }
 
-  // C32/C33 — condition-set entries. C32: a NUMERIC entry value (with or
-  // without tolerance) stated without a unit is a bare physical quantity —
-  // INV-1 (free-text values like "local ambient" stay legal). C33: the
-
   // C33 — symbols and verdict quantities: a declared quantity_kind must
   // agree with the declared unit's kind.
   const unitables: Array<{

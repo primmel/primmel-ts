@@ -1069,8 +1069,7 @@ export const CHECK_RULES: CheckRule[] = [
   // C142 (smart TODO.roadmap/40 batch 5; the packages-as-SSOT epic): the
   // gateway routing cascade — edge targets resolve to declared processes
   // (gated), exactly one default edge per edge-carrying gateway, the
-  // default recommended last (warning). The workflow_stage members-
-  // resolve legs ride this rule (step 5d).
+  // default recommended last (warning).
   R(
     'C142',
     'gateway-edges-resolve',

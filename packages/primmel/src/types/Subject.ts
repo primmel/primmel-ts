@@ -493,7 +493,7 @@ export interface SubjectIs {
   structure: string[];
   /** Type-defining values fixed by design: name → qualifier string. */
   designParameters: Record<string, string>;
-  /** Designed operating-condition tiers: tier name → condition_set id. */
+  /** Designed operating-condition tiers: tier name → tier value. */
   designedConditions: Record<string, string>;
   /**
    * Manufacturer claims on characteristics/behavior (TODO.roadmap/08) —

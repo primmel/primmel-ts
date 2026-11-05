@@ -2,8 +2,9 @@
 // The evaluation-registers family (C134–C142, smart TODO.roadmap/40
 // batches 3+5, the packages-as-SSOT epic): the evaluation-side
 // registers — evaluation_dimensions (C134), evaluation_profiles (C135),
-// certificate_templates (C136), workflow_config (C137),
-// verification_pathways (C138), the selection rules (C139),
+// certificate_templates (C136; C137 is RESERVED — the workflow_config
+// construct retired in phase 6), verification_pathways (C138), the
+// selection rules (C139),
 // test_report_skeletons (C140), test_report_checklists (C141), and the
 // exclusive gateways' routing cascade (C142). Per-register gating
 // throughout (the C58 doctrine): a resolve leg runs only when its
@@ -206,29 +207,8 @@ export function runEvaluationRegistersFamily({
     }
   }
 
-  // ── C137: workflow-config-references (smart TODO.roadmap/40 ────────
-  // batch 3; the packages-as-SSOT epic) ────────────────────────────────
-  // The certification workflow step register: the actor resolves against
-  // the composed role register (per-register gated; role ids are
-  // snake_case — the YAML hyphenation is the emitter's); the inputs/
-  // outputs entries resolve against the data-class register ONLY when
-  // the entry is a single clean token (composite strings like
-  // "TestReport containing FormInstance" stay documentary — skipped,
-  // never errored); the gates are prose predicates — never resolved
-  // (the R26 field-resolution precedent). The phase vocabulary is
-  // parse-enforced upstream (no check leg).
-  {
-    // Class ids may carry a namespace suffix (`Application#data`) while
-    // the workflow's inputs/outputs spell the bare entity name — index
-    // both spellings (the semantic-status leg's precedent).
-    const dataclassIds = new Set<string>();
-    for (const c of standard.dataclasses ?? []) {
-      dataclassIds.add(c.id);
-      if (c.id.includes('#')) {
-        dataclassIds.add(c.id.slice(0, c.id.indexOf('#')));
-      }
-    }
-  }
+  // C137 is RESERVED (the workflow_config construct retired in phase 6;
+  // the catalog carries the id, no leg runs).
 
   // ── C138: verification-pathway-references (smart TODO.roadmap/40 ───
   // batch 3; the packages-as-SSOT epic) ────────────────────────────────
@@ -527,13 +507,6 @@ export function runEvaluationRegistersFamily({
   // resolved (the R26 field-resolution precedent). The edge-less
   // gateway (a label-only declaration) carries no routing, so the
   // default discipline skips it.
-  //
-  // The workflow_stage members-resolve legs ride this rule (step 5d):
-  // elements → the process register, approvals → the approval register,
-  // gateways → the gateway register — per-register gated. The stage's
-  // start_event / end_events are DOCUMENTARY tokens (dossier hazard 3,
-  // decision (b)) — the kernel's event register is the canvas start/end
-  // construct, a different sense — so they are never resolved.
   {
     const gwProcessIds = new Set((standard.processes ?? []).map(p => p.id));
     for (const g of standard.gateways ?? []) {
@@ -584,7 +557,5 @@ export function runEvaluationRegistersFamily({
         }
       }
     }
-    // The workflow_stage members-resolve legs (step 5d) — the events
-    // stay documentary, never resolved.
   }
 }
