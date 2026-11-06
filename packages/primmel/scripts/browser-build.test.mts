@@ -36,7 +36,7 @@ test(
 
     const src = [
       'class LoadCellSample {',
-      '  attribute serial_number, String { definition "sn" modality SHALL }',
+      '  attribute serial_number, String { definition { sn } modality SHALL }',
       '  attribute e_max, Mass { cardinality 1..1 }',
       '}',
       'instance smp-001 {',
@@ -58,7 +58,7 @@ test(
     const once = dump(standard);
     const twice = dump(load(once));
     assert.equal(once, twice);
-    assert.match(once, /attribute serial_number, String \{ definition "sn" modality SHALL \}/);
+    assert.match(once, /attribute serial_number, String \{ definition \{ sn \} modality SHALL \}/);
     assert.match(once, /attributes \{ serial_number : HBK-001 e_max : "2.2" t \}/);
   },
 );
