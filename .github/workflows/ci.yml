@@ -47,6 +47,15 @@ jobs:
           PRIMMEL_SPEC_SOURCES: ${{ github.workspace }}/spec/sources
       - name: Conformance suite (the reference toolchain against the corpus)
         run: yarn test:conformance
+      # The browser bundle's own gate: build it and import it (the
+      # node-builtin shims — a no-op shim shipped broken bundles for
+      # every release since the locator plane joined the import graph;
+      # the editor's app build consumes this file via the package's
+      # browser export).
+      - name: Browser bundle (build + the import/export gate)
+        run: |
+          yarn workspace @primmel/primmel run build:browser
+          yarn workspace @primmel/primmel test:browser
       - name: The second checker's corpus leg (parsanol from npm, PINNED — no checkout needed)
         run: |
           SCRATCH="$(mktemp -d)"
