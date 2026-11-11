@@ -66,7 +66,7 @@ jobs:
           # install turns the parsanol owner's release into this repo's
           # red CI. The bump is deliberate: verify the new version
           # against this leg LOCALLY, then raise the pin.
-          npm install parsanol@0.10.32 --no-audit --no-fund
+          npm install parsanol@0.10.46 --no-audit --no-fund
           cd "$GITHUB_WORKSPACE"
           PRIMMEL_PARSANOL_TS="$SCRATCH/node_modules/parsanol" yarn test:conformance:checker2
   corpus:
