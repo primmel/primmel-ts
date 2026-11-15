@@ -1175,9 +1175,13 @@ function composePackage(
     const m = manifests.get(id)!;
     const downstream = order.slice(i + 1);
     for (const p of m.provides ?? []) {
-      const consumed = downstream.some(o =>
-        (manifests.get(o)!.requires ?? []).includes(p),
-      );
+      const consumed = downstream.some(o => {
+        const reqs = manifests.get(o)!.requires ?? [];
+        // the scoped capability form (`pkg:token`, the shape C31's
+        // requires-satisfied resolves) consumes the token too — the
+        // composition doctrine's two legs agree on the scoped shape
+        return reqs.includes(p) || reqs.includes(`${id}:${p}`);
+      });
       const waived = downstream.some(o =>
         (manifests.get(o)!.waives ?? []).some(
           w => w === p || w === `${id}:${p}`,

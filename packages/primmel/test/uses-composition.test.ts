@@ -395,6 +395,35 @@ describe('uses composition — loader', () => {
     );
   });
 
+  it('provides: the scoped requires form (pkg:token) consumes the token — C30 and C31 agree on the scoped shape', () => {
+    makePackage('sc-core', 'package { id sc-core kind core }', {});
+    makePackage(
+      'sc-module',
+      'package { id sc-module uses { sc-core } provides { cap-a cap-b } }',
+      {},
+    );
+    // the layer consumes cap-a through the scoped capability form
+    makePackage(
+      'sc-layer',
+      'package { id sc-layer uses { sc-core sc-module } requires { sc-module:cap-a } }',
+      {},
+    );
+    makePackage(
+      'sc-rec',
+      'package { id sc-rec uses { sc-core sc-module sc-layer } }',
+      {},
+    );
+    const { issues } = loadPackageWithIssues(dirs.get('sc-rec')!, {
+      resolvePackage,
+    });
+    const unconsumed = issues.filter(i => i.code === 'provides-unconsumed');
+    // cap-a is consumed by the layer's scoped require; cap-b stays free.
+    assert.deepEqual(
+      unconsumed.map(i => i.id),
+      ['sc-module:cap-b'],
+    );
+  });
+
   it('without a locator the single directory loads as before (backwards compatible)', () => {
     const recDir = makeHappyComposition();
     const { standard, composition } = loadPackageWithIssues(recDir);
