@@ -582,12 +582,18 @@ function attrValue(inst: Instance, id: string): InstanceValueLike | undefined {
 
 /** The accuracy-class dimension value's typed payload (the class's
  *  defining data — Table 1 limits, Table 4 tiers), as the evaluator's
- *  nested scope. */
+ *  nested scope. The instrument resolved is the INSTANCE's own
+ *  (`of <Instrument>`) — a composed closure merges every package's
+ *  instruments, and the first is not necessarily the run's subject. */
 function classPayload(
   standard: Standard,
   dimValue: string | undefined,
+  instrumentId?: string,
 ): RunEnv {
-  const instrument = standard.instruments[0];
+  const instrument =
+    (instrumentId
+      ? standard.instruments.find(i => i.id === instrumentId)
+      : undefined) ?? standard.instruments[0];
   const dim = instrument?.dimensions.find(d => d.id === 'accuracy_class');
   const valueId = dimValue;
   const value = dim?.values.find(v => v.id === valueId);
@@ -641,7 +647,7 @@ export function executeRun(
   // The run scope: the instance's declared attributes (p_lc, e_max,
   // n_lc, ...) plus the typed class payload behind the dimension value.
   const dimValue = inst.has?.dimensions?.accuracy_class;
-  const payload = classPayload(standard, dimValue);
+  const payload = classPayload(standard, dimValue, inst.of);
   const scope: RunEnv = { ...payload, accuracy_class: payload };
   for (const [id] of Object.entries(inst.has?.attributes ?? {})) {
     const v = attrValue(inst, id);
